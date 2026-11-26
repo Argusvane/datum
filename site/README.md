@@ -143,7 +143,9 @@ and every docs page, as absolute addresses on the same origin) and `robots.txt` 
 `public/og/partners.png` (the partners page), 1200 x 630, drawn in the site's look by
 `node scripts/render-share-cards.mjs` (a local Chrome over the DevTools protocol; `CHROME`
 names the binary). They are committed: re-run the script after changing a card's words, which
-live in the script.
+live in the script. The same script draws the repository's card on GitHub,
+`.github/social-preview.png` (1280 x 640). GitHub has no API for it: after re-rendering, upload it
+in the repository's Settings > General > Social preview.
 
 The docs pages carry the same tags, written by `transformHead` in `docs/.vitepress/config.ts` (the page's title and
 description, its clean address and the site's card).

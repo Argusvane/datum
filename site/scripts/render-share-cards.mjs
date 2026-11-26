@@ -1,4 +1,5 @@
-// Draws the link-preview cards (public/og/*.png, 1200 x 630) in the site's own look: the
+// Draws the link-preview cards (public/og/*.png, 1200 x 630) and the GitHub repository's social
+// preview (.github/social-preview.png, 1280 x 640, GitHub's size) in the site's own look: the
 // light theme's tokens, Bebas Neue, Archivo and IBM Plex Mono from the site's own font files, 3px rules,
 // the four-stroke mark. Run by hand after changing the copy below, then commit the PNGs:
 //
@@ -6,6 +7,9 @@
 //
 // It drives a local headless Chrome over the DevTools protocol (Node's own WebSocket, no
 // dependencies). CHROME names the binary when it is not at the macOS default.
+//
+// GitHub has no API for the social preview: upload .github/social-preview.png by hand in the
+// repository's Settings > General > Social preview.
 import { spawn } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -15,11 +19,14 @@ import { fileURLToPath } from "node:url";
 const CHROME = process.env.CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const PORT = Number(process.env.CDP_PORT ?? 9461);
 const OUT = process.env.OG_OUT ?? fileURLToPath(new URL("../public/og/", import.meta.url));
+const GITHUB_OUT = fileURLToPath(new URL("../../.github/", import.meta.url));
 const FONTS = fileURLToPath(new URL("../public/fonts/", import.meta.url));
 // The cards set their small labels in IBM Plex Mono bold, which the site's pages do not use, so that one file lives beside this script.
 const SCRIPT_FONTS = fileURLToPath(new URL("./fonts/", import.meta.url));
 const WIDTH = 1200;
 const HEIGHT = 630;
+const GITHUB_WIDTH = 1280;
+const GITHUB_HEIGHT = 640;
 
 const MARK = `<svg width="56" height="56" viewBox="0 0 28 28" aria-hidden="true">
   <path d="M4 6h8M4 11h20" stroke="#141414" stroke-width="2.5" stroke-linecap="square" />
@@ -41,7 +48,7 @@ const FONT_FACES = [
   .join("\n");
 
 /** One card's page: eyebrow, headline lines (each ends in the accent full stop), foot line, and ruled rows beside the headline when given. */
-function card({ eyebrow, lines, size, foot, rows }) {
+function card({ eyebrow, lines, size, foot, rows, width = WIDTH, height = HEIGHT }) {
   const headline = lines.map((line) => `<span>${line}<span class="dot">.</span></span>`).join("");
   const aside = rows
     ? `<ul class="rows">${rows.map(([label, text]) => `<li><span class="rows__label">${label}</span><span>${text}</span></li>`).join("")}</ul>`
@@ -50,7 +57,7 @@ function card({ eyebrow, lines, size, foot, rows }) {
 <style>
 ${FONT_FACES}
   * { box-sizing: border-box; margin: 0; }
-  html, body { width: ${WIDTH}px; height: ${HEIGHT}px; background: #fafaf9; color: #141414; }
+  html, body { width: ${width}px; height: ${height}px; background: #fafaf9; color: #141414; }
   body { padding: 56px 64px; display: flex; flex-direction: column; font-family: "Archivo", sans-serif; }
   .brand { display: flex; align-items: center; gap: 18px; font-family: "Bebas Neue", sans-serif; font-size: 48px; letter-spacing: 0.1em; line-height: 1; }
   .main { flex: 1; display: flex; align-items: center; gap: 56px; }
@@ -70,14 +77,15 @@ ${FONT_FACES}
 </body></html>`;
 }
 
-const CARDS = {
-  "datum.png": card({
+/** Each card: where it is written, its size, and its page. */
+const CARDS = [
+  { dir: OUT, name: "datum.png", width: WIDTH, height: HEIGHT, html: card({
     eyebrow: "Define once. Deliver anywhere. Own it completely.",
     lines: ["Sovereign forms"],
     size: 172,
     foot: "Forms infrastructure &middot; open source (MIT) &middot; run it where you need it"
-  }),
-  "partners.png": card({
+  }) },
+  { dir: OUT, name: "partners.png", width: WIDTH, height: HEIGHT, html: card({
     eyebrow: "Partners",
     lines: ["Run it", "Embed it", "Deliver it"],
     size: 104,
@@ -88,8 +96,17 @@ const CARDS = {
       ["Embed it", "A form builder inside your product, without building one."],
       ["Deliver it", "One forms layer for every client project."]
     ]
-  })
-};
+  }) },
+  // The repository's card on GitHub: the site's card, at GitHub's size, naming the site.
+  { dir: GITHUB_OUT, name: "social-preview.png", width: GITHUB_WIDTH, height: GITHUB_HEIGHT, html: card({
+    eyebrow: "Define once. Deliver anywhere. Own it completely.",
+    lines: ["Sovereign forms"],
+    size: 172,
+    foot: "Forms infrastructure &middot; open source (MIT) &middot; datum.argusvane.com",
+    width: GITHUB_WIDTH,
+    height: GITHUB_HEIGHT
+  }) }
+];
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -127,9 +144,9 @@ const chrome = spawn(CHROME, ["--headless=new", `--remote-debugging-port=${PORT}
 try {
   const page = await connect();
   await page.send("Page.enable");
-  await page.send("Emulation.setDeviceMetricsOverride", { width: WIDTH, height: HEIGHT, deviceScaleFactor: 1, mobile: false });
-  mkdirSync(OUT, { recursive: true });
-  for (const [name, html] of Object.entries(CARDS)) {
+  for (const { dir, name, width, height, html } of CARDS) {
+    await page.send("Emulation.setDeviceMetricsOverride", { width, height, deviceScaleFactor: 1, mobile: false });
+    mkdirSync(dir, { recursive: true });
     const { frameId } = await page.send("Page.navigate", { url: "about:blank" });
     await page.send("Page.setDocumentContent", { frameId, html });
     // Each face is asked for by name: `fonts.ready` alone can settle before the page has asked for any.
@@ -139,12 +156,15 @@ try {
       awaitPromise: true
     });
     await sleep(300);
-    const shot = await page.send("Page.captureScreenshot", { format: "png", clip: { x: 0, y: 0, width: WIDTH, height: HEIGHT, scale: 1 } });
-    writeFileSync(join(OUT, name), Buffer.from(shot.data, "base64"));
-    console.log(`render-share-cards: public/og/${name}`);
+    const shot = await page.send("Page.captureScreenshot", { format: "png", clip: { x: 0, y: 0, width, height, scale: 1 } });
+    writeFileSync(join(dir, name), Buffer.from(shot.data, "base64"));
+    console.log(`render-share-cards: ${join(dir, name)}`);
   }
   page.close();
 } finally {
+  // Chrome writes to its profile as it shuts down: wait for it to exit before removing the profile.
+  const exited = new Promise((resolve) => chrome.once("exit", resolve));
   chrome.kill();
-  rmSync(profile, { recursive: true, force: true });
+  await exited;
+  rmSync(profile, { recursive: true, force: true, maxRetries: 5 });
 }
