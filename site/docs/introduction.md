@@ -40,9 +40,7 @@ A form is designed in the builder, published on a page, filled in, submitted as 
 
 Datum is pre-release, at version 0.1.0. This is the one place that says what is published; other pages link here instead of repeating it.
 
-**Today nothing is published** to npm, Maven Central or PyPI, so you build from the repository.
-
-**The first release, 0.1.0, will publish:**
+**The first release, 0.1.0, publishes:**
 
 | Where | What |
 |---|---|
