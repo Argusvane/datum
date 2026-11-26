@@ -2,7 +2,7 @@
 // by hand, which publishes nothing):
 //
 //   node scripts/npm/release.mjs check --version 0.1.0   every published package carries exactly that
-//                                                        version, the forwarders pin it, the private
+//                                                        version and the repository URL, and the private
 //                                                        packages are still private
 //   node scripts/npm/release.mjs pack --out release/npm  prepack and `npm pack` each package into the
 //                                                        folder, check each tarball (scripts/npm/pack-check.mjs),
@@ -36,16 +36,13 @@ export function checkVersions(version) {
   if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) {
     problems.push(`"${version}" is not a version`);
   }
-  for (const { folder, name, forwards } of PUBLISHED) {
+  for (const { folder, name } of PUBLISHED) {
     const manifest = manifestOf(folder);
     if (manifest.name !== name) problems.push(`${folder}/package.json is named ${manifest.name}, not ${name}`);
     if (manifest.version !== version) problems.push(`${name} is at ${manifest.version}, the release is ${version}`);
     if (manifest.private !== false) problems.push(`${name} is not marked "private": false`);
     if (manifest.repository?.url !== REPOSITORY_URL) {
       problems.push(`${name}'s repository.url is ${JSON.stringify(manifest.repository?.url)}, not ${REPOSITORY_URL}: provenance compares it with the repository case-sensitively`);
-    }
-    if (forwards !== undefined && JSON.stringify(manifest.dependencies) !== JSON.stringify({ [forwards]: version })) {
-      problems.push(`${name} must depend on exactly ${forwards}@${version}, it has ${JSON.stringify(manifest.dependencies)}`);
     }
   }
   for (const folder of STAY_PRIVATE) {
@@ -143,9 +140,7 @@ function smoke(dir) {
       }
     };
     const exec = (file, args) => execFileSync(file, args, { cwd: app, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
-    // A forwarder and its scoped package declare the same bin name, so npm links `.bin/<name>` to one of them only.
-    // Each command therefore also runs through every bin file of the installed packages directly: the forwarder's and
-    // the scoped package's, with the same arguments, and each must answer.
+    // Each command runs through `.bin` and through the bin file of the one published package that declares it.
     const binFiles = (command) => {
       const files = [];
       for (const { name } of PUBLISHED) {
@@ -165,8 +160,8 @@ function smoke(dir) {
     for (const [command, args, expected] of commands) {
       attempt(`${command} ${args.join(" ")} (.bin)`, () => exec(bin(command), args), expected);
       const files = binFiles(command);
-      // The scoped package and the bare forwarder both name the command: a missing one means the install lost a package.
-      if (files.length < 2) problems.push(`${command}: expected a scoped package and a forwarder to declare it, found ${files.map((entry) => entry.name).join(", ") || "none"}`);
+      // Exactly one published package names the command: none means the install lost it, two would make `.bin` ambiguous.
+      if (files.length !== 1) problems.push(`${command}: expected one published package to declare it, found ${files.map((entry) => entry.name).join(", ") || "none"}`);
       for (const { name, file } of files) {
         attempt(`${name} bin of ${command} ${args.join(" ")}`, () => exec(process.execPath, [file, ...args]), expected);
       }

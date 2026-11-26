@@ -10,7 +10,7 @@ The three registries do not publish alike, and the order follows from that:
 | Host | Published by | Starts when | Can be undone |
 |---|---|---|---|
 | Maven Central (`com.argusvane`) | `integrations/jvm/scripts/release.mjs`, run by hand on the maintainer's machine | the maintainer runs it | no: a Central version is permanent |
-| npm (`@argusvane/*` and four bare command names) | `.github/workflows/release-npm.yml` | the push of the tag `v<version>` | no: a version number is never reused |
+| npm (`@argusvane/*`) | `.github/workflows/release-npm.yml` | the push of the tag `v<version>` | no: a version number is never reused |
 | PyPI (eight `argusvane-datum-*` distributions) | `.github/workflows/release-fastapi.yml`, TestPyPI first | the push of the same tag | no |
 
 Maven goes first because it is the only one that is not started by the tag, and the one that needs a commit that is
@@ -46,7 +46,7 @@ The engine's gates run against the in-process sandbox adapter, because a depende
    environment that does not exist on its first use with no protection, so create them before anything that lets a job
    publish: a trusted publisher registered while `pypi` is unconfigured lets a pushed tag upload unapproved. Required
    reviewers need a public repository or a paid plan.
-3. Store `NPM_TOKEN` (an automation token that can publish the `@argusvane` scope and the four bare names) as a secret of
+3. Store `NPM_TOKEN` (an automation token that can publish the `@argusvane` scope) as a secret of
    the `npm` environment. Provenance needs no token.
 4. Register a pending trusted publisher on PyPI and on TestPyPI for each of the eight distributions: workflow
    `release-fastapi.yml`, environment `pypi` on PyPI and `testpypi` on TestPyPI.
@@ -64,7 +64,7 @@ The engine's gates run against the in-process sandbox adapter, because a depende
 
 The tree carries the release version before the tag is made; the workflows refuse a tag whose version does not match.
 
-- npm: every published package's `version` is the release version and the four bare-name forwarders pin it.
+- npm: every published package's `version` is the release version and its `repository.url` is the canonical one.
   `node scripts/npm/release.mjs check --version 0.1.0` says what is wrong.
 - PyPI: `npm run fastapi:release -- --version 0.1.0` sets every member's version and rewrites the sibling pins, builds
   the distributions locally and uploads nothing. Commit the changes it makes. It does not tag: the tag is made in step 2, on the

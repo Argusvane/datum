@@ -2,7 +2,7 @@
 #
 # NOT EXERCISED YET. The publish job names a GitHub environment, "npm", and reads a secret, NPM_TOKEN: before the first tag the
 # owner creates the environment in the repository settings (Settings, Environments) with a required reviewer, and stores an
-# automation token that can publish the @argusvane scope and the four bare command names in it. The publish jobs wait for that
+# automation token that can publish the @argusvane scope in it. The publish jobs wait for that
 # reviewer and nothing else: GitHub creates an environment that does not exist on its first use with no protection rules, so
 # a pushed tag publishes unapproved until the environment is configured. The publish jobs also run only in argusvane/datum, so a fork or a
 # mirror never publishes. The build job runs for every tag. npm "trusted publishing" would replace the token once the packages
@@ -15,8 +15,8 @@
 # bundles and the checksums of the tarballs are attached to the GitHub Release of the tag; when the tag has no Release yet, one is created as a draft, marked
 # as a prerelease when the version has a hyphen). The build job first requires a green ci.yml run on the tagged commit.
 #
-# Published: @argusvane/datum (the built bundles and their types), @argusvane/datum-conformance-suite and @argusvane/datum-form-test,
-# then the four bare names datum-form-test, datum-host-check, datum-security-check and datum-binding-check, which only forward to them.
+# Published: @argusvane/datum (the built bundles and their types), @argusvane/datum-conformance-suite and @argusvane/datum-form-test.
+# No unscoped name is published.
 # The engine, the PDF kernel, the QuickJS host and the submissions server stay private: the bundles carry their code.
 # The list and the order are scripts/npm/packages.mjs; scripts/npm/release.mjs is every check and `npm pack` step below, and
 # `npm publish` appears in the publish job only.
@@ -89,8 +89,8 @@ jobs:
         with:
           node-version: 22
 
-      # The tag names the version: every published package must already carry it, the forwarders must pin it, and the
-      # packages whose code the bundles carry must still be private.
+      # The tag names the version: every published package must already carry it and the canonical repository URL, and
+      # the packages whose code the bundles carry must still be private.
       - name: Assert the tag version equals every package version
         env:
           TAG: ${{ github.ref_name }}
@@ -124,7 +124,7 @@ jobs:
       - name: Pack tests
         run: |
           (cd packages/datum && npx vitest run --root . --maxWorkers=2 tests/npm-pack.test.ts)
-          (cd packages/conformance-suite && npx vitest run --maxWorkers=2 tests/pack.test.ts tests/cli-forwarders.test.ts)
+          (cd packages/conformance-suite && npx vitest run --maxWorkers=2 tests/pack.test.ts)
           (cd packages/form-test && npx vitest run --maxWorkers=2 tests/pack.test.ts)
 
       - name: Pack every package and check the tarballs
@@ -177,8 +177,7 @@ jobs:
           name: npm-tarballs
           path: npm
 
-      # The tarballs published are the ones the build job checked: their checksums, then each in PUBLISH_ORDER (the scoped
-      # packages before the forwarders that depend on them). INTEGRITY holds the registry's digest of each tarball, written by
+      # The tarballs published are the ones the build job checked: their checksums, then each in PUBLISH_ORDER. INTEGRITY holds the registry's digest of each tarball, written by
       # the pack step. A version the registry already holds is skipped only when its dist.integrity is that digest, so a rerun
       # after a partial failure publishes what is missing and never overwrites; a name and version held by anyone else, or
       # by another build of this one, answers a different digest and fails the job. An empty answer means the version is not
@@ -207,7 +206,7 @@ jobs:
               echo "::error::$name@$version is on the registry with a different tarball ($published, this build $expected); not published"
               exit 1
             fi
-            # A prerelease version never takes the "latest" tag: npm install of the bare name must not pick it up.
+            # A prerelease version never takes the "latest" tag: `npm install @argusvane/datum` with no version must not pick it up.
             tag=latest
             case "$version" in *-*) tag=next ;; esac
             # The loop reads PUBLISH_ORDER from its stdin: npm must not read it.

@@ -9,7 +9,7 @@ npm install --save-dev @argusvane/datum-form-test
 npx --package @argusvane/datum-form-test datum-form-test --help
 ```
 
-The command needs only Node 22 (the bundle carries the engine and the QuickJS sandbox). The bare name `datum-form-test` on npm is a forwarding package that runs this command; the `--package` form is the one to write in scripts and CI.
+The command needs only Node 22 (the bundle carries the engine and the QuickJS sandbox). Write the `--package` form in scripts and CI: the unscoped name `datum-form-test` on npm is not Datum's.
 
 From a checkout of the repository:
 

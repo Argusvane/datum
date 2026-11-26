@@ -33,10 +33,9 @@ const SUBMISSIONS = ["packages/submissions/", ...PDF_KERNEL];
 // so the jobs that run the kit add it themselves.)
 const WEB_COMPONENTS = ["packages/datum/", "scripts/with-lock.mjs", ...PDF_KERNEL];
 const HOST_SHARED = ["integrations/shared/", "package.json", "package-lock.json", "scripts/"];
-// What the npm release reads and checks: the pack and smoke scripts, the forwarding command packages that every
-// published command is installed beside, the notices library and licence texts the prepack and the bundle licence step
+// What the npm release reads and checks: the pack and smoke scripts, the notices library and licence texts the prepack and the bundle licence step
 // import (scripts/npm/prepack.mjs, bundle-licence.mjs), and the release workflow.
-const NPM_RELEASE = ["scripts/npm/", "packages/cli-forwarders/", "packages/datum/scripts/notices-lib.mjs", "packages/datum/notices/texts/", ".github/workflows/release-npm.yml"];
+const NPM_RELEASE = ["scripts/npm/", "packages/datum/scripts/notices-lib.mjs", "packages/datum/notices/texts/", ".github/workflows/release-npm.yml"];
 const WEB_COMPONENT_ACTIONS = [".github/actions/build-datum/", ".github/actions/install-datum/"];
 
 export const AREAS = {
