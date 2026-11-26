@@ -226,11 +226,12 @@ const RULES: Rule[] = [
   // compares against ("after 2020-01-01") is data, not a decision date.
   // A dated upstream commit or release (a hash beside its date, "QuickJS of 2021-03-27") is an upstream fact.
   // A validity range of a test certificate ("valid 2026-01-01 to 2026-06-01") is fixture data.
+  // A release heading of the changelog ("## [0.1.0] - 2026-11-26", written by scripts/changelog-promote.mjs) is the release's date.
   {
     name: "date in a comment",
     test: (subject) => DATE.test(subject.replace(/`[^`]*`/g, "``")),
     commentOnly: true,
-    except: /\bcommit [0-9a-f]{7,}, 20\d\d-\d\d-\d\d|\b[0-9a-f]{7,} \(20\d\d-\d\d-\d\d|20\d\d-\d\d-\d\d \([0-9a-f]{7,}\)|\bQuickJS (?:of|since) 20\d\d-\d\d-\d\d|\[--date 20\d\d-\d\d-\d\d\]|\b20\d\d-\d\d-\d\d to 20\d\d-\d\d-\d\d\b/
+    except: /^## \[\d+\.\d+\.\d+[^\]]*\] - 20\d\d-\d\d-\d\d$|\bcommit [0-9a-f]{7,}, 20\d\d-\d\d-\d\d|\b[0-9a-f]{7,} \(20\d\d-\d\d-\d\d|20\d\d-\d\d-\d\d \([0-9a-f]{7,}\)|\bQuickJS (?:of|since) 20\d\d-\d\d-\d\d|\[--date 20\d\d-\d\d-\d\d\]|\b20\d\d-\d\d-\d\d to 20\d\d-\d\d-\d\d\b/
   },
   { name: "refuter", test: /\brefuters?\b/i },
   { name: "spike", test: /(?<!\b(?:heap|memory|cpu|load|traffic|latency|usage) )\bspikes?\b/i },

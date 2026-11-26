@@ -40,16 +40,14 @@ A form is designed in the builder, published on a page, filled in, submitted as 
 
 Datum is pre-release, at version 0.1.0. This is the one place that says what is published; other pages link here instead of repeating it.
 
-**Today nothing is published** to npm, Maven Central or PyPI, so you build from the repository.
-
 **The first release, 0.1.0, publishes:**
 
 | Where | What |
 |---|---|
 | npm | `@argusvane/datum` (the form and builder bundles), `@argusvane/datum-conformance-suite` and `@argusvane/datum-form-test` |
 | GitHub Release | The same bundles as plain script files, with the source maps |
-| Maven Central | The Spring Boot host, under the group `com.argusvane` |
-| PyPI | The FastAPI host, as the `argusvane-datum-*` distributions |
+
+**Coming in a later release:** the Spring Boot host on Maven Central (group `com.argusvane`) and the FastAPI host on PyPI (the `argusvane-datum-*` distributions). Until then, both run from the repository.
 
 **What is never a package of its own:** the engine, the PDF kernel, the sandbox host and the submissions reference server (what ships of them is built into the packages above), the reference [bindings](/bindings), the PIV signing agent (it runs from the repository) and the other [server hosts](/server-hosts), which are documented as snippets.
 
