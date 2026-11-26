@@ -46,6 +46,7 @@ Datum is pre-release, at version 0.1.0. This is the one place that says what is 
 |---|---|
 | npm | `@argusvane/datum` (the form and builder bundles), `@argusvane/datum-conformance-suite` and `@argusvane/datum-form-test` |
 | GitHub Release | The same bundles as plain script files, with the source maps |
+| CDN | The npm package's files, from any npm CDN such as jsDelivr: [From a CDN](/files#from-a-cdn) |
 
 **Coming in a later release:** the Spring Boot host on Maven Central (group `com.argusvane`) and the FastAPI host on PyPI (the `argusvane-datum-*` distributions). Until then, both run from the repository.
 
