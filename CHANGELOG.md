@@ -4,11 +4,13 @@ All notable changes to Datum are recorded in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Before 1.0.0 the definition format and the program
-contracts can change between 0.x releases, and every such change is listed here. One tag, `v0.1.0`, names a release
-across npm, Maven Central and PyPI. What is published today is in
+contracts can change between 0.x releases, and every such change is listed here. One tag, such as `v0.1.0`, names a
+release across npm, Maven Central and PyPI. 0.1.0 is published to npm only. What is published today is in
 [Release status](https://datum.argusvane.com/docs/introduction#release-status).
 
 ## [Unreleased]
+
+## [0.1.0] - 2026-11-26
 
 The first release, 0.1.0, contains the following.
 
@@ -33,6 +35,7 @@ The first release, 0.1.0, contains the following.
 - Server hosts: Spring Boot (Maven, group `com.argusvane`, with starters for submissions, UI, PDF, timestamp and
   passkeys) and FastAPI (PyPI, `argusvane-datum-*`), both tested on Linux. Other frameworks run the same two programs
   through the framework-free sandbox libraries (`datum-sandbox` on the JVM, `argusvane-datum-sandbox` in Python).
+  In 0.1.0 they run from the repository; their Maven Central and PyPI packages come in a later release.
 - An address limit on both hosts (`datum.web.throttle.address-limit`, default 600 per window; FastAPI
   `address_limit`). Every throttled request is counted by its address before its body is read, so a flood of bodies
   that never parse is refused with 429 `flood` as well. The per-form limit still counts after the parse. The host
