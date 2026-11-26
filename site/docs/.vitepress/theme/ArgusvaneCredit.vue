@@ -23,7 +23,7 @@ import {
         <circle :cx="MARK_EYE.cx" :cy="MARK_EYE.cy" :r="MARK_EYE.r" :fill="ARGUSVANE_SIGNAL" />
         <line v-bind="MARK_STEM" stroke="currentColor" :stroke-width="MARK_STROKE" />
       </svg>
-      <svg class="argusvane-credit__word" :viewBox="WORDMARK_VIEWBOX" width="93" height="7" role="img" aria-label="Argusvane">
+      <svg class="argusvane-credit__word" :viewBox="WORDMARK_VIEWBOX" width="93" height="10" role="img" aria-label="Argusvane">
         <path :d="WORDMARK_PATH" fill="currentColor" />
       </svg>
     </a>

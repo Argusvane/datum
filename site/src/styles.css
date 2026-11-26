@@ -295,7 +295,8 @@ h1, h2, h3 { margin: 0; }
 }
 .by-argusvane > span { color: var(--muted); }
 .by-argusvane svg { display: block; flex: none; }
-.by-argusvane__word { width: auto; height: 6.6px; aspect-ratio: 22316 / 1600; }
+/* 1.5 times the letters' 6.6px: the box has empty room above and below them (WORDMARK_VIEWBOX in argusvane.ts). */
+.by-argusvane__word { width: auto; height: 9.9px; aspect-ratio: 22316 / 2400; }
 .by-argusvane:hover { color: var(--accent); }
 .by-argusvane:hover > span { color: inherit; }
 
@@ -2178,7 +2179,7 @@ html[data-hero="classic"] [data-hero-variant="classic"] { display: block; }
 .footer__name { color: var(--fg); }
 .footer__brand .by-argusvane { gap: 8px; }
 .footer__brand .by-argusvane__mark { width: 12px; height: 19px; }
-.footer__brand .by-argusvane__word { height: 7.4px; }
+.footer__brand .by-argusvane__word { height: 11.1px; }
 
 .footer__links {
   display: flex;

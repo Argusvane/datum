@@ -232,4 +232,5 @@ html[data-live-example-wide] .VPDoc .aside { opacity: 0; visibility: hidden; }
 .argusvane-credit__link { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; color: var(--vp-c-text-1); }
 .argusvane-credit__link:hover { color: var(--vp-c-brand-1); }
 .argusvane-credit svg { display: block; flex: none; }
-.argusvane-credit__word { width: auto; height: 6.6px; aspect-ratio: 22316 / 1600; }
+/* 1.5 times the letters' 6.6px: the box has empty room above and below them (WORDMARK_VIEWBOX in src/argusvane.ts). */
+.argusvane-credit__word { width: auto; height: 9.9px; aspect-ratio: 22316 / 2400; }
