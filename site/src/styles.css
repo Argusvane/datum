@@ -276,6 +276,29 @@ h1, h2, h3 { margin: 0; }
 .nav__brand svg { display: block; }
 .nav__brand:hover { color: var(--accent); }
 
+/* "by Argusvane" beside the Datum mark: the company that builds Datum, quieter than the product's own name.
+   The mark and the wordmark come from the sprite page-shell.ts puts on each page (src/argusvane.ts). */
+.nav__brands { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; }
+.nav__brands .by-argusvane::before { content: ""; width: var(--border); height: 24px; margin-right: 8px; background: var(--line); }
+
+.by-argusvane {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  color: var(--fg);
+  text-decoration: none;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.by-argusvane > span { color: var(--muted); }
+.by-argusvane svg { display: block; flex: none; }
+.by-argusvane__word { width: auto; height: 6.6px; aspect-ratio: 22316 / 1600; }
+.by-argusvane:hover { color: var(--accent); }
+.by-argusvane:hover > span { color: inherit; }
+
 .nav__links {
   display: flex;
   align-items: center;
@@ -2149,6 +2172,13 @@ html[data-hero="classic"] [data-hero-variant="classic"] { display: block; }
   text-transform: uppercase;
   color: var(--muted);
 }
+
+/* Datum by Argusvane: the mark a little larger than the header's, the wordmark at the row's cap height. */
+.footer__brand { display: inline-flex; align-items: center; gap: 10px; }
+.footer__name { color: var(--fg); }
+.footer__brand .by-argusvane { gap: 8px; }
+.footer__brand .by-argusvane__mark { width: 12px; height: 19px; }
+.footer__brand .by-argusvane__word { height: 7.4px; }
 
 .footer__links {
   display: flex;

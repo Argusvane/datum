@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_SHARE_CARD, SHARE_CARDS, SHARE_CARD_SIZE, resolveSiteUrl, shareCardTags } from "../share-cards";
+import { DEFAULT_SHARE_CARD, SHARE_CARDS, SHARE_CARD_SIZE, resolveSiteUrl, shareCardTags, siteRecord } from "../share-cards";
 
 const page = `<!doctype html><html><head>
   <title>Datum: partners</title>
@@ -16,11 +16,26 @@ const contentOf = (tags: ReturnType<typeof shareCardTags>, key: string): string 
   tags.find((tag) => tag.attrs?.property === key || tag.attrs?.name === key)?.attrs?.content as string | undefined;
 
 describe("link previews", () => {
+  it("names Argusvane as the home page's publisher, and only there", () => {
+    const record = (tags: ReturnType<typeof shareCardTags>) => tags.find((tag) => tag.tag === "script" && tag.attrs?.type === "application/ld+json");
+    const home = record(shareCardTags(page, "index.html", "https://datum.example"));
+    expect(JSON.parse(String(home?.children))).toEqual({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "Datum",
+      url: "https://datum.example/",
+      publisher: { "@type": "Organization", name: "Argusvane", url: "https://argusvane.com" }
+    });
+    expect(record(shareCardTags(page, "partners.html", "https://datum.example"))).toBeUndefined();
+    expect(JSON.parse(siteRecord(undefined))).not.toHaveProperty("url");
+  });
+
   it("takes the words from the page's own title and description", () => {
     const tags = shareCardTags(page, "partners.html", undefined);
     expect(contentOf(tags, "og:title")).toBe("Datum: partners");
     expect(contentOf(tags, "og:description")).toBe("Three ways to use Datum: run it, embed it, deliver it.");
-    expect(contentOf(tags, "og:site_name")).toBe("Datum");
+    expect(contentOf(tags, "og:site_name")).toBe("Datum by Argusvane");
+    expect(contentOf(tags, "author")).toBe("Argusvane");
     expect(tags.every((tag) => tag.injectTo === "head")).toBe(true);
   });
 

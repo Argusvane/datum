@@ -1,4 +1,5 @@
 import type { Plugin } from "vite";
+import { argusvaneSprite } from "./src/argusvane";
 import { NON_AFFILIATION } from "./src/non-affiliation";
 
 /**
@@ -7,7 +8,8 @@ import { NON_AFFILIATION } from "./src/non-affiliation";
  * the static fallback for the copy their script draws. The binding pages are shells that
  * `src/render-bindings.ts` fills; without JavaScript the shell says so and still carries the sentence
  * about the design systems' owners (`NON_AFFILIATION`, the one the drawn pages use), so a reader or a
- * crawler that runs no script finds it in the HTML.
+ * crawler that runs no script finds it in the HTML. A page whose header or footer draws the Argusvane credit
+ * (`<use href="#av-mark">`) gets the one hidden sprite those references point at, right after the skip link.
  */
 
 const SHELL_FALLBACK = '<noscript><p class="binding-demo__fallback container">This page needs JavaScript.</p></noscript>';
@@ -18,6 +20,10 @@ export function pageShell(html: string): string {
   let out = html;
   if (!out.includes('id="main"')) out = out.replace("<main>", '<main id="main" tabindex="-1">');
   if (!out.includes("skip-link")) out = out.replace(/<body>/, '<body>\n    <a class="skip-link" href="#main">Skip to content</a>');
+  if (out.includes('href="#av-') && !out.includes('id="av-mark"')) {
+    const skip = /<a\b[^>]*\bclass="skip-link"[^>]*>[\s\S]*?<\/a>/;
+    out = skip.test(out) ? out.replace(skip, (link) => `${link}\n    ${argusvaneSprite()}`) : out.replace(/<body[^>]*>/, (body) => `${body}\n    ${argusvaneSprite()}`);
+  }
   return out.replace(SHELL_FALLBACK, BINDING_FALLBACK);
 }
 

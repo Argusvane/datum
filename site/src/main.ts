@@ -1,3 +1,4 @@
+import { ARGUSVANE_URL } from "./argusvane";
 import { wireHero } from "./hero";
 import { wireHeroVideo } from "./hero-video";
 import { highlightCode } from "./highlight";
@@ -38,6 +39,9 @@ function fillRepositoryLinks(): void {
   });
   document.querySelectorAll<HTMLAnchorElement>("a[data-contact]").forEach((link) => {
     link.href = `mailto:${CONTACT_EMAIL}`;
+  });
+  document.querySelectorAll<HTMLAnchorElement>("a[data-argusvane]").forEach((link) => {
+    link.href = ARGUSVANE_URL;
   });
 }
 

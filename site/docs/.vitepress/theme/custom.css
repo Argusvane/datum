@@ -214,3 +214,22 @@ html[data-live-example-wide] .VPDoc .aside { opacity: 0; visibility: hidden; }
   .live-example__note { display: none; }
   .live-example__bar span:first-child { flex: 1; }
 }
+
+/* "Datum by Argusvane" under the sidebar's links (ArgusvaneCredit.vue), set like the marketing site's footer. */
+.argusvane-credit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 24px 0 0;
+  padding: 16px 0 24px;
+  border-top: 1px solid var(--vp-c-divider);
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--vp-c-text-2);
+}
+.argusvane-credit__link { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; color: var(--vp-c-text-1); }
+.argusvane-credit__link:hover { color: var(--vp-c-brand-1); }
+.argusvane-credit svg { display: block; flex: none; }
+.argusvane-credit__word { width: auto; height: 6.6px; aspect-ratio: 22316 / 1600; }
