@@ -49,7 +49,7 @@ jobs:
   #   conformance_suite       conformance-suite (3 Node)        packages/conformance-suite, + submissions paths, integrations/shared,
   #                                                             integrations/jvm/{libs,tck}, docs/reference/agent-tools.md,
   #                                                             packages/datum/scripts/write-sandbox-program.ts, the npm release
-  #                                                             (scripts/npm, packages/cli-forwarders, packages/datum/notices/texts,
+  #                                                             (scripts/npm, packages/datum/notices/texts,
   #                                                             packages/datum/scripts/notices-lib.mjs, release-npm.yml)
   #   form_test               form-test (3 Node)                packages/form-test, + quickjs_wasm_host paths, the npm release
   #                                                             (the same five paths as conformance_suite)

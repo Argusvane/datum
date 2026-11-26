@@ -57,9 +57,9 @@ generic word "datum".
    classifier. The Maven poms declare the MIT License, and the jars carry `META-INF/LICENSE` and
    `META-INF/NOTICE`. Every published npm package gets `LICENSE` and `NOTICE` when it is packed.
    The `private` field says what is published: `false` in `packages/datum`,
-   `packages/conformance-suite` and `packages/form-test`, which the npm release workflow publishes
-   together with the four command forwarders under `packages/cli-forwarders` that carry the bare
-   command names. `true` in `packages/pdf-kernel`, `packages/quickjs-wasm-host`,
+   `packages/conformance-suite` and `packages/form-test`, which the npm release workflow publishes,
+   all under `@argusvane`; no unscoped name is published, so the commands run as
+   `npx --package @argusvane/<package> <command>`. `true` in `packages/pdf-kernel`, `packages/quickjs-wasm-host`,
    `packages/submissions` and `engine`, whose code the published bundles carry, and in the root,
    `site`, the bindings and `plugins/icons-fontawesome`, which are not published.
 7. **Third-party assets keep their own licences**, listed in `THIRD_PARTY_NOTICES.md`: the fonts and
