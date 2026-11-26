@@ -1,0 +1,34 @@
+{
+  "id": "contact",
+  "version": "1",
+  "schemaVersion": "1",
+  "root": {
+    "id": "root",
+    "type": "form",
+    "configuration": { "title": "Contact us" },
+    "children": {
+      "content": [
+        {
+          "id": "name",
+          "type": "text",
+          "configuration": { "label": "Your name", "required": true, "maxLength": 80 }
+        },
+        {
+          "id": "email",
+          "type": "text",
+          "configuration": { "label": "Email", "required": true, "maxLength": 200 }
+        },
+        {
+          "id": "message",
+          "type": "textarea",
+          "configuration": { "label": "Message", "required": true, "maxLength": 2000 }
+        },
+        {
+          "id": "send",
+          "type": "button",
+          "configuration": { "label": "Send", "action": "submit" }
+        }
+      ]
+    }
+  }
+}

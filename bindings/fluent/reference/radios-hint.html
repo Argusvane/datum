@@ -1,0 +1,30 @@
+<!-- datum-reference
+{
+  "note": "radios with a hint and an option hint",
+  "components": [
+    {
+      "id": "contact",
+      "type": "radio",
+      "configuration": {
+        "label": "Preferred contact",
+        "description": "Choose one.",
+        "options": [
+          {
+            "value": "email",
+            "label": "Email",
+            "description": "Within a day"
+          },
+          {
+            "value": "phone",
+            "label": "Phone"
+          }
+        ]
+      }
+    }
+  ],
+  "source": "Fluent UI Web Components 3.2.1: field.stories.ts ComponentExamples and radio-group.stories.ts (fluent-field label-position='above' around fluent-radio-group slot='input' orientation='vertical', each fluent-radio slot='input' in its own fluent-field label-position='after' with label slot='label'), https://github.com/microsoft/fluentui/tree/master/packages/web-components/src/radio-group; hint: field.stories.ts Hint (fluent-text slot='message' size='200'), an option's hint in its own field's message slot; attributes per custom-elements.json 3.2.1",
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate><fluent-field label-position="above"><label slot="label" for="contact">Preferred contact</label><fluent-radio-group slot="input" id="contact" name="contact" orientation="vertical" aria-describedby="contact-hint"><fluent-field label-position="after"><label slot="label" for="contact-email">Email</label><fluent-radio slot="input" id="contact-email" value="email" aria-describedby="contact-email-hint"></fluent-radio><fluent-text slot="message" size="200" id="contact-email-hint">Within a day</fluent-text></fluent-field><fluent-field label-position="after"><label slot="label" for="contact-phone">Phone</label><fluent-radio slot="input" id="contact-phone" value="phone"></fluent-radio></fluent-field></fluent-radio-group><fluent-text slot="message" size="200"><div id="contact-hint">Choose one.</div></fluent-text></fluent-field></form>

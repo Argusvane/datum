@@ -1,0 +1,23 @@
+{
+  "designSystem": "Fluent UI",
+  "binding": "src/index.ts",
+  "stylesheets": [
+    "/theme/teams-light.css"
+  ],
+  "scripts": [
+    "/node_modules/fluentui-web-components-3.2.1/dist/web-components.min.js"
+  ],
+  "fonts": [],
+  "known": [
+    {
+      "case": "MV-01",
+      "reason": "Fluent's own fluent-field throws when it is taken out of the DOM and put back (its bundled FAST sets a getter-only slottedInputObserver), reproduced with Fluent's markup alone.",
+      "since": "2026-11-14"
+    },
+    {
+      "case": "MV-03",
+      "reason": "Fluent's own fluent-field throws when it is taken out of the DOM and put back (its bundled FAST sets a getter-only slottedInputObserver), reproduced with Fluent's markup alone.",
+      "since": "2026-11-14"
+    }
+  ]
+}

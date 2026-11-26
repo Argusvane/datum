@@ -1,0 +1,40 @@
+name: Install the web components
+description: >-
+  Installs every file: dependency packages/datum is built and tested from (the engine,
+  the QuickJS host, the PDF kernel and its bundled program) and then its own dependencies, without
+  building it. A plugin package installs this first: its tests and its build run from
+  packages/datum's sources and node_modules (@argusvane/datum/scripts/plugin-build.mjs). The
+  packages/datum package depends on no binding and no plugin, so none is installed here.
+  Expects Node to be set up already.
+runs:
+  using: composite
+  steps:
+    # Every file: dependency ships TypeScript source, so installing each one's own
+    # dependencies is all the "build" the bundler needs to resolve them.
+    - name: Install engine dependencies
+      shell: bash
+      run: npm ci
+      working-directory: engine
+
+    # The sandbox module (datum-wasm.js) is built over the QuickJS host.
+    - name: Install quickjs-wasm-host dependencies
+      shell: bash
+      run: npm ci
+      working-directory: packages/quickjs-wasm-host
+
+    # The PDF module (datum-pdf.js) is built over the kernel's sources, and the build copies
+    # the kernel's bundled program beside the bundles (datum-pdf-program.js).
+    - name: Install pdf-kernel dependencies
+      shell: bash
+      run: npm ci
+      working-directory: packages/pdf-kernel
+
+    - name: Build the PDF program
+      shell: bash
+      run: npm run build:program
+      working-directory: packages/pdf-kernel
+
+    - name: Install packages/datum dependencies
+      shell: bash
+      run: npm ci
+      working-directory: packages/datum

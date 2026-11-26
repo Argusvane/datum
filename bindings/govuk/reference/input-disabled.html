@@ -1,0 +1,26 @@
+<!-- datum-reference
+{
+  "source": "govuk-frontend 6.6.0: components/input/fixtures.json, fixture \"disabled\"",
+  "note": "a disabled text field",
+  "components": [
+    {
+      "id": "field1",
+      "type": "text",
+      "configuration": {
+        "label": "Disabled input",
+        "required": true
+      }
+    }
+  ],
+  "mode": "disabled",
+  "root": "form",
+  "width": 560,
+  "init": "window.GOVUKFrontend.initAll();"
+}
+-->
+<form novalidate>
+<div class="govuk-form-group">
+<label class="govuk-label" for="disabled-input"> Disabled input </label>
+<input class="govuk-input" id="disabled-input" name="disabled-input" type="text" disabled>
+</div>
+</form>

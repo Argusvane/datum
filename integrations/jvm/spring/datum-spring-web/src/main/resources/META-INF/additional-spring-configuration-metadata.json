@@ -1,0 +1,27 @@
+{
+  "properties": [
+    {
+      "name": "datum.web.api.endpoints",
+      "type": "java.util.Map<java.lang.String,java.lang.Boolean>",
+      "description": "Per-endpoint switches. Every Datum endpoint is off until it is set to true here; the keys are listed in the hints."
+    }
+  ],
+  "hints": [
+    {
+      "name": "datum.web.api.endpoints.keys",
+      "values": [
+        { "value": "submissions", "description": "POST {api}/submissions: the full receive pipeline." },
+        { "value": "validate", "description": "POST {api}/submissions/validate: a page's or journey's check." },
+        { "value": "test", "description": "POST {api}/submissions/test: the dry run, for people who build." },
+        { "value": "inspect", "description": "POST {api}/inspect: the kernel's inspection of a definition." },
+        { "value": "definition", "description": "GET {api}/forms/{key}/definition and /translations." },
+        { "value": "data-sources", "description": "GET {api}/data-sources/{id}." },
+        { "value": "pdf", "description": "POST {api}/pdf." },
+        { "value": "fill", "description": "POST {api}/pdf/fill." },
+        { "value": "sign", "description": "POST {api}/pdf/sign." },
+        { "value": "verify", "description": "POST {api}/pdf/verify." },
+        { "value": "certificate", "description": "GET {api}/server/certificate." }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+spring:
+  application:
+    name: datum-example-webflux-pdf
+  datasource:
+    # No url: Spring Boot makes an embedded H2 database, named afresh for each application context.
+    generate-unique-name: true
+  ssl:
+    bundle:
+      jks:
+        # The PDF seal's key, as a Spring Boot SSL bundle (datum.pdf.signing.ssl-bundle below). The development key store:
+        # run scripts/make-dev-keystore.sh once (it writes local/dev-signer.p12, gitignored). The password is the script's
+        # default; a real deployment reads both from its own secret store.
+        pdf-signer:
+          keystore:
+            location: file:./local/dev-signer.p12
+            type: PKCS12
+            password: ${DATUM_PDF_KEYSTORE_PASSWORD:changeit}
+
+datum:
+  jdbc:
+    # The modules' own table scripts (the form definition snapshots, the accepted-submission digests and the timestamp
+    # authority's serial numbers) run when the in-memory database starts: embedded is the default, so no spring.sql.init
+    # lists them. A real application sets never and runs META-INF/datum/db/migration/<dialect>/V100, V200 and V300 with
+    # Flyway or Liquibase.
+    initialize-schema: embedded
+  # The builder is on; SecurityConfiguration lets only ROLE_FORM_ADMIN build (HTTP Basic author / author).
+  builder:
+    enabled: true
+  host:
+    time-zone: America/Toronto
+  pdf:
+    # Sans and Sans Bold (the default pack); "standard" is five faces, "all" the seven.
+    fonts: default
+    signing:
+      # The key is the bundle's (spring.ssl.bundle.jks.pdf-signer above).
+      ssl-bundle: pdf-signer
+    seal:
+      # PDFs the application issues from an accepted submission (GET /receipts/{id}.pdf) are sealed with the server's key.
+      # PDFs of answers merely posted to POST /api/pdf are not the server's to vouch for: they get a throwaway test
+      # certificate unless datum.pdf.seal.posted-answers is switched on.
+      enabled: true
+      # A token from this application's own timestamp authority (datum.tsa below) is embedded in every seal. The PDF
+      # module asks the authority in process; no HTTP request is made to /tsa for it.
+      timestamp: true
+      reason: Issued by the Datum WebFlux PDF example
+  # The timestamp authority behind datum.pdf.seal.timestamp. The certificate is a throwaway made at every start
+  # (development only: tokens verify against nobody, and a restart changes it); a real deployment sets signer.ssl-bundle.
+  tsa:
+    enabled: true
+    # Open, so no client key is needed, which is safe only because /tsa answers loopback callers alone here
+    # (the chain's loopback rule, SecurityConfiguration). Serial numbers are rows of the H2 database created below.
+    access: open
+    path: /tsa
+    signer:
+      self-signed: true
+  web:
+    # Every Datum route is off until switched on (the start-up log lists the ones that are on). This application serves the
+    # form and the data sources, receives submissions, prints PDFs and serves the browser bundles; the builder and the
+    # timestamp server have their own switches above.
+    assets:
+      enabled: true
+    api:
+      endpoints:
+        definition: true
+        data-sources: true
+        submissions: true
+        validate: true
+        pdf: true
+        fill: true
+        sign: true
+        verify: true
+        certificate: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always

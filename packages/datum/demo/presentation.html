@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>datum-form — presentations</title>
+    <link rel="stylesheet" href="/dist/datum-form.css" />
+    <script type="module" src="/dist/datum-form.js"></script>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; background: #f6f7f9; color: #1d2b36; }
+      .page { max-width: 1180px; margin: 0 auto; padding: 24px 20px 60px; display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 24px; }
+      header { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+      header h1 { font-size: 20px; margin: 0; }
+      header a { color: #2f6feb; }
+      .sheet { background: #fff; border: 1px solid #dfe5ec; border-radius: 10px; padding: 24px; min-width: 0; }
+      .log { background: #fff; border: 1px solid #dfe5ec; border-radius: 10px; padding: 16px; font-size: 13px; min-width: 0; }
+      .log h2 { font-size: 14px; margin: 16px 0 8px; }
+      .log h2:first-child { margin-top: 0; }
+      .log p { margin: 0 0 8px; }
+      .log pre { margin: 0; white-space: pre-wrap; word-break: break-word; max-height: 30vh; overflow: auto; background: #f6f7f9; border-radius: 6px; padding: 8px; }
+      .values { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .values h3 { font-size: 13px; margin: 0 0 4px; }
+      .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+      button, select { font: inherit; padding: 6px 10px; border-radius: 6px; border: 1px solid #c9d3dd; background: #fff; cursor: pointer; }
+      @media (max-width: 860px) { .page { grid-template-columns: 1fr; } .values { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <h1>&lt;datum-form&gt; — presentations</h1>
+        <a href="/demo/">All demos</a>
+      </header>
+
+      <main class="sheet">
+        <!-- One form, filled through presentations of it: a journey that asks it with
+             fields of its own, and one that asks it on one page. The form is what is submitted. -->
+        <datum-form id="form" draft="presentation-demo"></datum-form>
+      </main>
+
+      <aside class="log">
+        <div class="controls">
+          <select id="journey" aria-label="Presentation">
+            <option value="">Form's choice</option>
+            <option value="form">Whole form</option>
+          </select>
+          <button id="restart" type="button">Start over</button>
+        </div>
+        <p>
+          <strong>Apply</strong> asks for <em>Email</em> as "Work email" (an alias: its answer is the form's), and works
+          out <em>Annual income</em> from three months you type (a worked-out value). <strong>Public</strong> is a
+          one-page journey with its page heading hidden: the form's own Email and Name inside a two-column layout of its own, then the form's Money group
+          as it is, so the required <em>Annual income</em> is asked there too.
+        </p>
+        <div class="values">
+          <div>
+            <h3>What is submitted (<code>values</code>)</h3>
+            <pre id="form-values">{}</pre>
+          </div>
+          <div>
+            <h3>Kept in the browser (<code>presentationValues()</code>)</h3>
+            <pre id="own-values">{}</pre>
+          </div>
+        </div>
+        <h2>Events</h2>
+        <pre id="events">(waiting for datum-ready)</pre>
+      </aside>
+    </div>
+
+    <script type="module">
+      const form = document.getElementById("form");
+      const events = document.getElementById("events");
+      const lines = [];
+      const log = (line) => {
+        lines.unshift(`${new Date().toLocaleTimeString()}  ${line}`);
+        events.textContent = lines.slice(0, 40).join("\n");
+      };
+      const read = (name) => ({ kind: "path", path: name });
+
+      form.definition = {
+        id: "income-support",
+        version: "1.0.0",
+        schemaVersion: "1",
+        root: {
+          id: "form",
+          type: "form",
+          configuration: { title: "Income support" },
+          children: {
+            content: [
+              { id: "email", type: "text", configuration: { label: "Email", required: true } },
+              { id: "name", type: "text", configuration: { label: "Name" } },
+              {
+                id: "money",
+                type: "fieldset",
+                configuration: { label: "Money" },
+                children: { content: [{ id: "annual_income", type: "number", configuration: { label: "Annual income", required: true, max: 1000000 } }] }
+              },
+              { id: "approved_amount", type: "number", configuration: { label: "Approved amount" } }
+            ]
+          }
+        },
+        journey: {
+          journeys: [
+            {
+              id: "apply",
+              name: "Apply",
+              progress: "count",
+              pages: [
+                {
+                  id: "details",
+                  title: "Your details",
+                  components: [
+                    // An alias: its answer is the form's `email`, under a label of its own.
+                    { id: "work_email", type: "text", configuration: { label: "Work email", description: "The address you read at work", fills: "email", required: true } },
+                    // A field of the journey's own: kept in the browser, never submitted.
+                    { id: "greeting", type: "text", configuration: { label: "What should we call you?" } }
+                  ]
+                },
+                {
+                  id: "income",
+                  title: "Your income",
+                  components: [
+                    { id: "m1", type: "number", configuration: { label: "Month 1" } },
+                    { id: "m2", type: "number", configuration: { label: "Month 2" } },
+                    { id: "m3", type: "number", configuration: { label: "Month 3" } },
+                    // A worked-out value: the form's `annual_income`, from the page's own fields.
+                    { id: "income_total", type: "journey-value", configuration: { to: "annual_income", value: { kind: "call", name: "sum", args: [read("m1"), read("m2"), read("m3")] } } }
+                  ],
+                  routes: [
+                    { when: { kind: "binary", operator: "gte", left: read("annual_income"), right: { kind: "literal", value: 50000 } }, to: "assist" },
+                    { to: "$end" }
+                  ]
+                },
+                { id: "assist", title: "Assistance", components: ["approved_amount"] }
+              ]
+            },
+            {
+              id: "public",
+              name: "Public",
+              heading: "hidden",
+              pages: [
+                {
+                  id: "all",
+                  title: "Tell us about you",
+                  components: [
+                    {
+                      id: "contact",
+                      type: "grid",
+                      configuration: { columns: 2 },
+                      children: {
+                        content: [
+                          { type: "journey-field", configuration: { componentId: "email" } },
+                          { type: "journey-field", configuration: { componentId: "name" } }
+                        ]
+                      }
+                    },
+                    { id: "public_note", type: "html", configuration: { content: "<p>We only use your email to reply to you.</p>" } },
+                    // A form component listed as it is: the Money group with the required Annual income in
+                    // it. A presentation asks every required field the form has, or it can never be submitted.
+                    "money"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      };
+
+      // What is submitted beside what stays in the browser.
+      const refresh = () => {
+        document.getElementById("form-values").textContent = JSON.stringify(form.values, null, 2);
+        document.getElementById("own-values").textContent = JSON.stringify(form.presentationValues(), null, 2);
+      };
+
+      form.addEventListener("datum-ready", async ({ detail }) => {
+        log("datum-ready");
+        // Own answers are not reported as `datum-change` (they are no answers of the form), so the
+        // panel follows the runtime's own recompute to show them as they are typed.
+        detail.runtime.events().subscribe("RECOMPUTE_COMPLETED", refresh);
+        const select = document.getElementById("journey");
+        if (select.options.length === 2) {
+          for (const journey of form.journeys()) {
+            select.add(new Option(journey.label, journey.id));
+          }
+        }
+        if (await form.hasDraft()) {
+          await form.restoreDraft();
+          log("draft restored");
+        }
+        refresh();
+      });
+      form.addEventListener("datum-change", ({ detail }) => {
+        log(`datum-change ${detail.path} = ${JSON.stringify(detail.value)}`);
+        refresh();
+      });
+      form.addEventListener("datum-page-change", ({ detail }) => {
+        log(`datum-page-change ${detail.fromPageId ?? "(start)"} → ${detail.pageId} (${detail.direction})`);
+        refresh();
+      });
+      form.addEventListener("datum-error", (event) => log(`datum-error ${event.detail.message}`));
+      form.addEventListener("datum-submit", (event) => {
+        const { accepted, submission, errors } = event.detail;
+        log(accepted ? `datum-submit accepted\n${JSON.stringify(submission.submission.values, null, 2)}` : `datum-submit rejected: ${errors.map((e) => `${e.componentId ?? "form"}:${e.code}`).join(", ")}`);
+        if (accepted) {
+          form.setNotice({ title: "Application received" });
+          void form.clearDraft();
+        }
+      });
+
+      document.getElementById("journey").addEventListener("change", (event) => {
+        if (event.target.value) {
+          form.setAttribute("journey", event.target.value);
+        } else {
+          form.removeAttribute("journey");
+        }
+        refresh();
+      });
+      document.getElementById("restart").addEventListener("click", async () => {
+        await form.clearDraft();
+        location.reload();
+      });
+    </script>
+  </body>
+</html>

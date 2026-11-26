@@ -1,0 +1,34 @@
+{
+  "note": "a required select left empty and validated",
+  "components": [
+    {
+      "id": "prov",
+      "type": "select",
+      "configuration": {
+        "label": "Province",
+        "description": "Where you live.",
+        "options": [
+          {
+            "value": "qc",
+            "label": "Qu\u00e9bec"
+          },
+          {
+            "value": "on",
+            "label": "Ontario"
+          },
+          {
+            "value": "bc",
+            "label": "Colombie-Britannique"
+          }
+        ],
+        "required": true
+      }
+    }
+  ],
+  "steps": [
+    {
+      "op": "validate"
+    }
+  ],
+  "width": 560
+}

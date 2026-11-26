@@ -1,0 +1,1 @@
+{ "id": "datum-host-check-pdf", "version": "1.0.0", "target": "pdf", "label": "Host check", "pdf": { "colors": { "text": "#123456" } } }

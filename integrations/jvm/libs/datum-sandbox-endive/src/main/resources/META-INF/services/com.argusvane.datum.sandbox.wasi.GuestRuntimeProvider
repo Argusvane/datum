@@ -1,0 +1,2 @@
+# Endive, the engine datum.runtime.engine=endive selects (a com.argusvane.datum.sandbox.wasi.GuestRuntimeProvider).
+com.argusvane.datum.sandbox.endive.EndiveRuntimeProvider

@@ -1,0 +1,56 @@
+<!-- datum-reference
+{
+  "source": "bootstrap 5.3.8: https://getbootstrap.com/docs/5.3/forms/validation/#server-side (checkboxes: input.form-check-input.is-invalid, div.invalid-feedback inside the last div.form-check) under the alert of https://getbootstrap.com/docs/5.3/components/alerts/. The asterisk after the legend (text-danger, read out: a checkbox group carries no required state) is the binding's own required mark, not Bootstrap's: Bootstrap marks no required field.",
+  "note": "required checkboxes with none chosen and validated",
+  "components": [
+    {
+      "id": "field1",
+      "type": "checkboxes",
+      "configuration": {
+        "label": "Extras",
+        "required": true,
+        "messages": {
+          "required": "Choose at least one."
+        },
+        "options": [
+          {
+            "value": "a",
+            "label": "Gift wrap"
+          },
+          {
+            "value": "b",
+            "label": "Express"
+          }
+        ]
+      }
+    }
+  ],
+  "steps": [
+    {
+      "op": "validate"
+    }
+  ],
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate>
+<div class="alert alert-danger" role="alert" tabindex="-1">
+<h2 class="alert-heading h5">1 error</h2>
+<ul class="mb-0">
+<li><a class="alert-link" href="#field1-a">Extras: Choose at least one.</a></li>
+</ul>
+</div>
+<fieldset class="mb-3" aria-describedby="field1-error">
+<legend class="col-form-label pt-0">Extras <span class="text-danger">*</span></legend>
+<div class="form-check">
+<input class="form-check-input is-invalid" id="field1-a" name="field1" type="checkbox" value="a">
+<label class="form-check-label" for="field1-a">Gift wrap</label>
+</div>
+<div class="form-check">
+<input class="form-check-input is-invalid" id="field1-b" name="field1" type="checkbox" value="b">
+<label class="form-check-label" for="field1-b">Express</label>
+<div id="field1-error" class="invalid-feedback">Choose at least one.</div>
+</div>
+</fieldset>
+</form>

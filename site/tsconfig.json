@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "types": ["vite/client", "node"],
+    "noEmit": true
+  },
+  "include": ["src", "test", "vitest.config.ts", "vite.config.ts", "share-cards.ts", "docs/.vitepress/config.ts", "docs/.vitepress/theme/examples/*.ts"]
+}

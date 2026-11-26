@@ -1,0 +1,70 @@
+<!-- datum-reference
+{
+  "source": "govuk-frontend 6.6.0: components/error-summary/template.njk with options of this case; components/date-input/template.njk with options of this case",
+  "note": "a date left empty and validated: the error summary, the date's error and every box marked",
+  "components": [
+    {
+      "id": "field1",
+      "type": "date",
+      "configuration": {
+        "label": "What is your date of birth?",
+        "description": "For example, 27 3 2007",
+        "required": true,
+        "messages": {
+          "required": "Enter your date of birth"
+        }
+      }
+    }
+  ],
+  "steps": [
+    {
+      "op": "validate"
+    }
+  ],
+  "root": "form",
+  "width": 560,
+  "init": "window.GOVUKFrontend.initAll();"
+}
+-->
+<form novalidate>
+<div class="govuk-error-summary" data-module="govuk-error-summary">
+<div role="alert">
+<h2 class="govuk-error-summary__title"> There is a problem </h2>
+<div class="govuk-error-summary__body">
+<ul class="govuk-list govuk-error-summary__list">
+<li>
+<a href="#field1">Enter your date of birth</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="govuk-form-group govuk-form-group--error">
+<fieldset class="govuk-fieldset" role="group" aria-describedby="field1-hint field1-error">
+<legend class="govuk-fieldset__legend"> What is your date of birth? </legend>
+<div id="field1-hint" class="govuk-hint"> For example, 27 3 2007 </div>
+<p id="field1-error" class="govuk-error-message">
+<span class="govuk-visually-hidden">Error:</span> Enter your date of birth </p>
+<div class="govuk-date-input" id="field1">
+<div class="govuk-date-input__item">
+<div class="govuk-form-group">
+<label class="govuk-label govuk-date-input__label" for="field1-day"> Day </label>
+<input class="govuk-input govuk-date-input__input govuk-input--width-2 govuk-input--error" id="field1-day" name="field1-day" type="text" inputmode="numeric">
+</div>
+</div>
+<div class="govuk-date-input__item">
+<div class="govuk-form-group">
+<label class="govuk-label govuk-date-input__label" for="field1-month"> Month </label>
+<input class="govuk-input govuk-date-input__input govuk-input--width-2 govuk-input--error" id="field1-month" name="field1-month" type="text" inputmode="numeric">
+</div>
+</div>
+<div class="govuk-date-input__item">
+<div class="govuk-form-group">
+<label class="govuk-label govuk-date-input__label" for="field1-year"> Year </label>
+<input class="govuk-input govuk-date-input__input govuk-input--width-4 govuk-input--error" id="field1-year" name="field1-year" type="text" inputmode="numeric">
+</div>
+</div>
+</div>
+</fieldset>
+</div>
+</form>

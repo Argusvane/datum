@@ -1,0 +1,435 @@
+{
+  "id": "form-tests-fixture",
+  "version": "1.0.0",
+  "schemaVersion": "1.0.0",
+  "localization": {
+    "defaultLocale": "en",
+    "supportedLocales": [
+      {
+        "code": "en"
+      },
+      {
+        "code": "fr"
+      }
+    ]
+  },
+  "root": {
+    "id": "form",
+    "type": "form",
+    "configuration": {
+      "label": "Form tests fixture"
+    },
+    "children": {
+      "content": [
+        {
+          "id": "applicant_name",
+          "type": "text",
+          "configuration": {
+            "label": "Name",
+            "required": true
+          }
+        },
+        {
+          "id": "age",
+          "type": "number",
+          "configuration": {
+            "label": "Age",
+            "min": 18,
+            "max": 120
+          }
+        },
+        {
+          "id": "age_next_year",
+          "type": "number",
+          "configuration": {
+            "label": "Age next year"
+          },
+          "rules": {
+            "value": "age + 1"
+          }
+        },
+        {
+          "id": "wants_details",
+          "type": "checkbox",
+          "configuration": {
+            "label": "Tell us more"
+          }
+        },
+        {
+          "id": "nickname",
+          "type": "text",
+          "configuration": {
+            "label": "Nickname"
+          },
+          "rules": {
+            "enabledWhen": "wants_details = true",
+            "readonlyWhen": "applicant_name = \"Locked\""
+          }
+        },
+        {
+          "id": "contact_method",
+          "type": "select",
+          "configuration": {
+            "label": "How to reach you",
+            "options": [
+              {
+                "value": "email",
+                "label": "Email"
+              },
+              {
+                "value": "phone",
+                "label": "Phone"
+              }
+            ]
+          }
+        },
+        {
+          "id": "email",
+          "type": "text",
+          "configuration": {
+            "label": "Email"
+          },
+          "rules": {
+            "requiredWhen": "contact_method = \"email\""
+          }
+        },
+        {
+          "id": "phone",
+          "type": "text",
+          "configuration": {
+            "label": "Phone"
+          },
+          "rules": {
+            "visibleWhen": "contact_method = \"phone\""
+          }
+        },
+        {
+          "id": "confirm_email",
+          "type": "text",
+          "configuration": {
+            "label": "Confirm email",
+            "messages": {
+              "rule": "The two emails must match."
+            }
+          },
+          "rules": {
+            "validWhen": "confirm_email = email"
+          }
+        },
+        {
+          "id": "province",
+          "type": "select",
+          "configuration": {
+            "label": "Province",
+            "data": {
+              "sourceId": "provinces"
+            }
+          }
+        },
+        {
+          "id": "stop_code",
+          "type": "text",
+          "configuration": {
+            "label": "Code"
+          }
+        },
+        {
+          "id": "topics",
+          "type": "checkboxes",
+          "configuration": {
+            "label": "Topics",
+            "options": [
+              {
+                "value": "news",
+                "label": "News"
+              },
+              {
+                "value": "offers",
+                "label": "Offers"
+              },
+              {
+                "value": "events",
+                "label": "Events"
+              }
+            ]
+          }
+        },
+        {
+          "id": "has_pet",
+          "type": "checkbox",
+          "configuration": {
+            "label": "I have a pet"
+          }
+        },
+        {
+          "id": "pet_name",
+          "type": "text",
+          "configuration": {
+            "label": "Pet name",
+            "hiddenValueBehavior": "retain"
+          },
+          "rules": {
+            "visibleWhen": "has_pet = true"
+          }
+        },
+        {
+          "id": "items",
+          "type": "repeatingSection",
+          "configuration": {
+            "label": "Items"
+          },
+          "collection": {
+            "itemFields": [
+              "qty"
+            ]
+          },
+          "children": {
+            "content": [
+              {
+                "id": "qty",
+                "type": "number",
+                "configuration": {
+                  "label": "Quantity"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "role_note",
+          "type": "text",
+          "configuration": {
+            "label": "Admin note"
+          },
+          "rules": {
+            "visibleWhen": "host.role = \"admin\""
+          }
+        },
+        {
+          "id": "ref_number",
+          "type": "text",
+          "configuration": {
+            "label": "Reference",
+            "messages": {
+              "rule": "That reference is not ours."
+            }
+          },
+          "rules": {
+            "validWhen": {
+              "formula": "ref_number != \"BAD\"",
+              "run": "server"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "journey": {
+    "journeys": [
+      {
+        "id": "main",
+        "validation": {
+          "continue": "page"
+        },
+        "pages": [
+          {
+            "id": "intro",
+            "components": [
+              "applicant_name",
+              "age",
+              "age_next_year",
+              "wants_details",
+              "nickname"
+            ]
+          },
+          {
+            "id": "contact",
+            "components": [
+              "contact_method",
+              "email",
+              "phone",
+              "confirm_email",
+              "province",
+              "stop_code"
+            ],
+            "routes": [
+              {
+                "when": "stop_code = \"STOP\"",
+                "to": "stop"
+              },
+              {
+                "when": "not(wants_details = true)",
+                "to": "review"
+              }
+            ]
+          },
+          {
+            "id": "details",
+            "components": [
+              "topics",
+              "has_pet",
+              "pet_name"
+            ]
+          },
+          {
+            "id": "review",
+            "components": [
+              "items",
+              "role_note",
+              "ref_number"
+            ],
+            "routes": [
+              {
+                "to": "$end"
+              }
+            ]
+          },
+          {
+            "id": "stop",
+            "kind": "exit",
+            "title": "Not eligible",
+            "components": []
+          }
+        ]
+      }
+    ]
+  },
+  "pdf": {
+    "layouts": [
+      {
+        "id": "standard",
+        "kind": "generated",
+        "root": {
+          "id": "document",
+          "type": "pdf-document",
+          "configuration": {},
+          "children": {
+            "body": [],
+            "header": [],
+            "footer": []
+          }
+        }
+      },
+      {
+        "id": "pets",
+        "kind": "generated",
+        "when": "has_pet = true",
+        "root": {
+          "id": "document",
+          "type": "pdf-document",
+          "configuration": {},
+          "children": {
+            "body": [],
+            "header": [],
+            "footer": []
+          }
+        }
+      }
+    ],
+    "defaultLayoutId": "standard"
+  },
+  "translations": {
+    "fr": {
+      "components": {
+        "applicant_name": {
+          "label": {
+            "text": "Nom",
+            "source": "4el6o6"
+          }
+        },
+        "confirm_email": {
+          "messages": {
+            "rule": {
+              "text": "Les deux courriels doivent correspondre.",
+              "source": "1f23inx"
+            }
+          }
+        }
+      },
+      "texts": {
+        "messages": {
+          "required": {
+            "text": "Ce champ est obligatoire",
+            "source": "1cyzib0"
+          }
+        }
+      }
+    }
+  },
+  "tests": {
+    "scenarios": [
+      {
+        "id": "main-1",
+        "source": "test \"intro holds until a name is given\"\n  expect page = intro\n  expect applicant_name visible\n  expect applicant_name required\n  expect applicant_name enabled\n  expect applicant_name editable\n  expect applicant_name empty\n  continue\n  expect page = intro\n  expect error on applicant_name\n  expect error on applicant_name: required\n  set applicant_name = \"Ada\"\n  set age = 30\n  expect applicant_name not empty\n  continue\n  expect page = contact\n  expect no error on applicant_name"
+      },
+      {
+        "id": "main-2",
+        "source": "test \"the age bounds and the calculation\"\n  set applicant_name = \"Ada\"\n  set age = 15\n  expect age = 15\n  expect age != 16\n  expect age_next_year = 16\n  expect age_next_year = age + 1\n  check\n  expect refused\n  expect error on age: number.min\n  set age = 30\n  check\n  expect accepted\n  expect no errors"
+      },
+      {
+        "id": "main-3",
+        "source": "test \"the nickname follows the details box\"\n  expect nickname disabled\n  set wants_details = true\n  expect nickname enabled\n  set applicant_name = \"Locked\"\n  expect nickname readonly\n  set applicant_name = \"Ada\"\n  expect nickname editable"
+      },
+      {
+        "id": "main-4",
+        "source": "test \"email is required when it is the way to reach you\"\n  set applicant_name = \"Ada\"\n  set age = 30\n  continue\n  expect page = contact\n  expect email optional\n  set contact_method = \"email\"\n  expect email required\n  continue\n  expect page = contact\n  expect error on email: required"
+      },
+      {
+        "id": "main-5",
+        "source": "test \"the confirmation must match the email\"\n  given journey = none\n  set email = \"a@example.com\"\n  set confirm_email = \"b@example.com\"\n  check\n  expect refused\n  expect error on confirm_email: rule\n  expect message on confirm_email = \"The two emails must match.\"\n  set confirm_email = \"a@example.com\"\n  check\n  expect no error on confirm_email"
+      },
+      {
+        "id": "main-6",
+        "source": "test \"the confirmation message in French\"\n  given journey = none\n  given locale = \"fr\"\n  set email = \"a@example.com\"\n  set confirm_email = \"b@example.com\"\n  check\n  expect error on confirm_email: rule\n  expect message on confirm_email = \"Les deux courriels doivent correspondre.\""
+      },
+      {
+        "id": "main-7",
+        "source": "test \"a hidden phone is withheld, a hidden pet name is kept\"\n  given journey = none\n  set applicant_name = \"Ada\"\n  set age = 30\n  set contact_method = \"phone\"\n  set phone = \"555-0100\"\n  expect phone visible\n  set contact_method = \"email\"\n  set email = \"a@example.com\"\n  set confirm_email = \"a@example.com\"\n  expect phone hidden\n  set has_pet = false\n  set pet_name = \"Rex\"\n  expect pet_name hidden\n  submit\n  expect accepted\n  expect phone withheld\n  expect submitted pet_name = \"Rex\"\n  expect submitted applicant_name = \"Ada\""
+      },
+      {
+        "id": "main-8",
+        "source": "test \"STOP routes to the exit page\"\n  set applicant_name = \"Ada\"\n  set age = 30\n  continue\n  set stop_code = \"STOP\"\n  continue\n  expect page = stop\n  expect path = (intro, contact, stop)\n  expect path ends at stop\n  expect review off path"
+      },
+      {
+        "id": "main-9",
+        "source": "test \"the details page is skipped unless asked for\"\n  expect details off path\n  expect path = (intro, contact, review)\n  expect path ends\n  set wants_details = true\n  expect details on path\n  expect path = (intro, contact, details, review)"
+      },
+      {
+        "id": "main-10",
+        "source": "test \"an answer on a skipped page is withheld\"\n  set applicant_name = \"Ada\"\n  set age = 30\n  set wants_details = true\n  set has_pet = true\n  set wants_details = false\n  submit\n  expect accepted\n  expect has_pet withheld"
+      },
+      {
+        "id": "main-11",
+        "source": "test \"Back and a jump move between pages\"\n  set applicant_name = \"Ada\"\n  set age = 30\n  continue\n  expect page = contact\n  back\n  expect page = intro\n  go to contact\n  expect page = contact"
+      },
+      {
+        "id": "main-12",
+        "source": "test \"rows are added, answered and removed\"\n  given journey = none\n  expect rows of items = 0\n  add row to items with qty = 2\n  add row to items\n  expect rows of items = 2\n  expect items[0].qty = 2\n  set items[1].qty = 5\n  expect items[1].qty = 5\n  remove row 0 of items\n  expect rows of items = 1\n  expect items[0].qty = 5"
+      },
+      {
+        "id": "main-13",
+        "source": "test \"the pets layout when there is a pet\"\n  given journey = none\n  expect layout = standard\n  set has_pet = true\n  expect layout = pets"
+      },
+      {
+        "id": "main-14",
+        "source": "test \"topics read through a formula\"\n  given journey = none\n  expect topics empty\n  set topics = (\"news\", \"events\")\n  expect topics not empty\n  expect count(selected(topics)) = 2\n  set topics = ()\n  expect topics empty"
+      },
+      {
+        "id": "main-15",
+        "source": "test \"a province from the given options\"\n  given journey = none\n  given options for province = (\"ON\", \"QC\")\n  set applicant_name = \"Ada\"\n  set age = 30\n  set province = \"QC\"\n  submit\n  expect accepted\n  expect submitted province = \"QC\""
+      },
+      {
+        "id": "main-16",
+        "source": "test \"an admin sees the role note\"\n  given journey = none\n  given host.role = \"admin\"\n  expect role_note visible"
+      },
+      {
+        "id": "main-17",
+        "source": "test \"anyone else does not see the role note\"\n  given journey = none\n  given host.role = \"user\"\n  expect role_note hidden"
+      },
+      {
+        "id": "main-18",
+        "source": "test \"a server-only check is not the browser's to judge\"\n  given journey = none\n  set ref_number = \"BAD\"\n  check\n  expect error on ref_number: rule"
+      }
+    ]
+  }
+}

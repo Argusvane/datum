@@ -1,0 +1,38 @@
+<!-- datum-reference
+{
+  "note": "a required radio group left empty and validated: the error summary and the group's error, drawn as input-error draws them (Fluent's elements only: the form column's 16px gap is the one style)",
+  "components": [
+    {
+      "id": "contact",
+      "type": "radio",
+      "configuration": {
+        "label": "Preferred contact",
+        "required": true,
+        "messages": {
+          "required": "Choose a contact method."
+        },
+        "options": [
+          {
+            "value": "email",
+            "label": "Email",
+            "description": "Within a day"
+          },
+          {
+            "value": "phone",
+            "label": "Phone"
+          }
+        ]
+      }
+    }
+  ],
+  "steps": [
+    {
+      "op": "validate"
+    }
+  ],
+  "source": "Fluent UI Web Components 3.2.1: field.stories.ts ComponentExamples and radio-group.stories.ts (fluent-field label-position='above' around fluent-radio-group slot='input' orientation='vertical', each fluent-radio slot='input' in its own fluent-field label-position='after' with label slot='label'), https://github.com/microsoft/fluentui/tree/master/packages/web-components/src/radio-group; hint: field.stories.ts Hint (fluent-text slot='message' size='200'), an option's hint in its own field's message slot; attributes per custom-elements.json 3.2.1; summary and error: as input-error",
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate style="display: flex; flex-direction: column; gap: var(--spacingVerticalL);"><fluent-message-bar intent="error" layout="multiline" role="alert" tabindex="-1"><span slot="icon" style="color: var(--colorStatusDangerForeground1)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M10 2a8 8 0 1 1 0 16a8 8 0 0 1 0-16M7.81 7.114a.5.5 0 0 0-.638.058l-.058.069a.5.5 0 0 0 .058.638L9.292 10l-2.12 2.121l-.058.07a.5.5 0 0 0 .058.637l.069.058a.5.5 0 0 0 .638-.058L10 10.708l2.121 2.12l.07.058a.5.5 0 0 0 .637-.058l.058-.069a.5.5 0 0 0-.058-.638L10.708 10l2.12-2.121l.058-.07a.5.5 0 0 0-.058-.637l-.069-.058a.5.5 0 0 0-.638.058L10 9.292l-2.121-2.12z"></path></svg></span><div><fluent-text weight="semibold" block><h2>1 error</h2></fluent-text><ul><li><fluent-link inline href="#contact">Preferred contact: Choose a contact method.</fluent-link></li></ul></div></fluent-message-bar><div><fluent-field label-position="above"><label slot="label" for="contact">Preferred contact</label><fluent-radio-group slot="input" id="contact" name="contact" orientation="vertical" aria-describedby="contact-error" aria-invalid="true" required><fluent-field label-position="after"><label slot="label" for="contact-email">Email</label><fluent-radio slot="input" id="contact-email" value="email" aria-describedby="contact-email-hint"></fluent-radio><fluent-text slot="message" size="200" id="contact-email-hint">Within a day</fluent-text></fluent-field><fluent-field label-position="after"><label slot="label" for="contact-phone">Phone</label><fluent-radio slot="input" id="contact-phone" value="phone"></fluent-radio></fluent-field></fluent-radio-group><fluent-text slot="message" size="200"><div id="contact-error"><svg fill="var(--colorStatusDangerForeground1)" aria-hidden="true" width="1em" height="1em" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><path d="M6 11A5 5 0 1 0 6 1a5 5 0 0 0 0 10Zm-.75-2.75a.75.75 0 1 1 1.5 0 .75.75 0 0 1-1.5 0Zm.26-4.84a.5.5 0 0 1 .98 0l.01.09v2.59a.5.5 0 0 1-1 0V3.41Z" fill="var(--colorStatusDangerForeground1)"></path></svg> Choose a contact method.</div></fluent-text></fluent-field></div></form>

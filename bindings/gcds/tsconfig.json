@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": []
+  },
+  "include": ["src/**/*.ts", "print/**/*.ts", "pdf/**/*.ts", "tests/**/*.ts"],
+  "exclude": ["tests/pdf-theme.test.ts", "tests/print-filled.test.ts", "tests/panel.test.ts", "tests/plugin-urls.test.ts"]
+}

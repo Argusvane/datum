@@ -1,0 +1,11 @@
+from typing import assert_never
+
+from datum_core.submissions import Accepted, SubmissionOutcome
+
+
+def label(outcome: SubmissionOutcome) -> str:
+    match outcome:
+        case Accepted():
+            return "accepted"
+        case _ as unreachable:
+            assert_never(unreachable)

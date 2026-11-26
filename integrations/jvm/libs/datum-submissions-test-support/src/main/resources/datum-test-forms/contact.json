@@ -1,0 +1,1 @@
+{"id":"contact","version":"1","root":{"id":"root","type":"form","configuration":{},"children":{"content":[{"id":"name","type":"text","configuration":{"label":"Name","required":true}}]}}}

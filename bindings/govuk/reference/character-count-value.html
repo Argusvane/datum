@@ -1,0 +1,46 @@
+<!-- datum-reference
+{
+  "source": "govuk-frontend 6.6.0: components/character-count/fixtures.json, fixture \"with default value\"",
+  "note": "a character count holding an answer: the count the script leaves",
+  "components": [
+    {
+      "id": "field1",
+      "type": "textarea",
+      "configuration": {
+        "label": "Full address",
+        "required": true,
+        "rows": 5,
+        "maxLength": 100,
+        "characterCount": true
+      }
+    }
+  ],
+  "preset": {
+    "field1": "221B Baker Street\nLondon\nNW1 6XE\n"
+  },
+  "root": "form",
+  "width": 560,
+  "init": "window.GOVUKFrontend.initAll();",
+  "compareWith": "plain",
+  "ignoreText": [
+    {
+      "match": "^\\[live\\] \\[sr\\] You have",
+      "reason": "GOV.UK's script writes its own visually hidden status; the count's live region is the renderer's announcer"
+    }
+  ],
+  "ignoreBoxes": [
+    {
+      "match": "^You have \\d+ characters? r",
+      "reason": "the script's visually hidden status element (see ignoreText)"
+    }
+  ]
+}
+-->
+<form novalidate>
+<div class="govuk-form-group govuk-character-count" data-module="govuk-character-count" data-maxlength="100">
+<label class="govuk-label" for="with-default-value"> Full address </label> <textarea class="govuk-textarea govuk-js-character-count" id="with-default-value" name="default-value" rows="5" aria-describedby="with-default-value-info">221B Baker Street
+London
+NW1 6XE
+</textarea> <div id="with-default-value-info" class="govuk-hint govuk-character-count__message"> You can enter up to 100 characters </div>
+</div>
+</form>

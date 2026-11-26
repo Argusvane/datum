@@ -1,0 +1,4 @@
+# The start-up refusals of the Datum modules print as a Description and an Action.
+# The engine-selection analyzer is datum-sandbox-spring's.
+org.springframework.boot.diagnostics.FailureAnalyzer=\
+com.argusvane.datum.springweb.spring.DatumConfigurationFailureAnalyzer

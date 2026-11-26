@@ -1,0 +1,2 @@
+com.argusvane.datum.submissions.spring.DatumSubmissionsAutoConfiguration
+com.argusvane.datum.submissions.spring.DatumSubmissionsOpenApiAutoConfiguration

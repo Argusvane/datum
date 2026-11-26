@@ -1,0 +1,25 @@
+<!-- datum-reference
+{
+  "note": "tabs, the first shown: a tablist of two tabs over two panels, the first panel shown",
+  "components": [
+    { "id": "sections", "type": "tabs", "configuration": { "tabs": [ { "id": "one", "label": "Applicant" }, { "id": "two", "label": "Items" } ] },
+      "children": {
+        "one": [ { "id": "name", "type": "text", "configuration": { "label": "Full name" } } ],
+        "two": [ { "id": "email", "type": "text", "configuration": { "label": "Email address" } } ]
+      } }
+  ],
+  "source": "Fluent UI Web Components 3.2.1: tablist.stories.ts (Default, AutoPanelAssociation: fluent-tablist of fluent-tab, a tab's aria-controls naming its panel, the panels plain divs in a column with gap 1rem) and field.stories.ts for the fields in the panels, https://github.com/microsoft/fluentui/tree/master/packages/web-components/src/tablist; attributes per custom-elements.json 3.2.1 (fluent-tablist: appearance, activeid)",
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate>
+<div style="display: flex; flex-direction: column; gap: 1rem;">
+<fluent-tablist appearance="transparent" activeid="sections-tab-one">
+<fluent-tab id="sections-tab-one" aria-controls="sections-panel-one">Applicant</fluent-tab>
+<fluent-tab id="sections-tab-two" aria-controls="sections-panel-two">Items</fluent-tab>
+</fluent-tablist>
+<div id="sections-panel-one" role="tabpanel" aria-labelledby="sections-tab-one"><fluent-field label-position="above"><label slot="label" for="name">Full name</label><fluent-text-input slot="input" id="name" name="name"></fluent-text-input></fluent-field></div>
+<div id="sections-panel-two" role="tabpanel" aria-labelledby="sections-tab-two" hidden><fluent-field label-position="above"><label slot="label" for="email">Email address</label><fluent-text-input slot="input" id="email" name="email"></fluent-text-input></fluent-field></div>
+</div>
+</form>

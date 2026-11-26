@@ -1,0 +1,23 @@
+{
+  "id": "new-form",
+  "version": "1.0.0",
+  "schemaVersion": "1",
+  "localization": {
+    "defaultLocale": "en",
+    "supportedLocales": [{ "code": "en", "label": "English" }]
+  },
+  "root": {
+    "id": "root",
+    "type": "form",
+    "configuration": { "label": "New form" },
+    "children": {
+      "content": [
+        {
+          "id": "submit",
+          "type": "button",
+          "configuration": { "label": "Submit", "action": "submit" }
+        }
+      ]
+    }
+  }
+}

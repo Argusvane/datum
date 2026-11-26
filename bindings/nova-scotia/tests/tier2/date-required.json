@@ -1,0 +1,15 @@
+{
+  "note": "a required date: the asterisk in the legend and the note above",
+  "components": [
+    {
+      "id": "start",
+      "type": "date",
+      "configuration": {
+        "label": "Start date",
+        "description": "For example, 14 5 2026.",
+        "required": true
+      }
+    }
+  ],
+  "width": 560
+}

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-forms</artifactId>
+  <packaging>jar</packaging>
+  <name>datum-forms</name>
+  <description>Datum forms: definition repository SPIs, definition service and read endpoints. Framework-free library; the Spring Boot binding is datum-forms-spring.</description>
+  <dependencies>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-sandbox</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-core</artifactId>
+    </dependency>
+    <!-- The read facade (FormsApi) answers through datum-web-core's error model; the services import nothing from it. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-web-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-programs</artifactId>
+    </dependency>
+    <!-- A plain library (no framework): the bounded caches of DefinitionService, single-flight through AsyncCache. -->
+    <dependency>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+    </dependency>
+    <!-- No JDBC here: the SQL stores and their database tests are the -spring binding's; the
+         library ships only the SPIs, the in-memory stores and the migration scripts. -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- The shared test helpers (the library-boundary rule, the settings-record copy check, the recording observation registry);
+         datum-core-test-support is never published. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-core-test-support</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <!-- The helpers this module's -spring binding shares with its own tests (fixtures, fake runtimes) live in
+             datum-forms-test-support, which depends on this module; a dependency back would be a cycle, so this module's tests
+             compile the same sources and resources from there. -->
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>shared-test-helpers</id>
+            <phase>generate-test-sources</phase>
+            <goals><goal>add-test-source</goal></goals>
+            <configuration>
+              <sources>
+                <source>${project.basedir}/../datum-forms-test-support/src/main/java</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

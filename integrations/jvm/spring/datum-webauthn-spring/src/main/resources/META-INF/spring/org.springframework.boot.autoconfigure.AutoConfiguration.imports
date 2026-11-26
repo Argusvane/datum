@@ -1,0 +1,3 @@
+com.argusvane.datum.webauthn.spring.DatumWebAuthnAutoConfiguration
+com.argusvane.datum.webauthn.spring.DatumWebAuthnWebAutoConfiguration
+com.argusvane.datum.webauthn.spring.DatumWebAuthnOpenApiAutoConfiguration

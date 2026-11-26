@@ -1,0 +1,60 @@
+{
+  "name": "@argusvane/datum-binding-fluent",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "author": "Argusvane <maintainers@argusvane.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/argusvane/datum.git",
+    "directory": "bindings/fluent"
+  },
+  "homepage": "https://datum.argusvane.com",
+  "bugs": {
+    "url": "https://github.com/argusvane/datum/issues"
+  },
+  "keywords": [
+    "datum",
+    "forms",
+    "form-renderer",
+    "design-system",
+    "binding"
+  ],
+  "description": "Fluent UI binding for the Datum form renderer: Datum's components drawn in the design system's own markup.",
+  "type": "module",
+  "datumBinding": {
+    "id": "fluent",
+    "designSystem": "Fluent UI",
+    "release": "3.2.1",
+    "bundle": "dist/fluent.js",
+    "global": "DatumBindingFluent",
+    "budgetKb": 14,
+    "checks": [
+      "tests/enter-key.mjs"
+    ]
+  },
+  "scripts": {
+    "build": "node ../../packages/datum/binding-kit/build.mjs --binding fluent",
+    "typecheck": "tsc --noEmit",
+    "kit:check": "node ../../packages/datum/binding-kit/check.mjs --binding fluent",
+    "kit:build": "node ../../packages/datum/binding-kit/build.mjs --binding fluent",
+    "kit:equality": "node ../../packages/datum/binding-kit/equality.mjs --binding fluent",
+    "kit:behaviour": "node ../../packages/datum/binding-kit/behaviour.mjs --binding fluent",
+    "kit:conformance": "node ../../packages/datum/binding-kit/conformance.ts --binding fluent",
+    "kit:serve": "node ../../packages/datum/binding-kit/serve.mjs --binding fluent",
+    "theme:generate": "node scripts/generate-theme.mjs"
+  },
+  "devDependencies": {
+    "@argusvane/datum-engine": "file:../../engine",
+    "esbuild": "^0.28.2",
+    "fluentui-tokens-1.0.0-alpha.24": "npm:@fluentui/tokens@1.0.0-alpha.24",
+    "fluentui-web-components-3.2.1": "npm:@fluentui/web-components@3.2.1",
+    "typescript": "^7.0.2"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  }
+}

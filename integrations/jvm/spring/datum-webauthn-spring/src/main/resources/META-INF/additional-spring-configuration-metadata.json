@@ -1,0 +1,77 @@
+{
+  "hints": [
+    {
+      "name": "datum.webauthn.mode",
+      "values": [
+        {
+          "value": "off",
+          "description": "Submissions are not signed."
+        },
+        {
+          "value": "optional",
+          "description": "A visitor may sign."
+        },
+        {
+          "value": "required",
+          "description": "A visitor must sign."
+        }
+      ]
+    },
+    {
+      "name": "datum.webauthn.scope",
+      "values": [
+        {
+          "value": "envelope",
+          "description": "The whole submission envelope."
+        },
+        {
+          "value": "submission",
+          "description": "The submission document."
+        },
+        {
+          "value": "values",
+          "description": "The answers only."
+        }
+      ]
+    },
+    {
+      "name": "datum.webauthn.placement",
+      "values": [
+        {
+          "value": "embedded",
+          "description": "Signatures sit inside the submission."
+        },
+        {
+          "value": "wrapper",
+          "description": "Signatures wrap the submission."
+        }
+      ]
+    },
+    {
+      "name": "datum.webauthn.user-verification",
+      "values": [
+        {
+          "value": "required",
+          "description": "The authenticator must verify the user."
+        },
+        {
+          "value": "preferred",
+          "description": "Verification is asked for, not demanded."
+        }
+      ]
+    },
+    {
+      "name": "datum.webauthn.unavailable",
+      "values": [
+        {
+          "value": "refuse",
+          "description": "Refuse a required form's submission from a browser without passkeys."
+        },
+        {
+          "value": "accept",
+          "description": "Accept it unsigned."
+        }
+      ]
+    }
+  ]
+}

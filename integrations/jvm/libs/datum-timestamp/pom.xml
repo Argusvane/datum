@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-timestamp</artifactId>
+  <packaging>jar</packaging>
+  <name>datum-timestamp</name>
+  <description>Datum timestamp: an RFC 3161 Time-Stamp Authority, server and client. Framework-free library; the Spring Boot binding is datum-timestamp-spring.</description>
+  <dependencies>
+    <!-- The RFC 3161 library (the module's root package) needs datum-core (DatumException, Jcs) and Bouncy Castle
+         only: no Spring, no Datum runtime. The Spring dependencies below serve the web and spring sub-packages. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-web-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcprov-jdk18on</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.bouncycastle</groupId>
+      <artifactId>bcpkix-jdk18on</artifactId>
+    </dependency>
+    <!-- The observation tests record on a real ObservationRegistry (datum-core's RecordingObservations);
+         the library itself names no Micrometer type (DatumObservations is plain Java). -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-observation</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- The shared test helpers (the library-boundary rule, the settings-record copy check, the recording observation registry);
+         datum-core-test-support is never published. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-core-test-support</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <!-- The helpers this module's -spring binding shares with its own tests (fixtures, fake runtimes) live in
+             datum-timestamp-test-support, which depends on this module; a dependency back would be a cycle, so this module's tests
+             compile the same sources and resources from there. -->
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>shared-test-helpers</id>
+            <phase>generate-test-sources</phase>
+            <goals><goal>add-test-source</goal></goals>
+            <configuration>
+              <sources>
+                <source>${project.basedir}/../datum-timestamp-test-support/src/main/java</source>
+              </sources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>shared-test-helper-resources</id>
+            <phase>generate-test-resources</phase>
+            <goals><goal>add-test-resource</goal></goals>
+            <configuration>
+              <resources>
+                <resource><directory>${project.basedir}/../datum-timestamp-test-support/src/main/resources</directory></resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

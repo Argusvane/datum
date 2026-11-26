@@ -1,0 +1,93 @@
+<!-- datum-reference
+{
+  "source": "nsgov/patternlibrary 663c256: forms/form-input-number.html (type=number)",
+  "note": "a number field",
+  "components": [
+    {
+      "id": "field1",
+      "type": "number",
+      "configuration": {
+        "label": "Choose a number"
+      }
+    }
+  ],
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate>
+<style>
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+  .form-group { margin-bottom: 1.5em; }
+  .form-control { max-width: 100%; }
+  .help-block { display: block; margin-top: 5px; margin-bottom: 10px; }
+  .radio, .checkbox { display: block; margin-top: 10px; margin-bottom: 10px; }
+  .radio label, .checkbox label { margin-bottom: 0; font-weight: 400; cursor: pointer; }
+  .radio .help-block, .checkbox .help-block { margin-top: 0; }
+  /* A legend that names a group of choices is the group's label, not a section heading (the library's legend is 1.5em with a rule). */
+  legend.control-label { font-size: inherit; font-weight: bold; color: inherit; border: 0; margin-bottom: 5px; }
+  /* Bootstrap's input group, for a prefix and a suffix: the box and its addons in one row. */
+  .input-group { display: inline-flex; align-items: stretch; max-width: 100%; }
+  .input-group .form-control { flex: 1 1 auto; min-width: 0; margin: 0; }
+  .input-group-addon { padding: 1px 12px; line-height: 1.6875; color: #555; text-align: center; white-space: nowrap; background-color: #eee; border: 1px solid #a2a2a2; }
+  .input-group > .input-group-addon:first-child { border-right: 0; }
+  .input-group > .input-group-addon:last-child { border-left: 0; }
+  /* The button size classes carry a page-level margin (54px auto): inside a form a button stands where it is written. */
+  .btn.btn-lg { margin: 0; }
+
+  .datum-ns-required { border: 0; text-decoration: none; cursor: default; color: #a94442; }
+  /* Notices: the library's warning colour and its icon, never the error colour, whichever group they sit in. */
+  .datum-ns-notice.help-block { margin-top: 5px; margin-bottom: 5px; }
+  .datum-ns-notice.datum-ns-notice--warning.help-block { color: #8a6d3b; }
+  .datum-ns-notice.datum-ns-notice--info.help-block { color: #444; }
+  .datum-ns-notice .fa { margin-right: 0.25em; }
+  .datum-ns-count--over.help-block { color: #a94442; }
+  .datum-ns-choice-error .fa { margin-right: 0.25em; }
+  /* The summary and the receipt are the library's alert block; its heading is a heading element drawn as the block's bold line. */
+  .alert-block > .alert-message > .datum-ns-alert-title { margin: 0.25em 0 0; font-size: 1em; line-height: inherit; }
+  .alert-block > .alert-message > .datum-ns-alert-title + * { margin-top: 0.5em; }
+  .alert-block ul { margin: 0.5em 0 0; }
+  .datum-ns-details { margin: 0.5em 0 0; }
+  .datum-ns-details div { display: flex; gap: 0.5em; }
+  .datum-ns-details dt { font-weight: 700; }
+  .datum-ns-details dd { margin: 0; }
+  /* A date: three boxes in a row, each under its own label (the library has no date). */
+  .datum-ns-date { display: flex; flex-wrap: wrap; gap: 0 1em; }
+  .datum-ns-date-part label { font-weight: 400; }
+  .datum-ns-date-part .form-control { max-width: 100%; }
+  /* A data grid: the library's table, or the same table held as blocks. Left to the form (auto) it is a table while its box is wide, with the cells' own labels read out but not shown (the column headings name them), and blocks with the labels shown when the box is narrow. */
+  .datum-ns-grid-box { container-type: inline-size; }
+  .datum-ns-grid { margin-bottom: 0.5em; }
+  .datum-ns-grid th, .datum-ns-grid td { vertical-align: top; }
+  .datum-ns-grid td .form-group { margin-bottom: 0; }
+  .datum-ns-grid-actions { white-space: nowrap; }
+  .datum-ns-grid-actions .btn + .btn { margin-left: 0.25em; }
+  .datum-ns-grid--auto td label.control-label { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+  .datum-ns-grid--stacked thead { display: none; }
+  .datum-ns-grid--stacked, .datum-ns-grid--stacked tbody, .datum-ns-grid--stacked tr, .datum-ns-grid--stacked td, .datum-ns-grid--stacked th { display: block; width: 100%; }
+  .datum-ns-grid--stacked tr { border-top: 1px solid #ddd; padding: 0.5em 0; }
+  .datum-ns-grid--stacked td, .datum-ns-grid--stacked th { border: 0; padding: 0.25em 8px; }
+  @container (max-width: 40em) {
+  .datum-ns-grid--auto thead { display: none; }
+  .datum-ns-grid--auto, .datum-ns-grid--auto tbody, .datum-ns-grid--auto tr, .datum-ns-grid--auto td, .datum-ns-grid--auto th { display: block; width: 100%; }
+  .datum-ns-grid--auto tr { border-top: 1px solid #ddd; padding: 0.5em 0; }
+  .datum-ns-grid--auto td, .datum-ns-grid--auto th { border: 0; padding: 0.25em 8px; }
+    .datum-ns-grid--auto td label.control-label { position: static; width: auto; height: auto; margin: 0 0 5px; overflow: visible; clip: auto; }
+  }
+  /* Steps: the library's progress tracker, then the shown step, then the buttons. */
+  .datum-ns-steps-indicator { display: flow-root; }
+  .datum-ns-steps-indicator .pagination { margin: 0 0 1.5em; display: block; }
+  .datum-ns-step-panel[hidden] { display: none; }
+  .datum-ns-actions { display: flex; flex-wrap: wrap; gap: 0.75em; margin: 1.5em 0 0; }
+  .datum-ns-button-group { display: flex; flex-wrap: wrap; gap: 0.75em; margin-bottom: 1.5em; }
+  .datum-ns-caption { display: block; color: #777; font-size: 0.875em; }
+  .datum-ns-languages { margin: 0 0 1.5em; }
+  .datum-ns-languages ul { display: flex; gap: 1em; list-style: none; margin: 0; padding: 0; }
+  .datum-ns-languages [aria-current] { font-family: "open_sansbold", Helvetica, Arial, Tahoma, sans-serif; }
+  .datum-ns-required-note { margin: 0 0 1.5em; }
+</style>
+<div class="form-group">
+<label class="control-label" for="field1">Choose a number</label>
+<input class="form-control" id="field1" name="field1" type="number">
+</div>
+</form>

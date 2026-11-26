@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-core-test-support</artifactId>
+  <packaging>jar</packaging>
+  <name>datum-core-test-support</name>
+  <description>Test helpers every library module shares (the library-boundary rule, the settings-record copy check, the recording observation registry). Never published.</description>
+  <properties>
+    <!-- Test helpers are not part of a release: neither the deploy plugin nor Central publishing may touch this module, and the
+         BOM does not list it (the root pom's central-publishing configuration also names it in excludeArtifacts). -->
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <skipPublishing>true</skipPublishing>
+  </properties>
+  <dependencies>
+    <!-- The helpers are written against the library, so they sit above it; datum-core's own tests compile the same sources
+         (build-helper in its pom) because a dependency from the library back on this module would be a cycle. The test
+         frameworks they use are compile scope here and test scope in a consumer. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-observation</artifactId>
+    </dependency>
+  </dependencies>
+</project>

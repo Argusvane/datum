@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Contact us</title>
+    <style>
+      body { font: 16px/1.5 system-ui, sans-serif; margin: 0; padding: 2rem; }
+      main { max-width: 40rem; margin: 0 auto; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <!-- Everything the form needs is on the tag: where it is, how it looks, the language. The server
+           decides nothing about the page; the glue only wires the form to the submissions endpoint. -->
+      <datum-form id="f" locale="en" src="/api/forms/contact/definition"></datum-form>
+    </main>
+
+    <script type="module" src="/datum/assets/datum-host.js"></script>
+    <script type="module">
+      // Loads datum-form.js from the versioned assets path (host.json names it), then sends each accepted
+      // submission to POST /api/submissions with the CSRF header when the application has one.
+      await DatumHost.load({ bundle: 'form' });
+      DatumHost.submit(document.getElementById('f'));
+    </script>
+  </body>
+</html>

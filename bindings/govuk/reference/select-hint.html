@@ -1,0 +1,46 @@
+<!-- datum-reference
+{
+  "source": "govuk-frontend 6.6.0: components/select/template.njk with options of this case",
+  "note": "a select with a hint",
+  "components": [
+    {
+      "id": "field1",
+      "type": "select",
+      "configuration": {
+        "label": "Sort by",
+        "description": "Choose how the results are ordered.",
+        "required": true,
+        "options": [
+          {
+            "value": "published",
+            "label": "Recently published"
+          },
+          {
+            "value": "updated",
+            "label": "Recently updated"
+          },
+          {
+            "value": "views",
+            "label": "Most views"
+          }
+        ]
+      }
+    }
+  ],
+  "root": "form",
+  "width": 560,
+  "init": "window.GOVUKFrontend.initAll();"
+}
+-->
+<form novalidate>
+<div class="govuk-form-group">
+<label class="govuk-label" for="field1"> Sort by </label>
+<div id="field1-hint" class="govuk-hint"> Choose how the results are ordered. </div>
+<select class="govuk-select" id="field1" name="field1" aria-describedby="field1-hint">
+<option value="">Select…</option>
+<option value="published">Recently published</option>
+<option value="updated">Recently updated</option>
+<option value="views">Most views</option>
+</select>
+</div>
+</form>

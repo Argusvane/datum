@@ -1,0 +1,267 @@
+# Release workflow of the npm packages.
+#
+# NOT EXERCISED YET. The publish job names a GitHub environment, "npm", and reads a secret, NPM_TOKEN: before the first tag the
+# owner creates the environment in the repository settings (Settings, Environments) with a required reviewer, and stores an
+# automation token that can publish the @argusvane scope and the four bare command names in it. The publish jobs wait for that
+# reviewer and nothing else: GitHub creates an environment that does not exist on its first use with no protection rules, so
+# a pushed tag publishes unapproved until the environment is configured. The publish jobs also run only in argusvane/datum, so a fork or a
+# mirror never publishes. The build job runs for every tag. npm "trusted publishing" would replace the token once the packages
+# exist; provenance needs no token.
+#
+# A tag v<version> (the one tag of a release, shared with the other hosts) runs: build (the tagged commit must be on main, every
+# published package carries the tag's version, the web components and the two command packages are built, the source maps are
+# split off into a release asset, the pack tests run, each package is packed and the tarballs checked, and installed into an empty
+# project) -> publish (the tarballs, in dependency order, with provenance, behind the reviewer; a version the registry holds with the same tarball is skipped, with another one fails) -> release-assets (the source maps, the script
+# bundles and the checksums of the tarballs are attached to the GitHub Release of the tag; when the tag has no Release yet, one is created as a draft, marked
+# as a prerelease when the version has a hyphen). The build job first requires a green ci.yml run on the tagged commit.
+#
+# Published: @argusvane/datum (the built bundles and their types), @argusvane/datum-conformance-suite and @argusvane/datum-form-test,
+# then the four bare names datum-form-test, datum-host-check, datum-security-check and datum-binding-check, which only forward to them.
+# The engine, the PDF kernel, the QuickJS host and the submissions server stay private: the bundles carry their code.
+# The list and the order are scripts/npm/packages.mjs; scripts/npm/release.mjs is every check and `npm pack` step below, and
+# `npm publish` appears in the publish job only.
+#
+# Every action is pinned by commit SHA (the comment names the release).
+name: Release npm
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-npm
+  cancel-in-progress: false
+
+env:
+  FORCE_COLOR: "0"
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      # Reads the ci.yml runs of the tagged commit (the check below); the token can write nothing.
+      actions: read
+    env:
+      # packages/datum keeps its source maps through the build; packages/datum/scripts/release-assets.mjs archives them as a release
+      # asset and takes them (and the comments that point at them) out of dist before the tarball is packed.
+      DATUM_SOURCE_MAPS: "1"
+    steps:
+      - name: Checkout the tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # Full history, so the next step can tell whether the tagged commit is on main.
+          fetch-depth: 0
+
+      # A release is cut from main only: a tag pushed on any other branch stops here, before anything is built.
+      - name: Refuse a tag whose commit is not on main
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::The tagged commit $GITHUB_SHA is not on main; a release is built from main only."
+            exit 1
+          fi
+
+      # A release is built from a commit whose CI is green: a ci.yml run on the tagged commit must have concluded success, and
+      # its ci-ok job (the gate that waits for every other job) must have passed.
+      - name: Require a green CI run on the tagged commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&status=success&per_page=100" --jq '.workflow_runs[].id')
+          for run in $runs; do
+            gate=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run/jobs?per_page=100" --jq '[.jobs[] | select(.name == "ci-ok") | .conclusion] | first // ""')
+            if [ "$gate" = "success" ]; then
+              echo "CI run $run passed ci-ok on $GITHUB_SHA"
+              exit 0
+            fi
+          done
+          echo "::error::No ci.yml run on $GITHUB_SHA concluded success with ci-ok passing; push the commit to main, wait for CI, then tag it."
+          exit 1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      # The tag names the version: every published package must already carry it, the forwarders must pin it, and the
+      # packages whose code the bundles carry must still be private.
+      - name: Assert the tag version equals every package version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: node scripts/npm/release.mjs check --version "${TAG#v}"
+
+      # Installs the engine, the QuickJS host, the PDF kernel and packages/datum, and builds them (the check-bundles gates run in it).
+      - name: Build the web components
+        uses: ./.github/actions/build-datum
+
+      # The two command packages bundle the engine, the QuickJS host and the PDF kernel's sources, and the suite's tests run
+      # a submissions server, so those four are installed first.
+      - name: Install the command packages
+        run: |
+          (cd packages/submissions && npm ci)
+          (cd packages/conformance-suite && npm ci)
+          (cd packages/form-test && npm ci)
+
+      - name: Build the conformance suite
+        run: npm run build
+        working-directory: packages/conformance-suite
+
+      - name: Build the form-test command
+        run: npm run build
+        working-directory: packages/form-test
+
+      # The build kept the maps: archive them (and the script bundles) for the Release, then strip dist to the shape the tarball carries.
+      - name: Split the source maps off the web components
+        run: node packages/datum/scripts/release-assets.mjs --out "$RUNNER_TEMP/release/assets"
+
+      # What a tarball carries, on each package: LICENSE, NOTICE and README, entry points present, no source, tests, maps or build path.
+      - name: Pack tests
+        run: |
+          (cd packages/datum && npx vitest run --root . --maxWorkers=2 tests/npm-pack.test.ts)
+          (cd packages/conformance-suite && npx vitest run --maxWorkers=2 tests/pack.test.ts tests/cli-forwarders.test.ts)
+          (cd packages/form-test && npx vitest run --maxWorkers=2 tests/pack.test.ts)
+
+      - name: Pack every package and check the tarballs
+        run: node scripts/npm/release.mjs pack --out "$RUNNER_TEMP/release/npm"
+
+      # Each tarball installed into an empty project, no repository beside it: the commands answer and the engine entry loads.
+      - name: Install the tarballs and run them
+        run: node scripts/npm/release.mjs smoke --dir "$RUNNER_TEMP/release/npm"
+
+      # The release folders are under the runner's temp folder, so nothing the build wrote belongs in the checkout.
+      - name: Tree is clean
+        run: test -z "$(git status --porcelain)"
+
+      - name: Upload the tarballs
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: npm-tarballs
+          path: ${{ runner.temp }}/release/npm
+          if-no-files-found: error
+      - name: Upload the release assets
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-assets
+          path: ${{ runner.temp }}/release/assets
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    # Only the canonical repository publishes: a fork or a mirror that receives the tag stops after the build job.
+    if: github.repository == 'argusvane/datum'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # The reviewers required on this environment (Settings, Environments) are what makes the job wait for approval; the
+    # environment must be configured before the first tag, as GitHub creates a missing one with no protection.
+    environment: npm
+    permissions:
+      contents: read
+      # The one place the OIDC token is available: npm signs the provenance statement with it.
+      id-token: write
+    steps:
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Download the tarballs
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: npm-tarballs
+          path: npm
+
+      # The tarballs published are the ones the build job checked: their checksums, then each in PUBLISH_ORDER (the scoped
+      # packages before the forwarders that depend on them). INTEGRITY holds the registry's digest of each tarball, written by
+      # the pack step. A version the registry already holds is skipped only when its dist.integrity is that digest, so a rerun
+      # after a partial failure publishes what is missing and never overwrites; a name and version held by anyone else, or
+      # by another build of this one, answers a different digest and fails the job. An empty answer means the version is not
+      # published: a missing version can exit 0 with no output, so the answer is compared, not the exit status.
+      - name: Publish with provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        working-directory: npm
+        run: |
+          set -euo pipefail
+          sha256sum --check SHA256SUMS
+          while read -r file; do
+            name=$(tar -xzOf "$file" package/package.json | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0, "utf8")).name)')
+            version=$(tar -xzOf "$file" package/package.json | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0, "utf8")).version)')
+            expected=$(awk -v file="$file" '$2 == file { print $1 }' INTEGRITY)
+            if [ -z "$expected" ]; then
+              echo "::error::INTEGRITY holds no digest for $file"
+              exit 1
+            fi
+            published=$(npm view "$name@$version" dist.integrity 2>/dev/null < /dev/null || true)
+            if [ "$published" = "$expected" ]; then
+              echo "::notice::$name@$version is already published with this tarball; skipped"
+              continue
+            fi
+            if [ -n "$published" ]; then
+              echo "::error::$name@$version is on the registry with a different tarball ($published, this build $expected); not published"
+              exit 1
+            fi
+            # A prerelease version never takes the "latest" tag: npm install of the bare name must not pick it up.
+            tag=latest
+            case "$version" in *-*) tag=next ;; esac
+            # The loop reads PUBLISH_ORDER from its stdin: npm must not read it.
+            npm publish "$file" --provenance --access public --tag "$tag" < /dev/null
+          done < PUBLISH_ORDER
+
+  release-assets:
+    needs: publish
+    if: github.repository == 'argusvane/datum'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    # Both release workflows of a tag create-or-find the same draft Release, then upload to it. One group, named by the tag and
+    # shared across the two workflows, runs the jobs one after the other, so neither can look for the Release while the other is
+    # between its own look and its create. A queued job waits for the running one; a rerun queued
+    # behind a pending one replaces it.
+    concurrency:
+      group: release-assets-${{ github.ref_name }}
+      cancel-in-progress: false
+    permissions:
+      # Creates the draft Release and attaches the files: nothing else in the workflow can write to the repository.
+      contents: write
+    steps:
+      - name: Download the release assets
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-assets
+          path: assets
+
+      # The checksums of the published tarballs, next to the ones of the archives, so a download can be compared with the
+      # registry's. Only the checksum list is attached; the tarballs are on the registry.
+      - name: Download the tarballs' checksums
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: npm-tarballs
+          path: npm
+      - name: Name the tarballs' checksum list
+        run: cp npm/SHA256SUMS assets/SHA256SUMS-npm
+
+      # The Release is a draft with a one-line note: the owner writes the notes from CHANGELOG.md and publishes it. A
+      # Release that exists already (a rerun, or created by hand) is kept and the files replace the ones of the same name.
+      # Neither the Maven release (run by hand, docs/releasing.md) nor the PyPI workflow writes notes; the Maven checksum list
+      # is attached by hand to this draft.
+      # The release-fastapi workflow attaches to the same draft for the tag; the two release-assets jobs share a concurrency group,
+      # so the look and the create of one never interleave with the other's.
+      - name: Attach the source maps, the script bundles and the checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            # A version with a hyphen is a prerelease: its Release is marked so, as its npm tag is "next".
+            flags=()
+            case "$TAG" in *-*) flags+=(--prerelease) ;; esac
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --verify-tag --title "$TAG" --notes "Datum $TAG" "${flags[@]}"
+          fi
+          gh release upload "$TAG" assets/* --repo "$GITHUB_REPOSITORY" --clobber

@@ -1,0 +1,106 @@
+name: Pages
+
+# The marketing site (site/) is deployed by hand: run this workflow from the Actions tab (workflow_dispatch) once the
+# domain and the Pages setting are ready. No push starts it, so a push never publishes the site. One-time repository
+# setup: Settings → Pages → Build and deployment → Source: "GitHub Actions". The site has no file: dependency on the
+# engine or the packages, but its home page's live demo loads the built bundles, so the job builds packages/datum
+# first, then every plugin package (each builds its own bundle into its own dist),
+# and copies what the demo needs into site/public/demo before the site's own install + build.
+on:
+  workflow_dispatch:
+
+# Read-only by default. The build job runs package installs, so it holds no write scope and no OIDC token; only
+# the deploy job below can publish.
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      # configure-pages reads the Pages settings (the site's base path and address).
+      pages: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            site/package-lock.json
+            packages/datum/package-lock.json
+            packages/quickjs-wasm-host/package-lock.json
+            packages/pdf-kernel/package-lock.json
+            plugins/*/package-lock.json
+            bindings/*/package-lock.json
+            engine/package-lock.json
+
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      # The bundles the live demo loads, built the way the CI job builds them.
+      - name: Build the web components
+        uses: ./.github/actions/build-datum
+
+      # The plugin bundles (each package's own dist) the demo loads beside them.
+      - name: Build the plugin bundles
+        uses: ./.github/actions/build-plugin-packages
+
+      - name: Install site dependencies
+        run: npm ci
+        working-directory: site
+
+      # The reference bindings the binding pages draw live: each package's own bundle (dist) and the design
+      # system release it is pinned to (node_modules), which site/scripts/copy-binding-assets.mjs publishes.
+      - name: Build the reference bindings
+        run: |
+          for dir in bindings/*/; do
+            (cd "$dir" && npm ci && npm run build)
+          done
+
+      # Strict: a deploy without the bundles would ship the demo's fallback text.
+      - name: Copy the demo bundles
+        run: npm run demo-assets
+        working-directory: site
+
+      # The site is served from its own domain, at the root: the base path is "/" and the full
+      # address is the domain's. Both are set here rather than read from the Pages configuration,
+      # which reports a github.io address until the domain is configured, so a build never writes
+      # canonical links, link previews or a sitemap for the wrong host. SITE_BASE and SITE_URL
+      # repository variables override them for a build under another address.
+      - name: Build the site
+        run: npm run build
+        working-directory: site
+        env:
+          SITE_BASE: ${{ vars.SITE_BASE || '/' }}
+          SITE_URL: ${{ vars.SITE_URL }}
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

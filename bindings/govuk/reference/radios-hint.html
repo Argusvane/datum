@@ -1,0 +1,48 @@
+<!-- datum-reference
+{
+  "source": "govuk-frontend 6.6.0: components/radios/fixtures.json, fixture \"with hint\"",
+  "note": "radios with a legend and a hint",
+  "components": [
+    {
+      "id": "field1",
+      "type": "radio",
+      "configuration": {
+        "label": "Have you changed your name?",
+        "description": "This includes changing your last name or spelling your name differently.",
+        "required": true,
+        "options": [
+          {
+            "value": "yes",
+            "label": "Yes"
+          },
+          {
+            "value": "no",
+            "label": "No"
+          }
+        ]
+      }
+    }
+  ],
+  "root": "form",
+  "width": 560,
+  "init": "window.GOVUKFrontend.initAll();"
+}
+-->
+<form novalidate>
+<div class="govuk-form-group">
+<fieldset class="govuk-fieldset" aria-describedby="example-with-hint-hint">
+<legend class="govuk-fieldset__legend"> Have you changed your name? </legend>
+<div id="example-with-hint-hint" class="govuk-hint"> This includes changing your last name or spelling your name differently. </div>
+<div class="govuk-radios" data-module="govuk-radios">
+<div class="govuk-radios__item">
+<input class="govuk-radios__input" id="example-with-hint" name="example-with-hint" type="radio" value="yes">
+<label class="govuk-label govuk-radios__label" for="example-with-hint"> Yes </label>
+</div>
+<div class="govuk-radios__item">
+<input class="govuk-radios__input" id="example-with-hint-2" name="example-with-hint" type="radio" value="no">
+<label class="govuk-label govuk-radios__label" for="example-with-hint-2"> No </label>
+</div>
+</div>
+</fieldset>
+</div>
+</form>

@@ -1,0 +1,15 @@
+name: Install a plugin package
+description: >-
+  Installs one package under plugins/ (npm ci). Run install-datum first: every such
+  package is a devDependency on packages/datum. Expects Node to be set up already.
+inputs:
+  directory:
+    description: The package folder, for example plugins/icons-fontawesome.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Install the package dependencies
+      shell: bash
+      run: npm ci
+      working-directory: ${{ inputs.directory }}

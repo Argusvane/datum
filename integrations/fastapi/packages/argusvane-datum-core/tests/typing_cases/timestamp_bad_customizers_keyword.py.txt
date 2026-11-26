@@ -1,0 +1,7 @@
+from datum_core import Datum
+
+
+def wrong(draft: int) -> None: ...
+
+
+Datum(timestamp_request_customizers=[wrong])

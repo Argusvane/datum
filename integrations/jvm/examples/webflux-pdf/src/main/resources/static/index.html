@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Service request</title>
+    <style>
+      body { font: 16px/1.5 system-ui, sans-serif; margin: 0; padding: 2rem; }
+      main { max-width: 40rem; margin: 0 auto; }
+      #links { margin-top: 1rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <datum-form id="f" locale="en" src="/api/forms/intake/definition"></datum-form>
+      <p id="links" hidden>
+        Received. <a id="pdf" href="#">Download your receipt as a sealed PDF</a>
+      </p>
+    </main>
+
+    <script type="module" src="/datum/assets/datum-host.js"></script>
+    <script type="module">
+      // The glue loads the renderer from the versioned assets path and posts each accepted submission to
+      // POST /api/submissions; the accepted body names the id the PDF is read back under.
+      await DatumHost.load({ bundle: 'form' });
+      const form = document.getElementById('f');
+      DatumHost.submit(form);
+      form.addEventListener('datum-host-accepted', (event) => {
+        const id = event.detail && event.detail.id;
+        if (id) {
+          document.getElementById('pdf').href = '/receipts/' + encodeURIComponent(id) + '.pdf';
+          document.getElementById('links').hidden = false;
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-pdf-test-support</artifactId>
+  <packaging>jar</packaging>
+  <name>datum-pdf-test-support</name>
+  <description>Test helpers of datum-pdf that its -spring binding's tests share: the scripted PDF runtime and the PDF kernel fixtures. Never published.</description>
+  <properties>
+    <!-- Test helpers are not part of a release: neither the deploy plugin nor Central publishing may touch this module, and the
+         BOM does not list it (the root pom's central-publishing configuration also names it in excludeArtifacts). -->
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <skipPublishing>true</skipPublishing>
+  </properties>
+  <dependencies>
+    <!-- The helpers are written against the library, so they sit above it; datum-pdf's own tests compile the same sources
+         (build-helper in its pom) because a dependency from the library back on this module would be a cycle. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-pdf</artifactId>
+    </dependency>
+    <!-- The test frameworks the helpers are written against: compile scope here, test scope in a consumer. -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+    </dependency>
+  </dependencies>
+</project>

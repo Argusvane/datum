@@ -1,0 +1,49 @@
+<!-- datum-reference
+{
+  "source": "govuk-frontend 6.6.0: components/error-summary/template.njk with options of this case; components/input/template.njk with options of this case",
+  "note": "a required text field left empty and validated: the error summary and the field's error",
+  "components": [
+    {
+      "id": "field1",
+      "type": "text",
+      "configuration": {
+        "label": "National insurance number",
+        "description": "It’s on your National Insurance card, benefit letter, payslip or P60.",
+        "required": true,
+        "messages": {
+          "required": "Enter a National Insurance number in the correct format"
+        }
+      }
+    }
+  ],
+  "steps": [
+    {
+      "op": "validate"
+    }
+  ],
+  "root": "form",
+  "width": 560,
+  "init": "window.GOVUKFrontend.initAll();"
+}
+-->
+<form novalidate>
+<div class="govuk-error-summary" data-module="govuk-error-summary">
+<div role="alert">
+<h2 class="govuk-error-summary__title"> There is a problem </h2>
+<div class="govuk-error-summary__body">
+<ul class="govuk-list govuk-error-summary__list">
+<li>
+<a href="#field1">Enter a National Insurance number in the correct format</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="govuk-form-group govuk-form-group--error">
+<label class="govuk-label" for="field1"> National insurance number </label>
+<div id="field1-hint" class="govuk-hint"> It’s on your National Insurance card, benefit letter, payslip or P60. </div>
+<p id="field1-error" class="govuk-error-message">
+<span class="govuk-visually-hidden">Error:</span> Enter a National Insurance number in the correct format </p>
+<input class="govuk-input govuk-input--error" id="field1" name="field1" type="text" aria-describedby="field1-hint field1-error">
+</div>
+</form>

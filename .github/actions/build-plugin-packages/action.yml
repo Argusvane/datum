@@ -1,0 +1,16 @@
+name: Build the plugin bundles
+description: >-
+  Builds every package under plugins/ (npm ci, then npm run build in each), so that
+  plugins/<package>/dist holds the bundles site/scripts/copy-demo-assets.mjs copies. Loops over
+  the folders, so a new package needs no step here. Run build-datum first (the packages
+  build with the script that packages/datum exports and its node_modules). Expects Node
+  to be set up already.
+runs:
+  using: composite
+  steps:
+    - name: Install and build the plugin packages
+      shell: bash
+      run: |
+        for dir in plugins/*/; do
+          (cd "$dir" && npm ci && npm run build)
+        done

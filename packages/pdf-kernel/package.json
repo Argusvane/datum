@@ -1,0 +1,73 @@
+{
+  "name": "@argusvane/datum-pdf-kernel",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "author": "Argusvane <maintainers@argusvane.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/argusvane/datum.git",
+    "directory": "packages/pdf-kernel"
+  },
+  "homepage": "https://datum.argusvane.com",
+  "bugs": {
+    "url": "https://github.com/argusvane/datum/issues"
+  },
+  "keywords": [
+    "datum",
+    "forms",
+    "pdf",
+    "acroform",
+    "quickjs",
+    "wasm"
+  ],
+  "description": "The Datum PDF program: the engine's PDF model builder plus a layout and AcroForm kernel over @cantoo/pdf-lib, bundled into one portable program that runs in-process in JS hosts and inside QuickJS-WASM on any other.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./quickjs": {
+      "types": "./src/quickjs-provider.ts",
+      "import": "./src/quickjs-provider.ts"
+    },
+    "./fonts": {
+      "types": "./src/fonts.ts",
+      "import": "./src/fonts.ts"
+    },
+    "./program": "./dist/datum-pdf.program.js"
+  },
+  "files": [
+    "dist",
+    "src",
+    "fonts"
+  ],
+  "scripts": {
+    "build:program": "node ./scripts/build-program.mjs",
+    "build": "tsc -p tsconfig.build.json && npm run build:program",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build:program && vitest run",
+    "probe:quickjs": "node ./scripts/probe-quickjs-globals.mjs"
+  },
+  "dependencies": {
+    "@cantoo/pdf-lib": "2.11.1",
+    "@argusvane/datum-engine": "file:../../engine",
+    "@argusvane/datum-quickjs-wasm-host": "file:../quickjs-wasm-host",
+    "bidi-js": "1.1.0",
+    "dejavu-fonts-ttf": "2.37.3",
+    "fontkit": "3.0.0",
+    "linebreak": "2.0.0"
+  },
+  "devDependencies": {
+    "@jitl/quickjs-singlefile-mjs-release-sync": "0.32.0",
+    "@types/node": "^26.6.6",
+    "esbuild": "0.28.2",
+    "pdfjs-dist": "6.5.438",
+    "quickjs-emscripten-core": "0.32.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

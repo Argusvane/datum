@@ -1,0 +1,6 @@
+com.argusvane.datum.springweb.autoconfigure.DatumWebAutoConfiguration
+com.argusvane.datum.springweb.autoconfigure.DatumSecurityAutoConfiguration
+com.argusvane.datum.springweb.autoconfigure.DatumOpenApiAutoConfiguration
+com.argusvane.datum.springweb.autoconfigure.DatumActuatorAutoConfiguration
+com.argusvane.datum.springweb.autoconfigure.DatumMetricsAutoConfiguration
+com.argusvane.datum.springweb.autoconfigure.DatumJdbcAutoConfiguration

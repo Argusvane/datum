@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-pdf-spring</artifactId>
+  <packaging>jar</packaging>
+  <name>datum-pdf-spring</name>
+  <description>Datum PDF for Spring Boot: auto-configuration, datum.pdf.* properties and the MVC/WebFlux adapters over the datum-pdf library.</description>
+  <dependencies>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-sandbox</artifactId>
+    </dependency>
+    <!-- The framework-free library this module binds. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-pdf</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-spring-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-forms-spring</artifactId>
+    </dependency>
+    <!-- The runtime (PDF slots and program) comes from the sandbox binding, not from submissions. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-sandbox-spring</artifactId>
+    </dependency>
+    <!-- Kept for the receiver only: POST /pdf judges answers through the submission receiver, throttle and host context. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-submissions-spring</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webmvc</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webflux</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <!-- The timestamp client's HTTP rides RestClient.Builder when the application has Boot's REST client support
+         (customisers, observation, the request factory's proxy and timeouts, TLS bundles). Optional: without it the JDK's
+         HttpClient carries the request. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-restclient</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-http-client</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-configuration-processor</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <!-- The endpoints. Servlet types for the MVC adapter; OpenAPI annotations are inert without the jar, the group needs
+         springdoc; the web starters and springdoc's api modules are for the web tests only (as datum-submissions has them). -->
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>io.swagger.core.v3</groupId>
+      <artifactId>swagger-annotations-jakarta</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-common</artifactId>
+      <version>${springdoc.version}</version>
+      <optional>true</optional>
+    </dependency>
+    <!-- The web tests secure the real routes with datum-spring-web's matchers and JSON handlers, so every
+         refusal is shown made by Spring Security. No Boot security auto-configuration. -->
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-config</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-web</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webmvc</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webmvc-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webflux</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+      <version>${springdoc.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webflux-api</artifactId>
+      <version>${springdoc.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- RecordingObservations: a real ObservationRegistry that records each observation with its parent. -->
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-core-test-support</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- The library's test helpers (fixtures, fake runtimes) for the binding's tests. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-pdf-test-support</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <!-- Configuration metadata for datum.pdf.* (spring-configuration-metadata.json). -->
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-configuration-processor</artifactId>
+              <version>${spring-boot.version}</version>
+            </path>
+            <path>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-autoconfigure-processor</artifactId>
+              <version>${spring-boot.version}</version>
+            </path>
+          </annotationProcessorPaths>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

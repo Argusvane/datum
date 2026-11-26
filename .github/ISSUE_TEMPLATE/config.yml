@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question or share an idea
+    url: https://github.com/argusvane/datum/discussions
+    about: Questions about using Datum, ideas, and things to show go to GitHub Discussions. Issues are for bugs and missing pieces you can describe.
+  - name: Report a security vulnerability
+    url: https://github.com/argusvane/datum/blob/main/SECURITY.md
+    about: Do not open a public issue. Follow SECURITY.md to report privately.

@@ -1,0 +1,18 @@
+{
+  "designSystem": "Québec design system",
+  "binding": "src/index.ts",
+  "lang": "fr",
+  "stylesheets": [
+    "/node_modules/qc-trousse-sdg-1.6.1/dist/css/qc-sdg-rfz100.min.css"
+  ],
+  "scripts": [
+    {
+      "url": "/node_modules/qc-trousse-sdg-1.6.1/dist/js/qc-sdg.min.js",
+      "classic": true,
+      "attributes": {
+        "sdg-css-path": "/node_modules/qc-trousse-sdg-1.6.1/dist/css/qc-sdg-rfz100.min.css",
+        "sdg-assets-base-path": "/node_modules/qc-trousse-sdg-1.6.1/dist"
+      }
+    }
+  ]
+}

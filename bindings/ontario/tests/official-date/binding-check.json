@@ -1,0 +1,13 @@
+{
+  "designSystem": "Ontario Design System",
+  "binding": "binding.ts",
+  "stylesheets": [
+    "/node_modules/ontario-design-system-global-styles-9.2.2/dist/styles/css/compiled/ontario-theme.min.css"
+  ],
+  "scripts": [
+    "/node_modules/ontario-design-system-component-library-9.2.2/dist/ontario-design-system-components/ontario-design-system-components.esm.js"
+  ],
+  "roots": [
+    "../.."
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "note": "tier 2: Datum's date in Fluent's elements and tokens, empty and required, with a hint, in Datum's part order",
+  "components": [
+    { "id": "start", "type": "date", "configuration": { "label": "Start date", "description": "For example, 14 5 2026.", "required": true } }
+  ],
+  "width": 560
+}

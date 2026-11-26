@@ -1,0 +1,15 @@
+{
+  "note": "tier 2: Datum's date in Alberta's pieces, empty: legend, help text, month dropdown, day and year boxes",
+  "components": [
+    {
+      "id": "start",
+      "type": "date",
+      "configuration": {
+        "label": "Start date",
+        "description": "For example, 5 14 2026.",
+        "required": true
+      }
+    }
+  ],
+  "width": 560
+}

@@ -1,0 +1,269 @@
+{
+  "id": "signed-intake",
+  "version": "1.0.0",
+  "schemaVersion": "1",
+  "localization": {
+    "defaultLocale": "en",
+    "supportedLocales": [
+      {
+        "code": "en",
+        "label": "English"
+      }
+    ]
+  },
+  "root": {
+    "id": "root",
+    "type": "form",
+    "configuration": {
+      "title": "Customer Intake",
+      "messages": {
+        "maxLength": "Keep it under {maxLength} characters."
+      }
+    },
+    "children": {
+      "content": [
+        {
+          "id": "fullName",
+          "type": "text",
+          "configuration": {
+            "label": "Full name",
+            "description": "As it appears on a government ID",
+            "required": true,
+            "messages": {
+              "required": "Enter your full name."
+            }
+          }
+        },
+        {
+          "id": "country",
+          "type": "select",
+          "configuration": {
+            "label": "Country",
+            "data": {
+              "sourceId": "countries"
+            }
+          }
+        },
+        {
+          "id": "contactMethod",
+          "type": "radio",
+          "configuration": {
+            "label": "Preferred contact method",
+            "options": [
+              {
+                "value": "email",
+                "label": "Email"
+              },
+              {
+                "value": "phone",
+                "label": "Phone"
+              }
+            ]
+          }
+        },
+        {
+          "id": "newsletter",
+          "type": "fieldset",
+          "configuration": {
+            "label": "Newsletter"
+          },
+          "children": {
+            "content": [
+              {
+                "id": "subscribe",
+                "type": "checkbox",
+                "configuration": {
+                  "label": "Subscribe to the newsletter"
+                }
+              },
+              {
+                "id": "newsletterEmail",
+                "type": "text",
+                "configuration": {
+                  "label": "Newsletter email",
+                  "pattern": "[^@\\s]+@[^@\\s]+\\.[^@\\s]+",
+                  "patternMessage": "Enter an email address."
+                },
+                "rules": {
+                  "visibleWhen": "subscribe"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "notes",
+          "type": "textarea",
+          "configuration": {
+            "label": "Additional notes",
+            "maxLength": 500
+          }
+        },
+        {
+          "id": "submit",
+          "type": "button",
+          "configuration": {
+            "label": "Submit",
+            "action": "submit"
+          }
+        }
+      ]
+    }
+  },
+  "pdf": {
+    "layouts": [
+      {
+        "id": "intake-record",
+        "kind": "generated",
+        "name": "Intake record",
+        "page": {
+          "footer": {
+            "height": 24
+          }
+        },
+        "root": {
+          "id": "document",
+          "type": "pdf-document",
+          "configuration": {},
+          "children": {
+            "body": [
+              {
+                "id": "title",
+                "type": "pdf-text",
+                "configuration": {
+                  "text": "Customer intake",
+                  "variant": "h1"
+                }
+              },
+              {
+                "id": "pdf-fullName",
+                "type": "pdf-field",
+                "configuration": {
+                  "componentId": "fullName"
+                }
+              },
+              {
+                "id": "pdf-country",
+                "type": "pdf-field",
+                "configuration": {
+                  "componentId": "country"
+                }
+              },
+              {
+                "id": "pdf-contactMethod",
+                "type": "pdf-field",
+                "configuration": {
+                  "componentId": "contactMethod"
+                }
+              },
+              {
+                "id": "sec-newsletter",
+                "type": "pdf-section",
+                "configuration": {
+                  "label": "Newsletter",
+                  "skipWhenEmpty": true
+                },
+                "children": {
+                  "content": [
+                    {
+                      "id": "pdf-subscribe",
+                      "type": "pdf-field",
+                      "configuration": {
+                        "componentId": "subscribe"
+                      }
+                    },
+                    {
+                      "id": "pdf-newsletterEmail",
+                      "type": "pdf-field",
+                      "configuration": {
+                        "componentId": "newsletterEmail"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "pdf-notes",
+                "type": "pdf-field",
+                "configuration": {
+                  "componentId": "notes"
+                }
+              },
+              {
+                "id": "sign-space",
+                "type": "pdf-spacer",
+                "configuration": {
+                  "height": 18
+                }
+              },
+              {
+                "id": "sign",
+                "type": "pdf-signature",
+                "configuration": {
+                  "fieldName": "applicant-signature",
+                  "label": "Signed by the applicant",
+                  "width": 220,
+                  "height": 56
+                }
+              }
+            ],
+            "header": [],
+            "footer": [
+              {
+                "id": "footer",
+                "type": "pdf-table",
+                "configuration": {
+                  "rows": 1,
+                  "columns": 2,
+                  "header": false,
+                  "borders": "none",
+                  "style": {
+                    "spacingBefore": 0,
+                    "spacingAfter": 0
+                  }
+                },
+                "children": {
+                  "r1c1": [
+                    {
+                      "id": "footer-title",
+                      "type": "pdf-text",
+                      "configuration": {
+                        "text": "Customer intake",
+                        "variant": "muted",
+                        "style": {
+                          "spacingBefore": 0,
+                          "spacingAfter": 0
+                        }
+                      }
+                    }
+                  ],
+                  "r1c2": [
+                    {
+                      "id": "footer-pages",
+                      "type": "pdf-text",
+                      "configuration": {
+                        "text": "Page {{page}} of {{pages}}",
+                        "variant": "muted",
+                        "align": "end",
+                        "style": {
+                          "spacingBefore": 0,
+                          "spacingAfter": 0
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "signature": {
+          "field": "applicant-signature",
+          "certify": "noChanges",
+          "reason": "Signed by the applicant"
+        }
+      }
+    ],
+    "defaultLayoutId": "intake-record"
+  }
+}

@@ -1,0 +1,9 @@
+from datum_core.timestamp import TsaSerialAllocator
+
+
+class Serials:
+    def allocate(self) -> str:
+        return "1"
+
+
+bad: TsaSerialAllocator = Serials()

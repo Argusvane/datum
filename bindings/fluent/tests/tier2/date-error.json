@@ -1,0 +1,8 @@
+{
+  "note": "tier 2: a required date left empty and validated: the error under the parts, the legend, the parts",
+  "components": [
+    { "id": "start", "type": "date", "configuration": { "label": "Start date", "description": "For example, 14 5 2026.", "required": true } }
+  ],
+  "steps": [ { "op": "validate" } ],
+  "width": 560
+}

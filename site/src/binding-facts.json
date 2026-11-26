@@ -1,0 +1,255 @@
+{
+  "datum": {
+    "behaviour": {
+      "pass": 9,
+      "fail": 0,
+      "skip": 0
+    },
+    "conformance": {
+      "pass": 73,
+      "fail": 0,
+      "skip": 2,
+      "pending": 0
+    },
+    "browser": "chromium",
+    "measuredOn": "2026-11-10"
+  },
+  "gcds": {
+    "release": "1.7.0",
+    "budgetKb": 14,
+    "gzipKb": 12.3,
+    "behaviour": {
+      "pass": 9,
+      "fail": 0,
+      "skip": 0
+    },
+    "conformance": {
+      "pass": 70,
+      "fail": 0,
+      "skip": 5,
+      "pending": 0
+    },
+    "browser": "chromium",
+    "measuredOn": "2026-11-10",
+    "equality": {
+      "tier1": 12,
+      "tier1Pass": 12,
+      "tier2": 12,
+      "pass": 24,
+      "fail": 0
+    }
+  },
+  "govuk": {
+    "release": "6.6.0",
+    "budgetKb": 10,
+    "gzipKb": 8.2,
+    "behaviour": {
+      "pass": 9,
+      "fail": 0,
+      "skip": 0
+    },
+    "conformance": {
+      "pass": 73,
+      "fail": 0,
+      "skip": 2,
+      "pending": 0
+    },
+    "browser": "chromium",
+    "measuredOn": "2026-11-10",
+    "equality": {
+      "tier1": 17,
+      "tier1Pass": 17,
+      "tier2": 0,
+      "pass": 17,
+      "fail": 0
+    }
+  },
+  "uswds": {
+    "release": "3.14.0",
+    "budgetKb": 12,
+    "gzipKb": 9.4,
+    "behaviour": {
+      "pass": 9,
+      "fail": 0,
+      "skip": 0
+    },
+    "conformance": {
+      "pass": 73,
+      "fail": 0,
+      "skip": 2,
+      "pending": 0
+    },
+    "browser": "chromium",
+    "measuredOn": "2026-11-10",
+    "equality": {
+      "tier1": 14,
+      "tier1Pass": 14,
+      "tier2": 0,
+      "pass": 14,
+      "fail": 0
+    }
+  },
+  "bootstrap": {
+    "release": "5.3.8",
+    "budgetKb": 12,
+    "gzipKb": 8.2,
+    "behaviour": {
+      "pass": 9,
+      "fail": 0,
+      "skip": 0
+    },
+    "conformance": {
+      "pass": 73,
+      "fail": 0,
+      "skip": 2,
+      "pending": 0
+    },
+    "browser": "chromium",
+    "measuredOn": "2026-11-10",
+    "equality": {
+      "tier1": 16,
+      "tier1Pass": 16,
+      "tier2": 0,
+      "pass": 16,
+      "fail": 0
+    }
+  },
+  "nova-scotia": {
+    "release": "663c256",
+    "budgetKb": 10.5,
+    "gzipKb": 8.3,
+    "behaviour": {
+      "pass": 9,
+      "fail": 0,
+      "skip": 0
+    },
+    "conformance": {
+      "pass": 68,
+      "fail": 0,
+      "skip": 7,
+      "pending": 0
+    },
+    "browser": "chromium",
+    "measuredOn": "2026-11-10",
+    "equality": {
+      "tier1": 14,
+      "tier1Pass": 14,
+      "tier2": 14,
+      "pass": 28,
+      "fail": 0
+    }
+  },
+  "alberta": {
+    "release": "3.2.0",
+    "budgetKb": 12,
+    "gzipKb": 10,
+    "behaviour": {
+      "pass": 9,
+      "fail": 0,
+      "skip": 0
+    },
+    "conformance": {
+      "pass": 68,
+      "fail": 0,
+      "skip": 7,
+      "pending": 0
+    },
+    "browser": "chromium",
+    "measuredOn": "2026-11-10",
+    "equality": {
+      "tier1": 11,
+      "tier1Pass": 11,
+      "tier2": 11,
+      "pass": 22,
+      "fail": 0
+    }
+  },
+  "quebec": {
+    "release": "1.6.1",
+    "budgetKb": 14,
+    "gzipKb": 12.6,
+    "behaviour": {
+      "pass": 9,
+      "fail": 0,
+      "skip": 0
+    },
+    "conformance": {
+      "pass": 68,
+      "fail": 0,
+      "skip": 7,
+      "pending": 0
+    },
+    "browser": "chromium",
+    "measuredOn": "2026-11-10",
+    "equality": {
+      "tier1": 12,
+      "tier1Pass": 12,
+      "tier2": 12,
+      "pass": 24,
+      "fail": 0
+    }
+  },
+  "ontario": {
+    "release": "9.2.2",
+    "budgetKb": 14,
+    "gzipKb": 11.5,
+    "behaviour": {
+      "pass": 9,
+      "fail": 0,
+      "skip": 0
+    },
+    "conformance": {
+      "pass": 67,
+      "fail": 0,
+      "skip": 8,
+      "pending": 0
+    },
+    "browser": "chromium",
+    "measuredOn": "2026-11-10",
+    "equality": {
+      "tier1": 15,
+      "tier1Pass": 15,
+      "tier2": 10,
+      "pass": 25,
+      "fail": 0
+    }
+  },
+  "fluent": {
+    "release": "3.2.1",
+    "budgetKb": 14,
+    "gzipKb": 10.4,
+    "behaviour": {
+      "pass": 6,
+      "fail": 0,
+      "skip": 1,
+      "known": 2
+    },
+    "conformance": {
+      "pass": 67,
+      "fail": 0,
+      "skip": 8,
+      "pending": 0
+    },
+    "browser": "chromium",
+    "measuredOn": "2026-11-14",
+    "knownDefects": [
+      {
+        "suite": "behaviour",
+        "case": "MV-01",
+        "reason": "Fluent's own fluent-field throws when it is taken out of the DOM and put back (its bundled FAST sets a getter-only slottedInputObserver), reproduced with Fluent's markup alone."
+      },
+      {
+        "suite": "behaviour",
+        "case": "MV-03",
+        "reason": "Fluent's own fluent-field throws when it is taken out of the DOM and put back (its bundled FAST sets a getter-only slottedInputObserver), reproduced with Fluent's markup alone."
+      }
+    ],
+    "equality": {
+      "tier1": 20,
+      "tier1Pass": 20,
+      "tier2": 8,
+      "pass": 28,
+      "fail": 0
+    }
+  }
+}

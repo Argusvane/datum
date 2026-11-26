@@ -1,0 +1,13 @@
+<!-- intake.csproj — beside Program.cs. ASP.NET Core for the endpoint; Wasmtime, the Bytecode Alliance's
+     .NET embedding of wasmtime, for the engine: the runtime main.py runs under, as a NuGet package that
+     carries its native library for Windows, macOS and Linux on x64 and arm64. Nothing else to install. -->
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Wasmtime" Version="44.0.0" />
+  </ItemGroup>
+</Project>

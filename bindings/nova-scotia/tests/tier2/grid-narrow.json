@@ -1,0 +1,33 @@
+{
+  "note": "the same grid in a narrow box: held as blocks, the labels shown",
+  "components": [
+    {
+      "id": "items",
+      "type": "dataGrid",
+      "configuration": {
+        "label": "Items",
+        "initialRows": 2,
+        "canReorder": true
+      },
+      "children": {
+        "content": [
+          {
+            "id": "item",
+            "type": "text",
+            "configuration": {
+              "label": "Item"
+            }
+          },
+          {
+            "id": "qty",
+            "type": "text",
+            "configuration": {
+              "label": "Quantity"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "width": 320
+}

@@ -1,0 +1,46 @@
+{
+  "name": "datum-site",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "author": "Argusvane <maintainers@argusvane.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/argusvane/datum.git",
+    "directory": "site"
+  },
+  "homepage": "https://datum.argusvane.com",
+  "bugs": {
+    "url": "https://github.com/argusvane/datum/issues"
+  },
+  "keywords": [
+    "datum",
+    "forms",
+    "documentation"
+  ],
+  "type": "module",
+  "description": "The Datum marketing site: a static Vite multi-page app deployed to GitHub Pages.",
+  "scripts": {
+    "dev": "node ./scripts/dev.mjs",
+    "build": "tsc --noEmit && node ./scripts/copy-demo-assets.mjs --if-present && node ./scripts/copy-binding-assets.mjs --if-present && vite build && vitepress build docs && node ./scripts/write-crawl-files.mjs",
+    "demo-assets": "node ./scripts/copy-demo-assets.mjs && node ./scripts/copy-binding-assets.mjs",
+    "binding-facts": "node ./scripts/collect-binding-facts.mjs",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
+    "docs:reference": "node ./scripts/gen-docs-reference.mjs",
+    "docs:examples": "node ./scripts/check-examples.mjs",
+    "dev:site": "vite"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "shiki": "^2.5.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitepress": "^1.6.4",
+    "vitest": "^5.0.5"
+  }
+}

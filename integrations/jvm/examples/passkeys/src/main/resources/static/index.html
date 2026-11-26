@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign the petition</title>
+    <style>
+      body { font: 16px/1.5 system-ui, sans-serif; margin: 0; padding: 2rem; }
+      main { max-width: 40rem; margin: 0 auto; }
+      .datum-signing-notice { border: 1px solid #888; padding: 0.75rem; margin: 0 0 1rem; }
+      .datum-signing-notice--error { border-color: #b00020; }
+      .datum-signing-notice button { margin-right: 0.5rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="/login">Sign in</a> (ada / ada), then <a href="/account.html">manage your passkeys</a>.</p>
+      <!-- The form signs: datum.webauthn.forms.petition.mode=required. The glue reads what it needs (scope, statement, relying party)
+           from GET /api/webauthn/passkeys?form=petition, gives the element a passkey signing provider, and offers to make a
+           passkey when the person has none. -->
+      <datum-form id="f" locale="en" src="/api/forms/petition/definition"></datum-form>
+    </main>
+
+    <script type="module" src="/datum/assets/datum-host.js"></script>
+    <script type="module">
+      await DatumHost.load({ bundle: 'form' });
+      const form = document.getElementById('f');
+      const passkeys = await DatumHost.passkeys(form, { formKey: 'petition' });
+      // headers: a browser without passkeys says so, to a form that accepts that (unavailable: accept).
+      DatumHost.submit(form, { headers: passkeys.headers });
+    </script>
+  </body>
+</html>

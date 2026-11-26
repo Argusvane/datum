@@ -1,0 +1,14 @@
+{
+  "designSystem": "GOV.UK Frontend",
+  "binding": "src/index.ts",
+  "stylesheets": [
+    "/node_modules/govuk-frontend-6.6.0/dist/govuk/govuk-frontend.min.css"
+  ],
+  "scripts": [
+    {
+      "url": "/node_modules/govuk-frontend-6.6.0/dist/govuk/all.bundle.js",
+      "classic": true
+    }
+  ],
+  "bodyClass": "govuk-frontend-supported"
+}

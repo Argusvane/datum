@@ -1,0 +1,26 @@
+<!-- datum-reference
+{
+  "source": "bootstrap 5.3.8: https://getbootstrap.com/docs/5.3/forms/form-control/ (Example textarea: label.form-label, textarea.form-control rows=3) with the help text of https://getbootstrap.com/docs/5.3/forms/overview/#form-text",
+  "note": "a textarea with help text",
+  "components": [
+    {
+      "id": "field1",
+      "type": "textarea",
+      "configuration": {
+        "label": "Comments",
+        "description": "Tell us what happened.",
+        "rows": 3
+      }
+    }
+  ],
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate>
+<div class="mb-3">
+<label class="form-label" for="field1">Comments</label>
+<textarea class="form-control" id="field1" name="field1" rows="3" aria-describedby="field1-hint"></textarea>
+<div id="field1-hint" class="form-text">Tell us what happened.</div>
+</div>
+</form>

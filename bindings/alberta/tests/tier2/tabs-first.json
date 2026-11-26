@@ -1,0 +1,53 @@
+{
+  "note": "Datum's tabs in goa-tabs' tokens: the indicator bar under the selected tab",
+  "components": [
+    {
+      "id": "sections",
+      "type": "tabs",
+      "configuration": {
+        "label": "Sections"
+      },
+      "children": {
+        "content": [
+          {
+            "id": "t1",
+            "type": "tab",
+            "configuration": {
+              "label": "Applicant"
+            },
+            "children": {
+              "content": [
+                {
+                  "id": "name",
+                  "type": "text",
+                  "configuration": {
+                    "label": "Name"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "id": "t2",
+            "type": "tab",
+            "configuration": {
+              "label": "Items"
+            },
+            "children": {
+              "content": [
+                {
+                  "id": "city",
+                  "type": "text",
+                  "configuration": {
+                    "label": "City"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "width": 560
+}

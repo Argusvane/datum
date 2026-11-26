@@ -1,0 +1,18 @@
+{
+  "note": "a disabled date",
+  "components": [
+    {
+      "id": "start",
+      "type": "date",
+      "configuration": {
+        "label": "Start date",
+        "description": "For example, 27 3 2027.",
+        "disabled": true
+      }
+    }
+  ],
+  "preset": {
+    "start": "2027-03-27"
+  },
+  "width": 560
+}

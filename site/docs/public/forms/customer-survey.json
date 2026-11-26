@@ -1,0 +1,23 @@
+{
+  "id": "customer-survey",
+  "version": "1.0.0",
+  "schemaVersion": "1",
+  "localization": {
+    "defaultLocale": "en",
+    "supportedLocales": [{ "code": "en", "label": "English" }]
+  },
+  "kinds": { "star-rating": "number" },
+  "root": {
+    "id": "root",
+    "type": "form",
+    "configuration": { "title": "Customer survey" },
+    "children": {
+      "content": [
+        { "id": "fullName", "type": "text", "configuration": { "label": "Full name", "required": true } },
+        { "id": "experience", "type": "star-rating", "configuration": { "label": "How was your experience?", "max": 5 } },
+        { "id": "comments", "type": "textarea", "configuration": { "label": "Anything else?", "maxLength": 500 } },
+        { "id": "submit", "type": "button", "configuration": { "label": "Submit", "action": "submit" } }
+      ]
+    }
+  }
+}

@@ -1,0 +1,209 @@
+{
+  "id": "household-support",
+  "version": "1.0.0",
+  "schemaVersion": "1",
+  "root": {
+    "id": "root",
+    "type": "form",
+    "configuration": {
+      "title": "Household support"
+    },
+    "children": {
+      "content": [
+        {
+          "id": "fullName",
+          "type": "text",
+          "configuration": {
+            "label": "Full name",
+            "required": true
+          }
+        },
+        {
+          "id": "email",
+          "type": "text",
+          "configuration": {
+            "label": "Email",
+            "required": true,
+            "pattern": "[^@\\s]+@[^@\\s]+\\.[^@\\s]+",
+            "patternMessage": "Enter an email address, like name@example.com."
+          }
+        },
+        {
+          "id": "household",
+          "type": "fieldset",
+          "configuration": {
+            "label": "Your household"
+          },
+          "children": {
+            "content": [
+              {
+                "id": "householdSize",
+                "type": "number",
+                "configuration": {
+                  "label": "People in your household",
+                  "required": true,
+                  "min": 1,
+                  "max": 20
+                }
+              },
+              {
+                "id": "annualIncome",
+                "type": "number",
+                "configuration": {
+                  "label": "Household income for the year",
+                  "description": "Before tax, in dollars",
+                  "required": true,
+                  "min": 0
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "consent",
+          "type": "checkbox",
+          "configuration": {
+            "label": "The answers I gave are true",
+            "required": true
+          }
+        },
+        {
+          "id": "submit",
+          "type": "button",
+          "configuration": {
+            "label": "Apply",
+            "action": "submit"
+          }
+        }
+      ]
+    }
+  },
+  "journey": {
+    "journeys": [
+      {
+        "id": "apply",
+        "name": "Apply",
+        "progress": "count",
+        "pages": [
+          {
+            "id": "you",
+            "title": "About you",
+            "components": [
+              "fullName",
+              {
+                "id": "contactEmail",
+                "type": "text",
+                "configuration": {
+                  "label": "Email we can reach you at",
+                  "description": "We send the decision here",
+                  "fills": "email",
+                  "required": true
+                }
+              }
+            ]
+          },
+          {
+            "id": "income",
+            "title": "Your income",
+            "components": [
+              "householdSize",
+              {
+                "id": "monthlyPay",
+                "type": "number",
+                "configuration": {
+                  "label": "Pay each month",
+                  "description": "Before tax"
+                }
+              },
+              {
+                "id": "monthlyOther",
+                "type": "number",
+                "configuration": {
+                  "label": "Other income each month",
+                  "description": "A pension, benefits, rent from a room"
+                }
+              },
+              {
+                "id": "yearlyIncome",
+                "type": "journey-value",
+                "configuration": {
+                  "to": "annualIncome",
+                  "value": {
+                    "kind": "arithmetic",
+                    "operator": "multiply",
+                    "left": {
+                      "kind": "call",
+                      "name": "sum",
+                      "args": [
+                        {
+                          "kind": "path",
+                          "path": "monthlyPay"
+                        },
+                        {
+                          "kind": "path",
+                          "path": "monthlyOther"
+                        }
+                      ]
+                    },
+                    "right": {
+                      "kind": "literal",
+                      "value": 12
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "id": "check",
+            "title": "Check and apply",
+            "components": [
+              "consent"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "renew",
+        "name": "Renew",
+        "progress": "count",
+        "pages": [
+          {
+            "id": "now",
+            "title": "Your household now",
+            "components": [
+              "household"
+            ]
+          },
+          {
+            "id": "contact",
+            "title": "How to reach you",
+            "components": [
+              "fullName",
+              "email",
+              "consent"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "short",
+        "name": "One page",
+        "heading": "hidden",
+        "pages": [
+          {
+            "id": "all",
+            "title": "Apply on one page",
+            "components": [
+              "fullName",
+              "email",
+              "household",
+              "consent"
+            ]
+          }
+        ]
+      }
+    ],
+    "defaultJourneyId": "apply"
+  }
+}

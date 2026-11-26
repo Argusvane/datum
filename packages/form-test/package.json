@@ -1,0 +1,95 @@
+{
+  "name": "@argusvane/datum-form-test",
+  "version": "0.1.0",
+  "private": false,
+  "license": "MIT",
+  "author": "Argusvane <maintainers@argusvane.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/argusvane/datum.git",
+    "directory": "packages/form-test"
+  },
+  "homepage": "https://datum.argusvane.com",
+  "bugs": {
+    "url": "https://github.com/argusvane/datum/issues"
+  },
+  "keywords": [
+    "datum",
+    "forms",
+    "testing",
+    "cli",
+    "vitest"
+  ],
+  "description": "Runs a Datum form's tests (scenarios over rules, journeys and verdicts) from the command line and from vitest: the scenarios stored with a definition and in .datum-test files, played on the browser runtime and on the validation kernel, with parity between the two, coverage of the form's rules, and JSON, JUnit and Markdown reports with CI exit codes.",
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/types/packages/form-test/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/packages/form-test/src/index.d.ts",
+      "import": "./dist/index.mjs"
+    },
+    "./vitest": {
+      "types": "./dist/types/packages/form-test/src/vitest.d.ts",
+      "import": "./dist/vitest.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "datum-form-test": "./bin/datum-form-test.mjs"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.map",
+    "bin",
+    "fixtures",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "node ../../scripts/npm/build-types.mjs && node scripts/build-cli.mjs && node ../../scripts/npm/bundle-licence.mjs datum-form-test dist/index.mjs dist/vitest.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "fixtures:write": "vite-node scripts/write-fixtures.ts",
+    "pack:smoke": "vitest run tests/pack.test.ts",
+    "prepack": "npm run build && node ../../scripts/npm/prepack.mjs",
+    "pack:check": "node ../../scripts/npm/pack-check.mjs ."
+  },
+  "peerDependencies": {
+    "vitest": ">=2.1.0",
+    "@codemirror/autocomplete": "^6.20.4",
+    "lit-html": "^3.3.3",
+    "quickjs-emscripten-core": "^0.32.0"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    },
+    "@codemirror/autocomplete": {
+      "optional": true
+    },
+    "lit-html": {
+      "optional": true
+    },
+    "quickjs-emscripten-core": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@argusvane/datum-engine": "file:../../engine",
+    "@argusvane/datum-quickjs-wasm-host": "file:../quickjs-wasm-host",
+    "@types/node": "^26.6.6",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2",
+    "vite-node": "^6.0.0",
+    "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,0 +1,132 @@
+{
+  "name": "@argusvane/datum-engine",
+  "version": "0.1.0",
+  "sideEffects": false,
+  "private": true,
+  "license": "MIT",
+  "author": "Argusvane <maintainers@argusvane.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/argusvane/datum.git",
+    "directory": "engine"
+  },
+  "homepage": "https://datum.argusvane.com",
+  "bugs": {
+    "url": "https://github.com/argusvane/datum/issues"
+  },
+  "keywords": [
+    "datum",
+    "forms",
+    "form-engine",
+    "validation",
+    "feel"
+  ],
+  "description": "Datum form engine package.",
+  "type": "module",
+  "main": "./form-engine/index.ts",
+  "types": "./form-engine/index.ts",
+  "exports": {
+    ".": {
+      "types": "./form-engine/index.ts",
+      "import": "./form-engine/index.ts"
+    },
+    "./core": {
+      "types": "./form-engine/core/index.ts",
+      "import": "./form-engine/core/index.ts"
+    },
+    "./builder": {
+      "types": "./form-engine/builder/index.ts",
+      "import": "./form-engine/builder/index.ts"
+    },
+    "./runtime": {
+      "types": "./form-engine/runtime/index.ts",
+      "import": "./form-engine/runtime/index.ts"
+    },
+    "./render": {
+      "types": "./form-engine/render/index.ts",
+      "import": "./form-engine/render/index.ts"
+    },
+    "./registry": {
+      "types": "./form-engine/registry/index.ts",
+      "import": "./form-engine/registry/index.ts"
+    },
+    "./data": {
+      "types": "./form-engine/data/index.ts",
+      "import": "./form-engine/data/index.ts"
+    },
+    "./persistence": {
+      "types": "./form-engine/persistence/index.ts",
+      "import": "./form-engine/persistence/index.ts"
+    },
+    "./plugins": {
+      "types": "./form-engine/plugins/index.ts",
+      "import": "./form-engine/plugins/index.ts"
+    },
+    "./verification/release-gates": {
+      "types": "./form-engine/verification/release-gates.ts",
+      "import": "./form-engine/verification/release-gates.ts"
+    },
+    "./verification/telemetry": {
+      "types": "./form-engine/verification/telemetry.ts",
+      "import": "./form-engine/verification/telemetry.ts"
+    },
+    "./testing": {
+      "types": "./form-engine/testing/index.ts",
+      "import": "./form-engine/testing/index.ts"
+    },
+    "./form-tests": {
+      "types": "./form-engine/core/form-tests/index.ts",
+      "import": "./form-engine/core/form-tests/index.ts"
+    },
+    "./logic": {
+      "types": "./form-engine/builder/logic/index.ts",
+      "import": "./form-engine/builder/logic/index.ts"
+    },
+    "./agent": {
+      "types": "./form-engine/agent/index.ts",
+      "import": "./form-engine/agent/index.ts"
+    },
+    "./tests/fixtures/*": {
+      "types": "./tests/fixtures/*.ts",
+      "import": "./tests/fixtures/*.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint:arch": "node ./scripts/check-architecture-boundaries.mjs",
+    "check:traceability": "node ./scripts/gen-feature-matrix.mjs --check",
+    "docs:agent-tools": "node ./scripts/gen-agent-tools-reference.mjs",
+    "docs:agent-tools:check": "node ./scripts/gen-agent-tools-reference.mjs --check",
+    "test:integration": "vitest run tests/integration",
+    "test:parity": "vitest run tests/integration/parity.test.ts",
+    "gates:collect": "node ./scripts/collect-gate-inputs.mjs",
+    "gates:evaluate": "node ./scripts/evaluate-gates.mjs",
+    "gates": "npm run build && npm run gates:collect && npm run gates:evaluate",
+    "builder-texts:template": "vite-node ./scripts/builder-texts-template.ts --",
+    "bench:feel": "vite-node ./scripts/bench-feel.mjs --",
+    "test:features": "node ./feature-coverage/run.mjs",
+    "test:print": "node ./print-fixtures/run.mjs",
+    "ci": "npm run lint:arch && npm run check:traceability && npm run docs:agent-tools:check && npm run typecheck && npm run test"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "esbuild": "^0.28.2",
+    "jsdom": "^31.0.1",
+    "playwright": "^1.65.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "^6.20.4",
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/language": "^6.13.1",
+    "@codemirror/lint": "^6.9.8",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.15",
+    "@lezer/highlight": "^1.2.5",
+    "lit-html": "^3.3.3"
+  }
+}

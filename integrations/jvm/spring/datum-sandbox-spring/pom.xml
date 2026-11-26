@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-sandbox-spring</artifactId>
+  <packaging>jar</packaging>
+  <name>datum-sandbox-spring</name>
+  <description>The sandbox for Spring Boot: the datum.runtime.* and datum.host.* properties mapped onto SandboxSettings, the engine and
+    DatumSandbox beans, the lifecycle, the runtime health check, the datum actuator endpoint, the run meters, the engine-selection
+    failure analyzer and the replacement decorators. The submissions and PDF bindings take their runtime from here.</description>
+  <dependencies>
+    <!-- The framework-free library this module binds. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-sandbox</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-spring-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-configuration-processor</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <!-- Optional: the datum endpoint (actuator) and the meters (Micrometer); their configurations are guarded by class name. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- The real engine jar, so the binding's selection is proved through its META-INF/services (an unknown id names "endive"
+         as the engine found; the default creates it). No runner jar, so here it runs as bytecode: the tests of the refusal and of
+         datum.runtime.allow-bytecode need exactly that. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-sandbox-endive</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- The shared test helpers (the library-boundary rule, the settings-record copy check, the recording observation registry);
+         datum-core-test-support is never published. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-core-test-support</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <!-- The sandbox's test helpers (the scripted TestRuntime, the stand-in programs); datum-sandbox-test-support is never
+         published. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-sandbox-test-support</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <!-- Configuration metadata for datum.runtime.* and datum.host.* (spring-configuration-metadata.json). -->
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-configuration-processor</artifactId>
+              <version>${spring-boot.version}</version>
+            </path>
+            <path>
+              <groupId>org.springframework.boot</groupId>
+              <artifactId>spring-boot-autoconfigure-processor</artifactId>
+              <version>${spring-boot.version}</version>
+            </path>
+          </annotationProcessorPaths>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -1,0 +1,20 @@
+{
+  "note": "a required date left empty and validated: Ontario's error line",
+  "components": [
+    {
+      "id": "start",
+      "type": "date",
+      "configuration": {
+        "label": "Start date",
+        "description": "For example, 2026 5 14.",
+        "required": true
+      }
+    }
+  ],
+  "steps": [
+    {
+      "op": "validate"
+    }
+  ],
+  "width": 560
+}

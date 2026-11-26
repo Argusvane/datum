@@ -1,0 +1,13 @@
+from typing import assert_never
+
+from datum_core.builder import BuilderOutcome, Declined, Saved
+
+
+def label(outcome: BuilderOutcome) -> str:
+    match outcome:
+        case Saved():
+            return "saved"
+        case Declined():
+            return "declined"
+        case _ as unreachable:
+            assert_never(unreachable)

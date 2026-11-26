@@ -1,0 +1,40 @@
+<!-- datum-reference
+{
+  "source": "bootstrap 5.3.8: https://getbootstrap.com/docs/5.3/components/buttons/ (button.btn.btn-primary, button.btn.btn-secondary) in a row spaced with the gap utility of https://getbootstrap.com/docs/5.3/utilities/flex/ (list-unstyled d-flex flex-wrap gap-2 mb-3)",
+  "note": "a primary and a secondary button in a row",
+  "components": [
+    {
+      "id": "actions",
+      "type": "button-group",
+      "configuration": {},
+      "children": {
+        "content": [
+          {
+            "id": "go",
+            "type": "button",
+            "configuration": {
+              "label": "Continue"
+            }
+          },
+          {
+            "id": "back",
+            "type": "button",
+            "configuration": {
+              "label": "Back",
+              "variant": "secondary"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate>
+<ul class="list-unstyled d-flex flex-wrap gap-2 mb-3">
+<li><button type="button" class="btn btn-primary">Continue</button></li>
+<li><button type="button" class="btn btn-secondary">Back</button></li>
+</ul>
+</form>

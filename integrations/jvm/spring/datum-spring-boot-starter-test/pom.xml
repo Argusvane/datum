@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-spring-boot-starter-test</artifactId>
+  <packaging>jar</packaging>
+  <name>datum-spring-boot-starter-test</name>
+  <description>Starter: test support for Datum applications (a fake sandbox runtime, fixture forms, MockMvc and WebTestClient helpers).</description>
+  <dependencies>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-sandbox</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-core</artifactId>
+    </dependency>
+    <!-- Not datum-sandbox-spring: the fake runtime orders itself before that auto-configuration by name (DatumTestAutoConfiguration),
+         so an application that has the sandbox binding gets the fake, and one that has none (the TSA server example) is not given
+         a runtime by this starter. -->
+    <!-- DatumTestForms implements datum-forms' FormDefinitionRepository. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-forms</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+    </dependency>
+    <!-- The host test kit: an application's tests run the same wire contracts as the Datum examples
+         and as a Quarkus binding would, through DatumTck. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-host-tck</artifactId>
+    </dependency>
+    <!-- The helpers for the stack the application does not use are never loaded: their dependencies are optional. -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webflux</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webmvc</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <!-- DatumMockMvcTester returns MvcTestResult, an AssertJ AssertProvider: the compiler needs AssertJ to read the type. An
+         application using the helper has it through spring-boot-starter-test. -->
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <optional>true</optional>
+    </dependency>
+
+    <!-- The starter's own tests: every capability's auto-configuration starts with the fake runtime. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-spring-boot-starter-pdf</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-spring-boot-starter-ui</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-spring-boot-starter-webauthn</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webmvc</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webmvc-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webflux</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+      <version>${springdoc.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webflux-api</artifactId>
+      <version>${springdoc.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>

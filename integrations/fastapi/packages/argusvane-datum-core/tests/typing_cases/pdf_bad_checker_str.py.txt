@@ -1,0 +1,14 @@
+from collections.abc import Sequence
+from datetime import datetime
+
+from datum_core.pdf import RevocationChecker
+
+
+class Loose:
+    def status(
+        self, chain: Sequence[bytes], moment: datetime, *, crls: Sequence[bytes] = (), ocsps: Sequence[bytes] = ()
+    ) -> str:
+        return "good"
+
+
+bad: RevocationChecker = Loose()

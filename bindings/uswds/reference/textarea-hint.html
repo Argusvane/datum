@@ -1,0 +1,28 @@
+<!-- datum-reference
+{
+  "source": "uswds 3.14.0: packages/usa-input/src/usa-input.twig (the textarea) with the hint of packages/usa-character-count/src/usa-character-count.twig; the required note of packages/templates/usa-address-form.twig above the fields",
+  "note": "a textarea with a hint",
+  "components": [
+    {
+      "id": "field1",
+      "type": "textarea",
+      "configuration": {
+        "label": "Tell us more",
+        "description": "Do not include personal information.",
+        "required": true,
+        "rows": 5
+      }
+    }
+  ],
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate class="usa-form usa-form--large">
+<p>Required fields are marked with an asterisk (<abbr title="required" class="usa-hint usa-hint--required">*</abbr>).</p>
+<div class="usa-form-group">
+<label class="usa-label" for="field1">Tell us more <abbr title="required" class="usa-hint usa-hint--required">*</abbr></label>
+<span class="usa-hint" id="field1-hint">Do not include personal information.</span>
+<textarea class="usa-textarea" id="field1" name="field1" rows="5" aria-describedby="field1-hint" required></textarea>
+</div>
+</form>

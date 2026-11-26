@@ -1,0 +1,26 @@
+{
+  "note": "a data grid: stacked rows, each a fieldset with the toolkit's buttons",
+  "components": [
+    {
+      "id": "items",
+      "type": "dataGrid",
+      "configuration": {
+        "label": "Items",
+        "initialRows": 2,
+        "canReorder": true
+      },
+      "children": {
+        "content": [
+          {
+            "id": "item",
+            "type": "text",
+            "configuration": {
+              "label": "Item"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "width": 560
+}

@@ -1,0 +1,31 @@
+-- Datum timestamp: the RFC 3161 server's log and its optional client keys (tables datum_tsa_log and
+-- datum_tsa_client). The log has one row per token, and the row's id is the token's serial number, taken before the
+-- token is signed. It keeps digests, never documents. H2 in PostgreSQL or MySQL mode accepts this as well.
+CREATE TABLE datum_tsa_log (
+    id          BIGINT NOT NULL AUTO_INCREMENT,
+    created     BIGINT       NOT NULL,
+    gen_time    VARCHAR(32)  NOT NULL,
+    algorithm   VARCHAR(16)  NOT NULL,
+    imprint     VARCHAR(128) NOT NULL,
+    policy      VARCHAR(255) NOT NULL,
+    fingerprint VARCHAR(64)  NOT NULL,
+    client      VARCHAR(64),
+    channel     VARCHAR(32)  NOT NULL DEFAULT 'http',
+    PRIMARY KEY (id)
+);
+CREATE INDEX datum_tsa_log_created ON datum_tsa_log (created);
+CREATE INDEX datum_tsa_log_imprint ON datum_tsa_log (imprint);
+CREATE INDEX datum_tsa_log_client ON datum_tsa_log (client);
+
+CREATE TABLE datum_tsa_client (
+    id        BIGINT NOT NULL AUTO_INCREMENT,
+    label     VARCHAR(255) NOT NULL DEFAULT '',
+    key_hash  CHAR(64)     NOT NULL,
+    key_hint  VARCHAR(16)  NOT NULL DEFAULT '',
+    created   BIGINT       NOT NULL,
+    last_used BIGINT       NOT NULL DEFAULT 0,
+    uses      BIGINT       NOT NULL DEFAULT 0,
+    revoked   BIGINT       NOT NULL DEFAULT 0,
+    PRIMARY KEY (id),
+    CONSTRAINT datum_tsa_client_key_hash UNIQUE (key_hash)
+);

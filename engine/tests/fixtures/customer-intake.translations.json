@@ -1,0 +1,105 @@
+{
+  "id": "customer-intake",
+  "version": "1.0.0",
+  "schemaVersion": "1.0.0",
+  "localization": {
+    "defaultLocale": "en",
+    "supportedLocales": [
+      { "code": "en", "label": "English" },
+      { "code": "fr-CA", "label": "Français" },
+      { "code": "es", "label": "Español" }
+    ]
+  },
+  "root": {
+    "id": "root",
+    "type": "form",
+    "configuration": {
+      "title": "Customer Intake",
+      "description": "Tell us how to reach you.",
+      "messages": { "required": "This is required." },
+      "chrome": {
+        "header": [
+          { "id": "welcome", "type": "heading", "text": "Apply for a benefit", "level": 1 },
+          { "id": "switcher", "type": "language-switcher", "label": "Language" }
+        ],
+        "footer": [
+          { "id": "help", "type": "text", "text": "Need help? Call us." }
+        ]
+      }
+    },
+    "children": {
+      "content": [
+        {
+          "id": "fullName",
+          "type": "text",
+          "configuration": {
+            "label": "Full name",
+            "description": "As it appears on a government ID",
+            "placeholder": "",
+            "required": true,
+            "messages": { "required": "Enter your full name." }
+          }
+        },
+        {
+          "id": "contact",
+          "type": "select",
+          "configuration": {
+            "label": "Preferred contact method",
+            "options": [
+              { "value": "email", "label": "Email" },
+              { "value": "phone", "label": "Phone", "description": "Weekdays only" },
+              { "value": "sms", "label": "Text message" }
+            ]
+          }
+        },
+        {
+          "id": "newsletterEmail",
+          "type": "text",
+          "configuration": {
+            "label": "Newsletter email",
+            "pattern": "^[^@]+@[^@]+$",
+            "patternMessage": "Enter an email address."
+          }
+        }
+      ]
+    }
+  },
+  "translations": {
+    "fr-CA": {
+      "form": {
+        "title": { "text": "Accueil des clients", "source": "18gf023" },
+        "messages": { "required": { "text": "Ce champ est obligatoire.", "source": "192rbe2" } }
+      },
+      "components": {
+        "fullName": {
+          "label": { "text": "Nom complet", "source": "13z0t9r" },
+          "description": { "text": "Tel qu'il apparaît sur une pièce d'identité", "source": "1u3kqke" },
+          "messages": { "required": { "text": "Entrez votre nom complet.", "source": "8bi3le" } }
+        },
+        "contact": {
+          "label": { "text": "Mode de contact préféré", "source": "1asuvwb" },
+          "options": {
+            "email": { "label": { "text": "Courriel", "source": "inbfc7" } },
+            "phone": { "label": { "text": "Téléphone", "source": "kb2lhr" }, "description": { "text": "En semaine seulement", "source": "4jphfk" } }
+          }
+        },
+        "newsletterEmail": {
+          "label": { "text": "Courriel de l'infolettre", "source": "fwj2oq" },
+          "patternMessage": { "text": "Entrez une adresse courriel.", "source": "smays6" }
+        }
+      },
+      "chrome": {
+        "welcome": { "text": { "text": "Demander une prestation", "source": "k25i2c" } },
+        "switcher": { "label": { "text": "Langue", "source": "16us7mj" } }
+      }
+    },
+    "es": {
+      "components": {
+        "fullName": { "label": { "text": "Nombre completo", "source": "13z0t9r" } },
+        "contact": {
+          "options": { "email": { "label": { "text": "Correo electrónico", "source": "inbfc7" } } }
+        }
+      }
+    }
+  }
+}

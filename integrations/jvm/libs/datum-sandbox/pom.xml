@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-sandbox</artifactId>
+  <packaging>jar</packaging>
+  <name>datum-sandbox</name>
+  <description>Datum sandbox: every WebAssembly concern of the JVM hosts in one framework-free library. The engine seam and the
+    hardened WASI run (wasi), the Datum run protocol (protocol), the lifecycle and settings (runtime), its events and
+    observations. An engine module (datum-sandbox-endive) plugs in through GuestRuntimeProvider.</description>
+  <dependencies>
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-core</artifactId>
+    </dependency>
+    <!-- The packaged programs and programs.json (their ABIs and sha256 pins), read by runtime.ProgramStore. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-programs</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <!-- The run harness's in-memory /app (wasi). Optional: an engine module declares Jimfs itself. -->
+    <dependency>
+      <groupId>com.google.jimfs</groupId>
+      <artifactId>jimfs</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-observation</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- The shared test helpers (the library-boundary rule, the settings-record copy check, the recording observation registry);
+         datum-core-test-support is never published. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-core-test-support</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <!-- The helpers the submissions library and the -spring bindings share with this module's own tests (the scripted
+             TestRuntime, the stand-in programs, the settings shorthand) live in datum-sandbox-test-support, which depends on this
+             module; a dependency back would be a cycle, so this module's tests compile the same sources from there. -->
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>shared-test-helpers</id>
+            <phase>generate-test-sources</phase>
+            <goals><goal>add-test-source</goal></goals>
+            <configuration>
+              <sources>
+                <source>${project.basedir}/../datum-sandbox-test-support/src/main/java</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

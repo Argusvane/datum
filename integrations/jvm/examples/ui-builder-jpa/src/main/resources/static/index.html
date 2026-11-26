@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Intake</title>
+    <style>
+      body { font: 16px/1.5 system-ui, sans-serif; margin: 0; padding: 2rem; }
+      main { max-width: 40rem; margin: 0 auto; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p><a href="/builder/">Build this form</a> (sign in as author / author).</p>
+      <!-- The public copy: server-secret rules are never in it. -->
+      <datum-form id="f" locale="en" src="/api/forms/intake/definition"></datum-form>
+    </main>
+    <script type="module" src="/datum/assets/datum-host.js"></script>
+    <script type="module">
+      await DatumHost.load({ bundle: 'form' });
+      DatumHost.submit(document.getElementById('f'));
+    </script>
+  </body>
+</html>

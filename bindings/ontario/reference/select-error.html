@@ -1,0 +1,34 @@
+<!-- datum-reference
+{
+  "note": "a required select left empty and validated The error summary in this file (the role=alert box, its aria-label and the heading words) is the binding's own, not Ontario's: Ontario has no summary component, so that part agrees with the binding by construction and checks only the field; tests/tier2/summary-error.json holds the summary to its own baseline.",
+  "components": [
+    {
+      "id": "province",
+      "type": "select",
+      "configuration": {
+        "label": "Province",
+        "required": true,
+        "options": [
+          {
+            "value": "ON",
+            "label": "Ontario"
+          },
+          {
+            "value": "QC",
+            "label": "Quebec"
+          }
+        ]
+      }
+    }
+  ],
+  "steps": [
+    {
+      "op": "validate"
+    }
+  ],
+  "source": "https://designsystem.ontario.ca/components/detail/dropdown-list.html and https://designsystem.ontario.ca/developer-docs/components/ (Ontario Design System), props per @ongov/ontario-design-system-component-library 9.2.2 (src/components/ontario-*/readme.md and the component sources)",
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate><div role="alert" tabindex="-1" aria-label="Errors were found on this page"><ontario-page-alert type="error" heading="Errors were found on this page"><ul><li><a href="#province">Province: This is a required field.</a></li></ul></ontario-page-alert></div><ontario-dropdown-list element-id="province" name="province" caption='{"captionText":"Province","captionType":"default"}' options='[{"value":"ON","label":"Ontario"},{"value":"QC","label":"Quebec"}]' is-empty-start-option="Select" required error-message="This is a required field." language="en"></ontario-dropdown-list></form>

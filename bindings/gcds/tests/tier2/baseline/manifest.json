@@ -1,0 +1,99 @@
+{
+  "format": 1,
+  "environment": {
+    "platform": "darwin",
+    "browser": "chromium 158.0.8127.18"
+  },
+  "files": {
+    "date-disabled.png": {
+      "sha256": "1b1deaeb919043c31131b5ee219eb24ef969fcfb1d55aea4b656dc4c1b3f2f06"
+    },
+    "date-empty.png": {
+      "sha256": "b374cbaa77d27084ada7e299dd00e6ace85d8a3e8d6de9ed33d2deba5cae9a4e"
+    },
+    "date-error.png": {
+      "sha256": "3fca535bb160863d5c0783f54309bbaa91ed56b4b0375d070193462e755eb7ca"
+    },
+    "date-french.png": {
+      "sha256": "e224bafddc550996fb06ecf9a0f98682c6432780fa4c46d1ea4c77bcc1b7d974"
+    },
+    "date-value.png": {
+      "sha256": "42703294fd611aa0fe04965eb5573642fdcbe6bd92b5bf40cde53661236d9470"
+    },
+    "grid-rows.png": {
+      "sha256": "ee8fb8e2e62568665bb29c6478c7fa3d287768d7eae05f689711af908d559994"
+    },
+    "number-affixed.png": {
+      "sha256": "b1734ce7d9896879825d97e4e1595babd8b733feac351a33727571f3611677b0"
+    },
+    "steps-first.png": {
+      "sha256": "2bec942ff7bcef9682a0d04b0a90c2712253c546c971aa9409c24cbdb6a5f7f5"
+    },
+    "text-affixed-error.png": {
+      "sha256": "58192cbf5b344a9c2519aff0a1e19f13761f6ac8b9b1bfc74cb7ae36cc14e1d5"
+    },
+    "text-affixed.png": {
+      "sha256": "3d126a16823010ca95e59125a1c153f42c37b9278c1e4b9b3a58c015df6b2a3e"
+    },
+    "textarea-count-over.png": {
+      "sha256": "bda0b69aba2e18544d29a0be0839555cab0f193fd10ed2b4708a5bebc92ea24e"
+    },
+    "textarea-count.png": {
+      "sha256": "78e727995694ecf8bd65368c55ef75cec50991d12a1943af4dd5217992eb5ed2"
+    }
+  },
+  "signOff": {
+    "reviewer": "Argusvane maintainers",
+    "date": "2026-11-11",
+    "pngs": [
+      {
+        "file": "date-disabled.png",
+        "sha256": "1b1deaeb919043c31131b5ee219eb24ef969fcfb1d55aea4b656dc4c1b3f2f06"
+      },
+      {
+        "file": "date-empty.png",
+        "sha256": "b374cbaa77d27084ada7e299dd00e6ace85d8a3e8d6de9ed33d2deba5cae9a4e"
+      },
+      {
+        "file": "date-error.png",
+        "sha256": "3fca535bb160863d5c0783f54309bbaa91ed56b4b0375d070193462e755eb7ca"
+      },
+      {
+        "file": "date-french.png",
+        "sha256": "e224bafddc550996fb06ecf9a0f98682c6432780fa4c46d1ea4c77bcc1b7d974"
+      },
+      {
+        "file": "date-value.png",
+        "sha256": "42703294fd611aa0fe04965eb5573642fdcbe6bd92b5bf40cde53661236d9470"
+      },
+      {
+        "file": "grid-rows.png",
+        "sha256": "ee8fb8e2e62568665bb29c6478c7fa3d287768d7eae05f689711af908d559994"
+      },
+      {
+        "file": "number-affixed.png",
+        "sha256": "b1734ce7d9896879825d97e4e1595babd8b733feac351a33727571f3611677b0"
+      },
+      {
+        "file": "steps-first.png",
+        "sha256": "2bec942ff7bcef9682a0d04b0a90c2712253c546c971aa9409c24cbdb6a5f7f5"
+      },
+      {
+        "file": "text-affixed-error.png",
+        "sha256": "58192cbf5b344a9c2519aff0a1e19f13761f6ac8b9b1bfc74cb7ae36cc14e1d5"
+      },
+      {
+        "file": "text-affixed.png",
+        "sha256": "3d126a16823010ca95e59125a1c153f42c37b9278c1e4b9b3a58c015df6b2a3e"
+      },
+      {
+        "file": "textarea-count-over.png",
+        "sha256": "bda0b69aba2e18544d29a0be0839555cab0f193fd10ed2b4708a5bebc92ea24e"
+      },
+      {
+        "file": "textarea-count.png",
+        "sha256": "78e727995694ecf8bd65368c55ef75cec50991d12a1943af4dd5217992eb5ed2"
+      }
+    ]
+  }
+}

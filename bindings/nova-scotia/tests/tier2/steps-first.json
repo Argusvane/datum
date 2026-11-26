@@ -1,0 +1,53 @@
+{
+  "note": "steps: the library's progress tracker over the first panel, then Continue",
+  "components": [
+    {
+      "id": "wiz",
+      "type": "steps",
+      "configuration": {
+        "label": "Application"
+      },
+      "children": {
+        "content": [
+          {
+            "id": "s1",
+            "type": "step",
+            "configuration": {
+              "label": "About you"
+            },
+            "children": {
+              "content": [
+                {
+                  "id": "name",
+                  "type": "text",
+                  "configuration": {
+                    "label": "Name"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "id": "s2",
+            "type": "step",
+            "configuration": {
+              "label": "Where"
+            },
+            "children": {
+              "content": [
+                {
+                  "id": "city",
+                  "type": "text",
+                  "configuration": {
+                    "label": "City"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "width": 560
+}

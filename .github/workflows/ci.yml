@@ -1,0 +1,1439 @@
+name: CI
+
+# Every push to main or master and every pull request, and on demand from the Actions tab or with
+# `gh workflow run ci.yml` (a manual run starts every job; a push or pull request starts each job
+# only for the paths it builds from, see the `changes` job).
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+# Read-only token: no job writes to the repository (artifacts need no extra permission).
+permissions:
+  contents: read
+
+# One run per branch or pull request at a time: a newer push cancels the run its predecessor
+# started, so a burst of pushes (or of Dependabot rebases) does not queue thirty-odd jobs each.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # Only a pull request's superseded run is cancelled: it is re-judged against its base. A push
+  # run finishes, because the heavy jobs judge only that push's own diff, so a cancelled run
+  # would leave its changes untested.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # Which areas of the tree this push or pull request touches. Every other job except secret-scan and process-references
+  # lists this job in `needs` (the plugin rows through `packages`) and runs only when its area is true; a job whose
+  # area is false is reported as skipped, not failed, and keeps its name. A change confined to, say,
+  # integrations/ or tools/ starts only the jobs that build from it.
+  #
+  # The file list is plain git (.github/scripts/changed-areas.mjs holds the path lists, which are
+  # the source of truth for the table below): a push diffs the "before" commit with the new head, a
+  # pull request diffs the base with the head. A manual run, a new branch (all-zero "before"), a
+  # force push whose old commit is gone, or a failed diff makes every area true. Every area includes
+  # .github/workflows/ci.yml, the script itself and the composite actions its jobs use.
+  #
+  #   output                  gates (job)                       runs when a path under one of these changed
+  #   fastapi                 fastapi                           integrations/fastapi, integrations/shared, root package.json +
+  #                                                             scripts/, engine, packages/{datum,pdf-kernel,quickjs-wasm-host,
+  #                                                             submissions,conformance-suite}
+  #   bindings                binding <id> (9), binding <id>    bindings, packages/datum, packages/conformance-suite, engine
+  #                           (<browser>) (4)
+  #   feature_coverage        feature-coverage                  engine
+  #   datum_browser           datum-visual-browser,             packages/datum, packages/pdf-kernel,
+  #                           datum-a11y-browser                packages/quickjs-wasm-host, engine, docs/generated
+  #   quickjs_wasm_host       quickjs-wasm-host (3 Node)        packages/quickjs-wasm-host, engine
+  #   pdf_kernel              pdf-kernel (3 Node)               packages/pdf-kernel, + quickjs_wasm_host paths
+  #   submissions             submissions (3 Node)              packages/submissions, + pdf_kernel paths
+  #   conformance_suite       conformance-suite (3 Node)        packages/conformance-suite, + submissions paths, integrations/shared,
+  #                                                             integrations/jvm/{libs,tck}, docs/reference/agent-tools.md,
+  #                                                             packages/datum/scripts/write-sandbox-program.ts, the npm release
+  #                                                             (scripts/npm, packages/cli-forwarders, packages/datum/notices/texts,
+  #                                                             packages/datum/scripts/notices-lib.mjs, release-npm.yml)
+  #   form_test               form-test (3 Node)                packages/form-test, + quickjs_wasm_host paths, the npm release
+  #                                                             (the same five paths as conformance_suite)
+  #   host_scripts            host-scripts (3 Node)             integrations/{fastapi,jvm,shared}, root package.json + scripts/,
+  #                                                             site/scripts, packages/conformance-suite/binding-check
+  #   offline                 offline                           scripts/offline, site/scripts, bindings, plugins,
+  #                                                             packages/{datum,conformance-suite}, + pdf_kernel paths
+  #   piv_agent               piv-agent (4 Python)              tools/piv-agent
+  #   engine                  engine                            engine, docs, plugins, packages
+  #   datum                   datum                             packages/datum, + pdf_kernel paths, bindings,
+  #                                                             docs/reference, the third-party notices files, scripts/npm,
+  #                                                             release-npm.yml
+  #   site                    site                              site, docs, README.md, root scripts/, plugins, bindings,
+  #                                                             packages/{datum,conformance-suite}, + pdf_kernel paths
+  #   conformance_suite_artifacts  conformance-suite-artifacts  packages/{conformance-suite,datum}, + pdf_kernel paths
+  #   plugins                 packages, plugin <package>        plugins, packages/datum, + pdf_kernel paths
+  changes:
+    # Dependabot's pull requests run no CI at all: every job needs this one (the plugin rows through
+    # `packages`), so skipping it skips them all, at no cost in minutes, and `ci-ok` then fails. To test one of its branches,
+    # start a manual run on it: `gh workflow run ci.yml --ref <dependabot branch>`.
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      fastapi: ${{ steps.areas.outputs.fastapi }}
+      bindings: ${{ steps.areas.outputs.bindings }}
+      feature_coverage: ${{ steps.areas.outputs.feature_coverage }}
+      datum_browser: ${{ steps.areas.outputs.datum_browser }}
+      quickjs_wasm_host: ${{ steps.areas.outputs.quickjs_wasm_host }}
+      pdf_kernel: ${{ steps.areas.outputs.pdf_kernel }}
+      submissions: ${{ steps.areas.outputs.submissions }}
+      conformance_suite: ${{ steps.areas.outputs.conformance_suite }}
+      form_test: ${{ steps.areas.outputs.form_test }}
+      host_scripts: ${{ steps.areas.outputs.host_scripts }}
+      offline: ${{ steps.areas.outputs.offline }}
+      piv_agent: ${{ steps.areas.outputs.piv_agent }}
+      engine: ${{ steps.areas.outputs.engine }}
+      datum: ${{ steps.areas.outputs.datum }}
+      site: ${{ steps.areas.outputs.site }}
+      conformance_suite_artifacts: ${{ steps.areas.outputs.conformance_suite_artifacts }}
+      plugins: ${{ steps.areas.outputs.plugins }}
+    steps:
+      # Full history: the diff needs the "before" or base commit, which a shallow clone may lack.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Compute the changed areas
+        id: areas
+        run: node .github/scripts/changed-areas.mjs
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.sha }}
+
+  # Secret scan of the checked-out tree with gitleaks' default rules plus .gitleaks.toml (which
+  # allowlists the throwaway test keys by path). It is not gated by `changes`: a credential can land
+  # in any file, so every push and pull request is scanned. The release binary is pinned by version
+  # and its sha256 is checked before it runs; findings are redacted in the log and fail the job.
+  secret-scan:
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GITLEAKS_VERSION: 8.30.1
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install gitleaks
+        run: |
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "$RUNNER_TEMP/$archive" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/$archive"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/$archive" | sha256sum --check --strict
+          mkdir "$RUNNER_TEMP/gitleaks"
+          tar --extract --gzip --file "$RUNNER_TEMP/$archive" --directory "$RUNNER_TEMP/gitleaks" gitleaks
+
+      - name: Scan the tree
+        run: '"$RUNNER_TEMP/gitleaks/gitleaks" dir . --config .gitleaks.toml --redact --no-banner --exit-code 1'
+
+  # The tracked-text guard (packages/datum/tests/process-references.test.ts): comments, titles and
+  # Markdown across the whole tree name no records of how the code came to be (numbered records,
+  # review ids, history dates); they state the logic itself. It reads every tracked file through git.
+  # Like secret-scan it is not gated by `changes`: a reference can land in any file, so every push
+  # and pull request is checked. It needs git, node and vitest only, so only packages/datum's own
+  # dependencies are installed, without their install scripts, and nothing is built.
+  process-references:
+    if: github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: packages/datum/package-lock.json
+
+      - name: Install packages/datum dependencies
+        run: npm ci --ignore-scripts
+        working-directory: packages/datum
+
+      - name: Check the tracked text for process references
+        run: npx vitest run tests/process-references.test.ts
+        working-directory: packages/datum
+
+  engine:
+    needs: changes
+    if: needs.changes.outputs.engine == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: engine/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: engine
+
+      - name: Run architecture lint
+        run: npm run lint:arch
+        working-directory: engine
+
+      - name: Check the feature matrix (generated docs/reference/feature-matrix.md)
+        run: npm run check:traceability
+        working-directory: engine
+
+      - name: Check the agent-tools reference (generated docs/reference/agent-tools.md)
+        run: npm run docs:agent-tools:check
+        working-directory: engine
+
+      - name: Run typecheck
+        run: npm run typecheck
+        working-directory: engine
+
+      - name: Run tests
+        run: npm test
+        working-directory: engine
+
+      - name: Run integration suites
+        run: npm run test:integration
+        working-directory: engine
+
+      - name: Evaluate release gates
+        run: npm run gates
+        working-directory: engine
+
+  # The plugin packages are standalone (plugins/<package>); the job below runs once per folder,
+  # read from the tree, so a new package needs no entry here.
+  packages:
+    needs: changes
+    if: needs.changes.outputs.plugins == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      plugins: ${{ steps.list.outputs.plugins }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: List the package folders
+        id: list
+        run: |
+          list() { node -p 'JSON.stringify(require("node:fs").readdirSync(process.argv[1], { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name))' "$1"; }
+          echo "plugins=$(list plugins)" >> "$GITHUB_OUTPUT"
+
+  # The local signing agent: Python on Yubico's yubikey-manager. Its tests run with
+  # no YubiKey — a fake backend and a scripted PIN prompt — but the package must import, and
+  # pyscard compiles against the PC/SC headers when no wheel matches the interpreter.
+  piv-agent:
+    needs: changes
+    if: needs.changes.outputs.piv_agent == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: tools/piv-agent/requirements.txt
+
+      - name: Install PC/SC headers (pyscard)
+        run: sudo apt-get update && sudo apt-get install -y libpcsclite-dev swig pcscd
+
+      - name: Install agent dependencies
+        run: pip install --require-hashes -r requirements.txt
+        working-directory: tools/piv-agent
+
+      - name: Run agent tests
+        run: python -m unittest -v
+        working-directory: tools/piv-agent
+
+  # One plugin package (plugins/<package>): typecheck, tests, and its own bundle build. The package
+  # is a devDependency on packages/datum, whose sources and node_modules carry the build
+  # script, so that is installed first.
+  plugin:
+    name: plugin-${{ matrix.package }}
+    needs: packages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(needs.packages.outputs.plugins) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            engine/package-lock.json
+            packages/quickjs-wasm-host/package-lock.json
+            packages/pdf-kernel/package-lock.json
+            packages/datum/package-lock.json
+            plugins/*/package-lock.json
+
+      - name: Install the web components
+        uses: ./.github/actions/install-datum
+
+      - name: Install the plugin package
+        uses: ./.github/actions/install-package
+        with:
+          directory: plugins/${{ matrix.package }}
+
+      - name: Run typecheck
+        run: npm run typecheck
+        working-directory: plugins/${{ matrix.package }}
+
+      - name: Run tests
+        run: npm test
+        working-directory: plugins/${{ matrix.package }}
+
+      - name: Build the plugin bundle
+        run: npm run build
+        working-directory: plugins/${{ matrix.package }}
+
+  quickjs-wasm-host:
+    needs: changes
+    if: needs.changes.outputs.quickjs_wasm_host == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24, 26]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: |
+            packages/quickjs-wasm-host/package-lock.json
+            engine/package-lock.json
+
+      # The package depends on the engine via file:../../engine, which ships TypeScript
+      # source, so installing the engine's dependencies is all the "build" it needs.
+      - name: Install engine dependencies
+        run: npm ci
+        working-directory: engine
+
+      - name: Install package dependencies
+        run: npm ci
+        working-directory: packages/quickjs-wasm-host
+
+      - name: Run typecheck
+        run: npm run typecheck
+        working-directory: packages/quickjs-wasm-host
+
+      - name: Run tests
+        run: npm test
+        working-directory: packages/quickjs-wasm-host
+
+  pdf-kernel:
+    needs: changes
+    if: needs.changes.outputs.pdf_kernel == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24, 26]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: |
+            packages/pdf-kernel/package-lock.json
+            packages/quickjs-wasm-host/package-lock.json
+            engine/package-lock.json
+
+      # The package depends on the engine and the QuickJS host via file: links, both of
+      # which ship TypeScript source, so installing their dependencies is all the "build"
+      # they need.
+      - name: Install engine dependencies
+        run: npm ci
+        working-directory: engine
+
+      - name: Install QuickJS host dependencies
+        run: npm ci
+        working-directory: packages/quickjs-wasm-host
+
+      - name: Install package dependencies
+        run: npm ci
+        working-directory: packages/pdf-kernel
+
+      - name: Run typecheck
+        run: npm run typecheck
+        working-directory: packages/pdf-kernel
+
+      # veraPDF, the reference PDF/A validator, from its own installer (a Java app; the runner has a JDK).
+      # The installer is a fixed release whose sha256 is checked before it is unpacked, and a failed download
+      # or checksum fails the job: tests/verapdf.test.ts is skipped only when VERAPDF is unset, so a silent
+      # skip here would leave PDF/A conformance unasserted.
+      - name: Install veraPDF
+        id: verapdf
+        env:
+          VERAPDF_VERSION: "1.30.2"
+          VERAPDF_SHA256: 6cc6341cb1af644044054b81f00a6590a7918abb18f762243de115258bcad838
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 --retry-all-errors -o verapdf-installer.zip \
+            "https://software.verapdf.org/releases/${VERAPDF_VERSION%.*}/verapdf-greenfield-${VERAPDF_VERSION}-installer.zip"
+          echo "${VERAPDF_SHA256}  verapdf-installer.zip" | sha256sum --check
+          unzip -q verapdf-installer.zip -d verapdf-installer
+          cat > auto-install.xml <<'EOF'
+          <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+          <AutomatedInstallation langpack="eng">
+              <com.izforge.izpack.panels.htmlhello.HTMLHelloPanel id="welcome"/>
+              <com.izforge.izpack.panels.target.TargetPanel id="install_dir"><installpath>${{ runner.temp }}/verapdf</installpath></com.izforge.izpack.panels.target.TargetPanel>
+              <com.izforge.izpack.panels.packs.PacksPanel id="sdk_pack_select">
+                  <pack index="0" name="veraPDF GUI" selected="true"/>
+                  <pack index="1" name="veraPDF Batch files" selected="true"/>
+                  <pack index="2" name="veraPDF Validation model" selected="false"/>
+                  <pack index="3" name="veraPDF Documentation" selected="false"/>
+                  <pack index="4" name="veraPDF Sample Plugins" selected="false"/>
+              </com.izforge.izpack.panels.packs.PacksPanel>
+              <com.izforge.izpack.panels.install.InstallPanel id="install"/>
+              <com.izforge.izpack.panels.finish.FinishPanel id="finish"/>
+          </AutomatedInstallation>
+          EOF
+          java -jar verapdf-installer/verapdf-greenfield-*/verapdf-izpack-installer-*.jar auto-install.xml
+          "${{ runner.temp }}/verapdf/verapdf" --version
+          echo "VERAPDF=${{ runner.temp }}/verapdf/verapdf" >> "$GITHUB_ENV"
+
+      # Bundles the portable program first, then runs the kernel, provider, parity and
+      # (when veraPDF installed) conformance suites.
+      # A worker that runs out of heap writes a Node diagnostic report (heap spaces, native stack,
+      # resource usage) to the directory below, uploaded when the job fails. Node does not create
+      # the directory.
+      - name: Run tests
+        run: |
+          mkdir -p "$RUNNER_TEMP/node-reports"
+          npm test
+        working-directory: packages/pdf-kernel
+        env:
+          NODE_OPTIONS: --report-on-fatalerror --report-directory=${{ runner.temp }}/node-reports
+
+      - name: Upload Node fatal-error reports
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pdf-kernel-node-reports-node${{ matrix.node }}
+          path: ${{ runner.temp }}/node-reports
+          if-no-files-found: ignore
+
+  submissions:
+    needs: changes
+    if: needs.changes.outputs.submissions == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24, 26]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: |
+            packages/submissions/package-lock.json
+            packages/pdf-kernel/package-lock.json
+            packages/quickjs-wasm-host/package-lock.json
+            engine/package-lock.json
+
+      # The package depends on the engine and the PDF kernel (for the certificate minter and
+      # the X.509 parser) via file: links; its tests render PDFs through the kernel in-process.
+      - name: Install engine dependencies
+        run: npm ci
+        working-directory: engine
+
+      - name: Install QuickJS host dependencies
+        run: npm ci
+        working-directory: packages/quickjs-wasm-host
+
+      - name: Install pdf-kernel dependencies
+        run: npm ci
+        working-directory: packages/pdf-kernel
+
+      - name: Install package dependencies
+        run: npm ci
+        working-directory: packages/submissions
+
+      - name: Run typecheck
+        run: npm run typecheck
+        working-directory: packages/submissions
+
+      - name: Run tests
+        run: npm test
+        working-directory: packages/submissions
+
+  conformance-suite:
+    needs: changes
+    if: needs.changes.outputs.conformance_suite == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24, 26]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: |
+            packages/conformance-suite/package-lock.json
+            packages/submissions/package-lock.json
+            packages/pdf-kernel/package-lock.json
+            packages/quickjs-wasm-host/package-lock.json
+            engine/package-lock.json
+
+      # The suite depends on the engine and the QuickJS host via file: links (both ship TypeScript
+      # source) and, for its tests, on @argusvane/datum-submissions (the reference server an endpoint run is
+      # tested against) and @argusvane/datum-pdf-kernel (which that package renders through).
+      - name: Install engine dependencies
+        run: npm ci
+        working-directory: engine
+
+      - name: Install QuickJS host dependencies
+        run: npm ci
+        working-directory: packages/quickjs-wasm-host
+
+      - name: Install pdf-kernel dependencies
+        run: npm ci
+        working-directory: packages/pdf-kernel
+
+      - name: Install submissions dependencies
+        run: npm ci
+        working-directory: packages/submissions
+
+      - name: Install package dependencies
+        run: npm ci
+        working-directory: packages/conformance-suite
+
+      - name: Run typecheck
+        run: npm run typecheck
+        working-directory: packages/conformance-suite
+
+      # vitest.config.ts limits the workers to two when CI is set: the tests start QuickJS
+      # sandboxes and spawn the bundled command, and a runner with every core busy starves
+      # vitest's own heartbeat.
+      - name: Run tests
+        run: npm test
+        working-directory: packages/conformance-suite
+
+      - name: Build the command
+        run: npm run build
+        working-directory: packages/conformance-suite
+
+      # The files npm would pack for the command: LICENSE, NOTICE, entry points, and nothing it must not carry.
+      - name: Check the npm tarball contents
+        run: npm run pack:check
+        working-directory: packages/conformance-suite
+
+      # The release gate on the source: the program built from the engine's source, through
+      # program mode and parity. Fails the job on any enforced vector (exit 1) and on an
+      # inconclusive run (exit 3).
+      - name: Check the program built from source
+        run: npm run check:source -- --all --gate release --format json,md --out report
+        working-directory: packages/conformance-suite
+
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: conformance-suite-source-report-node${{ matrix.node }}
+          path: packages/conformance-suite/report
+          if-no-files-found: ignore
+
+  # The form-test command and its vitest helper. It runs a form's
+  # scenarios on the browser runtime and on the validation kernel, so the job needs the engine
+  # and the QuickJS host and nothing else: no PDF kernel, no submissions server.
+  form-test:
+    needs: changes
+    if: needs.changes.outputs.form_test == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24, 26]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: |
+            packages/form-test/package-lock.json
+            packages/quickjs-wasm-host/package-lock.json
+            engine/package-lock.json
+
+      # Both are file: dependencies that ship TypeScript source, so installing each one's own
+      # dependencies is all the "build" the bundler needs to resolve them.
+      - name: Install engine dependencies
+        run: npm ci
+        working-directory: engine
+
+      - name: Install QuickJS host dependencies
+        run: npm ci
+        working-directory: packages/quickjs-wasm-host
+
+      - name: Install package dependencies
+        run: npm ci
+        working-directory: packages/form-test
+
+      - name: Run typecheck
+        run: npm run typecheck
+        working-directory: packages/form-test
+
+      # vitest.config.ts limits the workers to two when CI is set: the tests build runtimes and
+      # QuickJS sandboxes and spawn the bundled command.
+      - name: Run tests
+        run: npm test
+        working-directory: packages/form-test
+
+      - name: Build the command
+        run: npm run build
+        working-directory: packages/form-test
+
+      # The files npm would pack for the command: LICENSE, NOTICE, entry points, and nothing it must not carry.
+      - name: Check the npm tarball contents
+        run: npm run pack:check
+        working-directory: packages/form-test
+
+      # The built command over the committed fixtures. Both fixture forms carry passing
+      # scenarios (main also reads its sidecar file), so this must exit 0; the reports go up as an
+      # artifact so a red run can be read without rerunning it.
+      - name: Run the fixture forms' tests
+        run: node dist/cli.mjs fixtures/main.json fixtures/clock.json --report junit --report json --out out
+        working-directory: packages/form-test
+
+      # The exit-1 path as CI sees it: one scenario that fails on purpose, kept in its own file
+      # so the two forms above stay green. Anything but exit 1 (a pass, a usage error, a crash)
+      # fails the job, which is what keeps this step honest.
+      - name: A failing scenario exits 1
+        run: |
+          set +e
+          node dist/cli.mjs fixtures/main.json --tests fixtures/failing.datum-test
+          code=$?
+          set -e
+          echo "exit code $code"
+          test "$code" -eq 1
+        working-directory: packages/form-test
+
+      - name: Upload the reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: form-test-reports-node${{ matrix.node }}
+          path: packages/form-test/out
+          if-no-files-found: ignore
+
+  # The host build scripts' own tests (node:test, Node built-ins only) on every Node the products run on. The fastapi
+  # job and the manual JVM workflow (jvm.yml) run them again on 22 after their asset builds, where the checks over the generated files run instead of
+  # skipping with their reason.
+  host-scripts:
+    needs: changes
+    if: needs.changes.outputs.host_scripts == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24, 26]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Test the FastAPI scripts
+        run: npm run fastapi:test:scripts
+
+      - name: Test the JVM scripts
+        run: npm run jvm:test:scripts
+
+      - name: Test the offline scripts
+        run: npm run offline:test
+
+  # Air-gapped deployments: the offline pack of every reference binding is
+  # written, and the browser bundles and the packs are drawn in a Chromium that can reach nothing but the
+  # folder they are served from. A request to any other host fails the job and is named in its log. The
+  # bundle is assembled without its server sections (those come from the hosts' release scripts) and
+  # without an archive; nothing is uploaded.
+  offline:
+    needs: changes
+    if: needs.changes.outputs.offline == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            packages/datum/package-lock.json
+            packages/conformance-suite/package-lock.json
+            packages/quickjs-wasm-host/package-lock.json
+            packages/pdf-kernel/package-lock.json
+            plugins/*/package-lock.json
+            bindings/*/package-lock.json
+            engine/package-lock.json
+
+      - name: Build the web components
+        uses: ./.github/actions/build-datum
+
+      - name: Build the plugin bundles
+        uses: ./.github/actions/build-plugin-packages
+
+      # Each binding's bundle (dist) and the design system release it pins (node_modules): what a pack is made of.
+      - name: Build the reference bindings
+        run: |
+          for dir in bindings/*/; do
+            (cd "$dir" && npm ci && npm run build)
+          done
+
+      # Playwright comes from the conformance suite's install, as it does for the binding kit.
+      - name: Install conformance-suite dependencies
+        run: npm ci
+        working-directory: packages/conformance-suite
+
+      - name: Install Playwright's Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: packages/conformance-suite
+
+      - name: Assemble the bundle and draw it offline
+        run: npm run offline:bundle -- --version 0.1.0 --skip runtime,python,maven,tools --no-archive
+
+  datum:
+    needs: changes
+    if: needs.changes.outputs.datum == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            packages/datum/package-lock.json
+            packages/quickjs-wasm-host/package-lock.json
+            packages/pdf-kernel/package-lock.json
+            engine/package-lock.json
+
+      # Every file: dependency ships TypeScript source, so installing each one's own
+      # dependencies is all the "build" the bundler needs to resolve them.
+      - name: Install engine dependencies
+        run: npm ci
+        working-directory: engine
+
+      # The sandbox module (datum-wasm.js) is built over the QuickJS host.
+      - name: Install quickjs-wasm-host dependencies
+        run: npm ci
+        working-directory: packages/quickjs-wasm-host
+
+      # The PDF module (datum-pdf.js) is built over the kernel's sources, and the build copies
+      # the kernel's bundled program beside the bundles (datum-pdf-program.js).
+      - name: Install pdf-kernel dependencies
+        run: npm ci
+        working-directory: packages/pdf-kernel
+
+      - name: Build the PDF program
+        run: npm run build:program
+        working-directory: packages/pdf-kernel
+
+      - name: Install packages/datum dependencies
+        run: npm ci
+        working-directory: packages/datum
+
+      - name: Run typecheck
+        run: npm run typecheck
+        working-directory: packages/datum
+
+      - name: Run tests
+        run: npm test
+        working-directory: packages/datum
+
+      - name: Build the embeddable bundles
+        run: npm run build
+        working-directory: packages/datum
+
+      # The tests above run before the build, so the cases that read the real tarball skip there; this step runs the same
+      # check over the built tree: the files npm would pack (LICENSE, NOTICE, entry points) and none it must not.
+      - name: Check the npm tarball contents
+        run: npm run pack:check
+        working-directory: packages/datum
+
+      - name: Check the generated attribute reference
+        run: npm run attributes:check
+        working-directory: packages/datum
+
+      # The bundled-package tables of THIRD_PARTY_NOTICES.md and the "generated" rows of both
+      # hosts' notices.json follow the licence files the build wrote beside each bundle
+      # (dist/<bundle>.LICENSE.txt), so a package that enters or leaves a bundle, or moves to
+      # another version, fails here until `npm run notices` has rewritten them.
+      - name: Check the generated third-party notices
+        run: npm run notices:check
+        working-directory: packages/datum
+
+  datum-a11y-browser:
+    needs: changes
+    if: needs.changes.outputs.datum_browser == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            packages/datum/package-lock.json
+            packages/quickjs-wasm-host/package-lock.json
+            packages/pdf-kernel/package-lock.json
+            engine/package-lock.json
+
+      # Every file: dependency ships TypeScript source, so installing each one's own
+      # dependencies is all the "build" the bundler needs to resolve them.
+      - name: Install engine dependencies
+        run: npm ci
+        working-directory: engine
+
+      # The sandbox module (datum-wasm.js) is built over the QuickJS host.
+      - name: Install quickjs-wasm-host dependencies
+        run: npm ci
+        working-directory: packages/quickjs-wasm-host
+
+      # The PDF module (datum-pdf.js) is built over the kernel's sources, and the build copies
+      # the kernel's bundled program beside the bundles (datum-pdf-program.js).
+      - name: Install pdf-kernel dependencies
+        run: npm ci
+        working-directory: packages/pdf-kernel
+
+      - name: Build the PDF program
+        run: npm run build:program
+        working-directory: packages/pdf-kernel
+
+      - name: Install packages/datum dependencies
+        run: npm ci
+        working-directory: packages/datum
+
+      # The browser accessibility check (axe): the built renderer under headless Chromium
+      # (Playwright's), axe-core with colour contrast on, every variant of the Datum form, compared
+      # with the committed baseline.
+      - name: Build the embeddable bundles
+        run: npm run build
+        working-directory: packages/datum
+
+      - name: Install Playwright's Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: packages/datum
+
+      - name: Check the browser accessibility baseline
+        run: npm run a11y:browser -- --check
+        working-directory: packages/datum
+
+
+  datum-visual-browser:
+    needs: changes
+    if: needs.changes.outputs.datum_browser == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            packages/datum/package-lock.json
+            packages/quickjs-wasm-host/package-lock.json
+            packages/pdf-kernel/package-lock.json
+            engine/package-lock.json
+
+      # Every file: dependency ships TypeScript source, so installing each one's own
+      # dependencies is all the "build" the bundler needs to resolve them.
+      - name: Install engine dependencies
+        run: npm ci
+        working-directory: engine
+
+      # The sandbox module (datum-wasm.js) is built over the QuickJS host.
+      - name: Install quickjs-wasm-host dependencies
+        run: npm ci
+        working-directory: packages/quickjs-wasm-host
+
+      # The PDF module (datum-pdf.js) is built over the kernel's sources, and the build copies
+      # the kernel's bundled program beside the bundles (datum-pdf-program.js).
+      - name: Install pdf-kernel dependencies
+        run: npm ci
+        working-directory: packages/pdf-kernel
+
+      - name: Build the PDF program
+        run: npm run build:program
+        working-directory: packages/pdf-kernel
+
+      - name: Install packages/datum dependencies
+        run: npm ci
+        working-directory: packages/datum
+
+      # Visual regression: the canonical fixture form under every
+      # Datum variant × state × width in headless Chromium (Playwright's), its perceptual signatures compared with the
+      # committed baseline. A baseline written on another platform makes the check advisory
+      # (text rasterises differently); the run uploads the PNGs and a signatures.json written
+      # here, so a maintainer can commit the Linux one and make the check binding.
+      - name: Build the embeddable bundles
+        run: npm run build
+        working-directory: packages/datum
+
+      - name: Install Playwright's Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: packages/datum
+
+      - name: Check the visual baseline
+        run: npm run visual -- --check
+        working-directory: packages/datum
+
+      - name: Keep the captures
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: visual-captures
+          path: packages/datum/visual/out
+          retention-days: 14
+
+  # The binding kit (packages/datum/binding-kit):
+  # `kit:check` on each of the eight reference bindings (bindings/<id>) and on Datum's own binding. One
+  # command, eight steps: package, build and bundle budget, tokens, the binding object, equality with the
+  # design system's own markup, behaviour, the package's own checks, and datum-binding-check (the
+  # conformance suite's browser command), in Playwright's Chromium on Linux.
+  #
+  # The tier-2 pictures of equality (reference-markup-versus-drawing, compared pixel for pixel) are
+  # baselined on the maintainer's platform only: sub-pixel text differs across platforms, so on
+  # Linux those cases SKIP, by design, and the step prints each one as `SKIP tier2/<id> (<reason>)`.
+  # A skip is not a failure (the job still asserts every tier-1 case, behaviour and the conformance
+  # corpus), and this job never writes a baseline: no `--update-baseline`, and a Linux baseline is not
+  # signed by CI. The skips are listed again in the job summary.
+  bindings:
+    needs: changes
+    if: needs.changes.outputs.bindings == 'true'
+    name: binding ${{ matrix.binding }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        binding: [alberta, bootstrap, fluent, gcds, govuk, nova-scotia, ontario, quebec, uswds]
+        include:
+          # Datum's own binding lives in the engine, not in a package: its kit run is the packages/datum script.
+          - binding: datum
+            dir: packages/datum
+            script: kit:check:datum
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            bindings/${{ matrix.binding }}/package-lock.json
+            packages/datum/package-lock.json
+            packages/conformance-suite/package-lock.json
+            engine/package-lock.json
+
+      # The kit lives in packages/datum and imports the conformance suite's binding-check
+      # (Playwright and esbuild come from the suite's install); the suite's host module is built from the
+      # engine's source. Every file: dependency ships TypeScript source, so each one's own
+      # `npm ci` is all the "build" they need.
+      - name: Install engine dependencies
+        run: npm ci
+        working-directory: engine
+
+      - name: Install conformance-suite dependencies
+        run: npm ci
+        working-directory: packages/conformance-suite
+
+      - name: Install packages/datum dependencies
+        run: npm ci
+        working-directory: packages/datum
+
+      # The pinned design system (and its fonts and tokens, where the release ships them) sits in the
+      # binding's own devDependencies, apart from every other binding's release.
+      - name: Install the binding's dependencies
+        if: matrix.binding != 'datum'
+        run: npm ci
+        working-directory: bindings/${{ matrix.binding }}
+
+      - name: Install Playwright's Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: packages/conformance-suite
+
+      - name: Run kit:check
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/kit"
+          npm run ${{ matrix.script || 'kit:check' }} 2>&1 | tee "$RUNNER_TEMP/kit/${{ matrix.binding }}.log"
+        working-directory: ${{ matrix.dir || format('bindings/{0}', matrix.binding) }}
+
+      # The GCDS plugin's own unit tests (its panel, and the guard that keeps unsafe addresses out of
+      # its anchors); the kit check does not run a binding's vitest files.
+      - name: Run the GCDS unit tests
+        if: matrix.binding == 'gcds'
+        run: ../../engine/node_modules/.bin/vitest run --root . tests/panel.test.ts tests/plugin-urls.test.ts
+        working-directory: bindings/gcds
+
+      # What the Linux run did not compare is listed, not hidden.
+      - name: List the skipped cases
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### ${{ matrix.binding }}: skipped on Linux"
+            echo
+            echo '```'
+            grep -E '^  SKIP |^SKIP ' "$RUNNER_TEMP/kit/${{ matrix.binding }}.log" || echo "(none)"
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+  # The feature-coverage harness (engine/feature-coverage): every feature on
+  # its checklist (CHECKLIST.md) exercised on the renderer with Datum's own binding, in both hosts (`live`, which
+  # mounts the renderer directly, and `element`, the real <datum-form-renderer>), and the harness's own self-check
+  # (faults it must catch). Chromium only, by design: the harness reads Chromium's accessibility tree through CDP;
+  # Firefox and WebKit are held to the behaviour and conformance corpus in the `bindings-browsers` job below.
+  feature-coverage:
+    needs: changes
+    if: needs.changes.outputs.feature_coverage == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: engine/package-lock.json
+
+      - name: Install engine dependencies
+        run: npm ci
+        working-directory: engine
+
+      - name: Install Playwright's Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: engine
+
+      - name: Check the harness itself
+        run: node feature-coverage/selfcheck.mjs
+        working-directory: engine
+
+      - name: Run the feature scenarios (both hosts)
+        run: npm run test:features -- --report "$RUNNER_TEMP/features/report.json"
+        working-directory: engine
+
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: feature-coverage-report
+          path: ${{ runner.temp }}/features
+          if-no-files-found: ignore
+          retention-days: 14
+
+  # Behaviour, conformance and text are required in Chromium, Firefox and WebKit (pixels in Chromium only, reported
+  # elsewhere). The `bindings` job above is the Chromium run; this one runs the same `kit:check` in Firefox and in WebKit
+  # on Datum's own binding and on one web-component binding (GC Design System). Equality's tier-1 pixels are reported
+  # and its tier-2 pictures are not compared outside Chromium (they are Chromium baselines), so these rows assert the
+  # binding object, boxes and words against the design system's markup, behaviour and the conformance corpus. A package's
+  # own checks (datumBinding.checks) are Chromium scripts: kit:check runs nothing for them under --browser firefox or
+  # webkit (the `bindings` job runs them), so these rows install only their own browser. This job never writes a baseline.
+  bindings-browsers:
+    needs: changes
+    if: needs.changes.outputs.bindings == 'true'
+    name: binding ${{ matrix.binding }} (${{ matrix.browser }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [firefox, webkit]
+        binding: [datum, gcds]
+        include:
+          - binding: datum
+            dir: packages/datum
+            script: kit:check:datum
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            bindings/${{ matrix.binding }}/package-lock.json
+            packages/datum/package-lock.json
+            packages/conformance-suite/package-lock.json
+            engine/package-lock.json
+
+      - name: Install engine dependencies
+        run: npm ci
+        working-directory: engine
+
+      - name: Install conformance-suite dependencies
+        run: npm ci
+        working-directory: packages/conformance-suite
+
+      - name: Install packages/datum dependencies
+        run: npm ci
+        working-directory: packages/datum
+
+      - name: Install the binding's dependencies
+        if: matrix.binding != 'datum'
+        run: npm ci
+        working-directory: bindings/${{ matrix.binding }}
+
+      - name: Install Playwright's ${{ matrix.browser }}
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+        working-directory: packages/conformance-suite
+
+      - name: Run kit:check in ${{ matrix.browser }}
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/kit"
+          npm run ${{ matrix.script || 'kit:check' }} -- --browser ${{ matrix.browser }} 2>&1 | tee "$RUNNER_TEMP/kit/${{ matrix.binding }}-${{ matrix.browser }}.log"
+        working-directory: ${{ matrix.dir || format('bindings/{0}', matrix.binding) }}
+
+  # The marketing site has no file: dependency on the engine or the packages, so
+  # this is the one job that is just install, build and test. Deployment is pages.yml.
+  # The marketing site has no file: dependency, but its live demo loads the built
+  # bundles: the composite action builds them first, the same way pages.yml does.
+  site:
+    needs: changes
+    if: needs.changes.outputs.site == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            site/package-lock.json
+            packages/datum/package-lock.json
+            packages/quickjs-wasm-host/package-lock.json
+            packages/pdf-kernel/package-lock.json
+            plugins/*/package-lock.json
+            engine/package-lock.json
+
+      - name: Build the web components
+        uses: ./.github/actions/build-datum
+
+      # The plugin bundles the live demo loads are each package's own dist.
+      - name: Build the plugin bundles
+        uses: ./.github/actions/build-plugin-packages
+
+      - name: Install site dependencies
+        run: npm ci
+        working-directory: site
+
+      # The reference bindings the binding pages draw live: each package's own bundle (dist) and the design
+      # system release it is pinned to (node_modules), which site/scripts/copy-binding-assets.mjs publishes.
+      - name: Build the reference bindings
+        run: |
+          for dir in bindings/*/; do
+            (cd "$dir" && npm ci && npm run build)
+          done
+
+      - name: Copy the demo bundles
+        run: npm run demo-assets
+        working-directory: site
+
+      - name: Build the site
+        run: npm run build
+        working-directory: site
+
+      - name: Run site tests
+        run: npm test
+        working-directory: site
+
+  # The built programs through the security suite. It builds the
+  # bundles itself (artifacts do not cross jobs).
+  conformance-suite-artifacts:
+    needs: changes
+    if: needs.changes.outputs.conformance_suite_artifacts == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            packages/conformance-suite/package-lock.json
+            packages/datum/package-lock.json
+            packages/quickjs-wasm-host/package-lock.json
+            packages/pdf-kernel/package-lock.json
+            packages/submissions/package-lock.json
+            engine/package-lock.json
+
+      - name: Install the bundles' dependencies
+        run: |
+          (cd engine && npm ci)
+          for dir in packages/quickjs-wasm-host packages/pdf-kernel packages/submissions packages/datum packages/conformance-suite; do (cd "$dir" && npm ci); done
+          (cd packages/pdf-kernel && npm run build:program)
+
+      - name: Build the command
+        run: node scripts/build-cli.mjs
+        working-directory: packages/conformance-suite
+
+      - name: Build the bundles
+        run: |
+          npm run datum:build
+
+      - name: Check the built sandbox program
+        run: node packages/conformance-suite/dist/cli.mjs --program packages/datum/dist/datum-sandbox-program.js --all --gate release --format json,md --out conformance-suite-report/dist-program
+
+      - name: Upload the reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: conformance-suite-artifact-reports
+          path: conformance-suite-report
+          if-no-files-found: ignore
+
+  # The Python host (integrations/fastapi; argusvane-datum-core, argusvane-datum-fastapi and argusvane-datum-sandbox-wasmtime have suites that take minutes).
+  # It gets its assets the way the manual JVM workflow (jvm.yml) does: the web components are built here, the conformance suite's commands
+  # are built here (the asset script runs `datum-host-check fixtures`, and tests/wire drives the same command), and the
+  # asset script runs WITHOUT --allow-stale, so a dist older than its sources fails. The script also fetches the pinned
+  # qjs-wasi.wasm from the official quickjs-ng release and holds it to the sha256 in datum_qjs_wasm/runtime.json. The
+  # interpreter is the one in .python-version (a plain 3.14 can resolve to a free-threaded build). The suites are
+  # split the way `npm run fastapi:test` splits them: the unmarked bulk under pytest-xdist, then the runtime, openssl
+  # and server tests in one quiet process (tests/wire among them).
+  fastapi:
+    needs: changes
+    if: needs.changes.outputs.fastapi == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      UV_PYTHON: "3.14.6"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            packages/conformance-suite/package-lock.json
+            packages/datum/package-lock.json
+            packages/quickjs-wasm-host/package-lock.json
+            packages/pdf-kernel/package-lock.json
+            packages/submissions/package-lock.json
+            engine/package-lock.json
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: integrations/fastapi/uv.lock
+
+      - name: Assert uv.lock matches the member versions
+        run: uv lock --check
+        working-directory: integrations/fastapi
+
+      - name: Build the web components
+        uses: ./.github/actions/build-datum
+
+      - name: Build the conformance suite commands
+        run: |
+          (cd packages/submissions && npm ci)
+          (cd packages/conformance-suite && npm ci && node scripts/build-cli.mjs)
+
+      # The generated resources (the programs, the bundles, the pinned wasm runtime, the fixtures) are gitignored build output.
+      - name: Build the assets
+        run: npm run fastapi:assets
+
+      - name: Sync the workspace
+        run: uv sync --all-packages --all-extras --frozen
+        working-directory: integrations/fastapi
+
+      # argusvane-datum-core writes its settings schema from its own models, so it needs the synced workspace: the asset build above
+      # ran before it and skipped the file, which argusvane-datum-core's tests read. This fails when the schema cannot be written.
+      - name: Write the settings schema
+        run: node integrations/fastapi/scripts/settings-schema.mjs
+
+      - name: Script tests
+        run: npm run fastapi:test:scripts
+
+      # The boundaries the code alone cannot hold: the import-linter contracts (the WASI layer of argusvane-datum-sandbox
+      # imports only the standard library, the layers run downward, no member reaches past its own) and every member's
+      # declared dependencies (deptry runs from inside each member).
+      - name: Import contracts and declared dependencies
+        working-directory: integrations/fastapi
+        run: |
+          uv run --frozen --no-sync lint-imports
+          for member in packages/*/; do (cd "$member" && uv run --frozen --no-sync deptry .); done
+
+      # Every member, tests/wire included: argusvane-datum-sandbox-wasmtime is the only suite that holds the recursion limit and the
+      # stack guard to the real engine (argusvane-datum-sandbox runs the runtime contract against fakes).
+      - name: Test every member
+        run: node integrations/fastapi/scripts/test-members.mjs
+
+      - name: Check the build left the tree clean
+        run: |
+          status="$(git status --porcelain integrations/fastapi)"
+          if [ -n "$status" ]; then echo "$status"; exit 1; fi
+
+      # The submissions example's host-check wiring (examples/submissions/host_check_app.py, TEST WIRING that refuses to
+      # start without HOST_CHECK_TEST_WIRING): the dry run, a header-trusting host context provider for the kit's
+      # host context form, the hostile rule module. The Node kit runs the capabilities the example's README lists,
+      # flood last (it spends the request budget), against one boot. The address limit is 200 beside the per-form
+      # request limit of 30: the earlier capabilities post well under 200 bodies, and the flood case (FLD-02) posts up to
+      # 400, so it reaches the 429 that is sent before the body is read. runtime-down, which needs the stale program and
+      # fail-fast off, gets a fresh boot of its own. The reports go to fastapi-reports, outside the tree the check above guards.
+      - name: Host check (Node kit), submissions example
+        run: |
+          mkdir -p fastapi-reports
+          kit="$RUNNER_TEMP/host-check-fastapi"
+          node packages/conformance-suite/dist/host-check.mjs fixtures --out "$kit"
+          cd integrations/fastapi
+          export HOST_CHECK_TEST_WIRING=yes-this-is-a-test-deployment
+          export DATUM_FORMS__LOCATIONS="[\"$kit/fixture-form.json\",\"$kit/fixture-host-context-form.json\"]"
+          export DATUM_WEB__API__ENDPOINTS__SUBMISSIONS=true DATUM_WEB__API__ENDPOINTS__VALIDATE=true DATUM_WEB__API__ENDPOINTS__TEST=true
+          export DATUM_WEB__API__ENDPOINTS__DEFINITION=true DATUM_WEB__ASSETS__ENABLED=true DATUM_WEB__THROTTLE__LIMIT=30 DATUM_WEB__THROTTLE__ADDRESS_LIMIT=200 DATUM_RUNTIME__VALIDATION__MEMORY=512MiB
+          cd ../..
+          node integrations/fastapi/scripts/host-run.mjs --port 18765 --path /datum/assets/host.json --deadline 180 --cwd integrations/fastapi --log fastapi-reports/host-check-app.log -- uv run --frozen --no-sync --package datum-example-submissions uvicorn --app-dir examples/submissions host_check_app:app --port 18765 --check node packages/conformance-suite/dist/host-check.mjs --endpoint http://127.0.0.1:18765 --capabilities submissions,submissions-test,forms,assets,hardening,host-context,flood --out fastapi-reports/host-check
+
+      - name: Host check (Node kit), submissions example without a runtime
+        run: |
+          mkdir -p fastapi-reports
+          kit="$RUNNER_TEMP/host-check-fastapi"
+          cd integrations/fastapi
+          export HOST_CHECK_TEST_WIRING=yes-this-is-a-test-deployment
+          export DATUM_FORMS__LOCATIONS="[\"$kit/fixture-form.json\"]"
+          export DATUM_WEB__API__ENDPOINTS__SUBMISSIONS=true DATUM_WEB__API__ENDPOINTS__VALIDATE=true DATUM_WEB__API__ENDPOINTS__DEFINITION=true
+          export DATUM_RUNTIME__PROGRAMS__SANDBOX="$kit/stale-program.js" DATUM_RUNTIME__FAIL_FAST=false
+          cd ../..
+          # The runtime-down host answers its health check with an error by design, so readiness is any HTTP answer.
+          node integrations/fastapi/scripts/host-run.mjs --port 18766 --path /api/submissions --any-status --deadline 180 --cwd integrations/fastapi --log fastapi-reports/host-check-app-runtime-down.log -- uv run --frozen --no-sync --package datum-example-submissions uvicorn --app-dir examples/submissions host_check_app:app --port 18766 --check node packages/conformance-suite/dist/host-check.mjs --endpoint http://127.0.0.1:18766 --capabilities runtime-down --out fastapi-reports/host-check-runtime-down
+
+      - name: Upload the reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fastapi-reports
+          path: fastapi-reports
+          if-no-files-found: ignore
+
+  # The one check a branch rule requires. It waits for every other job and passes only when each
+  # passed or was skipped because its area did not change. `changes` itself must pass: it is skipped
+  # on Dependabot's pull requests, and a run that tested nothing must not report success.
+  ci-ok:
+    if: always()
+    needs:
+      - changes
+      - secret-scan
+      - process-references
+      - engine
+      - packages
+      - piv-agent
+      - plugin
+      - quickjs-wasm-host
+      - pdf-kernel
+      - submissions
+      - conformance-suite
+      - form-test
+      - host-scripts
+      - offline
+      - datum
+      - datum-a11y-browser
+      - datum-visual-browser
+      - bindings
+      - feature-coverage
+      - bindings-browsers
+      - site
+      - conformance-suite-artifacts
+      - fastapi
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Every job passed or was skipped
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "$RESULTS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          echo "$RESULTS" | jq -e '.changes.result == "success" and ([.[] | .result] | all(. == "success" or . == "skipped"))' > /dev/null

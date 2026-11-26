@@ -1,0 +1,38 @@
+[project]
+name = "datum-piv-agent"
+version = "0.1.0"
+description = "Signs Datum PDFs with the certificate on a YubiKey's PIV applet, or in a certificate file on this computer, for a page on the same computer."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Argusvane", email = "maintainers@argusvane.com" }]
+maintainers = [{ name = "Argusvane", email = "maintainers@argusvane.com" }]
+keywords = ["datum", "pdf", "signing", "yubikey", "piv", "pades"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+dependencies = ["yubikey-manager>=5.5,<6", "cryptography>=42"]
+
+[project.scripts]
+datum-piv-agent = "piv_agent:main"
+
+[project.urls]
+Homepage = "https://datum.argusvane.com"
+Documentation = "https://datum.argusvane.com/docs/"
+Repository = "https://github.com/argusvane/datum"
+Issues = "https://github.com/argusvane/datum/issues"
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["piv_agent"]

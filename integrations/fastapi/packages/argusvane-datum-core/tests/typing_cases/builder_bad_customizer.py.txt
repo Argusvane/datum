@@ -1,0 +1,7 @@
+from datum_core.builder import BuilderSaveCustomizer
+
+
+def wrong(draft: int) -> None: ...
+
+
+bad: BuilderSaveCustomizer = wrong

@@ -1,0 +1,19 @@
+{
+  "note": "tier 2: a text box with a sign and a unit, in the design system's label, hint and input tokens",
+  "components": [
+    {
+      "id": "amount",
+      "type": "text",
+      "configuration": {
+        "label": "Amount",
+        "description": "Before tax.",
+        "prefix": "$",
+        "suffix": "CAD"
+      }
+    }
+  ],
+  "preset": {
+    "amount": "1250.00"
+  },
+  "width": 560
+}

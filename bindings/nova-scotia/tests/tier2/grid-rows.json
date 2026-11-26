@@ -1,0 +1,33 @@
+{
+  "note": "a data grid left to the form, wide: the library's table, the cells' labels read out but not shown",
+  "components": [
+    {
+      "id": "items",
+      "type": "dataGrid",
+      "configuration": {
+        "label": "Items",
+        "initialRows": 2,
+        "canReorder": true
+      },
+      "children": {
+        "content": [
+          {
+            "id": "item",
+            "type": "text",
+            "configuration": {
+              "label": "Item"
+            }
+          },
+          {
+            "id": "qty",
+            "type": "text",
+            "configuration": {
+              "label": "Quantity"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "width": 560
+}

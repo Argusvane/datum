@@ -1,0 +1,27 @@
+export { runCli, type CliHooks, type CliIo } from "./cli.js";
+export { parseArgs, UsageError, type CliOptions } from "./args.js";
+export { EXIT, type ExitCode } from "./exit-codes.js";
+export { runSuite, selectVectors, readManifestAbi, type RunSuiteOptions } from "./run.js";
+export { VECTORS, vectorById, matchesSelector } from "./vectors/index.js";
+export type { Vector, VectorInput, Fixture, Gate, Gen, PluginSource, Variant, Applic, VectorClass, Severity, Attacker } from "./vectors/schema.js";
+export { evaluate, describe, type Expectation, type PredicateEnv, type PredicateResult, type CustomPredicate, type GoldenControl } from "./predicates.js";
+export type { Observation, ObservedError, ObservedLog, RefusalKind, Json } from "./observation.js";
+export { errorToken, summarizeObservation } from "./observation.js";
+export { renderJson, redactArgv } from "./report/json.js";
+export { renderMarkdown } from "./report/markdown.js";
+export { decideVerdict, summarize, type Report, type VectorResult, type VariantResult, type ResultStatus, type Verdict } from "./report/model.js";
+export { loadProgram, programFromText, ProgramLoadError, type LoadedProgram } from "./runners/program/load-program.js";
+export { ProgramRunner, type ProgramRunConfig, type BudgetProfile } from "./runners/program/program-runner.js";
+export { ProgramSession, StartupError, verdictFrom, refusalFrom, type SessionOptions, type RunOutput } from "./runners/program/session.js";
+export { detectAbi, compareAbi, type AbiDetection } from "./runners/program/detect-abi.js";
+export { canonicalText, referenceDigest, sha256Hex } from "./reference/canonical.js";
+export { chooseGolden, BUNDLED_GOLDEN, BUNDLED_GOLDEN_ABI, type GoldenFile } from "./fixtures/golden.js";
+export { SUITE_NAME, SUITE_VERSION, VECTOR_SET_ID, DEFAULT_ABI_FLOOR } from "./version.js";
+export { REPORT_SCHEMA } from "./report/schema.js";
+export { runParityVectors, openParityAdapters, compareBytes, digestParity, submissionDigestOf, pluginFunctionParity, settleAgainstLedger, corpusRows, contextFor, DIVERGENCES, FUNCTION_CASES, type Divergence, type LedgerOutcome, type ParityRunOptions, type ParityRunOutput, type DigestRow } from "./runners/parity/index.js";
+export { runEndpoint, runsOnEndpoint, HttpClient, AllowlistViolation, TransportError, Budget, BudgetExhausted, RateLimitedOut, observe, wireProblems, LEAK_MARKERS, UNKNOWN_FORM_ID, routesFor, fixtureDefinition, submissionsFixture, EARLIER_ENDPOINT_SPECS, RECEIVER_ENDPOINT_SPECS, type EndpointConfig, type EndpointRun, type EndpointTarget, type ProfileName, type Exchange } from "./runners/endpoint/index.js";
+export { withEndpoint } from "./runners/endpoint/report.js";
+export { endpointConfigFrom } from "./runners/endpoint/config.js";
+export { runBuilder, runBuilderCleanup, builderPlan, builderConfigFrom, withBuilder, BUILDER_SPECS, BUILDER_FORM_OF, builderRowLines, runsOnBuilder, submissionsBuilderHost, observeBuilder, builderWireProblems, BuilderSetupError, type BuilderConfig, type BuilderRun, type BuilderHost } from "./runners/endpoint/profiles/builder.js";
+export type { BuilderReport } from "./report/model.js";
+

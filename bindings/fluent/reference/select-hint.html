@@ -1,0 +1,29 @@
+<!-- datum-reference
+{
+  "note": "a select with a hint",
+  "components": [
+    {
+      "id": "province",
+      "type": "select",
+      "configuration": {
+        "label": "Province",
+        "description": "Where you live.",
+        "options": [
+          {
+            "value": "ON",
+            "label": "Ontario"
+          },
+          {
+            "value": "QC",
+            "label": "Quebec"
+          }
+        ]
+      }
+    }
+  ],
+  "source": "Fluent UI Web Components 3.2.1: field.stories.ts ComponentExamples (fluent-field label-position, label slot='label' for, the control slot='input'), https://github.com/microsoft/fluentui/tree/master/packages/web-components/src/field; dropdown: dropdown.stories.ts Default (fluent-dropdown slot='input' placeholder, fluent-listbox > fluent-option value), type='select' per custom-elements.json 3.2.1 (DropdownType); hint: field.stories.ts Hint (fluent-text slot='message' size='200'); attributes per custom-elements.json 3.2.1",
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate><fluent-field label-position="above"><label slot="label" for="province">Province</label><fluent-dropdown slot="input" type="select" id="province" name="province" placeholder="Select…" aria-describedby="province-hint"><fluent-listbox><fluent-option value="ON">Ontario</fluent-option><fluent-option value="QC">Quebec</fluent-option></fluent-listbox></fluent-dropdown><fluent-text slot="message" size="200"><div id="province-hint">Where you live.</div></fluent-text></fluent-field></form>

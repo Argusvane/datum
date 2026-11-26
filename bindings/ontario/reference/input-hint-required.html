@@ -1,0 +1,20 @@
+<!-- datum-reference
+{
+  "note": "a required text field with a hint",
+  "components": [
+    {
+      "id": "full-name",
+      "type": "text",
+      "configuration": {
+        "label": "Full name",
+        "description": "As it appears on your passport.",
+        "required": true
+      }
+    }
+  ],
+  "source": "https://designsystem.ontario.ca/components/detail/text-inputs.html and https://designsystem.ontario.ca/developer-docs/components/ (Ontario Design System), props per @ongov/ontario-design-system-component-library 9.2.2 (src/components/ontario-*/readme.md and the component sources)",
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate><ontario-input element-id="full-name" name="full-name" caption='{"captionText":"Full name","captionType":"default"}' hint-text='{"hint":"As it appears on your passport.","hintContentType":"string"}' required language="en"></ontario-input></form>

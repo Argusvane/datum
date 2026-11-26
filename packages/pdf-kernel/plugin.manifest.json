@@ -1,0 +1,7 @@
+{
+  "id": "datum-pdf-kernel",
+  "version": "0.1.0",
+  "engineRange": "^0.1.0",
+  "environments": ["browser", "server", "wasm"],
+  "contributions": []
+}

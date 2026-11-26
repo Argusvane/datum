@@ -1,0 +1,49 @@
+<!-- datum-reference
+{
+  "source": "uswds 3.14.0: packages/usa-character-count/src/usa-character-count.twig after packages/usa-character-count/src/index.js has counted an answer of 5 characters (getCountMessage: '20 characters left'); the required note of packages/templates/usa-address-form.twig above the fields",
+  "note": "a character count holding an answer",
+  "components": [
+    {
+      "id": "field1",
+      "type": "text",
+      "configuration": {
+        "label": "Text input",
+        "required": true,
+        "description": "This is an input with a character counter.",
+        "maxLength": 25,
+        "characterCount": true
+      }
+    }
+  ],
+  "preset": {
+    "field1": "Hello"
+  },
+  "ignoreText": [
+    {
+      "match": "^\\[live\\] \\[sr\\] ",
+      "reason": "the script's visually hidden live status; the count's live region is the renderer's announcer"
+    }
+  ],
+  "ignoreBoxes": [
+    {
+      "match": "^\\d+ characters? (allowed|left|over limit)$",
+      "reason": "the script's visually hidden live status element (see ignoreText); the visible status is compared"
+    }
+  ],
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate class="usa-form usa-form--large">
+<p>Required fields are marked with an asterisk (<abbr title="required" class="usa-hint usa-hint--required">*</abbr>).</p>
+<div class="usa-character-count" data-maxlength="25">
+<div class="usa-form-group">
+<label class="usa-label" for="field1">Text input <abbr title="required" class="usa-hint usa-hint--required">*</abbr></label>
+<span id="field1-hint" class="usa-hint">This is an input with a character counter.</span>
+<input class="usa-input usa-character-count__field" id="field1" name="field1" aria-describedby="field1-info field1-hint" data-enhanced="true" data-character-count-over-limit="false" required value="Hello">
+</div>
+<span id="field1-info" class="usa-character-count__message usa-sr-only">You can enter up to 25 characters</span>
+<div class="usa-character-count__status usa-hint" aria-hidden="true">20 characters left</div>
+<div class="usa-character-count__sr-status usa-sr-only" aria-live="polite">20 characters left</div>
+</div>
+</form>

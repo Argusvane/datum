@@ -1,0 +1,30 @@
+# TEST DEPLOYMENT ONLY: the profile "host-check" prepares this example for an external `datum-host-check` run.
+# Never enable it where real submissions are taken: it wires
+# a host context provider that believes a request header, registers a hostile rule module and switches the dry run on.
+#
+#   datum-host-check fixtures --out <dir>
+#   java -jar datum-example-submissions-*-exec.jar --spring.profiles.active=host-check \
+#        --datum.example.host-check-fixtures=<dir>
+#
+# The placeholder has no default on purpose: without the directory the application refuses to start.
+datum:
+  example:
+    # HardeningRulesConfiguration reads this one: the kit's hostile rule module for the fixture form (HRD-01..05).
+    hardening-rules: ${datum.example.host-check-fixtures}/hardening-rules.js
+  forms:
+    # The example's own form (the kit's fixture form) and the kit's host context fixture (HCX-01..04).
+    locations: classpath:/datum/forms/*.json,file:${datum.example.host-check-fixtures}/fixture-host-context-form.json
+  web:
+    api:
+      endpoints:
+        # The dry-run route (DRY-01, and HCX-03/04 read its report).
+        test: true
+    # The kit's cases send more than a minute's default budget of one address; the flood case lowers both again on the
+    # command line (limit 30, address-limit 200).
+    throttle:
+      limit: 1000
+      address-limit: 1000
+  runtime:
+    validation:
+      # So the hostile module's 40 MiB answer is stopped by the run's output caps, not by the module failing to build it.
+      memory: 512MB

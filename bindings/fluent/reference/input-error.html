@@ -1,0 +1,27 @@
+<!-- datum-reference
+{
+  "note": "a required text field left empty and validated: the error summary and the field's error. The field's message is its message slot with an icon, as Fluent's field documentation draws a message's icon (SuccessIcon: an aria-hidden 1em SVG filled from a status token), here Fluent's ErrorCircle 12 filled glyph in colorStatusDangerForeground1. The summary is Fluent's elements only: a fluent-message-bar intent=error with Fluent's DismissCircle 20 filled icon (message-bar.stories.ts, its colour set on the icon as the story does), a semibold fluent-text wrapping an h2 as the title (fluent-text documents wrapping a semantic child) and a native ul of li items holding a fluent-link each; the only style is the form column with its 16px gap (the spacingVerticalL token, as field.stories.ts ComponentExamples lays fields out).",
+  "components": [
+    {
+      "id": "full-name",
+      "type": "text",
+      "configuration": {
+        "label": "Full name",
+        "required": true,
+        "messages": {
+          "required": "Enter your full name."
+        }
+      }
+    }
+  ],
+  "steps": [
+    {
+      "op": "validate"
+    }
+  ],
+  "source": "Fluent UI Web Components 3.2.1: field.stories.ts ComponentExamples (fluent-field label-position=\"above\", label slot=\"label\" for, fluent-text-input slot=\"input\"), https://github.com/microsoft/fluentui/tree/master/packages/web-components/src/field; attributes per custom-elements.json 3.2.1; field message: field.stories.ts Hint (fluent-text slot=\"message\" size=\"200\") and Default (message icon); summary: message-bar.stories.ts Intent (fluent-message-bar intent='error' layout='multiline', the icon in slot='icon'); fluent-link with href and inline per custom-elements.json 3.2.1",
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate style="display: flex; flex-direction: column; gap: var(--spacingVerticalL);"><fluent-message-bar intent="error" layout="multiline" role="alert" tabindex="-1"><span slot="icon" style="color: var(--colorStatusDangerForeground1)"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path fill="currentColor" d="M10 2a8 8 0 1 1 0 16a8 8 0 0 1 0-16M7.81 7.114a.5.5 0 0 0-.638.058l-.058.069a.5.5 0 0 0 .058.638L9.292 10l-2.12 2.121l-.058.07a.5.5 0 0 0 .058.637l.069.058a.5.5 0 0 0 .638-.058L10 10.708l2.121 2.12l.07.058a.5.5 0 0 0 .637-.058l.058-.069a.5.5 0 0 0-.058-.638L10.708 10l2.12-2.121l.058-.07a.5.5 0 0 0-.058-.637l-.069-.058a.5.5 0 0 0-.638.058L10 9.292l-2.121-2.12z"></path></svg></span><div><fluent-text weight="semibold" block><h2>1 error</h2></fluent-text><ul><li><fluent-link inline href="#full-name">Full name: Enter your full name.</fluent-link></li></ul></div></fluent-message-bar><div><fluent-field label-position="above"><label slot="label" for="full-name">Full name</label><fluent-text-input slot="input" id="full-name" name="full-name" required></fluent-text-input><fluent-text slot="message" size="200"><div id="full-name-error"><svg fill="var(--colorStatusDangerForeground1)" aria-hidden="true" width="1em" height="1em" viewBox="0 0 12 12" xmlns="http://www.w3.org/2000/svg"><path d="M6 11A5 5 0 1 0 6 1a5 5 0 0 0 0 10Zm-.75-2.75a.75.75 0 1 1 1.5 0 .75.75 0 0 1-1.5 0Zm.26-4.84a.5.5 0 0 1 .98 0l.01.09v2.59a.5.5 0 0 1-1 0V3.41Z" fill="var(--colorStatusDangerForeground1)"></path></svg> Enter your full name.</div></fluent-text></fluent-field></div></form>

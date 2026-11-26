@@ -1,0 +1,500 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project child.project.url.inherit.append.path="false" xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <!-- Not the Spring Boot parent: spring-boot-dependencies is imported below so consumers keep their own parent. -->
+  <groupId>com.argusvane</groupId>
+  <artifactId>datum-parent</artifactId>
+  <version>${revision}</version>
+  <packaging>pom</packaging>
+  <name>datum-parent</name>
+  <description>Datum for the JVM: the shared Java libraries, the Spring Boot bindings and starters, and the host test kit (reactor aggregator and parent).</description>
+  <url>https://datum.argusvane.com</url>
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>https://opensource.org/licenses/MIT</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <organization>
+    <name>Argusvane</name>
+    <url>https://argusvane.com</url>
+  </organization>
+  <developers>
+    <developer>
+      <id>argusvane</id>
+      <name>Argusvane maintainers</name>
+      <email>maintainers@argusvane.com</email>
+      <organization>Argusvane</organization>
+      <organizationUrl>https://argusvane.com</organizationUrl>
+    </developer>
+  </developers>
+  <scm child.scm.connection.inherit.append.path="false" child.scm.developerConnection.inherit.append.path="false" child.scm.url.inherit.append.path="false">
+    <url>https://github.com/argusvane/datum</url>
+    <connection>scm:git:https://github.com/argusvane/datum.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/argusvane/datum.git</developerConnection>
+  </scm>
+
+  <!-- Layout: libs/ are the framework-free libraries every JVM host shares, spring/ the Spring Boot
+       bindings and starters, tck/ the host test kit. The libs/*-test-support modules hold the test helpers modules share
+       (fixtures, fake runtimes, the library-boundary rule); they are built and tested with the reactor and never published: not
+       in the BOM, skipped by the deploy plugin and named in the central-publishing excludeArtifacts below. -->
+  <modules>
+    <module>datum-bom</module>
+    <module>libs/datum-core</module>
+    <module>libs/datum-core-test-support</module>
+    <module>libs/datum-programs</module>
+    <module>libs/datum-sandbox</module>
+    <module>libs/datum-sandbox-test-support</module>
+    <module>libs/datum-sandbox-tck</module>
+    <module>libs/datum-sandbox-endive</module>
+    <module>libs/datum-sandbox-endive-jffi</module>
+    <module>libs/datum-sandbox-endive-panama</module>
+    <module>libs/datum-web-core</module>
+    <module>libs/datum-forms</module>
+    <module>libs/datum-forms-test-support</module>
+    <module>libs/datum-submissions</module>
+    <module>libs/datum-submissions-test-support</module>
+    <module>libs/datum-ui</module>
+    <module>libs/datum-ui-test-support</module>
+    <module>libs/datum-pdf</module>
+    <module>libs/datum-pdf-test-support</module>
+    <module>libs/datum-timestamp</module>
+    <module>libs/datum-timestamp-test-support</module>
+    <module>libs/datum-webauthn</module>
+    <module>libs/datum-webauthn-test-support</module>
+    <module>spring/datum-spring-web</module>
+    <module>spring/datum-sandbox-spring</module>
+    <module>spring/datum-forms-spring</module>
+    <module>spring/datum-submissions-spring</module>
+    <module>spring/datum-ui-spring</module>
+    <module>spring/datum-pdf-spring</module>
+    <module>spring/datum-timestamp-spring</module>
+    <module>spring/datum-webauthn-spring</module>
+    <module>spring/datum-spring-boot-starter-submissions</module>
+    <module>spring/datum-spring-boot-starter-ui</module>
+    <module>spring/datum-spring-boot-starter-pdf</module>
+    <module>spring/datum-spring-boot-starter-timestamp</module>
+    <module>spring/datum-spring-boot-starter-webauthn</module>
+    <module>spring/datum-spring-boot-starter-test</module>
+    <module>tck/datum-host-tck</module>
+    <module>examples</module>
+  </modules>
+
+  <properties>
+    <!-- One version for the whole reactor (flatten-maven-plugin resolves it in published poms); release: -Drevision=x.y.z -->
+    <revision>0.1.0-SNAPSHOT</revision>
+    <maven.compiler.release>17</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <spring-boot.version>4.2.0</spring-boot.version>
+    <endive.version>1.2.0</endive.version>
+    <jimfs.version>1.3.2</jimfs.version>
+    <webauthn4j.version>0.32.0.RELEASE</webauthn4j.version>
+    <jcs.version>1.1</jcs.version>
+    <swagger.version>2.2.56</swagger.version>
+    <!-- springdoc 3.x is the line for Spring Boot 4 -->
+    <springdoc.version>3.2.1</springdoc.version>
+    <!-- plugin versions -->
+    <maven-compiler-plugin.version>3.16.0</maven-compiler-plugin.version>
+    <maven-surefire-plugin.version>3.6.1</maven-surefire-plugin.version>
+    <maven-jar-plugin.version>3.5.1</maven-jar-plugin.version>
+    <maven-source-plugin.version>3.4.0</maven-source-plugin.version>
+    <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
+    <maven-enforcer-plugin.version>3.7.0</maven-enforcer-plugin.version>
+    <maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
+    <maven-resources-plugin.version>3.5.0</maven-resources-plugin.version>
+    <exec-maven-plugin.version>3.7.0</exec-maven-plugin.version>
+    <build-helper-maven-plugin.version>3.8.0</build-helper-maven-plugin.version>
+    <maven-deploy-plugin.version>3.2.0</maven-deploy-plugin.version>
+    <maven-install-plugin.version>3.2.0</maven-install-plugin.version>
+    <flatten-maven-plugin.version>1.9.0</flatten-maven-plugin.version>
+    <properties-maven-plugin.version>1.4.0</properties-maven-plugin.version>
+    <central-publishing-maven-plugin.version>0.12.0</central-publishing-maven-plugin.version>
+    <!-- The generated assets: the root build runs integrations/jvm/scripts/build-assets.mjs once per reactor build, into
+         target/datum-assets, which every module reads (${maven.multiModuleProjectDirectory} is this directory, also for -pl).
+         -Ddatum.assets.skip=true reuses what is there; -Ddatum.assets.allowStale=true builds from a dist older than its
+         sources; -Ddatum.assets.omitFeatures=pdf,journeys leaves features out. -->
+    <datum.assets.dir>${maven.multiModuleProjectDirectory}/target/datum-assets</datum.assets.dir>
+    <datum.assets.skip>false</datum.assets.skip>
+    <datum.assets.allowStale>false</datum.assets.allowStale>
+    <datum.assets.omitFeatures></datum.assets.omitFeatures>
+    <!-- datum-sandbox-endive's Panama ITs; the jdk25 profile turns them on. -->
+    <datum.panama.it.skip>true</datum.panama.it.skip>
+    <!-- Failsafe's own default, declared so the jdk25 profile can follow it (a -DskipITs on the command line wins). -->
+    <skipITs>false</skipITs>
+    <!--
+      JUnit tags. The tests that start PostgreSQL and MySQL in Testcontainers are
+      tagged "containers" and left out by default, so a build without Docker stays green and fast. The containers profile (below)
+      runs them with everything else; to run only them: ./mvnw -Pcontainers -Ddatum.test.groups=containers -pl spring/datum-forms-spring verify
+    -->
+    <datum.test.groups></datum.test.groups>
+    <datum.test.excludedGroups>containers</datum.test.excludedGroups>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${spring-boot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <!-- Datum artifacts and the pinned third-party libraries come from the BOM this reactor also publishes. -->
+      <dependency>
+        <groupId>com.argusvane</groupId>
+        <artifactId>datum-bom</artifactId>
+        <version>${revision}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin><artifactId>maven-compiler-plugin</artifactId><version>${maven-compiler-plugin.version}</version></plugin>
+        <plugin><artifactId>maven-surefire-plugin</artifactId><version>${maven-surefire-plugin.version}</version></plugin>
+        <plugin><artifactId>maven-failsafe-plugin</artifactId><version>${maven-surefire-plugin.version}</version></plugin>
+        <plugin><artifactId>maven-jar-plugin</artifactId><version>${maven-jar-plugin.version}</version></plugin>
+        <plugin><artifactId>maven-source-plugin</artifactId><version>${maven-source-plugin.version}</version></plugin>
+        <plugin><artifactId>maven-javadoc-plugin</artifactId><version>${maven-javadoc-plugin.version}</version></plugin>
+        <plugin><artifactId>maven-enforcer-plugin</artifactId><version>${maven-enforcer-plugin.version}</version></plugin>
+        <plugin><artifactId>maven-gpg-plugin</artifactId><version>${maven-gpg-plugin.version}</version></plugin>
+        <plugin><artifactId>maven-resources-plugin</artifactId><version>${maven-resources-plugin.version}</version></plugin>
+        <plugin><groupId>org.codehaus.mojo</groupId><artifactId>exec-maven-plugin</artifactId><version>${exec-maven-plugin.version}</version></plugin>
+        <plugin><groupId>org.codehaus.mojo</groupId><artifactId>build-helper-maven-plugin</artifactId><version>${build-helper-maven-plugin.version}</version></plugin>
+        <plugin><artifactId>maven-deploy-plugin</artifactId><version>${maven-deploy-plugin.version}</version></plugin>
+        <plugin><artifactId>maven-install-plugin</artifactId><version>${maven-install-plugin.version}</version></plugin>
+        <plugin><groupId>org.codehaus.mojo</groupId><artifactId>flatten-maven-plugin</artifactId><version>${flatten-maven-plugin.version}</version></plugin>
+        <plugin><groupId>org.codehaus.mojo</groupId><artifactId>properties-maven-plugin</artifactId><version>${properties-maven-plugin.version}</version></plugin>
+        <plugin><groupId>org.sonatype.central</groupId><artifactId>central-publishing-maven-plugin</artifactId><version>${central-publishing-maven-plugin.version}</version></plugin>
+      </plugins>
+    </pluginManagement>
+
+    <testResources>
+      <testResource><directory>${basedir}/src/test/resources</directory></testResource>
+      <!-- The generated test fixtures (copies of the repository's golden files): target/datum-assets/<artifactId>/test-fixtures
+           appears on the test class path as datum-fixtures/, where the tests have always read it, so nothing generated sits beside
+           src. A module the generation gives no fixtures has no such directory, which the plugin skips. -->
+      <testResource>
+        <directory>${datum.assets.dir}/${project.artifactId}/test-fixtures</directory>
+        <targetPath>datum-fixtures</targetPath>
+      </testResource>
+    </testResources>
+
+    <plugins>
+      <plugin>
+        <!-- The repository root as a plain path (the enforcer's file rule does not resolve a ".." segment), for the dist check below.
+             Only the root runs it. -->
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <inherited>false</inherited>
+        <executions>
+          <execution>
+            <id>repository-root</id>
+            <phase>validate</phase>
+            <goals><goal>regex-property</goal></goals>
+            <configuration>
+              <name>datum.repo.root</name>
+              <value>${maven.multiModuleProjectDirectory}</value>
+              <regex>/integrations/jvm/?$</regex>
+              <replacement></replacement>
+              <failIfNoMatch>true</failIfNoMatch>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <release>${maven.compiler.release}</release>
+          <parameters>true</parameters>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!-- Modules have no tests yet; the skeleton must still verify. -->
+          <failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
+          <!-- The "containers" tag is left out unless the containers profile (or -Ddatum.test.excludedGroups=) lets it in. -->
+          <groups>${datum.test.groups}</groups>
+          <excludedGroups>${datum.test.excludedGroups}</excludedGroups>
+        </configuration>
+      </plugin>
+      <plugin>
+        <!-- Integration tests are *IT.java, run in verify. -->
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestEntries>
+              <!-- The Datum-* entries come from target/datum-assets/assets.properties, read at initialize by the properties plugin below;
+                   release.mjs refuses a jar without them (and one where the value is still a literal placeholder, as a
+                   checkout without generated assets leaves it). -->
+              <Implementation-Version>${project.version}</Implementation-Version>
+              <Datum-Engine-Version>${datum.engineVersion}</Datum-Engine-Version>
+              <Datum-Sandbox-Abi>${datum.sandboxAbi}</Datum-Sandbox-Abi>
+              <Datum-Pdf-Abi>${datum.pdfAbi}</Datum-Pdf-Abi>
+              <Datum-Build-Id>${datum.buildId}</Datum-Build-Id>
+              <Datum-Source>${datum.source}</Datum-Source>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <!-- The root build generates the assets from packages/datum/dist (the exec below); a checkout without that
+                 build says so here, before node is asked, naming the build that makes it. Not inherited: only the root runs it. -->
+            <id>require-datum-dist</id>
+            <phase>validate</phase>
+            <inherited>false</inherited>
+            <goals><goal>enforce</goal></goals>
+            <configuration>
+              <skip>${datum.assets.skip}</skip>
+              <rules>
+                <requireFilesExist>
+                  <files>
+                    <file>${datum.repo.root}/packages/datum/dist/datum-form.js</file>
+                    <file>${datum.repo.root}/packages/datum/dist/datum-sandbox-program.js</file>
+                    <file>${datum.repo.root}/packages/datum/dist/datum-pdf-program.js</file>
+                  </files>
+                  <message>packages/datum/dist is missing: run npm run datum:build (repository root) first. The JVM build generates its
+assets from it (target/datum-assets); -Ddatum.assets.skip=true reuses a previous generation instead.</message>
+                </requireFilesExist>
+              </rules>
+            </configuration>
+          </execution>
+          <execution>
+            <id>enforce-toolchain</id>
+            <phase>validate</phase>
+            <goals><goal>enforce</goal></goals>
+            <configuration>
+              <rules>
+                <requireMavenVersion><version>[3.9.16,)</version></requireMavenVersion>
+                <requireJavaVersion><version>[17,)</version></requireJavaVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <!-- The generated assets: the existing build script, run once per reactor build by the root project only
+             (not inherited), writes target/datum-assets/<artifactId>/ for every module, target/datum-assets/assets.properties and the
+             test fixtures. A build of one module with -pl does not start the root and reuses the last generation; mvn clean at the
+             root removes it. The npm script jvm:assets runs the same script (with the dist lock). Needs node on the PATH. -->
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <inherited>false</inherited>
+        <executions>
+          <execution>
+            <id>generate-datum-assets</id>
+            <phase>generate-resources</phase>
+            <goals><goal>exec</goal></goals>
+            <configuration>
+              <skip>${datum.assets.skip}</skip>
+              <executable>node</executable>
+              <workingDirectory>${maven.multiModuleProjectDirectory}</workingDirectory>
+              <arguments>
+                <!-- Through the datum-dist lock, as the npm alias does, so a datum:build in another session
+                     never rewrites the dist while it is copied. -->
+                <argument>${datum.repo.root}/scripts/with-lock.mjs</argument>
+                <argument>datum-dist</argument>
+                <argument>--</argument>
+                <argument>node</argument>
+                <argument>scripts/build-assets.mjs</argument>
+                <argument>--out</argument>
+                <argument>${datum.assets.dir}</argument>
+                <argument>--allow-stale=${datum.assets.allowStale}</argument>
+                <argument>--omit-features=${datum.assets.omitFeatures}</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <!-- target/datum-assets/<artifactId>/datum/** is the shared page glue and SQL migrations (integrations/shared, copied in by the asset generation): they
+             land in META-INF/datum/..., the classpath paths the jars have always carried. -->
+        <!-- Every published jar carries META-INF/LICENSE (the repository's MIT text) and META-INF/NOTICE (the module's
+             generated third-party notice, NOTICE written by the asset generation from scripts/notices.json).
+             A directory that does not exist is skipped, so a checkout without generated assets still compiles; the
+             release script checks every jar for both entries. -->
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-legal</id>
+            <phase>process-resources</phase>
+            <goals><goal>copy-resources</goal></goals>
+            <configuration>
+              <outputDirectory>${project.build.outputDirectory}/META-INF</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${datum.assets.dir}/${project.artifactId}</directory>
+                  <includes><include>NOTICE</include><include>datum/**</include></includes>
+                </resource>
+                <resource>
+                  <directory>${maven.multiModuleProjectDirectory}/../..</directory>
+                  <includes><include>LICENSE</include></includes>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <!-- assets.properties is generated with the assets (target/datum-assets); absent before the root build or on a -pl build without
+             a previous generation, so read it quietly (release.mjs refuses a jar with a placeholder). -->
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>properties-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>read-assets-properties</id>
+            <phase>initialize</phase>
+            <goals><goal>read-project-properties</goal></goals>
+            <configuration>
+              <files>
+                <file>${datum.assets.dir}/assets.properties</file>
+              </files>
+              <quiet>true</quiet>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>flatten-maven-plugin</artifactId>
+        <configuration>
+          <flattenMode>ossrh</flattenMode>
+          <updatePomFile>true</updatePomFile>
+        </configuration>
+        <executions>
+          <execution>
+            <id>flatten</id>
+            <phase>process-resources</phase>
+            <goals><goal>flatten</goal></goals>
+          </execution>
+          <execution>
+            <id>flatten-clean</id>
+            <phase>clean</phase>
+            <goals><goal>clean</goal></goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <!--
+        The stores' tests on real PostgreSQL and MySQL: the shipped scripts, generated
+        keys, FOR UPDATE locks, duplicate-key races and the exception translation, none of which H2's PostgreSQL and MySQL modes
+        reproduce. The tests are tagged "containers" (Testcontainers 2, @Testcontainers(disabledWithoutDocker = true), so a machine
+        whose Docker does not answer skips them). Active on its own on a GitHub Actions Linux runner (the variable and the Docker
+        socket are both there; macOS and Windows runners have no Docker), so the CI job that runs ./mvnw verify runs them; on a
+        machine with Docker ask for it with -Pcontainers, and turn it off with -P!containers.
+      -->
+      <id>containers</id>
+      <activation>
+        <property>
+          <name>env.GITHUB_ACTIONS</name>
+          <value>true</value>
+        </property>
+        <file>
+          <exists>/var/run/docker.sock</exists>
+        </file>
+      </activation>
+      <properties>
+        <datum.test.excludedGroups></datum.test.excludedGroups>
+      </properties>
+    </profile>
+    <profile>
+      <!--
+        Java 25+ only: runs datum-sandbox-endive's panama-it execution (the ITs again with the Panama runner beside JFFI,
+        whose classes are version 69 and load nowhere else). Nothing else changes with the JDK.
+      -->
+      <id>jdk25</id>
+      <activation>
+        <jdk>[25,)</jdk>
+      </activation>
+      <properties>
+        <!-- On unless -DskipITs: the panama-it execution binds its skipITs to this, so it must follow skipITs. -->
+        <datum.panama.it.skip>${skipITs}</datum.panama.it.skip>
+      </properties>
+    </profile>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-source-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals><goal>jar-no-fork</goal></goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+              <doclint>none</doclint>
+              <!-- Skeleton modules hold only package-info ("No public or protected classes found"); drop once real types land. -->
+              <failOnError>false</failOnError>
+            </configuration>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals><goal>jar</goal></goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals><goal>sign</goal></goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <extensions>true</extensions>
+            <configuration>
+              <publishingServerId>central</publishingServerId>
+              <!-- The test-support modules also set maven.deploy.skip; naming them here keeps them out of the bundle however
+                   the build is invoked (scripts/release.mjs checks that every one is listed). -->
+              <excludeArtifacts>
+                <excludeArtifact>datum-core-test-support</excludeArtifact>
+                <excludeArtifact>datum-sandbox-test-support</excludeArtifact>
+                <excludeArtifact>datum-forms-test-support</excludeArtifact>
+                <excludeArtifact>datum-submissions-test-support</excludeArtifact>
+                <excludeArtifact>datum-ui-test-support</excludeArtifact>
+                <excludeArtifact>datum-pdf-test-support</excludeArtifact>
+                <excludeArtifact>datum-timestamp-test-support</excludeArtifact>
+                <excludeArtifact>datum-webauthn-test-support</excludeArtifact>
+              </excludeArtifacts>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

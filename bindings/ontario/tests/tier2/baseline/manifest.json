@@ -1,0 +1,85 @@
+{
+  "format": 1,
+  "environment": {
+    "platform": "darwin",
+    "browser": "chromium 158.0.8127.18"
+  },
+  "files": {
+    "date-disabled.png": {
+      "sha256": "d0ae6551172b873f70215901e5b161bd0af8a503844a080d06aea6f734d13a08"
+    },
+    "date-empty.png": {
+      "sha256": "54b6cb94b2302cbab7298ab6bc9bcffba575eae9d54893c334efbbefd74ad68e"
+    },
+    "date-error.png": {
+      "sha256": "7de6b177b58aa4ba75cbaf0c8e2a564e94a78416512e510871d97497d2602baa"
+    },
+    "date-french.png": {
+      "sha256": "13ba45ece4529ab92c3c7fcb5a6518d8381de71954d98233b4d122d10b73e0e8"
+    },
+    "date-value.png": {
+      "sha256": "1dd4275853681d6bb6e1c13a99e735a1e54b30bf46f220d152cc760e099a50c4"
+    },
+    "grid-rows.png": {
+      "sha256": "6e8e7b69ddcea9f83939e3258ab1fa0a7f02169904c3fe6ed201f3e99586dbf6"
+    },
+    "steps-first.png": {
+      "sha256": "28ec41618a0c704bb125c9daf0aa5143ea29cfc926eb167d6c5121533da3be92"
+    },
+    "textarea-count-over.png": {
+      "sha256": "f0b254dda513afc4c5fec30066df33bfb13c17e4e6f6982d9c4de0a4900aca97"
+    },
+    "textarea-count.png": {
+      "sha256": "15cb10ac47aa50338e65461f6ed32ac608ddd7ca0fad05bb2fc43ba798236bc2"
+    },
+    "summary-error.png": {
+      "sha256": "ce28dd364ae56483df2bf470754860f363012d132a85457ed40e91586fe2bd9f"
+    }
+  },
+  "signOff": {
+    "reviewer": "Argusvane maintainers",
+    "date": "2026-11-10",
+    "pngs": [
+      {
+        "file": "date-disabled.png",
+        "sha256": "d0ae6551172b873f70215901e5b161bd0af8a503844a080d06aea6f734d13a08"
+      },
+      {
+        "file": "date-empty.png",
+        "sha256": "54b6cb94b2302cbab7298ab6bc9bcffba575eae9d54893c334efbbefd74ad68e"
+      },
+      {
+        "file": "date-error.png",
+        "sha256": "7de6b177b58aa4ba75cbaf0c8e2a564e94a78416512e510871d97497d2602baa"
+      },
+      {
+        "file": "date-french.png",
+        "sha256": "13ba45ece4529ab92c3c7fcb5a6518d8381de71954d98233b4d122d10b73e0e8"
+      },
+      {
+        "file": "date-value.png",
+        "sha256": "1dd4275853681d6bb6e1c13a99e735a1e54b30bf46f220d152cc760e099a50c4"
+      },
+      {
+        "file": "grid-rows.png",
+        "sha256": "6e8e7b69ddcea9f83939e3258ab1fa0a7f02169904c3fe6ed201f3e99586dbf6"
+      },
+      {
+        "file": "steps-first.png",
+        "sha256": "28ec41618a0c704bb125c9daf0aa5143ea29cfc926eb167d6c5121533da3be92"
+      },
+      {
+        "file": "summary-error.png",
+        "sha256": "ce28dd364ae56483df2bf470754860f363012d132a85457ed40e91586fe2bd9f"
+      },
+      {
+        "file": "textarea-count-over.png",
+        "sha256": "f0b254dda513afc4c5fec30066df33bfb13c17e4e6f6982d9c4de0a4900aca97"
+      },
+      {
+        "file": "textarea-count.png",
+        "sha256": "15cb10ac47aa50338e65461f6ed32ac608ddd7ca0fad05bb2fc43ba798236bc2"
+      }
+    ]
+  }
+}

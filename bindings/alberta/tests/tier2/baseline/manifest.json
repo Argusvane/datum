@@ -1,0 +1,92 @@
+{
+  "format": 1,
+  "environment": {
+    "platform": "darwin",
+    "browser": "chromium 158.0.8127.18"
+  },
+  "files": {
+    "date-disabled.png": {
+      "sha256": "efc70e67526419b49c41c6872f4255ac668bc02eb7bf077eb5b7e2d3b537095e"
+    },
+    "date-empty.png": {
+      "sha256": "e6ea6de7f3a36cb0e0c9f3af6c98edf82c906f4a927a40d08414d8489904bced"
+    },
+    "date-error.png": {
+      "sha256": "156bd8bc614281caca56d6bca034f0129e2b3b67c885f793febe35bbd44be938"
+    },
+    "date-value.png": {
+      "sha256": "d0f68454f1b35383c4c8f599f144e279fe168b06138e465b4de45a555882ea33"
+    },
+    "fieldset-group.png": {
+      "sha256": "84dc915cd7b7734f1a72fe02272dfd7c49db44af2479158dd144ad47ec57a10a"
+    },
+    "grid-rows.png": {
+      "sha256": "c4a7f779107b8121b211a21a92ff604d4118d2a3152fc74c4dbeee0652c4920f"
+    },
+    "grid-table.png": {
+      "sha256": "c9573c1ac13474a3ac0814dcd99ab64454895155721cda54dd1c863742eda380"
+    },
+    "steps-first.png": {
+      "sha256": "cd20dd2cbce60691aaf8a6e6837373828cb754a51009533f838ecc6f2009d872"
+    },
+    "tabs-first.png": {
+      "sha256": "bffc9262f7fcb8cd821692b94fa310794f26eca262db08d9816ee99f1a6102fb"
+    },
+    "textarea-count-over.png": {
+      "sha256": "1f446d8bd109e4864301e800ff6a9157507547243b784c634aa041ba9f40456f"
+    },
+    "textarea-count.png": {
+      "sha256": "ad9fdbe3b1b104da4f948bb671bcccdf62ea3a224d16875e1df32e46d29a1de9"
+    }
+  },
+  "signOff": {
+    "reviewer": "Argusvane maintainers",
+    "date": "2026-11-10",
+    "pngs": [
+      {
+        "file": "date-disabled.png",
+        "sha256": "efc70e67526419b49c41c6872f4255ac668bc02eb7bf077eb5b7e2d3b537095e"
+      },
+      {
+        "file": "date-empty.png",
+        "sha256": "e6ea6de7f3a36cb0e0c9f3af6c98edf82c906f4a927a40d08414d8489904bced"
+      },
+      {
+        "file": "date-error.png",
+        "sha256": "156bd8bc614281caca56d6bca034f0129e2b3b67c885f793febe35bbd44be938"
+      },
+      {
+        "file": "date-value.png",
+        "sha256": "d0f68454f1b35383c4c8f599f144e279fe168b06138e465b4de45a555882ea33"
+      },
+      {
+        "file": "fieldset-group.png",
+        "sha256": "84dc915cd7b7734f1a72fe02272dfd7c49db44af2479158dd144ad47ec57a10a"
+      },
+      {
+        "file": "grid-rows.png",
+        "sha256": "c4a7f779107b8121b211a21a92ff604d4118d2a3152fc74c4dbeee0652c4920f"
+      },
+      {
+        "file": "grid-table.png",
+        "sha256": "c9573c1ac13474a3ac0814dcd99ab64454895155721cda54dd1c863742eda380"
+      },
+      {
+        "file": "steps-first.png",
+        "sha256": "cd20dd2cbce60691aaf8a6e6837373828cb754a51009533f838ecc6f2009d872"
+      },
+      {
+        "file": "tabs-first.png",
+        "sha256": "bffc9262f7fcb8cd821692b94fa310794f26eca262db08d9816ee99f1a6102fb"
+      },
+      {
+        "file": "textarea-count-over.png",
+        "sha256": "1f446d8bd109e4864301e800ff6a9157507547243b784c634aa041ba9f40456f"
+      },
+      {
+        "file": "textarea-count.png",
+        "sha256": "ad9fdbe3b1b104da4f948bb671bcccdf62ea3a224d16875e1df32e46d29a1de9"
+      }
+    ]
+  }
+}

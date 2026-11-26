@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-ui</artifactId>
+  <packaging>jar</packaging>
+  <name>datum-ui</name>
+  <description>Datum UI: browser assets, glue and builder endpoints. Framework-free library; the Spring Boot binding is datum-ui-spring.</description>
+  <dependencies>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-sandbox</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-forms</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-web-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- The shared test helpers (the library-boundary rule, the settings-record copy check, the recording observation registry);
+         datum-core-test-support is never published. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-core-test-support</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <resources>
+      <resource><directory>${basedir}/src/main/resources</directory></resource>
+      <!-- The generated assets (target/datum-assets/<artifactId>) land under META-INF/datum/ (programs/, assets/, manifest.json); NOTICE (and LICENSE) reach META-INF/ through the parent pom's copy-legal execution. -->
+      <resource>
+        <directory>${datum.assets.dir}/${project.artifactId}</directory>
+        <targetPath>META-INF/datum</targetPath>
+        <excludes><exclude>NOTICE</exclude></excludes>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <!-- The helpers this module's -spring binding shares with its own tests (fixtures, fake runtimes) live in
+             datum-ui-test-support, which depends on this module; a dependency back would be a cycle, so this module's tests
+             compile the same sources and resources from there. -->
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>shared-test-helpers</id>
+            <phase>generate-test-sources</phase>
+            <goals><goal>add-test-source</goal></goals>
+            <configuration>
+              <sources>
+                <source>${project.basedir}/../datum-ui-test-support/src/main/java</source>
+              </sources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>shared-test-helper-resources</id>
+            <phase>generate-test-resources</phase>
+            <goals><goal>add-test-resource</goal></goals>
+            <configuration>
+              <resources>
+                <resource><directory>${project.basedir}/../datum-ui-test-support/src/main/resources</directory></resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <!-- The generated assets are build output (target/datum-assets, written by the root build); a -pl build with none must say how to make them. Checked at process-resources, where they are used, so a build that stops earlier (the CI runtime compile, up to generate-sources) needs none. -->
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>require-assets</id>
+            <phase>process-resources</phase>
+            <goals><goal>enforce</goal></goals>
+            <configuration>
+              <rules>
+                <requireFilesExist>
+                  <files><file>${datum.assets.dir}/${project.artifactId}/manifest.json</file></files>
+                  <message>the generated assets are missing (${datum.assets.dir}/${project.artifactId}): run ./mvnw -N generate-resources in integrations/jvm (or npm run jvm:assets at the repository root), or build the whole reactor, which generates them first</message>
+                </requireFilesExist>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

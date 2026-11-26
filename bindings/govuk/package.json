@@ -1,0 +1,60 @@
+{
+  "name": "@argusvane/datum-binding-govuk",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "author": "Argusvane <maintainers@argusvane.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/argusvane/datum.git",
+    "directory": "bindings/govuk"
+  },
+  "homepage": "https://datum.argusvane.com",
+  "bugs": {
+    "url": "https://github.com/argusvane/datum/issues"
+  },
+  "keywords": [
+    "datum",
+    "forms",
+    "form-renderer",
+    "design-system",
+    "binding"
+  ],
+  "description": "GOV.UK Frontend (design-system.service.gov.uk) binding for the Datum form renderer: Datum's components drawn in the design system's own markup.",
+  "type": "module",
+  "datumBinding": {
+    "id": "govuk",
+    "designSystem": "GOV.UK Frontend",
+    "release": "6.6.0",
+    "bundle": "dist/govuk.js",
+    "global": "DatumBindingGovuk",
+    "budgetKb": 10,
+    "checks": [
+      "src/checks.mjs"
+    ]
+  },
+  "scripts": {
+    "build": "node ./src/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "reference": "node ./reference/generate.mjs",
+    "kit:check": "node ../../packages/datum/binding-kit/check.mjs --binding govuk",
+    "kit:build": "node ../../packages/datum/binding-kit/build.mjs --binding govuk",
+    "kit:equality": "node ../../packages/datum/binding-kit/equality.mjs --binding govuk",
+    "kit:behaviour": "node ../../packages/datum/binding-kit/behaviour.mjs --binding govuk",
+    "kit:conformance": "node ../../packages/datum/binding-kit/conformance.ts --binding govuk",
+    "kit:serve": "node ../../packages/datum/binding-kit/serve.mjs --binding govuk"
+  },
+  "devDependencies": {
+    "@argusvane/datum-engine": "file:../../engine",
+    "esbuild": "^0.28.2",
+    "govuk-frontend-6.6.0": "npm:govuk-frontend@6.6.0",
+    "nunjucks": "^3.2.4",
+    "typescript": "^7.0.2"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  }
+}

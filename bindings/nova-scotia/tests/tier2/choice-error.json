@@ -1,0 +1,29 @@
+{
+  "note": "a required group of radios validated: the group is has-error, the glyph goes in front of the message",
+  "components": [
+    {
+      "id": "contact",
+      "type": "radio",
+      "configuration": {
+        "label": "Preferred contact method",
+        "required": true,
+        "options": [
+          {
+            "value": "email",
+            "label": "Email"
+          },
+          {
+            "value": "phone",
+            "label": "Phone"
+          }
+        ]
+      }
+    }
+  ],
+  "steps": [
+    {
+      "op": "validate"
+    }
+  ],
+  "width": 560
+}

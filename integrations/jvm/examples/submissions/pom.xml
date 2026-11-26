@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-examples</artifactId>
+    <version>${revision}</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-example-submissions</artifactId>
+  <packaging>jar</packaging>
+  <name>datum-example-submissions</name>
+  <description>Story one: a Spring MVC application with the submissions starter and nothing else; the server validates every submission with the form's own rules.</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-sandbox</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-spring-boot-starter-submissions</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webmvc</artifactId>
+    </dependency>
+    <!-- /actuator/health carries the datum runtime check (state, slots, ABI) and /actuator/info the datum capabilities. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- The host test kit's wire contracts (datum-host-tck, through the test starter's DatumTck). -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- ObservationTraceIT: Micrometer's in-memory tracer makes spans of the observations, so the test reads the
+         trace an operator's tracer would (the version is Spring Boot's micrometer-tracing). -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-tracing-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <!-- The Panama runner (JDK 22+) calls restricted native methods. This manifest attribute lets java -jar do so
+               without a warning (and, when the JVM denies illegal native access, without an IllegalCallerException). Spring
+               Boot's repackage keeps the plain jar's manifest entries, so the -exec jar carries it too. -->
+          <archive>
+            <manifestEntries>
+              <Enable-Native-Access>ALL-UNNAMED</Enable-Native-Access>
+            </manifestEntries>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <version>${spring-boot.version}</version>
+        <configuration>
+          <!-- The runnable jar is a classified companion: the plain jar stays the module's artifact, which is what failsafe puts on the classpath. -->
+          <classifier>exec</classifier>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>repackage</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

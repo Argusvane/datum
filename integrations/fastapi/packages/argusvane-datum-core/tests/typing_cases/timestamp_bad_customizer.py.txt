@@ -1,0 +1,7 @@
+from datum_core.timestamp import TimestampRequestHook
+
+
+def wrong(draft: int) -> None: ...
+
+
+bad: TimestampRequestHook = wrong

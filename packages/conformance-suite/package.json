@@ -1,0 +1,114 @@
+{
+  "name": "@argusvane/datum-conformance-suite",
+  "version": "0.1.0",
+  "private": false,
+  "license": "MIT",
+  "author": "Argusvane <maintainers@argusvane.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/argusvane/datum.git",
+    "directory": "packages/conformance-suite"
+  },
+  "homepage": "https://datum.argusvane.com",
+  "bugs": {
+    "url": "https://github.com/argusvane/datum/issues"
+  },
+  "keywords": [
+    "datum",
+    "forms",
+    "conformance",
+    "security",
+    "testing",
+    "cli"
+  ],
+  "description": "Datum's conformance suite: datum-security-check (attack vectors against the validation gate's program or a live endpoint), datum-host-check (a host's wire contract) and datum-binding-check (a form-renderer binding against Datum's feature corpus, in a browser), with JSON reports and CI exit codes.",
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/types/packages/conformance-suite/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/packages/conformance-suite/src/index.d.ts",
+      "import": "./dist/index.mjs"
+    },
+    "./binding-check": {
+      "import": "./binding-check/api.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "datum-security-check": "./bin/datum-security-check.mjs",
+    "datum-host-check": "./bin/datum-host-check.mjs",
+    "datum-binding-check": "./bin/datum-binding-check.mjs"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.map",
+    "bin",
+    "binding-check",
+    "!binding-check/host",
+    "!binding-check/tsconfig.json",
+    "golden",
+    "fixtures",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "node ../../scripts/npm/build-types.mjs && node scripts/build-cli.mjs && node scripts/build-binding-check.mjs && node ../../scripts/npm/bundle-licence.mjs datum-conformance-suite dist/index.mjs dist/host-check.mjs binding-check/dist/host.js",
+    "build:binding-check": "node scripts/build-binding-check.mjs",
+    "typecheck": "tsc --noEmit && tsc -p binding-check/tsconfig.json",
+    "test": "vitest run",
+    "check:source": "vite-node scripts/check-source.ts --",
+    "golden:write": "vite-node scripts/write-golden.ts",
+    "golden:agent": "vite-node scripts/write-agent-golden.ts",
+    "pack:smoke": "vitest run tests/pack.test.ts",
+    "binding-check": "node bin/datum-binding-check.mjs",
+    "pack:check": "node ../../scripts/npm/pack-check.mjs .",
+    "prepack": "npm run build && node ../../scripts/npm/prepack.mjs"
+  },
+  "devDependencies": {
+    "@argusvane/datum-engine": "file:../../engine",
+    "@argusvane/datum-pdf-kernel": "file:../pdf-kernel",
+    "@argusvane/datum-quickjs-wasm-host": "file:../quickjs-wasm-host",
+    "@argusvane/datum-submissions": "file:../submissions",
+    "@types/node": "^26.6.6",
+    "ajv": "^8.17.1",
+    "esbuild": "^0.28.2",
+    "playwright": "^1.65.1",
+    "typescript": "^7.0.2",
+    "vite-node": "^6.0.0",
+    "vitest": "^5.0.5",
+    "yaml": "^2.9.1"
+  },
+  "peerDependencies": {
+    "esbuild": ">=0.20.0",
+    "playwright": ">=1.20.0",
+    "@codemirror/autocomplete": "^6.20.4",
+    "lit-html": "^3.3.3",
+    "quickjs-emscripten-core": "^0.32.0"
+  },
+  "peerDependenciesMeta": {
+    "esbuild": {
+      "optional": true
+    },
+    "playwright": {
+      "optional": true
+    },
+    "@codemirror/autocomplete": {
+      "optional": true
+    },
+    "lit-html": {
+      "optional": true
+    },
+    "quickjs-emscripten-core": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "note": "tier 2: a text field over its character limit: the count's status in colorPaletteRedForeground1",
+  "components": [
+    { "id": "nickname", "type": "text", "configuration": { "label": "Nickname", "maxLength": 5, "characterCount": true } }
+  ],
+  "steps": [ { "op": "type", "id": "nickname", "text": "Abcdefgh" } ],
+  "width": 560
+}

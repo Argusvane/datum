@@ -1,0 +1,748 @@
+{
+  "//": "Third-party notices per distribution of the FastAPI host. build-assets.mjs writes packages/<distribution>/NOTICE from these rows. kind: vendored (the files ship inside the wheel), dependency (installed beside it), extra (installed by the named extra). Licences are the expected ones. Datum's own MIT licence needs no row. Development-only tools (rfc8785, rfc3161-client, the dependency groups) are not listed. Rows marked \"generated\" name the npm packages the shipped bundles carry and are written by packages/datum/scripts/notices.mjs from the bundles' licence files (npm run notices in packages/datum); the rest are hand-written.",
+  "modules": {
+    "argusvane-datum-qjs-wasm": [
+      {
+        "name": "QuickJS-ng (qjs-wasi.wasm)",
+        "version": "0.16.2",
+        "license": "MIT",
+        "source": "https://github.com/quickjs-ng/quickjs/releases/tag/v0.16.2",
+        "kind": "vendored",
+        "textFile": "integrations/fastapi/scripts/notices/quickjs-ng-LICENSE.txt"
+      }
+    ],
+    "argusvane-datum-programs": [
+      {
+        "name": "DejaVu Fonts",
+        "version": "2.37.3",
+        "license": "DejaVu Fonts License (Bitstream Vera + Arev, free)",
+        "source": "https://www.npmjs.com/package/dejavu-fonts-ttf",
+        "kind": "vendored",
+        "textFile": "integrations/fastapi/scripts/notices/dejavu-LICENSE.txt"
+      },
+      {
+        "name": "@cantoo/pdf-lib",
+        "version": "2.11.1",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/@cantoo/pdf-lib/v/2.11.1",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/cantoo__pdf-lib-2.11.1.txt",
+        "generated": true
+      },
+      {
+        "name": "bidi-js",
+        "version": "1.1.0",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/bidi-js/v/1.1.0",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/bidi-js-1.1.0.txt",
+        "generated": true
+      },
+      {
+        "name": "culori",
+        "version": "4.0.2",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/culori/v/4.0.2",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/culori-4.0.2.txt",
+        "generated": true
+      },
+      {
+        "name": "dfa",
+        "version": "2.0.0",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/dfa/v/2.0.0",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/dfa-2.0.0.txt",
+        "generated": true
+      },
+      {
+        "name": "fflate",
+        "version": "0.8.3",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/fflate/v/0.8.3",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/fflate-0.8.3.txt",
+        "generated": true
+      },
+      {
+        "name": "fontkit",
+        "version": "3.0.0",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/fontkit/v/3.0.0",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/fontkit-3.0.0.txt",
+        "generated": true
+      },
+      {
+        "name": "html-entities",
+        "version": "2.6.0",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/html-entities/v/2.6.0",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/html-entities-2.6.0.txt",
+        "generated": true
+      },
+      {
+        "name": "linebreak",
+        "version": "2.0.0",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/linebreak/v/2.0.0",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/linebreak-2.0.0.txt",
+        "generated": true
+      },
+      {
+        "name": "node-html-better-parser",
+        "version": "1.5.9",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/node-html-better-parser/v/1.5.9",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/node-html-better-parser-1.5.9.txt",
+        "generated": true
+      },
+      {
+        "name": "restructure",
+        "version": "3.0.2",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/restructure/v/3.0.2",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/restructure-3.0.2.txt",
+        "generated": true
+      },
+      {
+        "name": "tslib",
+        "version": "2.9.1",
+        "license": "0BSD",
+        "source": "https://www.npmjs.com/package/tslib/v/2.9.1",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/tslib-2.9.1.txt",
+        "generated": true
+      },
+      {
+        "name": "unicode-properties",
+        "version": "2.0.2",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/unicode-properties/v/2.0.2",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/unicode-properties-2.0.2.txt",
+        "generated": true
+      },
+      {
+        "name": "unicode-trie",
+        "version": "3.0.0",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/unicode-trie/v/3.0.0",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/unicode-trie-3.0.0.txt",
+        "generated": true
+      }
+    ],
+    "argusvane-datum-assets-ui": [
+      {
+        "name": "Geist and Geist Mono",
+        "version": "1.7.2",
+        "license": "OFL-1.1",
+        "source": "https://github.com/vercel/geist-font/releases",
+        "kind": "vendored",
+        "textFile": "integrations/fastapi/scripts/notices/geist-OFL.txt"
+      },
+      {
+        "name": "@codemirror/autocomplete",
+        "version": "6.20.4",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/@codemirror/autocomplete/v/6.20.4",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/codemirror__autocomplete-6.20.4.txt",
+        "generated": true
+      },
+      {
+        "name": "@codemirror/lang-json",
+        "version": "6.0.2",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/@codemirror/lang-json/v/6.0.2",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/codemirror__lang-json-6.0.2.txt",
+        "generated": true
+      },
+      {
+        "name": "@codemirror/language",
+        "version": "6.13.1",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/@codemirror/language/v/6.13.1",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/codemirror__language-6.13.1.txt",
+        "generated": true
+      },
+      {
+        "name": "@codemirror/lint",
+        "version": "6.9.8",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/@codemirror/lint/v/6.9.8",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/codemirror__lint-6.9.8.txt",
+        "generated": true
+      },
+      {
+        "name": "@codemirror/state",
+        "version": "6.7.6",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/@codemirror/state/v/6.7.6",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/codemirror__state-6.7.6.txt",
+        "generated": true
+      },
+      {
+        "name": "@codemirror/streamparser",
+        "version": "6.0.0",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/@codemirror/streamparser/v/6.0.0",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/codemirror__streamparser-6.0.0.txt",
+        "generated": true
+      },
+      {
+        "name": "@codemirror/view",
+        "version": "6.43.15",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/@codemirror/view/v/6.43.15",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/codemirror__view-6.43.15.txt",
+        "generated": true
+      },
+      {
+        "name": "@jitl/quickjs-ffi-types",
+        "version": "0.32.0",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/@jitl/quickjs-ffi-types/v/0.32.0",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/jitl__quickjs-ffi-types-0.32.0.txt",
+        "generated": true
+      },
+      {
+        "name": "@jitl/quickjs-singlefile-mjs-release-sync",
+        "version": "0.32.0",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/@jitl/quickjs-singlefile-mjs-release-sync/v/0.32.0",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/jitl__quickjs-singlefile-mjs-release-sync-0.32.0.txt",
+        "generated": true
+      },
+      {
+        "name": "@lezer/common",
+        "version": "1.5.5",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/@lezer/common/v/1.5.5",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/lezer__common-1.5.5.txt",
+        "generated": true
+      },
+      {
+        "name": "@lezer/highlight",
+        "version": "1.2.5",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/@lezer/highlight/v/1.2.5",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/lezer__highlight-1.2.5.txt",
+        "generated": true
+      },
+      {
+        "name": "@lezer/json",
+        "version": "1.0.3",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/@lezer/json/v/1.0.3",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/lezer__json-1.0.3.txt",
+        "generated": true
+      },
+      {
+        "name": "@lezer/lr",
+        "version": "1.4.12",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/@lezer/lr/v/1.4.12",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/lezer__lr-1.4.12.txt",
+        "generated": true
+      },
+      {
+        "name": "@marijn/find-cluster-break",
+        "version": "1.0.4",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/@marijn/find-cluster-break/v/1.0.4",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/marijn__find-cluster-break-1.0.4.txt",
+        "generated": true
+      },
+      {
+        "name": "crelt",
+        "version": "1.0.7",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/crelt/v/1.0.7",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/crelt-1.0.7.txt",
+        "generated": true
+      },
+      {
+        "name": "lit-html",
+        "version": "3.3.3",
+        "license": "BSD-3-Clause",
+        "source": "https://www.npmjs.com/package/lit-html/v/3.3.3",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/lit-html-3.3.3.txt",
+        "generated": true
+      },
+      {
+        "name": "quickjs-emscripten-core",
+        "version": "0.32.0",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/quickjs-emscripten-core/v/0.32.0",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/quickjs-emscripten-core-0.32.0.txt",
+        "generated": true
+      },
+      {
+        "name": "style-mod",
+        "version": "4.1.4",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/style-mod/v/4.1.4",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/style-mod-4.1.4.txt",
+        "generated": true
+      },
+      {
+        "name": "w3c-keyname",
+        "version": "2.2.8",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/w3c-keyname/v/2.2.8",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/w3c-keyname-2.2.8.txt",
+        "generated": true
+      }
+    ],
+    "argusvane-datum-assets-pdf": [
+      {
+        "name": "pdf.js (the worker, cmaps, standard fonts, wasm decoders and ICC profiles copied beside the page imagery module; the module itself is the pdfjs-dist row, and each data licence sits beside the files it covers in notices/pdfjs/)",
+        "version": "6.5.438",
+        "license": "Apache-2.0",
+        "source": "https://github.com/mozilla/pdf.js/releases/tag/v6.5.438",
+        "kind": "vendored"
+      },
+      {
+        "name": "pdf.js CMaps (character maps), bundled data of pdf.js 6.5.438",
+        "version": "6.5.438",
+        "license": "BSD-style (Adobe)",
+        "source": "https://github.com/mozilla/pdf.js/releases/tag/v6.5.438",
+        "kind": "vendored",
+        "textFile": "integrations/fastapi/scripts/notices/pdfjs/cmaps-LICENSE"
+      },
+      {
+        "name": "pdf.js ICC profiles, bundled data of pdf.js 6.5.438",
+        "version": "6.5.438",
+        "license": "CC0-1.0",
+        "source": "https://github.com/mozilla/pdf.js/releases/tag/v6.5.438",
+        "kind": "vendored",
+        "textFile": "integrations/fastapi/scripts/notices/pdfjs/iccs-LICENSE"
+      },
+      {
+        "name": "pdf.js standard fonts (Foxit), bundled data of pdf.js 6.5.438",
+        "version": "6.5.438",
+        "license": "BSD-style (Foxit)",
+        "source": "https://github.com/mozilla/pdf.js/releases/tag/v6.5.438",
+        "kind": "vendored",
+        "textFile": "integrations/fastapi/scripts/notices/pdfjs/standard_fonts-LICENSE_FOXIT"
+      },
+      {
+        "name": "pdf.js standard fonts (Liberation Sans, four unmodified TrueType faces), bundled data of pdf.js 6.5.438",
+        "version": "6.5.438",
+        "license": "GPL-2.0-only with the Liberation font exception (Red Hat's licence text)",
+        "source": "https://github.com/mozilla/pdf.js/releases/tag/v6.5.438",
+        "kind": "vendored",
+        "textFile": "integrations/fastapi/scripts/notices/pdfjs/standard_fonts-LICENSE_LIBERATION"
+      },
+      {
+        "name": "pdf.js JBIG2 decoder (wasm), bundled data of pdf.js 6.5.438",
+        "version": "6.5.438",
+        "license": "BSD-style",
+        "source": "https://github.com/mozilla/pdf.js/releases/tag/v6.5.438",
+        "kind": "vendored",
+        "textFile": "integrations/fastapi/scripts/notices/pdfjs/wasm-LICENSE_JBIG2"
+      },
+      {
+        "name": "pdf.js OpenJPEG decoder (wasm), bundled data of pdf.js 6.5.438",
+        "version": "6.5.438",
+        "license": "BSD-2-Clause",
+        "source": "https://github.com/mozilla/pdf.js/releases/tag/v6.5.438",
+        "kind": "vendored",
+        "textFile": "integrations/fastapi/scripts/notices/pdfjs/wasm-LICENSE_OPENJPEG"
+      },
+      {
+        "name": "pdf.js JBIG2 glue (wasm), bundled data of pdf.js 6.5.438",
+        "version": "6.5.438",
+        "license": "Apache-2.0",
+        "source": "https://github.com/mozilla/pdf.js/releases/tag/v6.5.438",
+        "kind": "vendored",
+        "textFile": "integrations/fastapi/scripts/notices/pdfjs/wasm-LICENSE_PDFJS_JBIG2"
+      },
+      {
+        "name": "pdf.js OpenJPEG glue (wasm), bundled data of pdf.js 6.5.438",
+        "version": "6.5.438",
+        "license": "BSD-2-Clause",
+        "source": "https://github.com/mozilla/pdf.js/releases/tag/v6.5.438",
+        "kind": "vendored",
+        "textFile": "integrations/fastapi/scripts/notices/pdfjs/wasm-LICENSE_PDFJS_OPENJPEG"
+      },
+      {
+        "name": "pdf.js QCMS glue (wasm), bundled data of pdf.js 6.5.438",
+        "version": "6.5.438",
+        "license": "MIT",
+        "source": "https://github.com/mozilla/pdf.js/releases/tag/v6.5.438",
+        "kind": "vendored",
+        "textFile": "integrations/fastapi/scripts/notices/pdfjs/wasm-LICENSE_PDFJS_QCMS"
+      },
+      {
+        "name": "QCMS colour management (wasm), bundled data of pdf.js 6.5.438",
+        "version": "6.5.438",
+        "license": "MIT",
+        "source": "https://github.com/mozilla/pdf.js/releases/tag/v6.5.438",
+        "kind": "vendored",
+        "textFile": "integrations/fastapi/scripts/notices/pdfjs/wasm-LICENSE_QCMS"
+      },
+      {
+        "name": "pdf.js QuickJS glue (wasm), bundled data of pdf.js 6.5.438",
+        "version": "6.5.438",
+        "license": "MIT",
+        "source": "https://github.com/mozilla/pdf.js/releases/tag/v6.5.438",
+        "kind": "vendored",
+        "textFile": "integrations/fastapi/scripts/notices/pdfjs/wasm-LICENSE_PDFJS_QUICKJS"
+      },
+      {
+        "name": "pdf.js QuickJS (wasm), bundled data of pdf.js 6.5.438",
+        "version": "6.5.438",
+        "license": "MIT",
+        "source": "https://github.com/mozilla/pdf.js/releases/tag/v6.5.438",
+        "kind": "vendored",
+        "textFile": "integrations/fastapi/scripts/notices/pdfjs/wasm-LICENSE_QUICKJS"
+      },
+      {
+        "name": "@cantoo/pdf-lib",
+        "version": "2.11.1",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/@cantoo/pdf-lib/v/2.11.1",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/cantoo__pdf-lib-2.11.1.txt",
+        "generated": true
+      },
+      {
+        "name": "base64-js",
+        "version": "1.5.1",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/base64-js/v/1.5.1",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/base64-js-1.5.1.txt",
+        "generated": true
+      },
+      {
+        "name": "bidi-js",
+        "version": "1.1.0",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/bidi-js/v/1.1.0",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/bidi-js-1.1.0.txt",
+        "generated": true
+      },
+      {
+        "name": "brotli",
+        "version": "2.1.0",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/brotli/v/2.1.0",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/brotli-2.1.0.txt",
+        "generated": true
+      },
+      {
+        "name": "culori",
+        "version": "4.0.2",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/culori/v/4.0.2",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/culori-4.0.2.txt",
+        "generated": true
+      },
+      {
+        "name": "dfa",
+        "version": "2.0.0",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/dfa/v/2.0.0",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/dfa-2.0.0.txt",
+        "generated": true
+      },
+      {
+        "name": "fflate",
+        "version": "0.8.3",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/fflate/v/0.8.3",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/fflate-0.8.3.txt",
+        "generated": true
+      },
+      {
+        "name": "fontkit",
+        "version": "3.0.0",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/fontkit/v/3.0.0",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/fontkit-3.0.0.txt",
+        "generated": true
+      },
+      {
+        "name": "html-entities",
+        "version": "2.6.0",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/html-entities/v/2.6.0",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/html-entities-2.6.0.txt",
+        "generated": true
+      },
+      {
+        "name": "linebreak",
+        "version": "2.0.0",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/linebreak/v/2.0.0",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/linebreak-2.0.0.txt",
+        "generated": true
+      },
+      {
+        "name": "node-html-better-parser",
+        "version": "1.5.9",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/node-html-better-parser/v/1.5.9",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/node-html-better-parser-1.5.9.txt",
+        "generated": true
+      },
+      {
+        "name": "pdfjs-dist",
+        "version": "6.5.438",
+        "license": "Apache-2.0",
+        "source": "https://www.npmjs.com/package/pdfjs-dist/v/6.5.438",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/pdfjs-dist-6.5.438.txt",
+        "generated": true
+      },
+      {
+        "name": "restructure",
+        "version": "3.0.2",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/restructure/v/3.0.2",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/restructure-3.0.2.txt",
+        "generated": true
+      },
+      {
+        "name": "tslib",
+        "version": "2.9.1",
+        "license": "0BSD",
+        "source": "https://www.npmjs.com/package/tslib/v/2.9.1",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/tslib-2.9.1.txt",
+        "generated": true
+      },
+      {
+        "name": "unicode-properties",
+        "version": "2.0.2",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/unicode-properties/v/2.0.2",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/unicode-properties-2.0.2.txt",
+        "generated": true
+      },
+      {
+        "name": "unicode-trie",
+        "version": "3.0.0",
+        "license": "MIT",
+        "source": "https://www.npmjs.com/package/unicode-trie/v/3.0.0",
+        "kind": "vendored",
+        "textFile": "packages/datum/notices/licenses/unicode-trie-3.0.0.txt",
+        "generated": true
+      }
+    ],
+    "argusvane-datum-sandbox": [
+      {
+        "name": "anyio",
+        "version": "range per pyproject.toml",
+        "license": "MIT",
+        "source": "https://pypi.org/project/anyio/",
+        "kind": "extra",
+        "extra": "aio"
+      },
+      {
+        "name": "pytest",
+        "version": "range per pyproject.toml",
+        "license": "MIT",
+        "source": "https://pypi.org/project/pytest/",
+        "kind": "extra",
+        "extra": "testing"
+      }
+    ],
+    "argusvane-datum-sandbox-wasmtime": [
+      {
+        "name": "wasmtime (the Python package)",
+        "version": "range per pyproject.toml",
+        "license": "Apache-2.0 WITH LLVM-exception",
+        "source": "https://pypi.org/project/wasmtime/",
+        "kind": "dependency"
+      }
+    ],
+    "argusvane-datum-core": [
+      {
+        "name": "pydantic",
+        "version": "range per pyproject.toml",
+        "license": "MIT",
+        "source": "https://pypi.org/project/pydantic/",
+        "kind": "dependency"
+      },
+      {
+        "name": "opentelemetry-api",
+        "version": ">=1.30,<2",
+        "license": "Apache-2.0",
+        "source": "https://pypi.org/project/opentelemetry-api/",
+        "kind": "dependency"
+      },
+      {
+        "name": "tzdata",
+        "version": "range per pyproject.toml",
+        "license": "Apache-2.0",
+        "source": "https://pypi.org/project/tzdata/",
+        "kind": "dependency"
+      },
+      {
+        "name": "anyio",
+        "version": "range per pyproject.toml",
+        "license": "MIT",
+        "source": "https://pypi.org/project/anyio/",
+        "kind": "extra",
+        "extra": "aio"
+      },
+      {
+        "name": "limits",
+        "version": "range per pyproject.toml",
+        "license": "MIT",
+        "source": "https://pypi.org/project/limits/",
+        "kind": "extra",
+        "extra": "limits"
+      },
+      {
+        "name": "cryptography (extras pdf, timestamp)",
+        "version": "range per pyproject.toml",
+        "license": "Apache-2.0 OR BSD-3-Clause",
+        "source": "https://pypi.org/project/cryptography/",
+        "kind": "extra",
+        "extra": "pdf, timestamp"
+      },
+      {
+        "name": "asn1crypto",
+        "version": "range per pyproject.toml",
+        "license": "MIT",
+        "source": "https://pypi.org/project/asn1crypto/",
+        "kind": "extra",
+        "extra": "timestamp"
+      },
+      {
+        "name": "pyhanko-certvalidator",
+        "version": "range per pyproject.toml",
+        "license": "MIT",
+        "source": "https://pypi.org/project/pyhanko-certvalidator/",
+        "kind": "extra",
+        "extra": "revocation"
+      },
+      {
+        "name": "oscrypto",
+        "version": "range per pyproject.toml",
+        "license": "MIT",
+        "source": "https://pypi.org/project/oscrypto/",
+        "kind": "extra",
+        "extra": "revocation"
+      },
+      {
+        "name": "aiohttp",
+        "version": "range per pyproject.toml",
+        "license": "Apache-2.0 AND MIT",
+        "source": "https://pypi.org/project/aiohttp/",
+        "kind": "extra",
+        "extra": "revocation"
+      },
+      {
+        "name": "certifi",
+        "version": "range per pyproject.toml",
+        "license": "MPL-2.0",
+        "source": "https://pypi.org/project/certifi/",
+        "kind": "extra",
+        "extra": "revocation"
+      },
+      {
+        "name": "pytest",
+        "version": "range per pyproject.toml",
+        "license": "MIT",
+        "source": "https://pypi.org/project/pytest/",
+        "kind": "extra",
+        "extra": "testing"
+      },
+      {
+        "name": "tzlocal",
+        "version": ">=5",
+        "license": "MIT",
+        "source": "https://pypi.org/project/tzlocal/",
+        "kind": "dependency"
+      },
+      {
+        "name": "hypothesis",
+        "version": ">=6",
+        "license": "MPL-2.0",
+        "source": "https://pypi.org/project/hypothesis/",
+        "kind": "extra",
+        "extra": "testing"
+      },
+      {
+        "name": "opentelemetry-sdk",
+        "version": ">=1.30,<2",
+        "license": "Apache-2.0",
+        "source": "https://pypi.org/project/opentelemetry-sdk/",
+        "kind": "extra",
+        "extra": "testing"
+      }
+    ],
+    "argusvane-datum-fastapi": [
+      {
+        "name": "FastAPI",
+        "version": ">=0.133.0",
+        "license": "MIT",
+        "source": "https://pypi.org/project/fastapi/",
+        "kind": "dependency"
+      },
+      {
+        "name": "pydantic-settings",
+        "version": "range per pyproject.toml",
+        "license": "MIT",
+        "source": "https://pypi.org/project/pydantic-settings/",
+        "kind": "dependency"
+      },
+      {
+        "name": "httpx2",
+        "version": "range per pyproject.toml",
+        "license": "BSD-3-Clause",
+        "source": "https://pypi.org/project/httpx2/",
+        "kind": "extra",
+        "extra": "testing"
+      },
+      {
+        "name": "Starlette (FastAPI's base)",
+        "version": "range per pyproject.toml",
+        "license": "BSD-3-Clause",
+        "source": "https://pypi.org/project/starlette/",
+        "kind": "dependency"
+      }
+    ]
+  }
+}

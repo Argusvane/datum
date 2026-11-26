@@ -1,0 +1,440 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-sandbox-endive</artifactId>
+  <packaging>jar</packaging>
+  <name>datum-sandbox-endive</name>
+  <description>Datum Endive runtime: GuestRuntime over the precompiled QuickJS class. Declares no runner.</description>
+  <properties>
+    <!-- datum:qjs begin (rewritten by npm run jvm:pin-runtime from the quickjs-ng release's published sha256; review the diff) -->
+    <qjs.version>0.16.2</qjs.version>
+    <qjs.sha256>d2939e98c808e8b9f4164cd0d7b0398cbc0121ddf52862bcd92157d923e461cc</qjs.sha256>
+    <qjs.size>1566956</qjs.size>
+    <!-- datum:qjs end -->
+    <!--
+      The module Endive compiles. An air-gapped build points this at a copy it fetched itself and skips the download
+      (-Dqjs.wasm.file=/path/qjs-wasi.wasm -Ddownload.plugin.skip=true); QjsPinTest re-hashes whatever file this names
+      against qjs.sha256 and qjs.size, so an override is still held to the pin.
+    -->
+    <qjs.wasm.file>${project.build.directory}/qjs/qjs-wasi.wasm</qjs.wasm.file>
+    <!-- The host's Redline target for the dev-native profile, set by the host-target-* profiles below. -->
+    <endive.host.target>x86_64-unknown-linux-gnu</endive.host.target>
+    <!-- True only under dev-native: NativeTargetsTest then skips its six-target check and the release profile refuses. -->
+    <datum.devNative>false</datum.devNative>
+    <!--
+      The phase of the Endive compile below. The endive-prebuilt profile sets it to "none": the plugin has no up-to-date
+      check and would compile again over output that is already there.
+    -->
+    <endive.compile.phase>generate-sources</endive.compile.phase>
+    <endive.generated.sources>${project.build.directory}/generated-sources/endive-compiler</endive.generated.sources>
+    <endive.generated.resources>${project.build.directory}/generated-resources/endive-compiler</endive.generated.resources>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-sandbox</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>run.endive</groupId>
+      <artifactId>runtime</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>run.endive</groupId>
+      <artifactId>wasi</artifactId>
+    </dependency>
+    <!-- Compile scope: the generated Qjs.java imports run.endive.redline.experimental.api. -->
+    <dependency>
+      <groupId>run.endive</groupId>
+      <artifactId>redline-api-experimental</artifactId>
+    </dependency>
+    <!--
+      The run's in-memory /app is datum-sandbox's run harness's (sandbox.wasi), and datum-sandbox declares Jimfs optional so that
+      only an engine brings it: this module runs the harness, so it brings Jimfs (and Guava) at run time.
+    -->
+    <dependency>
+      <groupId>com.google.jimfs</groupId>
+      <artifactId>jimfs</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!--
+      Tests only. The library declares no runner (the selector poms do); the tests run on the JFFI runner, which loads
+      on every JDK this reactor supports, and the jdk25 profile adds the Panama runner for the panama-it execution.
+      datum-programs supplies the real programs and the freeze snippet from its generated assets; datum-sandbox-tck the
+      contracts and the pinned fixtures.
+    -->
+    <dependency>
+      <groupId>run.endive</groupId>
+      <artifactId>redline-runner-jffi-experimental</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.github.jnr</groupId>
+      <artifactId>jffi</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.github.jnr</groupId>
+      <artifactId>jffi</artifactId>
+      <classifier>native</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-programs</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- The engine kit: GoldenIT, PdfRenderIT, SandboxHardeningIT and EndiveRuntimeIT implement its contracts. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-sandbox-tck</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- The shared test helpers (the library-boundary rule, the settings-record copy check, the recording observation registry);
+         datum-core-test-support is never published. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-core-test-support</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <resources>
+      <resource>
+        <directory>${basedir}/src/main/resources</directory>
+        <excludes><exclude>META-INF/datum/runtime.properties</exclude></excludes>
+      </resource>
+      <!-- The pin, filtered from the properties above, so the jar says which qjs-wasi.wasm it was compiled from. -->
+      <resource>
+        <directory>${basedir}/src/main/resources</directory>
+        <filtering>true</filtering>
+        <includes><include>META-INF/datum/runtime.properties</include></includes>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <!-- The official quickjs-ng release, checked against the pin; the raw wasm never ships. -->
+        <groupId>io.github.download-maven-plugin</groupId>
+        <artifactId>download-maven-plugin</artifactId>
+        <version>2.2.0</version>
+        <executions>
+          <execution>
+            <id>qjs-wasi</id>
+            <phase>initialize</phase>
+            <goals><goal>wget</goal></goals>
+            <configuration>
+              <uri>https://github.com/quickjs-ng/quickjs/releases/download/v${qjs.version}/qjs-wasi.wasm</uri>
+              <outputDirectory>${project.build.directory}/qjs</outputDirectory>
+              <outputFileName>qjs-wasi.wasm</outputFileName>
+              <sha256>${qjs.sha256}</sha256>
+              <alwaysVerifyChecksum>true</alwaysVerifyChecksum>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <!--
+          The precompiled class com.argusvane.datum.sandbox.endive.Qjs: JVM bytecode plus Redline native code
+          for all six targets (~1.5-2 min per target, 12-16 min in all; deterministic output). Function 283
+          (JS_CallInternal) is the one function too large for the bytecode compiler; it is pinned and any other one fails
+          the build, so a new qjs release that grows another cannot silently slow the bytecode fallback.
+        -->
+        <groupId>run.endive</groupId>
+        <artifactId>endive-compiler-maven-plugin</artifactId>
+        <version>${endive.version}</version>
+        <executions>
+          <execution>
+            <id>qjs-compile</id>
+            <phase>${endive.compile.phase}</phase>
+            <goals><goal>compile</goal></goals>
+            <configuration>
+              <name>com.argusvane.datum.sandbox.endive.Qjs</name>
+              <wasmFile>${qjs.wasm.file}</wasmFile>
+              <redlineExperimental>true</redlineExperimental>
+              <interpreterFallback>FAIL</interpreterFallback>
+              <interpretedFunctions>
+                <function>283</function>
+              </interpretedFunctions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <qjs.wasm.file>${qjs.wasm.file}</qjs.wasm.file>
+            <datum.devNative>${datum.devNative}</datum.devNative>
+          </systemPropertyVariables>
+          <excludes>
+            <exclude>**/BytecodeFallbackTest.java</exclude>
+          </excludes>
+        </configuration>
+        <executions>
+          <execution>
+            <!--
+              The bytecode fallback, in a JVM of its own: the generated class reads the host target once per JVM, and
+              endive.redline.os.arch=riscv64 makes it find no native code (the test switch).
+            -->
+            <id>bytecode-fallback</id>
+            <goals><goal>test</goal></goals>
+            <configuration>
+              <excludes combine.self="override"/>
+              <includes>
+                <include>**/BytecodeFallbackTest.java</include>
+              </includes>
+              <reportsDirectory>${project.build.directory}/surefire-reports-bytecode</reportsDirectory>
+              <!-- A small heap: the bytecode memory lives on it, and one test fills it to prove a full heap is the host's stop. -->
+              <argLine>-Xmx384m</argLine>
+              <systemPropertyVariables>
+                <endive.redline.os.arch>riscv64</endive.redline.os.arch>
+              </systemPropertyVariables>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <!-- -Dit.test=SomeIT runs it in the executions that include it, without failing the ones that do not. -->
+          <failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
+          <systemPropertyVariables>
+            <datum.expectedProvider>jffi</datum.expectedProvider>
+          </systemPropertyVariables>
+        </configuration>
+        <executions>
+          <execution>
+            <!--
+              Both runners on the class path on every JDK, as the submissions starter ships them: SelectorsTogetherIT
+              only (the selection and one run). On Java 17 this is the case Endive's own discovery cannot survive.
+            -->
+            <id>both-runners</id>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+            <configuration>
+              <includes>
+                <include>**/SelectorsTogetherIT.java</include>
+              </includes>
+              <reportsDirectory>${project.build.directory}/failsafe-reports-both</reportsDirectory>
+              <summaryFile>${project.build.directory}/failsafe-reports-both/failsafe-summary.xml</summaryFile>
+              <additionalClasspathDependencies>
+                <dependency>
+                  <groupId>run.endive</groupId>
+                  <artifactId>redline-runner-experimental</artifactId>
+                  <version>${endive.version}</version>
+                </dependency>
+              </additionalClasspathDependencies>
+            </configuration>
+          </execution>
+          <execution>
+            <!--
+              The same ITs on the Panama runner, beside JFFI as the submissions starter ships them: the selector must
+              pick Panama on 25+. Skipped unless the parent's jdk25 profile is active (Java 25+), which sets
+              datum.panama.it.skip to skipITs (false unless -DskipITs), so -DskipITs and -DskipTests skip it on every
+              JDK; the runner's classes are version 69 and load nowhere else.
+            -->
+            <id>panama-it</id>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+            <configuration>
+              <skipITs>${datum.panama.it.skip}</skipITs>
+              <reportsDirectory>${project.build.directory}/failsafe-reports-panama</reportsDirectory>
+              <summaryFile>${project.build.directory}/failsafe-reports-panama/failsafe-summary.xml</summaryFile>
+              <argLine>--enable-native-access=ALL-UNNAMED</argLine>
+              <additionalClasspathDependencies>
+                <dependency>
+                  <groupId>run.endive</groupId>
+                  <artifactId>redline-runner-experimental</artifactId>
+                  <version>${endive.version}</version>
+                </dependency>
+              </additionalClasspathDependencies>
+              <systemPropertyVariables>
+                <datum.expectedProvider>panama</datum.expectedProvider>
+              </systemPropertyVariables>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <profiles>
+    <profile>
+      <!--
+        Local iteration only, never in CI: Redline native code for this machine's target alone (about 2 minutes instead
+        of 12-16). The jar then runs native here and bytecode everywhere else, so it is never one to publish.
+      -->
+      <id>dev-native</id>
+      <properties>
+        <datum.devNative>true</datum.devNative>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>run.endive</groupId>
+            <artifactId>endive-compiler-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>qjs-compile</id>
+                <configuration>
+                  <redlineTargetsExperimental>
+                    <target>${endive.host.target}</target>
+                  </redlineTargetsExperimental>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <!--
+        The build over a compile that is already in target/ (the generated Qjs.java, the classes and the native code):
+        the Endive compile does not run, and the two generated directories join the build the way the plugin adds them.
+        CI compiles once (the jvm-runtime job), keeps the two directories in a cache keyed by this pom and the Endive
+        version, and every Java row builds with this profile. The output is the same for every JDK. The build stops
+        when the directories are not there; the release profile refuses this one, so a release always compiles.
+      -->
+      <id>endive-prebuilt</id>
+      <properties>
+        <endive.compile.phase>none</endive.compile.phase>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>require-prebuilt-qjs</id>
+                <phase>validate</phase>
+                <goals><goal>enforce</goal></goals>
+                <configuration>
+                  <rules>
+                    <requireFilesExist>
+                      <files>
+                        <file>${endive.generated.sources}/com/argusvane/datum/sandbox/endive/Qjs.java</file>
+                        <file>${endive.generated.resources}/com/argusvane/datum/sandbox/endive/Qjs.meta</file>
+                      </files>
+                      <message>-Pendive-prebuilt builds over a compile that is already in target/, and there is none: build once without the profile.</message>
+                    </requireFilesExist>
+                  </rules>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>add-prebuilt-qjs-source</id>
+                <phase>generate-sources</phase>
+                <goals><goal>add-source</goal></goals>
+                <configuration>
+                  <sources><source>${endive.generated.sources}</source></sources>
+                </configuration>
+              </execution>
+              <execution>
+                <id>add-prebuilt-qjs-resource</id>
+                <phase>generate-resources</phase>
+                <goals><goal>add-resource</goal></goals>
+                <configuration>
+                  <resources><resource><directory>${endive.generated.resources}</directory></resource></resources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <!-- Never publish a dev-native jar: it runs as bytecode, with the PDF path refused, on every other platform. -->
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>no-dev-native-release</id>
+                <goals><goal>enforce</goal></goals>
+                <configuration>
+                  <rules>
+                    <requireProperty>
+                      <property>datum.devNative</property>
+                      <regex>false</regex>
+                      <regexMessage>A release carries native code for all six targets: drop -Pdev-native.</regexMessage>
+                    </requireProperty>
+                    <requireProperty>
+                      <property>endive.compile.phase</property>
+                      <regex>generate-sources</regex>
+                      <regexMessage>A release compiles the runtime itself: drop -Pendive-prebuilt.</regexMessage>
+                    </requireProperty>
+                  </rules>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <!-- The host's target for dev-native, from Maven's own os detection (Java's os.arch: amd64 on Linux and Windows). -->
+    <profile>
+      <id>host-target-linux-x86_64</id>
+      <activation><os><family>unix</family><name>Linux</name><arch>amd64</arch></os></activation>
+      <properties><endive.host.target>x86_64-unknown-linux-gnu</endive.host.target></properties>
+    </profile>
+    <profile>
+      <id>host-target-linux-aarch64</id>
+      <activation><os><family>unix</family><name>Linux</name><arch>aarch64</arch></os></activation>
+      <properties><endive.host.target>aarch64-unknown-linux-gnu</endive.host.target></properties>
+    </profile>
+    <profile>
+      <id>host-target-mac-x86_64</id>
+      <activation><os><family>mac</family><arch>x86_64</arch></os></activation>
+      <properties><endive.host.target>x86_64-apple-darwin</endive.host.target></properties>
+    </profile>
+    <profile>
+      <id>host-target-mac-aarch64</id>
+      <activation><os><family>mac</family><arch>aarch64</arch></os></activation>
+      <properties><endive.host.target>aarch64-apple-darwin</endive.host.target></properties>
+    </profile>
+    <profile>
+      <id>host-target-windows-x86_64</id>
+      <activation><os><family>windows</family><arch>amd64</arch></os></activation>
+      <properties><endive.host.target>x86_64-pc-windows-msvc</endive.host.target></properties>
+    </profile>
+    <profile>
+      <id>host-target-windows-aarch64</id>
+      <activation><os><family>windows</family><arch>aarch64</arch></os></activation>
+      <properties><endive.host.target>aarch64-pc-windows-msvc</endive.host.target></properties>
+    </profile>
+  </profiles>
+</project>

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-host-tck</artifactId>
+  <packaging>jar</packaging>
+  <name>datum-host-tck</name>
+  <description>Datum host test kit: JUnit 5 contract classes over a base URL that hold any JVM host binding (Spring Boot today)
+    to the Datum wire contract, and a HostTck runner for a packaged application.</description>
+  <!-- See integrations/jvm/README.md "Libraries and bindings". The kit speaks HTTP only: it depends on
+       no Datum library and no framework, so a binding is judged by its wire answers and nothing it shares with the code under
+       test. JUnit and AssertJ are compile scope because the contract classes are the product. -->
+  <dependencies>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+    </dependency>
+    <!-- HostTck runs the contract classes outside a build (java -jar ... or a CI step against a deployed app). -->
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-launcher</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+  </dependencies>
+  <build>
+    <resources>
+      <resource><directory>${basedir}/src/main/resources</directory></resource>
+      <!-- The fixture form and golden answers the asset generation writes to target/datum-assets/<artifactId> land under
+           META-INF/datum-tck/; NOTICE (and LICENSE) reach META-INF/ through the parent pom's copy-legal execution. -->
+      <resource>
+        <directory>${datum.assets.dir}/${project.artifactId}</directory>
+        <targetPath>META-INF/datum-tck</targetPath>
+        <excludes><exclude>NOTICE</exclude></excludes>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <!-- The kit's own tests are unit tests (surefire). KitTest's nested probe classes (AlphabeticalRun and the others) are
+             fixtures it launches itself and must fail when run; failsafe given explicit -Dit.test patterns would run them as
+             tests, and its verify goal would read a summary no run of this module writes. The module has no integration test. -->
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <skipITs>true</skipITs>
+        </configuration>
+      </plugin>
+      <plugin>
+        <!-- The generated fixtures are build output (target/datum-assets, written by the root build); a -pl build with none must say how to make them. Checked at process-resources, where they are used, so a build that stops earlier (the CI runtime compile, up to generate-sources) needs none. -->
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>require-assets</id>
+            <phase>process-resources</phase>
+            <goals><goal>enforce</goal></goals>
+            <configuration>
+              <rules>
+                <requireFilesExist>
+                  <files>
+                    <file>${datum.assets.dir}/${project.artifactId}/golden.json</file>
+                    <file>${datum.assets.dir}/${project.artifactId}/fixture-form.json</file>
+                  </files>
+                  <message>the kit's fixtures are missing (${datum.assets.dir}/${project.artifactId}): run ./mvnw -N generate-resources in integrations/jvm (or npm run jvm:assets at the repository root), or build the whole reactor, which generates them first</message>
+                </requireFilesExist>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

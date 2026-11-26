@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>datum-form-builder workspaces="pdf" — contained</title>
+    <link rel="stylesheet" href="/dist/datum-builder.css" />
+    <script type="module" src="/dist/datum-builder.js"></script>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; background: #eef1f4; color: #1d2b36; }
+      .host-bar { position: sticky; top: 0; z-index: 10; background: #1d2b36; color: #fff; padding: 12px 20px; display: flex; gap: 16px; align-items: center; }
+      .host-bar h1 { font-size: 16px; margin: 0; }
+      .host-bar a { color: #9fc4ff; }
+      .page { max-width: 1400px; margin: 0 auto; padding: 20px; display: grid; gap: 16px; }
+      .intro { background: #fff; border: 1px solid #dfe5ec; border-radius: 10px; padding: 16px 20px; }
+      .intro p { margin: 0 0 8px; }
+      .intro p:last-child { margin: 0; }
+      datum-form-builder { height: 720px; border: 1px solid #c9d3dd; border-radius: 10px; overflow: hidden; background: #fff; }
+      .below { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .card { background: #fff; border: 1px solid #dfe5ec; border-radius: 10px; padding: 16px; font-size: 13px; }
+      .card h2 { font-size: 14px; margin: 0 0 8px; }
+      .card pre { margin: 0; white-space: pre-wrap; word-break: break-word; max-height: 40vh; overflow: auto; }
+      .card iframe { width: 100%; height: 60vh; border: 1px solid #dfe5ec; border-radius: 6px; background: #fff; }
+      .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+      button { font: inherit; padding: 6px 10px; border-radius: 6px; border: 1px solid #c9d3dd; background: #fff; cursor: pointer; }
+      .note { color: #5a6b7a; }
+      .log { margin: 0; padding-left: 18px; max-height: 24vh; overflow: auto; }
+      @media (max-width: 900px) { .below { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="host-bar">
+      <h1>A host page with the PDF layout designer inside it</h1>
+      <a href="/demo/">All demos</a>
+      <a href="/demo/builder.html">The form builder</a>
+    </div>
+    <div class="page">
+      <section class="intro">
+        <p>
+          <code>&lt;datum-form-builder workspaces="pdf"&gt;</code> is the form builder over the form's PDF layouts alone: one
+          tab per layout on its bar, the tab's menu to rename, copy, default or remove it, <strong>+</strong>
+          to add one, and <strong>Preview PDF</strong> beside them. A custom layout is designed on the page
+          sheet, each bound field previewed over the sample answers; <strong>+</strong> can also
+          <em>populate an existing PDF form</em> — a file you upload, or one this page provides through
+          <code>pdfTemplates</code> — whose fields become the layout's tree: pick a field's box on the
+          page and say what fills it in the inspector. A PDF with no fields is populated through
+          <em>areas</em> drawn over its pages, the pages shown through
+          <code>datum-pdf-pages.js</code> (pdf.js) beside the bundle.
+        </p>
+        <p>
+          <code>pdf="auto"</code> loads <code>datum-pdf.js</code> beside the bundle on the first preview, so
+          the bytes come from the real kernel. Every change reaches the page as one
+          <code>datum-pdf-layout-change</code> event carrying the definition with its <code>pdf</code> block.
+        </p>
+      </section>
+
+      <datum-form-builder
+        id="designer"
+        workspaces="pdf"
+        file-actions="off"
+        layout="contained"
+        persist-panels="demo-pdf-designer"
+        pdf="auto"
+        src="/demo/intake-form.json"
+        values='{"fullName":"Ada Lovelace","country":"CA","contactMethod":"email","newsletter":true}'
+      ></datum-form-builder>
+
+      <div class="below">
+        <section class="card">
+          <div class="controls">
+            <button id="preview" type="button">Preview through renderPdf()</button>
+            <button id="add" type="button">Add a blank layout through newLayout()</button>
+            <a id="download" hidden download>Download</a>
+            <span id="status" class="note">The element previews on its own; these drive its API from the page.</span>
+          </div>
+          <iframe id="frame" title="PDF preview" hidden></iframe>
+          <h2>Events</h2>
+          <ul id="events" class="log"></ul>
+        </section>
+        <section class="card">
+          <h2>The definition's <code>pdf</code> block, as designed</h2>
+          <pre id="layout"></pre>
+        </section>
+      </div>
+    </div>
+
+    <script type="module">
+      import { createPdfTemplateResolver } from "/dist/datum-builder.js";
+
+      const designer = document.getElementById("designer");
+      const out = document.getElementById("layout");
+      const status = document.getElementById("status");
+      const frame = document.getElementById("frame");
+      const download = document.getElementById("download");
+      const events = document.getElementById("events");
+
+      // The PDF forms this host provides for populated-form layouts, and how their `url` storage
+      // becomes bytes. A layout that picks one carries the reference, never the bytes.
+      designer.pdfTemplates = createPdfTemplateResolver(
+        {
+          url: async (source) => {
+            const response = await fetch(source.ref);
+            if (!response.ok) throw new Error(`Could not fetch ${source.ref}: ${response.status}`);
+            return new Uint8Array(await response.arrayBuffer());
+          }
+        },
+        {
+          templates: [
+            {
+              id: "customer-intake-paper",
+              label: "Customer intake (paper form)",
+              source: { storage: "url", name: "customer-intake-template.pdf", type: "application/pdf", size: 15346, ref: "/demo/customer-intake-template.pdf" }
+            },
+            // The same form with no fields at all: answers are drawn into areas marked on its pages.
+            {
+              id: "customer-intake-blank",
+              label: "Customer intake (blank paper form, no fields)",
+              source: { storage: "url", name: "customer-intake-blank.pdf", type: "application/pdf", size: 2299, ref: "/demo/customer-intake-blank.pdf" }
+            }
+          ]
+        }
+      );
+
+      const show = () => {
+        out.textContent = JSON.stringify(designer.definition.pdf, null, 2);
+      };
+      const log = (text) => {
+        const item = document.createElement("li");
+        item.textContent = text;
+        events.prepend(item);
+      };
+      designer.addEventListener("datum-pdf-designer-ready", (event) => {
+        show();
+        log(`ready: ${event.detail.layout.id} (${event.detail.layout.kind})`);
+      });
+      designer.addEventListener("datum-pdf-layout-change", (event) => {
+        show();
+        log(`change: ${event.detail.reason} — ${event.detail.layout.id}; ${event.detail.pdf.layouts.length} layout(s)`);
+      });
+      designer.addEventListener("datum-pdf-layout-select", (event) => {
+        log(`select: ${event.detail.layoutId}`);
+      });
+      designer.addEventListener("datum-error", (event) => {
+        status.textContent = event.detail.message;
+      });
+      document.getElementById("add").addEventListener("click", () => {
+        // The layout list is the PDF side's own API, there once `datum-pdf-designer-ready` has fired.
+        const layout = designer.pdfMode.newLayout({ name: `Copy ${designer.pdfMode.layouts.length + 1}`, from: "blank" });
+        status.textContent = `Added ${layout.id}.`;
+      });
+      document.getElementById("preview").addEventListener("click", async () => {
+        status.textContent = "Rendering…";
+        try {
+          const result = await designer.pdfMode.renderPdf();
+          const url = URL.createObjectURL(new Blob([result.bytes], { type: "application/pdf" }));
+          frame.hidden = false;
+          frame.src = url;
+          download.hidden = false;
+          download.href = url;
+          download.download = result.fileName;
+          status.textContent = `${result.pageCount} page(s)` + (result.warnings.length ? `, ${result.warnings.length} warning(s)` : "");
+        } catch (error) {
+          status.textContent = error instanceof Error ? error.message : String(error);
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,46 @@
+{
+  "name": "datum-host-check",
+  "version": "0.1.0",
+  "private": false,
+  "license": "MIT",
+  "author": "Argusvane <maintainers@argusvane.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/argusvane/datum.git",
+    "directory": "packages/cli-forwarders/datum-host-check"
+  },
+  "homepage": "https://datum.argusvane.com",
+  "bugs": {
+    "url": "https://github.com/argusvane/datum/issues"
+  },
+  "keywords": [
+    "datum",
+    "forms",
+    "cli"
+  ],
+  "description": "Runs the datum-host-check command of @argusvane/datum-conformance-suite, which checks that a host's wire contract for Datum forms holds. A forwarding command: the tool is @argusvane/datum-conformance-suite.",
+  "type": "module",
+  "bin": {
+    "datum-host-check": "./bin/datum-host-check.mjs"
+  },
+  "files": [
+    "bin",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "prepack": "node ../../../scripts/npm/prepack.mjs",
+    "pack:check": "node ../../../scripts/npm/pack-check.mjs ."
+  },
+  "dependencies": {
+    "@argusvane/datum-conformance-suite": "0.1.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

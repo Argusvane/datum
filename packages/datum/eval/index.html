@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Datum agent evaluation pages</title>
+    <!-- The pages scripts/agent-eval.mjs and the WebMCP pass drive. They are
+         not part of dist/ or of the published package; this index is the harness's ready path. -->
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; background: #f6f7f9; color: #1d2b36; }
+      main { max-width: 720px; margin: 0 auto; padding: 24px 20px 60px; }
+      a { color: #2f6feb; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Agent evaluation pages</h1>
+      <ul>
+        <li><a href="/eval/form.html">form.html</a>: one travel claim, assistants allowed by its definition</li>
+        <li><a href="/eval/form.html?prefill=half">form.html?prefill=half</a>: the same claim, half filled</li>
+        <li><a href="/eval/builder.html">builder.html</a>: an empty form in the builder</li>
+        <li><a href="/eval/sealed.html">sealed.html</a>: a declaration the author sealed, beside the claim</li>
+      </ul>
+    </main>
+  </body>
+</html>

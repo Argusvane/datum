@@ -1,0 +1,11 @@
+from datum_core.events import DatumEvent, listener
+
+
+class Ev(DatumEvent):
+    pass
+
+
+def takes_int(e: int) -> None: ...
+
+
+listener(Ev, takes_int)

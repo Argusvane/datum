@@ -1,0 +1,21 @@
+# A development timestamp server. Nothing here is fit for production: the certificate is made at every start and
+# no one trusts it, the database is in memory and the server answers anyone.
+spring:
+  application:
+    name: datum-tsa-server
+  datasource:
+    url: jdbc:h2:mem:tsa;DB_CLOSE_DELAY=-1
+
+datum:
+  jdbc:
+    # The module's own table script runs when the in-memory database starts (embedded is the default; no spring.sql.init to
+    # list). A real application sets never and runs META-INF/datum/db/migration/<dialect>/V300__datum_timestamp.sql with
+    # Flyway or Liquibase.
+    initialize-schema: embedded
+  tsa:
+    enabled: true
+    path: /tsa
+    # open: anyone may ask; clients: only holders of a key listed under datum.tsa.clients (SHA-256 of the key).
+    access: open
+    signer:
+      self-signed: true

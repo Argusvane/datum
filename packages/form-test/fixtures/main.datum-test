@@ -1,0 +1,17 @@
+test "the sidecar file runs beside the stored tests"
+  expect page = intro
+  expect applicant_name visible
+  expect applicant_name required
+  expect applicant_name enabled
+  expect applicant_name editable
+  expect applicant_name empty
+  continue
+  expect page = intro
+  expect error on applicant_name
+  expect error on applicant_name: required
+  set applicant_name = "Ada"
+  set age = 30
+  expect applicant_name not empty
+  continue
+  expect page = contact
+  expect no error on applicant_name

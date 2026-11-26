@@ -1,0 +1,327 @@
+name: JVM
+
+# The JVM host's build and tests (the Maven reactor, the examples, the security suite and the host test kit
+# against them). They take long enough on a runner that ci.yml does not run them: start this workflow from
+# the Actions tab, or with `gh workflow run jvm.yml --ref <branch>` (add `-f java=21` for one Java version).
+on:
+  workflow_dispatch:
+    inputs:
+      java:
+        description: Java versions to build on
+        type: choice
+        options: [all, "17", "21", "25"]
+        default: all
+
+# Read-only token: no job writes to the repository (artifacts need no extra permission).
+permissions:
+  contents: read
+
+# One run per branch at a time; a newer run waits for the one in progress.
+concurrency:
+  group: jvm-${{ github.ref }}
+
+jobs:
+  # The JVM host (integrations/jvm): the libraries, the Spring Boot bindings and starters,
+  # the host test kit and the examples, on Java 17, 21 and 25 (or the one the run names). It builds the bundles first and runs
+  # the reactor's own asset generation WITHOUT --allow-stale (CI builds the dist itself), builds over the QuickJS
+  # runtime the jvm-runtime job compiled for all six native targets (-Pendive-prebuilt), then
+  # holds the packaged ui example to the security suite (program mode on the jar-extracted program
+  # and endpoint mode) and to the host test kit. Node 22 is on the runner for the glue harness
+  # inside the Maven build, which fails (not skips) under CI=1.
+  #
+  # jvm-runtime compiles the QuickJS runtime once for the three Java rows: the Endive compile of qjs-wasi.wasm
+  # for all six native targets (no -Pdev-native: that profile is for local iteration) is close to half an hour on
+  # a runner, its output is deterministic and the same for every JDK, and the plugin has no up-to-date check, so
+  # a row that ran the compile would run it whether or not the output was there. The output is cached under a key
+  # of the runtime module's pom (the QuickJS pin, the class name, the plugin's configuration and the target list)
+  # and the Endive version; on a hit this job does nothing more, on a miss it compiles and saves. Each row
+  # restores the same key and builds with -Pendive-prebuilt, which leaves the compile out.
+  jvm-runtime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    outputs:
+      key: ${{ steps.key.outputs.key }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Compute the cache key
+        id: key
+        run: |
+          endive="$(sed -n 's:.*<endive.version>\(.*\)</endive.version>.*:\1:p' integrations/jvm/pom.xml)"
+          if [ -z "$endive" ]; then echo "no endive.version in integrations/jvm/pom.xml"; exit 1; fi
+          echo "key=endive-qjs-$endive-${{ hashFiles('integrations/jvm/libs/datum-sandbox-endive/pom.xml') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the compiled QuickJS runtime
+        id: cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            integrations/jvm/libs/datum-sandbox-endive/target/generated-resources/endive-compiler
+            integrations/jvm/libs/datum-sandbox-endive/target/generated-sources/endive-compiler
+          key: ${{ steps.key.outputs.key }}
+
+      - name: Setup Java 21
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+          cache-dependency-path: integrations/jvm/**/pom.xml
+
+      # The runtime module up to generate-sources, with the modules it depends on: the download of the pinned
+      # qjs-wasi.wasm and the Endive compile. No assets are generated (that is the reactor's generate-resources).
+      - name: Compile the QuickJS runtime
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: ./mvnw -B -ntp -pl libs/datum-sandbox-endive -am -Ddatum.assets.skip=true generate-sources
+        working-directory: integrations/jvm
+
+  jvm:
+    needs: jvm-runtime
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ${{ fromJSON(inputs.java == 'all' && '[17, 21, 25]' || format('[{0}]', inputs.java)) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            packages/conformance-suite/package-lock.json
+            packages/datum/package-lock.json
+            packages/quickjs-wasm-host/package-lock.json
+            packages/pdf-kernel/package-lock.json
+            packages/submissions/package-lock.json
+            engine/package-lock.json
+
+      - name: Build the web components
+        uses: ./.github/actions/build-datum
+
+      - name: Build the conformance suite commands
+        run: |
+          (cd packages/submissions && npm ci)
+          (cd packages/conformance-suite && npm ci && node scripts/build-cli.mjs)
+
+      # What every host shares (integrations/shared) names no host. A read-only check.
+      - name: Shared tree checks
+        run: npm run shared:check-neutral
+
+      # The module assets (target/datum-assets) are generated by the Maven build itself: the reactor's root project runs
+      # integrations/jvm/scripts/build-assets.mjs at generate-resources, from the dist built above and WITHOUT
+      # --allow-stale, so a dist older than its sources fails the build there. No separate npm step.
+
+      - name: Setup Java ${{ matrix.java }}
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          cache: maven
+          cache-dependency-path: integrations/jvm/**/pom.xml
+
+      # `clean` runs on its own first so that the cache below restores AFTER it: a restored
+      # target/ would otherwise be deleted by the `clean` of the build that follows. The key and
+      # the compile are the jvm-runtime job's; a miss here fails the row, never compiles.
+      - name: Clean the reactor
+        run: ./mvnw -B -ntp clean
+        working-directory: integrations/jvm
+
+      - name: Restore the compiled QuickJS runtime
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            integrations/jvm/libs/datum-sandbox-endive/target/generated-resources/endive-compiler
+            integrations/jvm/libs/datum-sandbox-endive/target/generated-sources/endive-compiler
+          key: ${{ needs.jvm-runtime.outputs.key }}
+          fail-on-cache-miss: true
+
+      # The jdk25 profile activates itself on Java 25 and runs the Panama ITs. endive-prebuilt builds over the
+      # restored compile (NativeTargetsTest still holds the jar to all six targets).
+      - name: Build and test the reactor
+        run: ./mvnw -B -ntp -Pendive-prebuilt verify
+        working-directory: integrations/jvm
+
+      # The release scripts' own tests (which jar ships which dist file).
+      - name: Test the JVM scripts
+        run: npm run jvm:test:scripts
+
+      # The generated assets (target/datum-assets), notices and fixtures are gitignored build output; nothing
+      # the build writes may show up as a change in the tree.
+      - name: Check the build left the tree clean
+        run: |
+          status="$(git status --porcelain integrations/jvm)"
+          if [ -n "$status" ]; then echo "$status"; exit 1; fi
+
+      # Program mode on the program as the jar ships it (not the dist copy), with the jar's manifest.
+      - name: Security suite, program mode
+        run: |
+          mkdir -p "$RUNNER_TEMP/programs"
+          unzip -o -j -q integrations/jvm/libs/datum-programs/target/datum-programs-[0-9]*.jar 'META-INF/datum/programs/datum-sandbox-program.js' 'META-INF/datum/manifest.json' -d "$RUNNER_TEMP/programs"
+          node packages/conformance-suite/dist/cli.mjs --program "$RUNNER_TEMP/programs/datum-sandbox-program.js" --manifest "$RUNNER_TEMP/programs/manifest.json" --gate release --format json,md --out jvm-reports/suite-program
+
+      # The packaged ui example three times, from the same jar, each boot used by exactly one run: one
+      # with a high request limit for the suite (about 150 requests at 250 ms would trip the default 60
+      # a minute), and two with a low one for the flood case of the Java kit and of the Node kit
+      # (datum-host-check). A flood case spends the address's request budget, and the kits' submission
+      # cases need the first 20 requests of a minute, so the second kit must never run against the
+      # first kit's boot. The address limit (a count of bodies per address, checked before the body is read)
+      # is its own budget: the suite boot sets it to 0 (off) because it runs about 150 requests and no flood
+      # case, and the kit boots set it to 200, which the cases before the flood stay under while the flood
+      # case (FLD-02) posts up to 400 and so meets the 429 sent before the body is read. Every boot serves the suite's fixture form and names the switches it needs: every Datum
+      # route is off by default, so the boot passes definition, submissions, validate, the opt-in
+      # dry run (test) and the assets rather than lean on the example's yml. See tck/datum-host-tck/README.md.
+      - name: Boot the ui example
+        run: |
+          jar="$(ls integrations/jvm/examples/ui/target/*-exec.jar)"
+          fixture="file:$PWD/integrations/jvm/target/datum-assets/datum-host-tck/fixture-form.json"
+          mkdir -p jvm-reports
+          common=(--datum.web.api.endpoints.definition=true --datum.web.api.endpoints.submissions=true --datum.web.api.endpoints.validate=true
+            --datum.web.api.endpoints.test=true --datum.web.assets.enabled=true "--datum.forms.locations=classpath:/datum/forms/*.json,$fixture")
+          setsid nohup java -jar "$jar" --server.port=18080 --datum.web.throttle.limit=100000 --datum.web.throttle.address-limit=0 "${common[@]}" > jvm-reports/ui-suite.log 2>&1 &
+          setsid nohup java -jar "$jar" --server.port=18081 --datum.web.throttle.limit=30 --datum.web.throttle.address-limit=200 "${common[@]}" > jvm-reports/ui-tck.log 2>&1 &
+          setsid nohup java -jar "$jar" --server.port=18082 --datum.web.throttle.limit=30 --datum.web.throttle.address-limit=200 "${common[@]}" > jvm-reports/ui-host-check.log 2>&1 &
+          for port in 18080 18081 18082; do
+            for i in $(seq 1 90); do
+              if curl -fsS "http://localhost:$port/datum/assets/host.json" > /dev/null; then break; fi
+              sleep 2
+            done
+            curl -fsS "http://localhost:$port/datum/assets/host.json" > /dev/null
+          done
+
+      - name: Security suite, endpoint mode
+        run: node packages/conformance-suite/dist/cli.mjs --endpoint http://localhost:18080 --form datum-security-suite --allow-writes --i-installed-the-suite-fixture --format json,md --out jvm-reports/suite-endpoint
+
+      # The wire contract as the kit's runner states it. Exit 0 passed, 1 a failed test, 2 a usage
+      # error or a capability that asserted nothing.
+      - name: Host test kit
+        run: |
+          set -o pipefail
+          integrations/jvm/mvnw -B -ntp -q -f integrations/jvm/pom.xml -pl tck/datum-host-tck dependency:build-classpath -Dmdep.outputFile="$RUNNER_TEMP/tck.classpath" -Dmdep.includeScope=runtime
+          java -cp "integrations/jvm/tck/datum-host-tck/target/classes:$(cat "$RUNNER_TEMP/tck.classpath")" com.argusvane.datum.tck.HostTck \
+            datum.tck.base-url=http://localhost:18081 datum.tck.capabilities=submissions,submissions-test,forms,assets,flood | tee jvm-reports/host-tck.txt
+
+      # The Node kit (datum-host-check, the cross-host wire gate) over the same capabilities, on its own
+      # fresh boot. Exit 0 passed, 1 a case failed, 2 a usage error or a named capability that asserted
+      # nothing, 3 inconclusive (a switch or the fixture form missing), 4 an internal error.
+      - name: Host check (Node kit), ui example
+        run: node packages/conformance-suite/dist/host-check.mjs --endpoint http://localhost:18082 --capabilities submissions,submissions-test,forms,assets,flood --out jvm-reports/host-check-ui
+
+      # The test-only deployments of the submissions example, each booted fresh: the hostile rule module
+      # registered for the fixture form (datum.example.hardening-rules, validation memory raised so the
+      # 40 MiB answer meets the output caps), and the stale sandbox program with fail-fast off.
+      - name: Host check (Node kit), hardening and runtime-down
+        run: |
+          jar="$(ls integrations/jvm/examples/submissions/target/*-exec.jar)"
+          kit="$RUNNER_TEMP/host-check-fixtures"
+          node packages/conformance-suite/dist/host-check.mjs fixtures --out "$kit"
+          # The runtime-down host answers /actuator/health 503 by design, so readiness there is any HTTP
+          # answer (curl without -f exits 0 once the server replies); the healthy boot keeps -f.
+          wait_up() {
+            for i in $(seq 1 90); do
+              if curl -sS -o /dev/null "http://localhost:$1/actuator/health" 2>/dev/null; then return 0; fi
+              sleep 2
+            done
+            curl -sS -o /dev/null "http://localhost:$1/actuator/health"
+          }
+          wait_healthy() {
+            for i in $(seq 1 90); do
+              if curl -fsS "http://localhost:$1/actuator/health" > /dev/null; then return 0; fi
+              sleep 2
+            done
+            curl -fsS "http://localhost:$1/actuator/health" > /dev/null
+          }
+          switches=(--datum.web.api.endpoints.submissions=true --datum.web.api.endpoints.validate=true)
+          setsid nohup java -jar "$jar" --server.port=18083 "${switches[@]}" --datum.example.hardening-rules="$kit/hardening-rules.js" --datum.runtime.validation.memory=512MB > jvm-reports/submissions-hardening.log 2>&1 &
+          setsid nohup java -jar "$jar" --server.port=18084 "${switches[@]}" --datum.runtime.fail-fast=false --datum.runtime.programs.sandbox="file:$kit/stale-program.js" > jvm-reports/submissions-runtime-down.log 2>&1 &
+          wait_healthy 18083
+          wait_up 18084
+          node packages/conformance-suite/dist/host-check.mjs --endpoint http://localhost:18083 --capabilities hardening --out jvm-reports/host-check-hardening
+          node packages/conformance-suite/dist/host-check.mjs --endpoint http://localhost:18084 --capabilities runtime-down --out jvm-reports/host-check-runtime-down
+
+      # The submissions example under its host-check profile (HostCheckConfiguration, application-host-check.yml): the
+      # dry run on, the kit's host context fixture served, the hostile rule module registered and a test-only
+      # HostContextProvider. One fresh boot runs the capabilities that profile prepares, host-context among them;
+      # flood (the ui boot above) and runtime-down (the boot above) keep their own boots. The profile has no default
+      # for the fixture directory, so a boot without it fails; see the example's README.
+      - name: Host check (Node kit), submissions example with host context
+        run: |
+          jar="$(ls integrations/jvm/examples/submissions/target/*-exec.jar)"
+          kit="$RUNNER_TEMP/host-check-context"
+          node packages/conformance-suite/dist/host-check.mjs fixtures --out "$kit"
+          setsid nohup java -jar "$jar" --server.port=18089 --spring.profiles.active=host-check --datum.example.host-check-fixtures="$kit" > jvm-reports/submissions-host-check.log 2>&1 &
+          for i in $(seq 1 90); do
+            if curl -fsS "http://localhost:18089/actuator/health" > /dev/null; then break; fi
+            sleep 2
+          done
+          curl -fsS "http://localhost:18089/actuator/health" > /dev/null
+          node packages/conformance-suite/dist/host-check.mjs --endpoint http://localhost:18089 --capabilities submissions,submissions-test,forms,hardening,host-context --out jvm-reports/host-check-submissions-context
+
+      # The four other examples, each booted fresh from its own jar and held to the Node kit once (a kit run spends
+      # the address's request budget, and the passkeys, builder and PDF cases write records, so no boot is reused).
+      # The recipes are the example deployments' own. Every route is off
+      # until switched on, so each boot names the switches its capabilities need.
+      - name: Host check (Node kit), ui-builder-jpa
+        run: |
+          jar="$(ls integrations/jvm/examples/ui-builder-jpa/target/*-exec.jar)"
+          setsid nohup java -jar "$jar" --server.port=18085 > jvm-reports/ui-builder-jpa.log 2>&1 &
+          for i in $(seq 1 90); do curl -fsS "http://localhost:18085/datum/assets/host.json" > /dev/null && break; sleep 2; done
+          curl -fsS "http://localhost:18085/datum/assets/host.json" > /dev/null
+          node packages/conformance-suite/dist/host-check.mjs --endpoint http://localhost:18085 --capabilities builder,assets --builder-enabled --build-form intake \
+            --person-header "Authorization=Basic $(printf 'author:author' | base64)" --other-person-header "Authorization=Basic $(printf 'viewer:viewer' | base64)" \
+            --csrf cookie:XSRF-TOKEN:X-XSRF-TOKEN --out jvm-reports/host-check-ui-builder-jpa
+
+      # The PDF seal's key is the development key store the example's script writes (RSA-2048, self-signed;
+      # the example's local/ directory is gitignored, so no key can be committed by this step).
+      - name: Host check (Node kit), webflux-pdf
+        run: |
+          examples=integrations/jvm/examples/webflux-pdf
+          "$examples/scripts/make-dev-keystore.sh"
+          kit="$RUNNER_TEMP/host-check-webflux"
+          node packages/conformance-suite/dist/host-check.mjs fixtures --out "$kit"
+          jar="$(ls $examples/target/*-exec.jar)"
+          setsid nohup java -jar "$jar" --server.port=18086 "--spring.ssl.bundle.jks.pdf-signer.keystore.location=file:$PWD/$examples/local/dev-signer.p12" \
+            --datum.web.api.endpoints.definition=true --datum.web.api.endpoints.submissions=true --datum.web.api.endpoints.validate=true --datum.web.assets.enabled=true \
+            "--datum.forms.locations=classpath:/datum/forms/*.json,file:$kit/fixture-form.json,file:$kit/fixture-form-b.json" \
+            --datum.bindings.routes.datum-security-suite-b=host-check-binding --datum.bindings.catalog.host-check-binding.label=Host-check \
+            --datum.bindings.catalog.host-check-binding.pdf-theme=datum-host-check-pdf "--datum.bindings.pdf-themes.datum-host-check-pdf=file:$kit/fixture-pdf-theme.json" \
+            > jvm-reports/webflux-pdf.log 2>&1 &
+          for i in $(seq 1 90); do curl -fsS "http://localhost:18086/datum/assets/host.json" > /dev/null && break; sleep 2; done
+          curl -fsS "http://localhost:18086/datum/assets/host.json" > /dev/null
+          node packages/conformance-suite/dist/host-check.mjs --endpoint http://localhost:18086 --capabilities submissions,forms,assets,pdf,tsa --builder-enabled --pdf-signing --pdf-bindings --out jvm-reports/host-check-webflux-pdf
+
+      - name: Host check (Node kit), tsa-server
+        run: |
+          jar="$(ls integrations/jvm/examples/tsa-server/target/*-exec.jar)"
+          setsid nohup java -jar "$jar" --server.port=18087 > jvm-reports/tsa-server.log 2>&1 &
+          for i in $(seq 1 90); do curl -sS -o /dev/null "http://localhost:18087/tsa/certificates" && break; sleep 2; done
+          node packages/conformance-suite/dist/host-check.mjs --endpoint http://localhost:18087 --capabilities tsa --out jvm-reports/host-check-tsa-server
+
+      # The relying party's origin is the boot's own port (a passkey is bound to the origin a browser writes).
+      - name: Host check (Node kit), passkeys
+        run: |
+          jar="$(ls integrations/jvm/examples/passkeys/target/*-exec.jar)"
+          setsid nohup java -jar "$jar" --server.port=18088 --datum.webauthn.origins=http://localhost:18088 > jvm-reports/passkeys.log 2>&1 &
+          # The passkeys example serves no assets, so its readiness probe is the public definition of its form.
+          for i in $(seq 1 90); do curl -fsS "http://localhost:18088/api/forms/petition/definition" > /dev/null && break; sleep 2; done
+          curl -fsS -o /dev/null "http://localhost:18088/api/forms/petition/definition"
+          node packages/conformance-suite/dist/host-check.mjs --endpoint http://localhost:18088 --capabilities passkeys --signing-form petition \
+            --person-header "Authorization=Basic $(printf 'ada:ada' | base64)" --other-person-header "Authorization=Basic $(printf 'grace:grace' | base64)" \
+            --csrf cookie:XSRF-TOKEN:X-XSRF-TOKEN --out jvm-reports/host-check-passkeys
+
+      - name: Upload the reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: jvm-reports-java-${{ matrix.java }}
+          path: |
+            jvm-reports
+            integrations/jvm/**/target/surefire-reports
+            integrations/jvm/**/target/failsafe-reports*
+          if-no-files-found: ignore

@@ -1,0 +1,44 @@
+<!-- datum-reference
+{
+  "source": "uswds 3.14.0: packages/usa-select/src/usa-select.twig (usa-label, usa-select, the empty first option '- Select -') in usa-form-group, with the required label of packages/templates/usa-address-form.twig; the required note of packages/templates/usa-address-form.twig above the fields",
+  "note": "a required select",
+  "components": [
+    {
+      "id": "field1",
+      "type": "select",
+      "configuration": {
+        "label": "Dropdown label",
+        "required": true,
+        "options": [
+          {
+            "value": "value1",
+            "label": "Option A"
+          },
+          {
+            "value": "value2",
+            "label": "Option B"
+          },
+          {
+            "value": "value3",
+            "label": "Option C"
+          }
+        ]
+      }
+    }
+  ],
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate class="usa-form usa-form--large">
+<p>Required fields are marked with an asterisk (<abbr title="required" class="usa-hint usa-hint--required">*</abbr>).</p>
+<div class="usa-form-group">
+<label class="usa-label" for="field1">Dropdown label <abbr title="required" class="usa-hint usa-hint--required">*</abbr></label>
+<select class="usa-select" id="field1" name="field1" required>
+<option value>- Select -</option>
+<option value="value1">Option A</option>
+<option value="value2">Option B</option>
+<option value="value3">Option C</option>
+</select>
+</div>
+</form>

@@ -1,0 +1,468 @@
+{
+  "rpId": "localhost",
+  "origin": "http://localhost",
+  "challenge": "BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc",
+  "userHandle": "YSByYW5kb20gaGFuZGxlIQ",
+  "credentials": [
+    {
+      "algorithm": -7,
+      "registration": {
+        "id": "Qrn8sYo2gqmU48SUZ9_3qw",
+        "publicKey": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEDTzXXeGetSyodOSX0JY9A0o7NOygTBxmbM32xjTT1ZwBVE0uHlxqy6busMOYF+7tDDO+2eXxsDYBMkYVXqS4nQ==",
+        "algorithm": -7,
+        "transports": [
+          "internal",
+          "hybrid"
+        ],
+        "userHandle": "YSByYW5kb20gaGFuZGxlIQ",
+        "response": {
+          "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiQndjSEJ3Y0hCd2NIQndjSEJ3Y0hCd2NIQndjSEJ3Y0hCd2NIQndjSEJ3YyIsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3QiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+          "authenticatorData": "SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2NFAAAAAAAAAAAAAAAAAAAAAAAAAAAAEEK5_LGKNoKplOPElGff96ulAQIDJiABIVggDTzXXeGetSyodOSX0JY9A0o7NOygTBxmbM32xjTT1ZwiWCABVE0uHlxqy6busMOYF-7tDDO-2eXxsDYBMkYVXqS4nQ",
+          "attestationObject": "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YViUSZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2NFAAAAAAAAAAAAAAAAAAAAAAAAAAAAEEK5_LGKNoKplOPElGff96ulAQIDJiABIVggDTzXXeGetSyodOSX0JY9A0o7NOygTBxmbM32xjTT1ZwiWCABVE0uHlxqy6busMOYF-7tDDO-2eXxsDYBMkYVXqS4nQ",
+          "transports": [
+            "internal",
+            "hybrid"
+          ]
+        }
+      },
+      "documents": [
+        {
+          "name": "envelope with a statement",
+          "scope": "envelope",
+          "statement": "I confirm these answers are true.",
+          "canonical": "{\"document\":{\"submission\":{\"locale\":\"fr\",\"values\":{\"10\":10,\"2\":2,\"B\":1,\"a\":2,\"agreed\":true,\"big\":1e+21,\"emoji\":\"😀\",\"fullName\":\"Zoë Ångström\",\"items\":[{\"qty\":3,\"sku\":\"A-1\"}],\"note\":null,\"quote\":\"say \\\"hi\\\" / \\\\\",\"ratio\":0.1,\"text1\":\"y\",\"text_1\":\"x\"}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"petition\",\"version\":\"1.0.0\"}}},\"statement\":\"I confirm these answers are true.\"}",
+          "document": {
+            "versionContext": {
+              "form": {
+                "id": "petition",
+                "version": "1.0.0"
+              },
+              "client": {
+                "runtimeVersion": "1.0.0",
+                "rendererVersion": "1.0.0",
+                "schemaVersion": "1"
+              }
+            },
+            "submission": {
+              "locale": "fr",
+              "values": {
+                "2": 2,
+                "10": 10,
+                "fullName": "Zoë Ångström",
+                "B": 1,
+                "a": 2,
+                "text_1": "x",
+                "text1": "y",
+                "ratio": 0.1,
+                "big": 1e+21,
+                "items": [
+                  {
+                    "sku": "A-1",
+                    "qty": 3
+                  }
+                ],
+                "agreed": true,
+                "note": null,
+                "emoji": "😀",
+                "quote": "say \"hi\" / \\"
+              }
+            },
+            "signatures": [
+              {
+                "participantId": "submitter",
+                "algorithm": "webauthn-es256",
+                "signature": "MEQCIAVPHXcsk3gd_omW3znI1Hq8HkOaoQAr2D5bE6TQ9jk4AiB7a5zKuddLIwceyRoCahfneJoeCGpUlIuaoGkxUYrOMg",
+                "signedAt": 1791544775447,
+                "format": {
+                  "scope": "envelope",
+                  "placement": "embedded",
+                  "digest": "sha-256",
+                  "canonicalization": "jcs"
+                },
+                "statement": "I confirm these answers are true.",
+                "webauthn": {
+                  "credentialId": "Qrn8sYo2gqmU48SUZ9_3qw",
+                  "authenticatorData": "SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MFAAAAAQ",
+                  "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoickFUX19QS2hHYWZfTGNROS16MV9JT0V3Um5xRWRucVJhSmFwTXBjMnNVVSIsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3QiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+                  "signature": "MEQCIAVPHXcsk3gd_omW3znI1Hq8HkOaoQAr2D5bE6TQ9jk4AiB7a5zKuddLIwceyRoCahfneJoeCGpUlIuaoGkxUYrOMg",
+                  "userHandle": "YSByYW5kb20gaGFuZGxlIQ",
+                  "algorithm": -7,
+                  "rpId": "localhost",
+                  "origin": "http://localhost",
+                  "signedAt": "2026-10-09T11:19:35.447Z"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "values, no statement",
+          "scope": "values",
+          "statement": null,
+          "canonical": "{\"10\":10,\"2\":2,\"B\":1,\"a\":2,\"agreed\":true,\"big\":1e+21,\"emoji\":\"😀\",\"fullName\":\"Zoë Ångström\",\"items\":[{\"qty\":3,\"sku\":\"A-1\"}],\"note\":null,\"quote\":\"say \\\"hi\\\" / \\\\\",\"ratio\":0.1,\"text1\":\"y\",\"text_1\":\"x\"}",
+          "document": {
+            "versionContext": {
+              "form": {
+                "id": "petition",
+                "version": "1.0.0"
+              },
+              "client": {
+                "runtimeVersion": "1.0.0",
+                "rendererVersion": "1.0.0",
+                "schemaVersion": "1"
+              }
+            },
+            "submission": {
+              "locale": "fr",
+              "values": {
+                "2": 2,
+                "10": 10,
+                "fullName": "Zoë Ångström",
+                "B": 1,
+                "a": 2,
+                "text_1": "x",
+                "text1": "y",
+                "ratio": 0.1,
+                "big": 1e+21,
+                "items": [
+                  {
+                    "sku": "A-1",
+                    "qty": 3
+                  }
+                ],
+                "agreed": true,
+                "note": null,
+                "emoji": "😀",
+                "quote": "say \"hi\" / \\"
+              }
+            },
+            "signatures": [
+              {
+                "participantId": "submitter",
+                "algorithm": "webauthn-es256",
+                "signature": "MEUCIQC7iVxHbFSJ2iWIgRV3bPYDy3IHvuvKwQOuNQWNdYLvLwIgeyuCNKBrPKP0ga7VE8VxVFU1guYnB4LFSFG8nnvHle0",
+                "signedAt": 1791544775448,
+                "format": {
+                  "scope": "values",
+                  "placement": "embedded",
+                  "digest": "sha-256",
+                  "canonicalization": "jcs"
+                },
+                "webauthn": {
+                  "credentialId": "Qrn8sYo2gqmU48SUZ9_3qw",
+                  "authenticatorData": "SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MFAAAAAg",
+                  "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiREhFRnNfUkg1XzRpY3lnYm5Cc2JRYjBoMXBhSzEwb05nNV9vOFliU0ZGYyIsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3QiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+                  "signature": "MEUCIQC7iVxHbFSJ2iWIgRV3bPYDy3IHvuvKwQOuNQWNdYLvLwIgeyuCNKBrPKP0ga7VE8VxVFU1guYnB4LFSFG8nnvHle0",
+                  "userHandle": "YSByYW5kb20gaGFuZGxlIQ",
+                  "algorithm": -7,
+                  "rpId": "localhost",
+                  "origin": "http://localhost",
+                  "signedAt": "2026-10-09T11:19:35.448Z"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "submission, a statement with quotes and accents",
+          "scope": "submission",
+          "statement": "Je confirme « ces réponses » — \"vraies\".",
+          "canonical": "{\"document\":{\"locale\":\"fr\",\"values\":{\"10\":10,\"2\":2,\"B\":1,\"a\":2,\"agreed\":true,\"big\":1e+21,\"emoji\":\"😀\",\"fullName\":\"Zoë Ångström\",\"items\":[{\"qty\":3,\"sku\":\"A-1\"}],\"note\":null,\"quote\":\"say \\\"hi\\\" / \\\\\",\"ratio\":0.1,\"text1\":\"y\",\"text_1\":\"x\"}},\"statement\":\"Je confirme « ces réponses » — \\\"vraies\\\".\"}",
+          "document": {
+            "versionContext": {
+              "form": {
+                "id": "petition",
+                "version": "1.0.0"
+              },
+              "client": {
+                "runtimeVersion": "1.0.0",
+                "rendererVersion": "1.0.0",
+                "schemaVersion": "1"
+              }
+            },
+            "submission": {
+              "locale": "fr",
+              "values": {
+                "2": 2,
+                "10": 10,
+                "fullName": "Zoë Ångström",
+                "B": 1,
+                "a": 2,
+                "text_1": "x",
+                "text1": "y",
+                "ratio": 0.1,
+                "big": 1e+21,
+                "items": [
+                  {
+                    "sku": "A-1",
+                    "qty": 3
+                  }
+                ],
+                "agreed": true,
+                "note": null,
+                "emoji": "😀",
+                "quote": "say \"hi\" / \\"
+              }
+            },
+            "signatures": [
+              {
+                "participantId": "submitter",
+                "algorithm": "webauthn-es256",
+                "signature": "MEQCID1Lwq9TXr3AMKBYtTN5GpDz_ce8Vw3uSZOg9qL5zZhbAiBDJHPUSHzwWLnE4BwDgOxwVgwREC5MqAWjhILoNwflqw",
+                "signedAt": 1791544775449,
+                "format": {
+                  "scope": "submission",
+                  "placement": "embedded",
+                  "digest": "sha-256",
+                  "canonicalization": "jcs"
+                },
+                "statement": "Je confirme « ces réponses » — \"vraies\".",
+                "webauthn": {
+                  "credentialId": "Qrn8sYo2gqmU48SUZ9_3qw",
+                  "authenticatorData": "SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MFAAAAAw",
+                  "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoibnJHQnhlWS11UG1US3FxYW5DUWplV25HMEJVSkJIcnNHQ3hjeng3VzJJWSIsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3QiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+                  "signature": "MEQCID1Lwq9TXr3AMKBYtTN5GpDz_ce8Vw3uSZOg9qL5zZhbAiBDJHPUSHzwWLnE4BwDgOxwVgwREC5MqAWjhILoNwflqw",
+                  "userHandle": "YSByYW5kb20gaGFuZGxlIQ",
+                  "algorithm": -7,
+                  "rpId": "localhost",
+                  "origin": "http://localhost",
+                  "signedAt": "2026-10-09T11:19:35.449Z"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "algorithm": -257,
+      "registration": {
+        "id": "HislQ3jnx4aVWcCM3AOV5A",
+        "publicKey": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAySTgFwaUZlubJdZsEf4TzLuZ9qZ0IUfnGF1qCz+jcGx3oEo4grx6gKEbp3hdkNFPVltylINH+iqBfZbEkPci2blkxK5wfTYdKp/sDdfBsI/nPWZs4IuOZ7i44DOMbxRsIa6oijP6DdQXZEVdRHqVQ01e2zItrl9vw1ZNOwqnwbevpMLaWJrdkfEY8D6hX5WQsaknFge29R8HyBnWOdLdQTomWo0NLqSIIOmR8gXTLCbwEX8oNnpuuzrhFA9nT8E4/m2wYd5WyDbPv1OercgRjvsGbr3vu8E9J5ED9jOlYtBsIvhitTFLWtp0tUBETVCTaVzagGlsNigovsFTZSExFwIDAQAB",
+        "algorithm": -257,
+        "transports": [
+          "internal",
+          "hybrid"
+        ],
+        "userHandle": "YSByYW5kb20gaGFuZGxlIQ",
+        "response": {
+          "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiQndjSEJ3Y0hCd2NIQndjSEJ3Y0hCd2NIQndjSEJ3Y0hCd2NIQndjSEJ3YyIsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3QiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+          "authenticatorData": "SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2NFAAAAAAAAAAAAAAAAAAAAAAAAAAAAEB4rJUN458eGlVnAjNwDleSkAQMDOQEAIFkBAMkk4BcGlGZbmyXWbBH-E8y7mfamdCFH5xhdags_o3Bsd6BKOIK8eoChG6d4XZDRT1ZbcpSDR_oqgX2WxJD3Itm5ZMSucH02HSqf7A3XwbCP5z1mbOCLjme4uOAzjG8UbCGuqIoz-g3UF2RFXUR6lUNNXtsyLa5fb8NWTTsKp8G3r6TC2lia3ZHxGPA-oV-VkLGpJxYHtvUfB8gZ1jnS3UE6JlqNDS6kiCDpkfIF0ywm8BF_KDZ6brs64RQPZ0_BOP5tsGHeVsg2z79Tnq3IEY77Bm6977vBPSeRA_YzpWLQbCL4YrUxS1radLVARE1Qk2lc2oBpbDYoKL7BU2UhMRchQwEAAQ",
+          "attestationObject": "o2NmbXRkbm9uZWdhdHRTdG10oGhhdXRoRGF0YVkBV0mWDeWIDoxodDQXD2R2YFuP5K65ooYyx5lc87qDHZdjRQAAAAAAAAAAAAAAAAAAAAAAAAAAABAeKyVDeOfHhpVZwIzcA5XkpAEDAzkBACBZAQDJJOAXBpRmW5sl1mwR_hPMu5n2pnQhR-cYXWoLP6NwbHegSjiCvHqAoRuneF2Q0U9WW3KUg0f6KoF9lsSQ9yLZuWTErnB9Nh0qn-wN18Gwj-c9Zmzgi45nuLjgM4xvFGwhrqiKM_oN1BdkRV1EepVDTV7bMi2uX2_DVk07CqfBt6-kwtpYmt2R8RjwPqFflZCxqScWB7b1HwfIGdY50t1BOiZajQ0upIgg6ZHyBdMsJvARfyg2em67OuEUD2dPwTj-bbBh3lbINs-_U56tyBGO-wZuve-7wT0nkQP2M6Vi0Gwi-GK1MUta2nS1QERNUJNpXNqAaWw2KCi-wVNlITEXIUMBAAE",
+          "transports": [
+            "internal",
+            "hybrid"
+          ]
+        }
+      },
+      "documents": [
+        {
+          "name": "envelope with a statement",
+          "scope": "envelope",
+          "statement": "I confirm these answers are true.",
+          "canonical": "{\"document\":{\"submission\":{\"locale\":\"fr\",\"values\":{\"10\":10,\"2\":2,\"B\":1,\"a\":2,\"agreed\":true,\"big\":1e+21,\"emoji\":\"😀\",\"fullName\":\"Zoë Ångström\",\"items\":[{\"qty\":3,\"sku\":\"A-1\"}],\"note\":null,\"quote\":\"say \\\"hi\\\" / \\\\\",\"ratio\":0.1,\"text1\":\"y\",\"text_1\":\"x\"}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"petition\",\"version\":\"1.0.0\"}}},\"statement\":\"I confirm these answers are true.\"}",
+          "document": {
+            "versionContext": {
+              "form": {
+                "id": "petition",
+                "version": "1.0.0"
+              },
+              "client": {
+                "runtimeVersion": "1.0.0",
+                "rendererVersion": "1.0.0",
+                "schemaVersion": "1"
+              }
+            },
+            "submission": {
+              "locale": "fr",
+              "values": {
+                "2": 2,
+                "10": 10,
+                "fullName": "Zoë Ångström",
+                "B": 1,
+                "a": 2,
+                "text_1": "x",
+                "text1": "y",
+                "ratio": 0.1,
+                "big": 1e+21,
+                "items": [
+                  {
+                    "sku": "A-1",
+                    "qty": 3
+                  }
+                ],
+                "agreed": true,
+                "note": null,
+                "emoji": "😀",
+                "quote": "say \"hi\" / \\"
+              }
+            },
+            "signatures": [
+              {
+                "participantId": "submitter",
+                "algorithm": "webauthn-es256",
+                "signature": "IwTp31YJs52nH-T2LO1nB-yUUA3AO60TAPG1R9fmPfgFzvdbixkoa2zPuuRfOM9mEqxKuPIaacc8FiqGz-hY51h-hyN-v3BP_sOaT7q_HKg9FnTZ9laXnbFzc7J3H2NulLuHARcdc2vexcex-1Q508Zau2QOnyL7RHga_AQ_sTGOE5RkNEb9YW3qOjWTEcM83Zp4_g2kaHPcUVCeFyN2cJB04sGkuO9lkiIgEhZ4pk2SHzMKem3W2SyR_eVq0-6nLUsGrSbRXl5tF1eY6c2JqJaORZnIYPb8y15igmzMqLa6wLMQ_BlS1hlDyD47HxIHiSLCZB7RNL9R7gRlQDYceg",
+                "signedAt": 1791544775552,
+                "format": {
+                  "scope": "envelope",
+                  "placement": "embedded",
+                  "digest": "sha-256",
+                  "canonicalization": "jcs"
+                },
+                "statement": "I confirm these answers are true.",
+                "webauthn": {
+                  "credentialId": "HislQ3jnx4aVWcCM3AOV5A",
+                  "authenticatorData": "SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MFAAAAAQ",
+                  "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoickFUX19QS2hHYWZfTGNROS16MV9JT0V3Um5xRWRucVJhSmFwTXBjMnNVVSIsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3QiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+                  "signature": "IwTp31YJs52nH-T2LO1nB-yUUA3AO60TAPG1R9fmPfgFzvdbixkoa2zPuuRfOM9mEqxKuPIaacc8FiqGz-hY51h-hyN-v3BP_sOaT7q_HKg9FnTZ9laXnbFzc7J3H2NulLuHARcdc2vexcex-1Q508Zau2QOnyL7RHga_AQ_sTGOE5RkNEb9YW3qOjWTEcM83Zp4_g2kaHPcUVCeFyN2cJB04sGkuO9lkiIgEhZ4pk2SHzMKem3W2SyR_eVq0-6nLUsGrSbRXl5tF1eY6c2JqJaORZnIYPb8y15igmzMqLa6wLMQ_BlS1hlDyD47HxIHiSLCZB7RNL9R7gRlQDYceg",
+                  "userHandle": "YSByYW5kb20gaGFuZGxlIQ",
+                  "algorithm": -7,
+                  "rpId": "localhost",
+                  "origin": "http://localhost",
+                  "signedAt": "2026-10-09T11:19:35.552Z"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "values, no statement",
+          "scope": "values",
+          "statement": null,
+          "canonical": "{\"10\":10,\"2\":2,\"B\":1,\"a\":2,\"agreed\":true,\"big\":1e+21,\"emoji\":\"😀\",\"fullName\":\"Zoë Ångström\",\"items\":[{\"qty\":3,\"sku\":\"A-1\"}],\"note\":null,\"quote\":\"say \\\"hi\\\" / \\\\\",\"ratio\":0.1,\"text1\":\"y\",\"text_1\":\"x\"}",
+          "document": {
+            "versionContext": {
+              "form": {
+                "id": "petition",
+                "version": "1.0.0"
+              },
+              "client": {
+                "runtimeVersion": "1.0.0",
+                "rendererVersion": "1.0.0",
+                "schemaVersion": "1"
+              }
+            },
+            "submission": {
+              "locale": "fr",
+              "values": {
+                "2": 2,
+                "10": 10,
+                "fullName": "Zoë Ångström",
+                "B": 1,
+                "a": 2,
+                "text_1": "x",
+                "text1": "y",
+                "ratio": 0.1,
+                "big": 1e+21,
+                "items": [
+                  {
+                    "sku": "A-1",
+                    "qty": 3
+                  }
+                ],
+                "agreed": true,
+                "note": null,
+                "emoji": "😀",
+                "quote": "say \"hi\" / \\"
+              }
+            },
+            "signatures": [
+              {
+                "participantId": "submitter",
+                "algorithm": "webauthn-es256",
+                "signature": "nHQWR5kFfAlSUuTq3Tsm2z174RUtbF9AMnvlbLm1teOy6GYdc1Yvp2wuTTF2RHuSnb8qrOob1EwoBzdiLY7Qi-a9ZO9J26d6c-1R4o3jDHZlETQfcZw6v6O63Gl8gZcYvHRFHYC_5ynip_tHxbRgj4GjO6gvbevNZoBxGcK8nXE55zGiFqLQxG5T--Ze_dzW75bGj1--aPx3KJuegedCN6FohJ9gHihjpq2-3WjLoYM6sF7I0NwgTnqiLof4ZGTxIumC7HIOd-vTfWIooX9TcYjmYj0Zg6r7RTJDTPxHc5gEgLRLuTP7-uCmNE-MncVaI0G3wHNjNNvHT5fV3eMNpQ",
+                "signedAt": 1791544775554,
+                "format": {
+                  "scope": "values",
+                  "placement": "embedded",
+                  "digest": "sha-256",
+                  "canonicalization": "jcs"
+                },
+                "webauthn": {
+                  "credentialId": "HislQ3jnx4aVWcCM3AOV5A",
+                  "authenticatorData": "SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MFAAAAAg",
+                  "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiREhFRnNfUkg1XzRpY3lnYm5Cc2JRYjBoMXBhSzEwb05nNV9vOFliU0ZGYyIsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3QiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+                  "signature": "nHQWR5kFfAlSUuTq3Tsm2z174RUtbF9AMnvlbLm1teOy6GYdc1Yvp2wuTTF2RHuSnb8qrOob1EwoBzdiLY7Qi-a9ZO9J26d6c-1R4o3jDHZlETQfcZw6v6O63Gl8gZcYvHRFHYC_5ynip_tHxbRgj4GjO6gvbevNZoBxGcK8nXE55zGiFqLQxG5T--Ze_dzW75bGj1--aPx3KJuegedCN6FohJ9gHihjpq2-3WjLoYM6sF7I0NwgTnqiLof4ZGTxIumC7HIOd-vTfWIooX9TcYjmYj0Zg6r7RTJDTPxHc5gEgLRLuTP7-uCmNE-MncVaI0G3wHNjNNvHT5fV3eMNpQ",
+                  "userHandle": "YSByYW5kb20gaGFuZGxlIQ",
+                  "algorithm": -7,
+                  "rpId": "localhost",
+                  "origin": "http://localhost",
+                  "signedAt": "2026-10-09T11:19:35.554Z"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "name": "submission, a statement with quotes and accents",
+          "scope": "submission",
+          "statement": "Je confirme « ces réponses » — \"vraies\".",
+          "canonical": "{\"document\":{\"locale\":\"fr\",\"values\":{\"10\":10,\"2\":2,\"B\":1,\"a\":2,\"agreed\":true,\"big\":1e+21,\"emoji\":\"😀\",\"fullName\":\"Zoë Ångström\",\"items\":[{\"qty\":3,\"sku\":\"A-1\"}],\"note\":null,\"quote\":\"say \\\"hi\\\" / \\\\\",\"ratio\":0.1,\"text1\":\"y\",\"text_1\":\"x\"}},\"statement\":\"Je confirme « ces réponses » — \\\"vraies\\\".\"}",
+          "document": {
+            "versionContext": {
+              "form": {
+                "id": "petition",
+                "version": "1.0.0"
+              },
+              "client": {
+                "runtimeVersion": "1.0.0",
+                "rendererVersion": "1.0.0",
+                "schemaVersion": "1"
+              }
+            },
+            "submission": {
+              "locale": "fr",
+              "values": {
+                "2": 2,
+                "10": 10,
+                "fullName": "Zoë Ångström",
+                "B": 1,
+                "a": 2,
+                "text_1": "x",
+                "text1": "y",
+                "ratio": 0.1,
+                "big": 1e+21,
+                "items": [
+                  {
+                    "sku": "A-1",
+                    "qty": 3
+                  }
+                ],
+                "agreed": true,
+                "note": null,
+                "emoji": "😀",
+                "quote": "say \"hi\" / \\"
+              }
+            },
+            "signatures": [
+              {
+                "participantId": "submitter",
+                "algorithm": "webauthn-es256",
+                "signature": "jiHJC8y6FKsI7HQqGxiukQ-_Jw7ybL8SpryUQO5pFPSVhKkDuCXRI0quIb9TEnV8NSvtNhfp3VvyERhzM7Xk_d-oJyobznDYUu0msewdl6IHYOjeZepbNoXowqHgASZB1unMNV6sKw3f8ypBhdUu2sAFj4y5hMhwrjr9l09j-4je0LwwMy_jVzldjWJjiWSRppkIOJBNrawXdAy7mEPU-Giy1ctSEJemkTkVardO8QSEXQDt5dAg0SgnZvrexGLiFBazZg8r6dgBxB5LL3ObrT1-ZQlW-c_j2h9tj11FDYWHifOo8drCAaRLxNqEPK2qj61Vww7qcjjbm2otzee40A",
+                "signedAt": 1791544775556,
+                "format": {
+                  "scope": "submission",
+                  "placement": "embedded",
+                  "digest": "sha-256",
+                  "canonicalization": "jcs"
+                },
+                "statement": "Je confirme « ces réponses » — \"vraies\".",
+                "webauthn": {
+                  "credentialId": "HislQ3jnx4aVWcCM3AOV5A",
+                  "authenticatorData": "SZYN5YgOjGh0NBcPZHZgW4_krrmihjLHmVzzuoMdl2MFAAAAAw",
+                  "clientDataJSON": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoibnJHQnhlWS11UG1US3FxYW5DUWplV25HMEJVSkJIcnNHQ3hjeng3VzJJWSIsIm9yaWdpbiI6Imh0dHA6Ly9sb2NhbGhvc3QiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+                  "signature": "jiHJC8y6FKsI7HQqGxiukQ-_Jw7ybL8SpryUQO5pFPSVhKkDuCXRI0quIb9TEnV8NSvtNhfp3VvyERhzM7Xk_d-oJyobznDYUu0msewdl6IHYOjeZepbNoXowqHgASZB1unMNV6sKw3f8ypBhdUu2sAFj4y5hMhwrjr9l09j-4je0LwwMy_jVzldjWJjiWSRppkIOJBNrawXdAy7mEPU-Giy1ctSEJemkTkVardO8QSEXQDt5dAg0SgnZvrexGLiFBazZg8r6dgBxB5LL3ObrT1-ZQlW-c_j2h9tj11FDYWHifOo8drCAaRLxNqEPK2qj61Vww7qcjjbm2otzee40A",
+                  "userHandle": "YSByYW5kb20gaGFuZGxlIQ",
+                  "algorithm": -7,
+                  "rpId": "localhost",
+                  "origin": "http://localhost",
+                  "signedAt": "2026-10-09T11:19:35.556Z"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

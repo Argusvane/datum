@@ -1,0 +1,5 @@
+out/
+
+# Written by scripts/npm/prepack.mjs for the tarball
+/LICENSE
+/NOTICE

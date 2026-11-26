@@ -1,0 +1,8 @@
+from datum_core.builder import BuilderSaveCandidate, BuilderSaveValidator
+
+
+def wrong(candidate: BuilderSaveCandidate) -> int:
+    return 1
+
+
+bad: BuilderSaveValidator = wrong

@@ -1,0 +1,30 @@
+test "the newsletter email shows only when subscribed"
+  expect newsletterEmail hidden
+  set subscribe = true
+  expect newsletterEmail visible
+  set newsletterEmail = "not an email"
+  check
+  expect error on newsletterEmail: pattern
+  set newsletterEmail = "ada@example.com"
+  check
+  expect no error on newsletterEmail
+
+test "a name is required"
+  submit
+  expect refused
+  expect error on fullName: required
+  set fullName = "Ada Lovelace"
+  submit
+  expect accepted
+
+test "an email typed before unsubscribing is not sent"
+  # A hidden answer stays on the form but is left out of the
+  # submission unless its field sets hiddenValueBehavior to "retain".
+  set fullName = "Ada Lovelace"
+  set subscribe = true
+  set newsletterEmail = "ada@example.com"
+  set subscribe = false
+  expect newsletterEmail hidden
+  submit
+  expect accepted
+  expect newsletterEmail withheld

@@ -1,0 +1,16 @@
+{
+  "note": "the French date: day, month, year in French words",
+  "locale": "fr-CA",
+  "components": [
+    {
+      "id": "start",
+      "type": "date",
+      "configuration": {
+        "label": "Date de début",
+        "description": "Par exemple, 14 5 2026.",
+        "required": true
+      }
+    }
+  ],
+  "width": 560
+}

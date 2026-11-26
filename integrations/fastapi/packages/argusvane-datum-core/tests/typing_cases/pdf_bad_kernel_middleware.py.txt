@@ -1,0 +1,8 @@
+from datum_core.pdf import PdfKernelMiddleware
+from datum_sandbox.protocol import PdfKernel
+
+
+def answers_none(kernel: PdfKernel) -> None: ...
+
+
+bad: PdfKernelMiddleware = answers_none

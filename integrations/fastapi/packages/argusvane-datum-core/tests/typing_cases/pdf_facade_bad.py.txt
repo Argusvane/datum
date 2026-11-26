@@ -1,0 +1,16 @@
+from datum_core.pdf import PdfSigner
+
+
+class Signer:
+    @property
+    def algorithm(self) -> str:
+        return "ECDSA-P256-SHA256"
+
+    def certificates(self) -> tuple[bytes, ...]:
+        return ()
+
+    def sign(self, to_be_signed: bytes) -> bytes:
+        return to_be_signed
+
+
+bad: PdfSigner = Signer()

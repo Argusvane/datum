@@ -1,0 +1,24 @@
+<!-- datum-reference
+{
+  "source": "bootstrap 5.3.8: https://getbootstrap.com/docs/5.3/forms/form-control/ (label.form-label, input.form-control) with the required attribute of https://getbootstrap.com/docs/5.3/forms/validation/ (Supported elements). The asterisk after the label (text-danger) is the binding's own required mark, not Bootstrap's: Bootstrap marks no required field (its checkout example marks the optional ones), and the binding draws the form's required word.",
+  "note": "a required text field",
+  "components": [
+    {
+      "id": "field1",
+      "type": "text",
+      "configuration": {
+        "label": "City",
+        "required": true
+      }
+    }
+  ],
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate>
+<div class="mb-3">
+<label class="form-label" for="field1">City <span class="text-danger" aria-hidden="true">*</span></label>
+<input class="form-control" id="field1" name="field1" type="text" required>
+</div>
+</form>

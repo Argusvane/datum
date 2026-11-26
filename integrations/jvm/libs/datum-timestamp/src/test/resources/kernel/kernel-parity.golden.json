@@ -1,0 +1,98 @@
+{
+  "rsa-kernel-request.tsr": {
+    "time": "2026-10-05T12:00:01Z",
+    "serialHex": "64",
+    "imprintAlgorithm": "2.16.840.1.101.3.4.2.1",
+    "imprintHex": "4016de7d5d3de0b31afdf1537e0cc5355c2cdd6d900d694ce9fc7db21552d505",
+    "accuracy": {
+      "seconds": 1
+    },
+    "tsa": "CN=Datum demo TSA, O=Datum, C=CA",
+    "certificates": 1,
+    "digestAlgorithm": "2.16.840.1.101.3.4.2.1",
+    "signatureAlgorithm": "1.2.840.113549.1.1.11",
+    "contentType": "1.2.840.113549.1.9.16.1.4",
+    "messageDigestHex": "3c1b157243fafd7d818820ad5c69080b4b60cf2d1f9c65b45b1c81a3cda6c961",
+    "essCertId": {
+      "algorithm": "2.16.840.1.101.3.4.2.1",
+      "hashHex": "8186730e5b65d922ecb6c92c12c27075280420d0aec4fb69bc754e62eb4fde7a"
+    },
+    "hasIssuerSerial": true,
+    "coversRight": true,
+    "coversWrong": false,
+    "signatureVerifies": true
+  },
+  "rsa-nonce-sha512.token": {
+    "time": "2026-10-05T12:00:01Z",
+    "serialHex": "65",
+    "imprintAlgorithm": "2.16.840.1.101.3.4.2.3",
+    "imprintHex": "63cee307d436f88665732eea0989cc58218000e08ecba495a4739ebea6c727b611a91ce5bafc7506ee0f118a324835a413ba9a161baea1c7368ccbf6c29b8e78",
+    "nonceHex": "084dd8f85ca462a3",
+    "accuracy": {
+      "seconds": 1,
+      "millis": 500
+    },
+    "tsa": "CN=Datum demo TSA, O=Datum, C=CA",
+    "certificates": 1,
+    "digestAlgorithm": "2.16.840.1.101.3.4.2.1",
+    "signatureAlgorithm": "1.2.840.113549.1.1.11",
+    "contentType": "1.2.840.113549.1.9.16.1.4",
+    "messageDigestHex": "be45483eb828822eada03811e5820d167dc76d00cec087f8c1130aaa6355c24b",
+    "essCertId": {
+      "algorithm": "2.16.840.1.101.3.4.2.1",
+      "hashHex": "8186730e5b65d922ecb6c92c12c27075280420d0aec4fb69bc754e62eb4fde7a"
+    },
+    "hasIssuerSerial": true,
+    "coversRight": true,
+    "coversWrong": false,
+    "signatureVerifies": true
+  },
+  "rsa-long-nonce.tsr": {
+    "time": "2026-10-05T12:00:01Z",
+    "serialHex": "66",
+    "imprintAlgorithm": "2.16.840.1.101.3.4.2.1",
+    "imprintHex": "4016de7d5d3de0b31afdf1537e0cc5355c2cdd6d900d694ce9fc7db21552d505",
+    "nonceHex": "05",
+    "accuracy": {
+      "seconds": 1
+    },
+    "tsa": "CN=Datum demo TSA, O=Datum, C=CA",
+    "certificates": 1,
+    "digestAlgorithm": "2.16.840.1.101.3.4.2.1",
+    "signatureAlgorithm": "1.2.840.113549.1.1.11",
+    "contentType": "1.2.840.113549.1.9.16.1.4",
+    "messageDigestHex": "47d7441e42590b6fcce7f965dd9058e8560a810dfc8e9155d33d1b73ac283eb9",
+    "essCertId": {
+      "algorithm": "2.16.840.1.101.3.4.2.1",
+      "hashHex": "8186730e5b65d922ecb6c92c12c27075280420d0aec4fb69bc754e62eb4fde7a"
+    },
+    "hasIssuerSerial": true,
+    "coversRight": true,
+    "coversWrong": false,
+    "signatureVerifies": true
+  },
+  "ec-p256-millis-nocert.tsr": {
+    "time": "2030-01-02T03:04:05Z",
+    "serialHex": "67",
+    "imprintAlgorithm": "2.16.840.1.101.3.4.2.1",
+    "imprintHex": "4016de7d5d3de0b31afdf1537e0cc5355c2cdd6d900d694ce9fc7db21552d505",
+    "nonceHex": "1122",
+    "accuracy": {
+      "millis": 250
+    },
+    "tsa": "O=Datum tests, CN=Datum test TSA ec",
+    "certificates": 0,
+    "digestAlgorithm": "2.16.840.1.101.3.4.2.1",
+    "signatureAlgorithm": "1.2.840.10045.4.3.2",
+    "contentType": "1.2.840.113549.1.9.16.1.4",
+    "messageDigestHex": "40757be98c30aa8823d9d8cb58f9234e811b9356b83938c2ba48a6d3f03d31cd",
+    "essCertId": {
+      "algorithm": "2.16.840.1.101.3.4.2.1",
+      "hashHex": "e4a61c58016e2dda3bf860a63ef6ae0d476229443a5d9f8ef3cffbae4f8cd2ef"
+    },
+    "hasIssuerSerial": true,
+    "coversRight": true,
+    "coversWrong": false,
+    "signatureVerifies": true
+  }
+}

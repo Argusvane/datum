@@ -1,0 +1,79 @@
+{
+  "name": "@argusvane/datum-binding-gcds",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "author": "Argusvane <maintainers@argusvane.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/argusvane/datum.git",
+    "directory": "bindings/gcds"
+  },
+  "homepage": "https://datum.argusvane.com",
+  "bugs": {
+    "url": "https://github.com/argusvane/datum/issues"
+  },
+  "keywords": [
+    "datum",
+    "forms",
+    "form-renderer",
+    "design-system",
+    "binding"
+  ],
+  "description": "GC Design System (design-system.canada.ca) binding for the Datum form renderer: Datum's components drawn in the design system's own markup.",
+  "type": "module",
+  "datumBinding": {
+    "id": "gcds",
+    "designSystem": "GC Design System",
+    "release": "1.7.0",
+    "bundle": "dist/gcds.js",
+    "global": "DatumBindingGcds",
+    "budgetKb": 14,
+    "checks": [
+      "tests/extras.mjs",
+      "tests/print-check.mjs"
+    ]
+  },
+  "scripts": {
+    "build": "node ./src/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "kit:check": "node ../../packages/datum/binding-kit/check.mjs --binding gcds",
+    "kit:build": "node ../../packages/datum/binding-kit/build.mjs --binding gcds",
+    "kit:equality": "node ../../packages/datum/binding-kit/equality.mjs --binding gcds",
+    "kit:behaviour": "node ../../packages/datum/binding-kit/behaviour.mjs --binding gcds",
+    "kit:conformance": "node ../../packages/datum/binding-kit/conformance.ts --binding gcds",
+    "kit:serve": "node ../../packages/datum/binding-kit/serve.mjs --binding gcds",
+    "tokens:generate": "node scripts/generate-tokens.mjs",
+    "test": "npm run test:tokens && npm run test:pdf && npm run test:print-filled && npm run test:panel && npm run test:plugin-urls",
+    "test:tokens": "node --test tests/tokens.test.mjs",
+    "test:pdf": "../../packages/pdf-kernel/node_modules/.bin/vitest run --root . tests/pdf-theme.test.ts",
+    "test:panel": "../../packages/pdf-kernel/node_modules/.bin/vitest run --root . tests/panel.test.ts",
+    "test:plugin-urls": "../../packages/pdf-kernel/node_modules/.bin/vitest run --root . tests/plugin-urls.test.ts",
+    "test:print-filled": "../../packages/pdf-kernel/node_modules/.bin/vitest run --root . tests/print-filled.test.ts",
+    "test:extras": "node tests/extras.mjs",
+    "test:print": "node tests/print-check.mjs",
+    "test:official-date": "node ../../packages/datum/binding-kit/conformance.ts --binding tests/official-date/binding.ts --assets tests/official-date/binding-check.json"
+  },
+  "devDependencies": {
+    "@argusvane/datum-engine": "file:../../engine",
+    "esbuild": "^0.28.2",
+    "gcds-components-1.7.0": "npm:@gcds-core/components@1.7.0",
+    "gcds-fonts-1.1.1": "npm:@gcds-core/fonts@1.1.1",
+    "gcds-tokens-1.6.0": "npm:@gcds-core/tokens@1.6.0",
+    "typescript": "^7.0.2"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/binding.ts",
+      "import": "./src/binding.ts"
+    },
+    "./print": {
+      "types": "./print/index.ts",
+      "import": "./print/index.ts"
+    },
+    "./pdf": {
+      "types": "./pdf/index.ts",
+      "import": "./pdf/index.ts"
+    }
+  }
+}

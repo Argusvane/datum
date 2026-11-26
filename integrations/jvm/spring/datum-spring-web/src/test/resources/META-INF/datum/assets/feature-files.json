@@ -1,0 +1,7 @@
+{
+  "features": {
+    "journeys": {"bundle": "both", "files": ["datum-journey-chunk.js"]},
+    "webauthn": {"bundle": "form", "files": ["datum-webauthn-chunk.js"]},
+    "signing": {"bundle": "form", "files": [], "aliasOf": "webauthn"}
+  }
+}

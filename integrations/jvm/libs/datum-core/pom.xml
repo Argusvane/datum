@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-core</artifactId>
+  <packaging>jar</packaging>
+  <name>datum-core</name>
+  <description>Datum core: sandbox protocol records, canonical JSON, runtime-agnostic run protocol.</description>
+  <dependencies>
+    <!-- Nullability annotations on the public SPI packages: optional, like micrometer-observation. An absent
+         annotation class is ignored at run time; an IDE, Kotlin or NullAway user adds org.jspecify:jspecify to read them. -->
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <!-- The sandbox package forwards a run's log to the datum.sandbox logger; API only, the app brings the binding. -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <!--
+      Datum's observations on Micrometer's Observation API, a plain library.
+      Optional: only core.observation.MicrometerObservations and its documentation enum name it, so a host without it runs
+      every library with DatumObservations.none(); a host with an ObservationRegistry (every Spring application has the jar
+      through spring-context) builds the Micrometer one. The version is Spring Boot's (the parent imports its BOM).
+    -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-observation</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <!-- The helpers every library's tests share (LibraryBoundaryRules, RecordCopies, RecordingObservations) live in
+             datum-core-test-support, which depends on this module; a dependency back would be a cycle, so this module's tests
+             compile the same sources from there. -->
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>shared-test-helpers</id>
+            <phase>generate-test-sources</phase>
+            <goals><goal>add-test-source</goal></goals>
+            <configuration>
+              <sources>
+                <source>${project.basedir}/../datum-core-test-support/src/main/java</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

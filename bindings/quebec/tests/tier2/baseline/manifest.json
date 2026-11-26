@@ -1,0 +1,99 @@
+{
+  "format": 1,
+  "environment": {
+    "platform": "darwin",
+    "browser": "chromium 158.0.8127.18"
+  },
+  "files": {
+    "date-disabled.png": {
+      "sha256": "606b7c15ad7061ade774e4f292ac389bc6c4826f15eb051aa918b9bd3be4db24"
+    },
+    "date-empty.png": {
+      "sha256": "678ca4d57bb702f8ca320d43db73499930abaa04aba8be9544f1a4eebea1c62f"
+    },
+    "date-error.png": {
+      "sha256": "2aa6dd64bc299919cd06b10b1346f0ed1d89713855bc4d1ad51ee023aa72c4e3"
+    },
+    "date-value.png": {
+      "sha256": "8d7c27d24787da30f743288be5505d2926bf25815856d2a395b88f4bf339ef17"
+    },
+    "fieldset-group.png": {
+      "sha256": "b2af3a257bd3ca11f7b85fad8ff2234535f7a2811a9e968aa868410dacab2298"
+    },
+    "grid-rows.png": {
+      "sha256": "0e178a19cb01394dc2700e8099f8ef567cab126b5ffb2e667a028894d8f5a67c"
+    },
+    "select-disabled.png": {
+      "sha256": "764eab04236b67b005149360466a5c25f93b9936225345dce3839c11a26a8188"
+    },
+    "select-empty.png": {
+      "sha256": "8d7470827bf5a54c8bab0578553447125cc6cede281eb1a22d0f38713f710751"
+    },
+    "select-error.png": {
+      "sha256": "353774ff39fd7d964d5c184d4e2653414c283692bbbedb669ecdd8cfda9df89c"
+    },
+    "select-value.png": {
+      "sha256": "ceebd086730ebacc26ba6c940c1d5fc98b1ba1dc45f2576a2d8a10f266e9df6e"
+    },
+    "steps-first.png": {
+      "sha256": "e3d14ea3a6738e4f2967e376c0bd695a7eeac6c825698298a0e1323c9ce06791"
+    },
+    "tabs-first.png": {
+      "sha256": "77410ac7a92252a1dc31aa07f7d82296379f4c1e794cf52d4ab3b86c8354b9c9"
+    }
+  },
+  "signOff": {
+    "reviewer": "Argusvane maintainers",
+    "date": "2026-11-10",
+    "pngs": [
+      {
+        "file": "date-disabled.png",
+        "sha256": "606b7c15ad7061ade774e4f292ac389bc6c4826f15eb051aa918b9bd3be4db24"
+      },
+      {
+        "file": "date-empty.png",
+        "sha256": "678ca4d57bb702f8ca320d43db73499930abaa04aba8be9544f1a4eebea1c62f"
+      },
+      {
+        "file": "date-error.png",
+        "sha256": "2aa6dd64bc299919cd06b10b1346f0ed1d89713855bc4d1ad51ee023aa72c4e3"
+      },
+      {
+        "file": "date-value.png",
+        "sha256": "8d7c27d24787da30f743288be5505d2926bf25815856d2a395b88f4bf339ef17"
+      },
+      {
+        "file": "fieldset-group.png",
+        "sha256": "b2af3a257bd3ca11f7b85fad8ff2234535f7a2811a9e968aa868410dacab2298"
+      },
+      {
+        "file": "grid-rows.png",
+        "sha256": "0e178a19cb01394dc2700e8099f8ef567cab126b5ffb2e667a028894d8f5a67c"
+      },
+      {
+        "file": "select-disabled.png",
+        "sha256": "764eab04236b67b005149360466a5c25f93b9936225345dce3839c11a26a8188"
+      },
+      {
+        "file": "select-empty.png",
+        "sha256": "8d7470827bf5a54c8bab0578553447125cc6cede281eb1a22d0f38713f710751"
+      },
+      {
+        "file": "select-error.png",
+        "sha256": "353774ff39fd7d964d5c184d4e2653414c283692bbbedb669ecdd8cfda9df89c"
+      },
+      {
+        "file": "select-value.png",
+        "sha256": "ceebd086730ebacc26ba6c940c1d5fc98b1ba1dc45f2576a2d8a10f266e9df6e"
+      },
+      {
+        "file": "steps-first.png",
+        "sha256": "e3d14ea3a6738e4f2967e376c0bd695a7eeac6c825698298a0e1323c9ce06791"
+      },
+      {
+        "file": "tabs-first.png",
+        "sha256": "77410ac7a92252a1dc31aa07f7d82296379f4c1e794cf52d4ab3b86c8354b9c9"
+      }
+    ]
+  }
+}

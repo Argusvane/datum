@@ -1,0 +1,27 @@
+<!-- datum-reference
+{
+  "source": "govuk-frontend 6.6.0: components/input/fixtures.json, fixture \"with hint text\"",
+  "note": "a text field with a hint",
+  "components": [
+    {
+      "id": "field1",
+      "type": "text",
+      "configuration": {
+        "label": "National insurance number",
+        "description": "It’s on your National Insurance card, benefit letter, payslip or P60. For example, ‘QQ 12 34 56 C’.",
+        "required": true
+      }
+    }
+  ],
+  "root": "form",
+  "width": 560,
+  "init": "window.GOVUKFrontend.initAll();"
+}
+-->
+<form novalidate>
+<div class="govuk-form-group">
+<label class="govuk-label" for="input-with-hint-text"> National insurance number </label>
+<div id="input-with-hint-text-hint" class="govuk-hint"> It’s on your National Insurance card, benefit letter, payslip or P60. For example, ‘QQ 12 34 56 C’. </div>
+<input class="govuk-input" id="input-with-hint-text" name="test-name-2" type="text" aria-describedby="input-with-hint-text-hint">
+</div>
+</form>

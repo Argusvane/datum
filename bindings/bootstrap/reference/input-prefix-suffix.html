@@ -1,0 +1,29 @@
+<!-- datum-reference
+{
+  "source": "bootstrap 5.3.8: https://getbootstrap.com/docs/5.3/forms/input-group/ (Basic example: input-group, input-group-text before and after the control, aria-hidden since the text is decoration)",
+  "note": "a text field with a prefix and a suffix",
+  "components": [
+    {
+      "id": "field1",
+      "type": "text",
+      "configuration": {
+        "label": "Amount",
+        "prefix": "$",
+        "suffix": ".00"
+      }
+    }
+  ],
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate>
+<div class="mb-3">
+<label class="form-label" for="field1">Amount</label>
+<div class="input-group">
+<span class="input-group-text" aria-hidden="true">$</span>
+<input class="form-control" id="field1" name="field1" type="text">
+<span class="input-group-text" aria-hidden="true">.00</span>
+</div>
+</div>
+</form>

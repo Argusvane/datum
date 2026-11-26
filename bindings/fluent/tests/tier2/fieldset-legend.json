@@ -1,0 +1,17 @@
+{
+  "note": "tier 2: a named group (Fluent has no group component): a native fieldset, the legend in Fluent's label tokens (semibold, base 300), the hint under it in the field hint's, the fields 16px apart",
+  "components": [
+    {
+      "id": "address",
+      "type": "fieldset",
+      "configuration": { "label": "Address", "description": "Where you live." },
+      "children": {
+        "content": [
+          { "id": "street", "type": "text", "configuration": { "label": "Street" } },
+          { "id": "city", "type": "text", "configuration": { "label": "City" } }
+        ]
+      }
+    }
+  ],
+  "width": 560
+}

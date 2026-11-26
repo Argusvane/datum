@@ -1,0 +1,113 @@
+{
+  "format": 1,
+  "environment": {
+    "platform": "darwin",
+    "browser": "chromium 158.0.8127.18"
+  },
+  "files": {
+    "choice-error.png": {
+      "sha256": "13bdb938e913b1e4f4aac8ff689c2416017cdc298054f9f6efbf70276779fa3e"
+    },
+    "date-disabled.png": {
+      "sha256": "9f143edf04c5507da138ec6048802d25151a193d7d35bdfd64fa50fe9424a6a8"
+    },
+    "date-empty.png": {
+      "sha256": "76d48747f791f570b56e8d4a0d156e590e19338a0b81d351ff490f106d8bb30f"
+    },
+    "date-error.png": {
+      "sha256": "c7a5c3b5698c55c9b8ca1584ff212ebc495aa6aadba8cbb2dc0b0f2edb3247e2"
+    },
+    "date-french.png": {
+      "sha256": "8e3ee6789f1e4f856bb7e6734f7e9f8faf164233381ca79b2ba043e5e0093b10"
+    },
+    "date-required.png": {
+      "sha256": "1fd413b297544943474348129bb0762568c4389fdbb41b45084253085d53c43a"
+    },
+    "date-value.png": {
+      "sha256": "15e9fa8fa43a5556a8330cce0c83e524e33cfe36af8873021fe841a914a960bf"
+    },
+    "grid-narrow.png": {
+      "sha256": "00ec131ee2ffb66a47de46cc5bc81b83029714c855fd737b7a3d51e538695f95"
+    },
+    "grid-rows.png": {
+      "sha256": "7f326ca641c15a0b0e7ba85ee8266fbd0bda9adebf5d2b26f4d5862b8f0bd432"
+    },
+    "number-affixed.png": {
+      "sha256": "2b757d1f8bfff4d3ede8e53ed10957d35f302e2caf280afcf9e576af4f224f1c"
+    },
+    "steps-first.png": {
+      "sha256": "59cb11f3895545ea341fb0e59abe652479e2a09110492a846ea5d33f86b0cdfb"
+    },
+    "text-affixed.png": {
+      "sha256": "e7ef69a9914d4bfa6be9b0d89f2632de397b22e0df95a3dab25e9d009f6a4c5e"
+    },
+    "textarea-count-over.png": {
+      "sha256": "2bb040ce53b7c44794e3fac14db3382ef00c96fe09d5c368a8b07f4a43fa814c"
+    },
+    "textarea-count.png": {
+      "sha256": "2a1bb8d3557a84450d54745f12719897cd74f224873d9f60905a194837b5c448"
+    }
+  },
+  "signOff": {
+    "reviewer": "Argusvane maintainers",
+    "date": "2026-11-10",
+    "pngs": [
+      {
+        "file": "choice-error.png",
+        "sha256": "13bdb938e913b1e4f4aac8ff689c2416017cdc298054f9f6efbf70276779fa3e"
+      },
+      {
+        "file": "date-disabled.png",
+        "sha256": "9f143edf04c5507da138ec6048802d25151a193d7d35bdfd64fa50fe9424a6a8"
+      },
+      {
+        "file": "date-empty.png",
+        "sha256": "76d48747f791f570b56e8d4a0d156e590e19338a0b81d351ff490f106d8bb30f"
+      },
+      {
+        "file": "date-error.png",
+        "sha256": "c7a5c3b5698c55c9b8ca1584ff212ebc495aa6aadba8cbb2dc0b0f2edb3247e2"
+      },
+      {
+        "file": "date-french.png",
+        "sha256": "8e3ee6789f1e4f856bb7e6734f7e9f8faf164233381ca79b2ba043e5e0093b10"
+      },
+      {
+        "file": "date-required.png",
+        "sha256": "1fd413b297544943474348129bb0762568c4389fdbb41b45084253085d53c43a"
+      },
+      {
+        "file": "date-value.png",
+        "sha256": "15e9fa8fa43a5556a8330cce0c83e524e33cfe36af8873021fe841a914a960bf"
+      },
+      {
+        "file": "grid-narrow.png",
+        "sha256": "00ec131ee2ffb66a47de46cc5bc81b83029714c855fd737b7a3d51e538695f95"
+      },
+      {
+        "file": "grid-rows.png",
+        "sha256": "7f326ca641c15a0b0e7ba85ee8266fbd0bda9adebf5d2b26f4d5862b8f0bd432"
+      },
+      {
+        "file": "number-affixed.png",
+        "sha256": "2b757d1f8bfff4d3ede8e53ed10957d35f302e2caf280afcf9e576af4f224f1c"
+      },
+      {
+        "file": "steps-first.png",
+        "sha256": "59cb11f3895545ea341fb0e59abe652479e2a09110492a846ea5d33f86b0cdfb"
+      },
+      {
+        "file": "text-affixed.png",
+        "sha256": "e7ef69a9914d4bfa6be9b0d89f2632de397b22e0df95a3dab25e9d009f6a4c5e"
+      },
+      {
+        "file": "textarea-count-over.png",
+        "sha256": "2bb040ce53b7c44794e3fac14db3382ef00c96fe09d5c368a8b07f4a43fa814c"
+      },
+      {
+        "file": "textarea-count.png",
+        "sha256": "2a1bb8d3557a84450d54745f12719897cd74f224873d9f60905a194837b5c448"
+      }
+    ]
+  }
+}

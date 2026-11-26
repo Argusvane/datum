@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-sandbox-endive-jffi</artifactId>
+  <packaging>pom</packaging>
+  <name>datum-sandbox-endive-jffi</name>
+  <description>Selector: the JFFI Redline runner for Datum Endive runtime (Java 17+).</description>
+  <!--
+    Packaging pom: depend on it with <type>pom</type>. The runner's own pom brings jffi transitively, but a missing native
+    jar is an UnsatisfiedLinkError on every run rather than a fallback, so both are declared here at the
+    reactor's pinned jffi version. datum-sandbox-endive picks this runner itself on Java 17-24, and on 25+ when the Panama
+    selector is absent; it never relies on ServiceLoader discovery, so shipping both selectors is safe.
+  -->
+  <dependencies>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-sandbox-endive</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>run.endive</groupId>
+      <artifactId>redline-runner-jffi-experimental</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.github.jnr</groupId>
+      <artifactId>jffi</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.github.jnr</groupId>
+      <artifactId>jffi</artifactId>
+      <classifier>native</classifier>
+      <scope>runtime</scope>
+    </dependency>
+  </dependencies>
+</project>

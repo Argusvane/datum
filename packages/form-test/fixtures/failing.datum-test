@@ -1,0 +1,2 @@
+test "a deliberate failure: the name is not optional"
+  expect applicant_name optional

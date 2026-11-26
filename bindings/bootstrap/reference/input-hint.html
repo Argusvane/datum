@@ -1,0 +1,25 @@
+<!-- datum-reference
+{
+  "source": "bootstrap 5.3.8: https://getbootstrap.com/docs/5.3/forms/form-control/ and the help text of https://getbootstrap.com/docs/5.3/forms/overview/#form-text (div.form-text after the control, aria-describedby)",
+  "note": "a text field with help text",
+  "components": [
+    {
+      "id": "field1",
+      "type": "text",
+      "configuration": {
+        "label": "Password",
+        "description": "Your password must be 8-20 characters long."
+      }
+    }
+  ],
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate>
+<div class="mb-3">
+<label class="form-label" for="field1">Password</label>
+<input class="form-control" id="field1" name="field1" type="text" aria-describedby="field1-hint">
+<div id="field1-hint" class="form-text">Your password must be 8-20 characters long.</div>
+</div>
+</form>

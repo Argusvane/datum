@@ -1,0 +1,30 @@
+<!-- datum-reference
+{
+  "note": "radios with a hint and an option hint",
+  "components": [
+    {
+      "id": "contact",
+      "type": "radio",
+      "configuration": {
+        "label": "Preferred contact",
+        "description": "Choose one.",
+        "options": [
+          {
+            "value": "email",
+            "label": "Email",
+            "description": "Within a day"
+          },
+          {
+            "value": "phone",
+            "label": "Phone"
+          }
+        ]
+      }
+    }
+  ],
+  "source": "https://design-system.canada.ca/en/components/radio/ (GC Design System, usage examples), attributes per gcds-components 1.7.0 specs/custom-elements.json",
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate><gcds-radios name="contact" legend="Preferred contact" hint="Choose one." options='[{"id":"contact-email","label":"Email","value":"email","hint":"Within a day"},{"id":"contact-phone","label":"Phone","value":"phone"}]'></gcds-radios></form>

@@ -1,0 +1,450 @@
+# Release workflow of Datum for FastAPI.
+#
+# NOT EXERCISED YET. The publish jobs name two GitHub environments, "testpypi" and "pypi", and PyPI and TestPyPI have no trusted
+# publisher registered for this workflow: before the first tag the owner creates both environments in the repository settings
+# (Settings, Environments), "pypi" with a required reviewer, and only then registers eight pending publishers on each index (one per
+# distribution, workflow release-fastapi.yml, the environment of that job). The "pypi" job waits for that reviewer and nothing
+# else: GitHub creates an environment that does not exist on its first use with no protection rules, so with a publisher
+# registered and no environment configured a pushed tag uploads to the index unapproved. The publish jobs also run only in
+# argusvane/datum, so a fork or a mirror never publishes. The build job runs for every tag.
+# Trusted publishing cannot run in a reusable workflow, so the publish jobs live in this file.
+#
+# A tag v<version> (the one tag of a release, shared with the other hosts) runs: build (the tag's commit must be on main and have a green ci.yml run, assets, version and pin assertion, member suites,
+# the security suite's program mode with --gate release, uv build, twine check --strict, post-checks) -> testpypi (one publish step per distribution, dependency order) -> smoke (install from TestPyPI on three
+# Pythons) -> pypi (the same eight steps behind the reviewer) -> release-assets (the checksums of the distributions are attached to the
+# draft GitHub Release of the tag, which is created when it does not exist). A duplicate upload fails loudly. After a partial failure rerun
+# with skip-existing set to true by hand on the steps that already went out, for that run only.
+#
+# Every action is pinned by commit SHA (the comment names the release). The local script, npm run fastapi:release, builds the
+# same files and never uploads.
+name: Release FastAPI
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-fastapi
+  cancel-in-progress: false
+
+env:
+  FORCE_COLOR: "0"
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      # Reads the ci.yml runs of the tagged commit (the check below); the token can write nothing.
+      actions: read
+    env:
+      # Plain 3.14 can resolve to a free-threaded build; the release is built on the exact CPython.
+      UV_PYTHON: "3.14.6"
+    steps:
+      - name: Checkout the tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # Full history, so the next step can tell whether the tagged commit is on main.
+          fetch-depth: 0
+
+      # A release is cut from main only: a tag pushed on any other branch stops here, before anything is built.
+      - name: Refuse a tag whose commit is not on main
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::The tagged commit $GITHUB_SHA is not on main; a release is built from main only."
+            exit 1
+          fi
+
+      # A release is built from a commit whose CI is green: a ci.yml run on the tagged commit must have concluded success, and
+      # its ci-ok job (the gate that waits for every other job) must have passed.
+      - name: Require a green CI run on the tagged commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&status=success&per_page=100" --jq '.workflow_runs[].id')
+          for run in $runs; do
+            gate=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run/jobs?per_page=100" --jq '[.jobs[] | select(.name == "ci-ok") | .conclusion] | first // ""')
+            if [ "$gate" = "success" ]; then
+              echo "CI run $run passed ci-ok on $GITHUB_SHA"
+              exit 0
+            fi
+          done
+          echo "::error::No ci.yml run on $GITHUB_SHA concluded success with ci-ok passing; push the commit to main, wait for CI, then tag it."
+          exit 1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+        with:
+          enable-cache: true
+
+      # The tag names the version: every member and every sibling pin must already carry it.
+      - name: Assert the tag version equals every member version and sibling pin
+        env:
+          TAG: ${{ github.ref_name }}
+        run: node integrations/fastapi/scripts/release.mjs --check-pins --version "${TAG#v}"
+
+      - name: Assert uv.lock matches the member versions
+        run: uv lock --check
+        working-directory: integrations/fastapi
+
+      - name: Build the web components
+        uses: ./.github/actions/build-datum
+
+      # The conformance command writes the fixtures the asset script copies.
+      - name: Install and build the conformance suite
+        run: |
+          (cd packages/submissions && npm ci)
+          (cd packages/conformance-suite && npm ci && npm run build)
+
+      - name: Build the assets
+        run: npm run fastapi:assets
+
+      - name: Sync the workspace
+        run: uv sync --all-packages --frozen
+        working-directory: integrations/fastapi
+
+      # argusvane-datum-core writes its settings schema from its own models, so it needs the synced workspace: the asset build above
+      # ran before it and skipped the file, which argusvane-datum-core's tests read. This fails when the schema cannot be written.
+      - name: Write the settings schema
+        run: node integrations/fastapi/scripts/settings-schema.mjs
+
+      - name: Script tests
+        run: node --test 'integrations/fastapi/scripts/tests/*.test.mjs'
+
+      - name: Member suites
+        run: npm run fastapi:test
+
+      # The security suite's program mode over the sandbox program this release ships. The gate names are release and full;
+      # a failing vector fails the run and nothing is built or uploaded.
+      - name: Security suite, program mode
+        run: node packages/conformance-suite/dist/cli.mjs --program packages/datum/dist/datum-sandbox-program.js --all --gate release
+
+      - name: Build every distribution
+        run: uv build --all-packages --out-dir dist/release
+        working-directory: integrations/fastapi
+
+      - name: Twine check
+        run: uv tool run twine check --strict dist/release/*
+        working-directory: integrations/fastapi
+
+      - name: Post-checks
+        env:
+          TAG: ${{ github.ref_name }}
+        run: uv run --frozen --no-sync python -I scripts/postcheck.py dist/release "${TAG#v}"
+        working-directory: integrations/fastapi
+
+      - name: Tree is clean
+        run: test -z "$(git status --porcelain integrations/fastapi)"
+
+      - name: Upload argusvane-datum-qjs-wasm
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist-datum-qjs-wasm
+          path: integrations/fastapi/dist/release/argusvane_datum_qjs_wasm-*
+          if-no-files-found: error
+      - name: Upload argusvane-datum-programs
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist-datum-programs
+          path: integrations/fastapi/dist/release/argusvane_datum_programs-*
+          if-no-files-found: error
+      - name: Upload argusvane-datum-assets-ui
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist-datum-assets-ui
+          path: integrations/fastapi/dist/release/argusvane_datum_assets_ui-*
+          if-no-files-found: error
+      - name: Upload argusvane-datum-assets-pdf
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist-datum-assets-pdf
+          path: integrations/fastapi/dist/release/argusvane_datum_assets_pdf-*
+          if-no-files-found: error
+      - name: Upload argusvane-datum-sandbox
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist-datum-sandbox
+          path: integrations/fastapi/dist/release/argusvane_datum_sandbox-*
+          if-no-files-found: error
+      - name: Upload argusvane-datum-core
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist-datum-core
+          path: integrations/fastapi/dist/release/argusvane_datum_core-*
+          if-no-files-found: error
+      - name: Upload argusvane-datum-sandbox-wasmtime
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist-datum-sandbox-wasmtime
+          path: integrations/fastapi/dist/release/argusvane_datum_sandbox_wasmtime-*
+          if-no-files-found: error
+      - name: Upload argusvane-datum-fastapi
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist-datum-fastapi
+          path: integrations/fastapi/dist/release/argusvane_datum_fastapi-*
+          if-no-files-found: error
+
+  testpypi:
+    needs: build
+    # Only the canonical repository publishes: a fork or a mirror that receives the tag stops after the build job.
+    if: github.repository == 'argusvane/datum'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: testpypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Download the distributions
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          path: dist
+          pattern: dist-*
+
+      - name: Publish 1 of 8, argusvane-datum-qjs-wasm
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: dist/dist-datum-qjs-wasm/
+          attestations: true
+          skip-existing: false
+      - name: Publish 2 of 8, argusvane-datum-programs
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: dist/dist-datum-programs/
+          attestations: true
+          skip-existing: false
+      - name: Publish 3 of 8, argusvane-datum-assets-ui
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: dist/dist-datum-assets-ui/
+          attestations: true
+          skip-existing: false
+      - name: Publish 4 of 8, argusvane-datum-assets-pdf
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: dist/dist-datum-assets-pdf/
+          attestations: true
+          skip-existing: false
+      - name: Publish 5 of 8, argusvane-datum-sandbox
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: dist/dist-datum-sandbox/
+          attestations: true
+          skip-existing: false
+      - name: Publish 6 of 8, argusvane-datum-core
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: dist/dist-datum-core/
+          attestations: true
+          skip-existing: false
+      - name: Publish 7 of 8, argusvane-datum-sandbox-wasmtime
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: dist/dist-datum-sandbox-wasmtime/
+          attestations: true
+          skip-existing: false
+      - name: Publish 8 of 8, argusvane-datum-fastapi
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: dist/dist-datum-fastapi/
+          attestations: true
+          skip-existing: false
+
+  smoke:
+    needs: testpypi
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: true
+      matrix:
+        python: ["3.12", "3.13", "3.14.6"]
+    steps:
+      - name: Checkout the tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+        with:
+          python-version: ${{ matrix.python }}
+
+      # A throwaway project: the eight argusvane-datum-* names come from TestPyPI (explicit index), everything else from PyPI.
+      - name: Install argusvane-datum-fastapi[all] from TestPyPI
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="${TAG#v}"
+          mkdir smoke && cd smoke
+          cat > pyproject.toml <<EOF
+          [project]
+          name = "datum-smoke"
+          version = "0"
+          requires-python = ">=3.12"
+          dependencies = ["argusvane-datum-fastapi[all]==${version}", "argusvane-datum-qjs-wasm", "argusvane-datum-programs", "argusvane-datum-assets-ui", "argusvane-datum-assets-pdf", "argusvane-datum-sandbox", "argusvane-datum-core", "argusvane-datum-sandbox-wasmtime"]
+
+          [tool.uv]
+          package = false
+
+          [tool.uv.sources]
+          argusvane-datum-qjs-wasm = { index = "testpypi" }
+          argusvane-datum-programs = { index = "testpypi" }
+          argusvane-datum-assets-ui = { index = "testpypi" }
+          argusvane-datum-assets-pdf = { index = "testpypi" }
+          argusvane-datum-sandbox = { index = "testpypi" }
+          argusvane-datum-core = { index = "testpypi" }
+          argusvane-datum-sandbox-wasmtime = { index = "testpypi" }
+          argusvane-datum-fastapi = { index = "testpypi" }
+
+          [[tool.uv.index]]
+          name = "testpypi"
+          url = "https://test.pypi.org/simple/"
+          explicit = true
+          EOF
+          # The index can lag the upload by a minute: retry before failing.
+          for attempt in 1 2 3 4 5 6; do
+            uv sync --no-cache --index-strategy first-index && break
+            [ "$attempt" = 6 ] && exit 1
+            sleep 30
+          done
+
+      - name: Import every package
+        working-directory: smoke
+        run: >-
+          uv run --no-sync python -I -c "import datum_core, datum_programs, datum_qjs_wasm, datum_assets_ui,
+          datum_assets_pdf, datum_sandbox, datum_sandbox_wasmtime, datum_fastapi; print('imports ok')"
+
+      - name: Examples' smoke tests
+        run: |
+          if [ -d integrations/fastapi/examples ]; then
+            echo "examples present: their smoke tests are not wired yet"
+          else
+            echo "no examples yet"
+          fi
+
+  pypi:
+    needs: smoke
+    if: github.repository == 'argusvane/datum'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    # The reviewers required on this environment (Settings, Environments) are what makes the job wait for approval; the
+    # environment must be configured before the first tag, as GitHub creates a missing one with no protection.
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - name: Download the distributions
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          path: dist
+          pattern: dist-*
+
+      - name: Publish 1 of 8, argusvane-datum-qjs-wasm
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: dist/dist-datum-qjs-wasm/
+          attestations: true
+          skip-existing: false
+      - name: Publish 2 of 8, argusvane-datum-programs
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: dist/dist-datum-programs/
+          attestations: true
+          skip-existing: false
+      - name: Publish 3 of 8, argusvane-datum-assets-ui
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: dist/dist-datum-assets-ui/
+          attestations: true
+          skip-existing: false
+      - name: Publish 4 of 8, argusvane-datum-assets-pdf
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: dist/dist-datum-assets-pdf/
+          attestations: true
+          skip-existing: false
+      - name: Publish 5 of 8, argusvane-datum-sandbox
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: dist/dist-datum-sandbox/
+          attestations: true
+          skip-existing: false
+      - name: Publish 6 of 8, argusvane-datum-core
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: dist/dist-datum-core/
+          attestations: true
+          skip-existing: false
+      - name: Publish 7 of 8, argusvane-datum-sandbox-wasmtime
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: dist/dist-datum-sandbox-wasmtime/
+          attestations: true
+          skip-existing: false
+      - name: Publish 8 of 8, argusvane-datum-fastapi
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: dist/dist-datum-fastapi/
+          attestations: true
+          skip-existing: false
+
+  release-assets:
+    needs: pypi
+    if: github.repository == 'argusvane/datum'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    # Both release workflows of a tag create-or-find the same draft Release, then upload to it. One group, named by the tag and
+    # shared across the two workflows, runs the jobs one after the other, so neither can look for the Release while the other is
+    # between its own look and its create. A queued job waits for the running one; a rerun queued
+    # behind a pending one replaces it.
+    concurrency:
+      group: release-assets-${{ github.ref_name }}
+      cancel-in-progress: false
+    permissions:
+      # Creates the draft Release when the npm workflow has not, and attaches the checksum list: nothing else in the workflow can write to the repository.
+      contents: write
+    steps:
+      - name: Download the distributions
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          path: dist
+          pattern: dist-*
+
+      # The checksums of every wheel and sdist uploaded to the index, so a download can be compared with the index's. Only the
+      # checksum list is attached; the distributions are on PyPI. The Release is a draft with a one-line note (the owner writes the
+      # notes from CHANGELOG.md; this workflow adds none), shared with the
+      # npm workflow of the same tag: whichever workflow reaches it first creates it, the other keeps it. The two release-assets jobs share
+      # a concurrency group named by the tag, so they run one after the other and the look and the create never interleave.
+      - name: Attach the checksums of the distributions
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          (cd dist && for dir in dist-*/; do (cd "$dir" && sha256sum -- *); done) | sort -k2 > SHA256SUMS-pypi
+          test -s SHA256SUMS-pypi
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            flags=()
+            case "$TAG" in *-*) flags+=(--prerelease) ;; esac
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --verify-tag --title "$TAG" --notes "Datum $TAG" "${flags[@]}"
+          fi
+          gh release upload "$TAG" SHA256SUMS-pypi --repo "$GITHUB_REPOSITORY" --clobber

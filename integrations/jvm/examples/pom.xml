@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-examples</artifactId>
+  <packaging>pom</packaging>
+  <name>datum-examples</name>
+  <description>Example applications; built by the reactor, never deployed.</description>
+
+  <properties>
+    <!-- Examples are never published: neither the deploy plugin nor Central publishing may touch them. -->
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <skipPublishing>true</skipPublishing>
+  </properties>
+
+  <modules>
+    <module>passkeys</module>
+    <module>submissions</module>
+    <module>tsa-server</module>
+    <module>ui</module>
+    <module>ui-builder-jpa</module>
+    <module>webflux-pdf</module>
+  </modules>
+</project>

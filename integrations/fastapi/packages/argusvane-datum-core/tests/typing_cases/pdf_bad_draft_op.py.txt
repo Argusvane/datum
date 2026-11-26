@@ -1,0 +1,5 @@
+from datum_core.pdf import PdfRequestDraft
+
+
+def tamper(draft: PdfRequestDraft) -> None:
+    draft.env = {}

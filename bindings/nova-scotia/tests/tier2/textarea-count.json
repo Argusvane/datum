@@ -1,0 +1,22 @@
+{
+  "note": "the character count the renderer counts, drawn as a help block",
+  "components": [
+    {
+      "id": "about",
+      "type": "textarea",
+      "configuration": {
+        "label": "About you",
+        "maxLength": 40,
+        "characterCount": true
+      }
+    }
+  ],
+  "steps": [
+    {
+      "op": "type",
+      "id": "about",
+      "text": "Hello there"
+    }
+  ],
+  "width": 560
+}

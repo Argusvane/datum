@@ -1,0 +1,27 @@
+<!-- datum-reference
+{
+  "source": "uswds 3.14.0: packages/templates/usa-address-form.twig (the required label) and packages/usa-character-count/src/usa-character-count.twig (label, span.usa-hint, input with aria-describedby); the required note of packages/templates/usa-address-form.twig above the fields",
+  "note": "a text field with a hint",
+  "components": [
+    {
+      "id": "field1",
+      "type": "text",
+      "configuration": {
+        "label": "Full name",
+        "required": true,
+        "description": "Use the name on your birth certificate."
+      }
+    }
+  ],
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate class="usa-form usa-form--large">
+<p>Required fields are marked with an asterisk (<abbr title="required" class="usa-hint usa-hint--required">*</abbr>).</p>
+<div class="usa-form-group">
+<label class="usa-label" for="field1">Full name <abbr title="required" class="usa-hint usa-hint--required">*</abbr></label>
+<span class="usa-hint" id="field1-hint">Use the name on your birth certificate.</span>
+<input class="usa-input" id="field1" name="field1" type="text" aria-describedby="field1-hint" required>
+</div>
+</form>

@@ -1,0 +1,29 @@
+<!-- datum-reference
+{
+  "note": "checkboxes with a hint",
+  "components": [
+    {
+      "id": "channels",
+      "type": "checkboxes",
+      "configuration": {
+        "label": "Channels",
+        "description": "Choose any.",
+        "options": [
+          {
+            "value": "email",
+            "label": "Email"
+          },
+          {
+            "value": "post",
+            "label": "Post"
+          }
+        ]
+      }
+    }
+  ],
+  "source": "Fluent UI Web Components 3.2.1: field.stories.ts ComponentExamples and checkbox.stories.ts (fluent-field label-position='after' with label slot='label' for and fluent-checkbox slot='input'), https://github.com/microsoft/fluentui/tree/master/packages/web-components/src/checkbox; Fluent has no checkbox group, so the group is a fluent-field label-position='above' around a div role='group' of those fields, laid out in a column as radio-group.styles lays its radios (Fluent defines no checkbox group, so this stack is the binding's own layout, the one inline style here, taken from radio-group.styles' column; a change to the binding's rule makes this case fail until the style here follows); hint: field.stories.ts Hint (fluent-text slot='message' size='200'); attributes per custom-elements.json 3.2.1",
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate><fluent-field label-position="above"><label slot="label" for="channels">Channels</label><div slot="input" id="channels" role="group" aria-describedby="channels-hint" style="display: flex; flex-direction: column; gap: var(--spacingVerticalL); margin: var(--spacingVerticalS) var(--spacingHorizontalS);"><fluent-field label-position="after"><label slot="label" for="channels-email">Email</label><fluent-checkbox slot="input" id="channels-email" name="channels" value="email"></fluent-checkbox></fluent-field><fluent-field label-position="after"><label slot="label" for="channels-post">Post</label><fluent-checkbox slot="input" id="channels-post" name="channels" value="post"></fluent-checkbox></fluent-field></div><fluent-text slot="message" size="200"><div id="channels-hint">Choose any.</div></fluent-text></fluent-field></form>

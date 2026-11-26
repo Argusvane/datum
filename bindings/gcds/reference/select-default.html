@@ -1,0 +1,28 @@
+<!-- datum-reference
+{
+  "note": "a select with its empty option",
+  "components": [
+    {
+      "id": "province",
+      "type": "select",
+      "configuration": {
+        "label": "Province",
+        "options": [
+          {
+            "value": "ON",
+            "label": "Ontario"
+          },
+          {
+            "value": "QC",
+            "label": "Quebec"
+          }
+        ]
+      }
+    }
+  ],
+  "source": "https://design-system.canada.ca/en/components/select/ (GC Design System, usage examples), attributes per gcds-components 1.7.0 specs/custom-elements.json",
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate><gcds-select select-id="province" name="province" label="Province" default-value="Select…"><option value="ON">Ontario</option><option value="QC">Quebec</option></gcds-select></form>

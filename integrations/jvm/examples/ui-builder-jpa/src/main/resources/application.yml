@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: datum-example-ui-builder-jpa
+  datasource:
+    # In memory for the example; any JDBC database works the same (the tables are this application's entities).
+    url: jdbc:h2:mem:builder;DB_CLOSE_DELAY=-1
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+datum:
+  # Story three: this application is where forms are authored. The builder bundle and the write endpoints exist
+  # only with this switch; who may use them is the application's Spring Security (SecurityConfiguration:
+  # ROLE_FORM_ADMIN on DatumRequestMatchers.builderWrites() and builderReads()).
+  builder:
+    enabled: true
+    max-definition-size: 1MB
+  host:
+    time-zone: America/Toronto
+  # Every Datum route is off until switched on: this application reads the form it authors and serves the bundles the
+  # builder page loads (the builder's own routes are the switch above).
+  web:
+    assets:
+      enabled: true
+    api:
+      endpoints:
+        definition: true

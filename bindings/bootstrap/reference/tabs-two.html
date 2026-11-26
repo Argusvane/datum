@@ -1,0 +1,66 @@
+<!-- datum-reference
+{
+  "source": "bootstrap 5.3.8: https://getbootstrap.com/docs/5.3/components/navs-tabs/#tabs (ul.nav.nav-tabs role=tablist, button.nav-link role=tab, div.tab-content, div.tab-pane) with the pt-3 spacing utility between the tabs and the panel; the data-bs-* attributes the script reads are left out, as the script cannot run in a shadow root",
+  "note": "tabs, the first shown",
+  "components": [
+    {
+      "id": "sections",
+      "type": "tabs",
+      "configuration": {
+        "tabs": [
+          {
+            "id": "one",
+            "label": "Applicant"
+          },
+          {
+            "id": "two",
+            "label": "Items"
+          }
+        ]
+      },
+      "children": {
+        "one": [
+          {
+            "id": "name",
+            "type": "text",
+            "configuration": {
+              "label": "Full name"
+            }
+          }
+        ],
+        "two": [
+          {
+            "id": "email",
+            "type": "text",
+            "configuration": {
+              "label": "Email address"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate>
+<ul class="nav nav-tabs" role="tablist">
+<li class="nav-item" role="presentation"><button type="button" class="nav-link active" id="sections-tab-one" role="tab" aria-controls="sections-panel-one" aria-selected="true">Applicant</button></li>
+<li class="nav-item" role="presentation"><button type="button" class="nav-link" id="sections-tab-two" role="tab" aria-controls="sections-panel-two" aria-selected="false" tabindex="-1">Items</button></li>
+</ul>
+<div class="tab-content pt-3">
+<div class="tab-pane active" id="sections-panel-one" role="tabpanel" aria-labelledby="sections-tab-one">
+<div class="mb-3">
+<label class="form-label" for="name">Full name</label>
+<input class="form-control" id="name" name="name" type="text">
+</div>
+</div>
+<div class="tab-pane" id="sections-panel-two" role="tabpanel" aria-labelledby="sections-tab-two" hidden>
+<div class="mb-3">
+<label class="form-label" for="email">Email address</label>
+<input class="form-control" id="email" name="email" type="text">
+</div>
+</div>
+</div>
+</form>

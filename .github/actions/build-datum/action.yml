@@ -1,0 +1,17 @@
+name: Build the web components
+description: >-
+  Installs every file: dependency the embeddable bundles are built from and builds
+  packages/datum/dist. Written once here because the CI workflow and the Pages
+  workflow both need it (the site's live demo copies the bundles in), and workflow
+  YAML has no way to share steps. The package depends on no binding and no plugin, so none is
+  installed or built here (build-plugin-packages does that). Expects Node to be set up already.
+runs:
+  using: composite
+  steps:
+    - name: Install the web components
+      uses: ./.github/actions/install-datum
+
+    - name: Build the embeddable bundles
+      shell: bash
+      run: npm run build
+      working-directory: packages/datum

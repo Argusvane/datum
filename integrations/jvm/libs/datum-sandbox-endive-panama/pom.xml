@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-sandbox-endive-panama</artifactId>
+  <packaging>pom</packaging>
+  <name>datum-sandbox-endive-panama</name>
+  <description>Selector: the Panama Redline runner for Datum Endive runtime (Java 25+).</description>
+  <!--
+    Packaging pom, resolvable on any JDK: the runner jar's classes are version 69 (Java 25) and are only LOADED by
+    datum-sandbox-endive's own provider selection, which tries them on Java 25+ alone and falls back to JFFI (or the
+    bytecode path) on a LinkageError. Panama wants native access: Enable-Native-Access: ALL-UNNAMED in the application
+    jar's manifest, or the JVM option enable-native-access=ALL-UNNAMED, else the JVM prints a restricted-method warning
+    (or refuses under illegal-native-access=deny, and the runtime falls back).
+  -->
+  <dependencies>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-sandbox-endive</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>run.endive</groupId>
+      <artifactId>redline-runner-experimental</artifactId>
+    </dependency>
+  </dependencies>
+</project>

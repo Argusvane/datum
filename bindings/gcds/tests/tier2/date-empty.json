@@ -1,0 +1,15 @@
+{
+  "note": "tier 2: Datum's date in GC Design System's HTML and tokens, empty, month first in English",
+  "components": [
+    {
+      "id": "start",
+      "type": "date",
+      "configuration": {
+        "label": "Start date",
+        "description": "For example, 14 5 2026.",
+        "required": true
+      }
+    }
+  ],
+  "width": 560
+}

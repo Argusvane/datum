@@ -1,0 +1,38 @@
+{
+  "id": "helper-project-main",
+  "version": "1.0.0",
+  "schemaVersion": "1.0.0",
+  "root": {
+    "id": "form",
+    "type": "form",
+    "configuration": { "label": "Helper project form" },
+    "children": {
+      "content": [
+        { "id": "applicant_name", "type": "text", "configuration": { "label": "Name", "required": true } },
+        { "id": "age", "type": "number", "configuration": { "label": "Age", "min": 18, "max": 120 } },
+        { "id": "wants_details", "type": "checkbox", "configuration": { "label": "Tell us more" } },
+        { "id": "nickname", "type": "text", "configuration": { "label": "Nickname" }, "rules": { "visibleWhen": "wants_details = true" } }
+      ]
+    }
+  },
+  "tests": {
+    "scenarios": [
+      {
+        "id": "t1",
+        "source": "test \"the name is required\"\n  expect applicant_name required\n  check\n  expect refused\n  expect error on applicant_name: required"
+      },
+      {
+        "id": "t2",
+        "source": "test \"the age has a floor\"\n  set applicant_name = \"Ada\"\n  set age = 15\n  check\n  expect refused\n  expect error on age: number.min\n  set age = 30\n  check\n  expect accepted"
+      },
+      {
+        "id": "t3",
+        "source": "test \"the nickname follows the box\"\n  expect nickname hidden\n  set wants_details = true\n  expect nickname visible"
+      },
+      {
+        "id": "t4",
+        "source": "test \"a scenario kept for later\"\n  skip \"waiting on the address rules\"\n  expect applicant_name visible"
+      }
+    ]
+  }
+}

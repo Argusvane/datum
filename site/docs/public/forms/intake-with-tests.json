@@ -1,0 +1,129 @@
+{
+  "id": "intake-with-tests",
+  "version": "1.0.0",
+  "schemaVersion": "1",
+  "localization": {
+    "defaultLocale": "en",
+    "supportedLocales": [
+      {
+        "code": "en",
+        "label": "English"
+      }
+    ]
+  },
+  "root": {
+    "id": "root",
+    "type": "form",
+    "configuration": {
+      "title": "Customer Intake",
+      "messages": {
+        "maxLength": "Keep it under {maxLength} characters."
+      }
+    },
+    "children": {
+      "content": [
+        {
+          "id": "fullName",
+          "type": "text",
+          "configuration": {
+            "label": "Full name",
+            "description": "As it appears on a government ID",
+            "required": true,
+            "messages": {
+              "required": "Enter your full name."
+            }
+          }
+        },
+        {
+          "id": "country",
+          "type": "select",
+          "configuration": {
+            "label": "Country",
+            "data": {
+              "sourceId": "countries"
+            }
+          }
+        },
+        {
+          "id": "contactMethod",
+          "type": "radio",
+          "configuration": {
+            "label": "Preferred contact method",
+            "options": [
+              {
+                "value": "email",
+                "label": "Email"
+              },
+              {
+                "value": "phone",
+                "label": "Phone"
+              }
+            ]
+          }
+        },
+        {
+          "id": "newsletter",
+          "type": "fieldset",
+          "configuration": {
+            "label": "Newsletter"
+          },
+          "children": {
+            "content": [
+              {
+                "id": "subscribe",
+                "type": "checkbox",
+                "configuration": {
+                  "label": "Subscribe to the newsletter"
+                }
+              },
+              {
+                "id": "newsletterEmail",
+                "type": "text",
+                "configuration": {
+                  "label": "Newsletter email",
+                  "pattern": "[^@\\s]+@[^@\\s]+\\.[^@\\s]+",
+                  "patternMessage": "Enter an email address."
+                },
+                "rules": {
+                  "visibleWhen": "subscribe"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "notes",
+          "type": "textarea",
+          "configuration": {
+            "label": "Additional notes",
+            "maxLength": 500
+          }
+        },
+        {
+          "id": "submit",
+          "type": "button",
+          "configuration": {
+            "label": "Submit",
+            "action": "submit"
+          }
+        }
+      ]
+    }
+  },
+  "tests": {
+    "scenarios": [
+      {
+        "id": "t1",
+        "source": "test \"the newsletter email shows only when subscribed\"\n  expect newsletterEmail hidden\n  set subscribe = true\n  expect newsletterEmail visible\n  set newsletterEmail = \"not an email\"\n  check\n  expect error on newsletterEmail: pattern\n  set newsletterEmail = \"ada@example.com\"\n  check\n  expect no error on newsletterEmail"
+      },
+      {
+        "id": "t2",
+        "source": "test \"a name is required\"\n  submit\n  expect refused\n  expect error on fullName: required\n  set fullName = \"Ada Lovelace\"\n  submit\n  expect accepted"
+      },
+      {
+        "id": "t3",
+        "source": "test \"an email typed before unsubscribing is not sent\"\n  # A hidden answer stays on the form but is left out of the\n  # submission unless its field sets hiddenValueBehavior to \"retain\".\n  set fullName = \"Ada Lovelace\"\n  set subscribe = true\n  set newsletterEmail = \"ada@example.com\"\n  set subscribe = false\n  expect newsletterEmail hidden\n  submit\n  expect accepted\n  expect newsletterEmail withheld"
+      }
+    ]
+  }
+}

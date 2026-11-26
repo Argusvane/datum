@@ -1,0 +1,54 @@
+<!-- datum-reference
+{
+  "source": "uswds 3.14.0: packages/usa-checkbox/src/usa-checkbox.twig (usa-fieldset, usa-legend, usa-checkbox) with the legend and hint pattern of packages/usa-memorable-date/src/usa-memorable-date.twig, in usa-form-group; the required note of packages/templates/usa-address-form.twig above the fields",
+  "note": "checkboxes with a legend and a hint",
+  "components": [
+    {
+      "id": "field1",
+      "type": "checkboxes",
+      "configuration": {
+        "label": "Select any historical figure",
+        "description": "Choose as many as you like.",
+        "required": true,
+        "options": [
+          {
+            "value": "sojourner-truth",
+            "label": "Sojourner Truth"
+          },
+          {
+            "value": "frederick-douglass",
+            "label": "Frederick Douglass"
+          },
+          {
+            "value": "booker-t-washington",
+            "label": "Booker T. Washington"
+          }
+        ]
+      }
+    }
+  ],
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate class="usa-form usa-form--large">
+<p>Required fields are marked with an asterisk (<abbr title="required" class="usa-hint usa-hint--required">*</abbr>).</p>
+<div class="usa-form-group">
+<fieldset class="usa-fieldset" aria-describedby="field1-hint">
+<legend class="usa-legend">Select any historical figure <abbr title="required" class="usa-hint usa-hint--required">*</abbr></legend>
+<span class="usa-hint" id="field1-hint">Choose as many as you like.</span>
+<div class="usa-checkbox">
+<input class="usa-checkbox__input" id="field1-sojourner-truth" type="checkbox" name="field1" value="sojourner-truth">
+<label class="usa-checkbox__label" for="field1-sojourner-truth">Sojourner Truth</label>
+</div>
+<div class="usa-checkbox">
+<input class="usa-checkbox__input" id="field1-frederick-douglass" type="checkbox" name="field1" value="frederick-douglass">
+<label class="usa-checkbox__label" for="field1-frederick-douglass">Frederick Douglass</label>
+</div>
+<div class="usa-checkbox">
+<input class="usa-checkbox__input" id="field1-booker-t-washington" type="checkbox" name="field1" value="booker-t-washington">
+<label class="usa-checkbox__label" for="field1-booker-t-washington">Booker T. Washington</label>
+</div>
+</fieldset>
+</div>
+</form>

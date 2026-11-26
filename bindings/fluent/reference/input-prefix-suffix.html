@@ -1,0 +1,10 @@
+<!-- datum-reference
+{
+  "note": "a text field with a prefix and a suffix",
+  "components": [ { "id": "price", "type": "text", "configuration": { "label": "Price", "prefix": "$", "suffix": ".00" } } ],
+  "source": "Fluent UI Web Components 3.2.1: field.stories.ts ComponentExamples (fluent-field label-position='above', label slot='label' for, fluent-text-input slot='input'), https://github.com/microsoft/fluentui/tree/master/packages/web-components/src/field; attributes per custom-elements.json 3.2.1; start and end: text-input.stories.ts StartAndEndSlot (span slot='start'>$, span slot='end'>.00)",
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate><fluent-field label-position="above"><label slot="label" for="price">Price</label><fluent-text-input slot="input" id="price" name="price"><span slot="start">$</span><span slot="end">.00</span></fluent-text-input></fluent-field></form>

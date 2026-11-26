@@ -1,0 +1,52 @@
+{
+  "name": "@argusvane/datum-quickjs-wasm-host",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "author": "Argusvane <maintainers@argusvane.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/argusvane/datum.git",
+    "directory": "packages/quickjs-wasm-host"
+  },
+  "homepage": "https://datum.argusvane.com",
+  "bugs": {
+    "url": "https://github.com/argusvane/datum/issues"
+  },
+  "keywords": [
+    "datum",
+    "forms",
+    "quickjs",
+    "wasm",
+    "sandbox"
+  ],
+  "description": "Real QuickJS/WASM sandbox adapter for the Datum engine's WASM validation ABI: runs the portable kernel and plugin validator modules in an isolated QuickJS instance, identically in browser and Node.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./worker": {
+      "types": "./src/worker-host.ts",
+      "import": "./src/worker-host.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && mkdir -p dist/src/worker && cp src/worker/quickjs-worker.mjs dist/src/worker/",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@argusvane/datum-engine": "file:../../engine",
+    "@jitl/quickjs-singlefile-mjs-release-sync": "0.32.0",
+    "quickjs-emscripten-core": "0.32.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

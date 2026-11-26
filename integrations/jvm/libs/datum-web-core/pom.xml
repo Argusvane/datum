@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-web-core</artifactId>
+  <packaging>jar</packaging>
+  <name>datum-web-core</name>
+  <description>Datum web core: the framework-neutral web pieces every JVM host binding shares (error model, capped JSON bodies,
+    asset paths and withheld files, host.json, datum-host.js, method rules, OpenAPI constants, capability and health registries).</description>
+  <!-- Split out of datum-spring-web (integrations/jvm/README.md "Libraries and bindings"): the Spring binding and
+       a Quarkus binding would both build on it, so nothing here may name a framework (LibraryBoundaryTest). -->
+  <dependencies>
+    <!-- ErrorMapper maps the sandbox's SandboxException to its wire code. datum-web-core needs the protocol types only, not the
+         packaged programs the sandbox's ProgramStore reads, so datum-programs (and its asset manifest) stays off this module's
+         class path: a binding that runs the sandbox brings it through datum-submissions or datum-pdf. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-sandbox</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>com.argusvane</groupId>
+          <artifactId>datum-programs</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <!-- Nullability annotations on the public SPI packages: optional, like micrometer-observation. An absent
+         annotation class is ignored at run time; an IDE, Kotlin or NullAway user adds org.jspecify:jspecify to read them. -->
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-core</artifactId>
+    </dependency>
+    <!-- DatumMeters registers over a MeterRegistry the binding passes in (null for no metrics). -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- The shared test helpers (the library-boundary rule, the settings-record copy check, the recording observation registry);
+         datum-core-test-support is never published. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-core-test-support</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+</project>

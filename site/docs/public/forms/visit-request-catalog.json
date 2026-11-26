@@ -1,0 +1,76 @@
+{
+  "id": "visit-request-catalog",
+  "version": "1.0.0",
+  "schemaVersion": "1",
+  "localization": {
+    "defaultLocale": "en",
+    "supportedLocales": [
+      {
+        "code": "en",
+        "label": "English"
+      },
+      {
+        "code": "fr",
+        "label": "Français"
+      }
+    ]
+  },
+  "root": {
+    "id": "root",
+    "type": "form",
+    "configuration": {
+      "title": "Visit request"
+    },
+    "children": {
+      "content": [
+        {
+          "id": "fullName",
+          "type": "text",
+          "configuration": {
+            "label": "Full name",
+            "required": true,
+            "messages": {
+              "required": "Enter your full name."
+            }
+          }
+        },
+        {
+          "id": "email",
+          "type": "text",
+          "configuration": {
+            "label": "Email",
+            "required": true
+          }
+        },
+        {
+          "id": "reason",
+          "type": "textarea",
+          "configuration": {
+            "label": "Reason for the visit",
+            "maxLength": 40
+          }
+        },
+        {
+          "id": "submit",
+          "type": "button",
+          "configuration": {
+            "label": "Send",
+            "action": "submit"
+          }
+        }
+      ]
+    }
+  },
+  "translations": {
+    "fr": {
+      "components": {
+        "email": {
+          "label": {
+            "text": "Adresse courriel",
+            "source": "inbfc7"
+          }
+        }
+      }
+    }
+  }
+}

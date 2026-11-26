@@ -1,0 +1,32 @@
+{
+  "note": "a select with an answer",
+  "components": [
+    {
+      "id": "prov",
+      "type": "select",
+      "configuration": {
+        "label": "Province",
+        "description": "Where you live.",
+        "options": [
+          {
+            "value": "qc",
+            "label": "Qu\u00e9bec"
+          },
+          {
+            "value": "on",
+            "label": "Ontario"
+          },
+          {
+            "value": "bc",
+            "label": "Colombie-Britannique"
+          }
+        ],
+        "required": true
+      }
+    }
+  ],
+  "preset": {
+    "prov": "qc"
+  },
+  "width": 560
+}

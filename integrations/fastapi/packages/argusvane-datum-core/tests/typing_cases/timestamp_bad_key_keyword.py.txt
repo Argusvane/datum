@@ -1,0 +1,9 @@
+from datum_core import Datum
+
+
+class NoSignature:
+    def sign(self, data: str) -> bytes:
+        return data.encode()
+
+
+Datum(tsa_key_material=NoSignature())

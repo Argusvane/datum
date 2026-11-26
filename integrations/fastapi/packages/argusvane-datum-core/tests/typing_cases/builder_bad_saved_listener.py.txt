@@ -1,0 +1,7 @@
+from datum_core.events import FormDefinitionSavedEvent, listener
+
+
+def takes_int(event: int) -> None: ...
+
+
+listener(FormDefinitionSavedEvent, takes_int)

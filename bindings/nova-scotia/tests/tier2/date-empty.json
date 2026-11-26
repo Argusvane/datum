@@ -1,0 +1,14 @@
+{
+  "note": "the date: three boxes under the library's label, a help block for the hint (the library has no date)",
+  "components": [
+    {
+      "id": "start",
+      "type": "date",
+      "configuration": {
+        "label": "Start date",
+        "description": "For example, 14 5 2026."
+      }
+    }
+  ],
+  "width": 560
+}

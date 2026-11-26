@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>datum-binding-check host page</title>
+    <!-- The host page datum-binding-check drives (binding-check/cli.mjs). It holds nothing of any
+         design system: the tester loads a binding and its assets into window.bc (page.js) and
+         mounts each fixture form into #stage. -->
+    <style>
+      body { margin: 0; padding: 16px; background: #fff; font-family: system-ui, sans-serif; }
+      #stage > div { max-width: 720px; margin: 0 0 24px; }
+    </style>
+    <script type="module">
+      import "/binding-check/page.js";
+      window.bindingCheckReady = true;
+    </script>
+  </head>
+  <body>
+    <div id="stage"></div>
+  </body>
+</html>

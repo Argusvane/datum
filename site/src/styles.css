@@ -1,0 +1,2659 @@
+/* Datum marketing site. Editorial: 1px charcoal rules on a neutral off-white, no
+   radius, one red accent (Canada red, tuned per theme for contrast), condensed uppercase display type. Light is the default theme;
+   [data-theme="dark"] on <html> switches to dark. Tokens first, then layout, then parts. */
+
+/* The site's three typefaces, served from this site's own files under public/fonts (SIL Open
+   Font License, texts beside them): a visitor's browser asks no one else for a font. Each family
+   has a latin and a latin-ext file, chosen by unicode-range, so a page that needs only the first
+   downloads only the first. Archivo is one variable file for 400 to 700. */
+@font-face {
+  font-family: "Bebas Neue";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/bebas-neue-latin-ext-400.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Bebas Neue";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/bebas-neue-latin-400.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Archivo";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/archivo-latin-ext-variable.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Archivo";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/fonts/archivo-latin-variable.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-latin-ext-400.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-latin-400.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-latin-ext-500.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-latin-500.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* The light palette: the site's own in the light theme, and, in either theme, the page under a
+   live form or builder whose binding paints no surface of its own (the demo's renderer drawn light: see its section). Such a
+   form draws its dark ink on whatever page it sits on, so that page stays light while the site
+   is dark; a form drawn dark paints its own. */
+:root,
+.demo__sheet[data-scheme="light"] {
+  color-scheme: light;
+  --bg: #fafaf9;
+  --raised: #ffffff;
+  --sunken: #eeeeec;
+  --fg: #141414;
+  --muted: #5a5b5e;
+  --line: #d9d9d6;
+  --line-strong: #2c2d30;
+  --accent: #d3080c;
+  --accent-fg: #ffffff;
+  --signal: #d3080c;
+  --signal-fg: #ffffff;
+  --ok: #3d8b1f;
+  /* The same green for small text and for a chip's ground: 5.6:1 or more on --bg and --raised (--ok is 4.1:1 there). */
+  --ok-text: #2f6e17;
+  --warn: #8a5a00;
+}
+
+:root {
+  --display: "Bebas Neue", Impact, "Arial Narrow Bold", sans-serif;
+  --body: "Archivo", ui-sans-serif, system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+
+  --border: 1px;
+  --container: 1120px;
+  --gutter: 16px;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e0e0e;
+  --raised: #161616;
+  --sunken: #080808;
+  --fg: #ededeb;
+  --muted: #9b9ca0;
+  --line: #2a2a2a;
+  --line-strong: #c4c6ca;
+  --accent: #ff2a30;
+  --accent-fg: #0e0e0e;
+  --signal: #ff2a30;
+  --signal-fg: #0e0e0e;
+  --ok: #9be15d;
+  --ok-text: #9be15d;
+  --warn: #e8b04a;
+}
+
+@media (min-width: 768px) {
+  :root { --gutter: 24px; }
+}
+
+/* ---------- base ---------- */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { background: var(--bg); }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--body);
+  font-size: 17px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+a { color: var(--accent); }
+a:hover { color: var(--fg); }
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+h1, h2, h3 { margin: 0; }
+
+.container {
+  width: 100%;
+  max-width: var(--container);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.display {
+  font-family: var(--display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  line-height: 0.95;
+}
+
+.label {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.accent { color: var(--accent); }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* The first link on every page: off screen until the keyboard reaches it, then a plain block at the top left
+   that jumps to <main id="main">. Added to each page by page-shell.ts. */
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  padding: 10px 16px;
+  background: var(--fg);
+  color: var(--bg);
+  font-weight: 600;
+  transform: translateY(-100%);
+}
+.skip-link:focus { transform: none; }
+
+/* ---------- buttons ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 22px;
+  border: var(--border) solid var(--line-strong);
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--fg);
+  background: transparent;
+  cursor: pointer;
+}
+
+.btn:hover { color: var(--accent); border-color: var(--accent); }
+
+.btn--primary { background: var(--fg); color: var(--bg); }
+.btn--primary:hover { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+
+.btn--small {
+  min-height: 38px;
+  padding: 0 14px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+/* ---------- nav ---------- */
+
+.nav { border-bottom: var(--border) solid var(--line-strong); }
+
+.nav__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  flex-wrap: wrap;
+  min-height: 72px;
+  padding-block: 12px;
+}
+
+.nav__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--fg);
+  font-family: var(--display);
+  font-size: 26px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.nav__brand svg { display: block; }
+.nav__brand:hover { color: var(--accent); }
+
+.nav__links {
+  display: flex;
+  align-items: center;
+  gap: 8px 24px;
+  flex-wrap: wrap;
+  font-weight: 500;
+  font-size: 15px;
+}
+
+/* Six page links, two buttons and the toggle: a tighter gap below desktop keeps the rows the
+   nav had before the Partners link joined it. */
+@media (max-width: 1023px) {
+  .nav__links { column-gap: 18px; }
+}
+
+.nav__links a { color: var(--fg); text-decoration: none; }
+.nav__links a:hover { color: var(--accent); }
+.nav__links a[aria-current] { text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 2px; }
+
+/* The theme toggle is a quiet icon, not a bordered control: it is a convenience, not a call to action. */
+.nav__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-left: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.nav__toggle:hover { color: var(--fg); }
+/* The icon names the theme in force: the sun on the light site, the moon on the dark one. */
+.nav__toggle svg { display: block; }
+.nav__toggle .icon-moon { display: none; }
+.nav__toggle[data-theme="dark"] .icon-moon { display: block; }
+.nav__toggle[data-theme="dark"] .icon-sun { display: none; }
+
+/* ---------- sub-navigation: the developer pages ----------
+   A strip under the header on the two developer sub-pages: the section's name, then one link
+   per sub-page, the current one inverted like a selected tab (main.ts marks it). */
+
+.subnav { border-bottom: 1px solid var(--line); }
+
+.subnav__row {
+  display: flex;
+  align-items: center;
+  gap: 8px 10px;
+  flex-wrap: wrap;
+  min-height: 52px;
+  padding-block: 8px;
+}
+
+.subnav__label {
+  margin-right: 8px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.subnav a {
+  padding: 7px 14px;
+  border: 1px solid var(--line-strong);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--fg);
+}
+
+.subnav a:hover { color: var(--accent); border-color: var(--accent); }
+.subnav a[aria-current] { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+
+/* ---------- hero ---------- */
+
+.hero { border-bottom: var(--border) solid var(--line-strong); }
+
+.hero__row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  align-items: center;
+  padding-block: 56px;
+}
+
+@media (min-width: 900px) {
+  .hero__row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; padding-block: 88px 72px; }
+}
+
+.hero__copy { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+
+.hero__title {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(4.5rem, 11vw, 8rem);
+  line-height: 0.9;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.hero__title .accent { color: var(--accent); }
+
+@media (min-width: 900px) {
+  .hero__break { display: block; }
+}
+
+/* A title that would otherwise wrap mid-phrase on a phone breaks where it reads. */
+@media (max-width: 599px) {
+  .hero__break--narrow { display: block; }
+}
+
+.hero__lede {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.55;
+  color: var(--muted);
+  max-width: 540px;
+}
+
+/* The three ways in (run it, embed it, deliver it), each a row linking to its block on the
+   partners page. Ruled like the FAQ: heavy rules round the list, thin ones between rows. */
+.hero__routes {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  max-width: 540px;
+  border-top: var(--border) solid var(--line-strong);
+  border-bottom: var(--border) solid var(--line-strong);
+}
+
+.hero__routes li + li { border-top: 1px solid var(--line-strong); }
+
+.hero__route {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 4px 16px;
+  padding: 13px 2px;
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.hero__route::after {
+  content: "\2192";
+  font-family: var(--mono);
+  color: var(--accent);
+  transition: transform 0.15s ease;
+}
+
+.hero__route-label {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.hero__route-text { font-size: 16px; line-height: 1.4; }
+
+.hero__route:hover { color: var(--fg); }
+.hero__route:hover .hero__route-label { color: var(--accent); }
+.hero__route:hover::after { transform: translateX(4px); }
+
+@media (max-width: 479px) {
+  .hero__route { grid-template-columns: minmax(0, 1fr) auto; }
+  .hero__route-label { grid-column: 1; }
+  .hero__route-text { grid-column: 1; grid-row: 2; }
+  .hero__route::after { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__route::after { transition: none; }
+}
+
+/* Four slides in one place, "What it is", "Why it matters", "In and out" and "Journeys", taking
+   turns. All sit in one grid cell, so the hero is as tall as the tallest and never jumps. The slide not shown is hidden
+   from sight, pointer and screen reader, and its scene waits where it stopped. The line under
+   the chosen tab is the clock: it fills over --hero-hold, and when it ends hero.ts shows the
+   next slide. Without the script only the first slide shows and the tabs stay hidden. */
+.hero__deck { --hero-hold: 10s; }
+
+.hero__slides { display: grid; }
+
+.hero__slide {
+  grid-area: 1 / 1;
+  display: grid;
+  min-width: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.6s ease, visibility 0s linear 0.6s;
+}
+
+.hero__slide[data-active] { opacity: 1; visibility: visible; transition: opacity 0.6s ease; }
+.hero__slide:not([data-active]) { pointer-events: none; }
+.hero__slide[hidden] { display: none; }
+
+/* The scene rules set `animation`, which resets the play state, hence the !important. */
+.hero__slide:not([data-active]) .scene,
+.hero__slide:not([data-active]) .scene * { animation-play-state: paused !important; }
+
+/* Each slide's row fills the shared cell. Stacked on a narrow screen the parts keep to the top;
+   side by side the words keep to the top and the scene stays centred, so neither the title nor
+   the scene moves when the slides change. */
+.hero__deck .hero__row { align-content: start; }
+
+@media (min-width: 900px) {
+  .hero__deck .hero__row { align-content: stretch; }
+  .hero__deck .hero__copy { align-self: start; }
+}
+
+.hero__deck[data-ready] .hero__row { padding-bottom: 28px; }
+
+.hero__controls { display: flex; padding-bottom: 40px; }
+.hero__controls[hidden] { display: none; }
+
+.hero__pause,
+.hero__tab {
+  border: var(--border) solid var(--line-strong);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.hero__pause { display: grid; place-items: center; width: 44px; padding: 0; color: var(--fg); }
+.hero__pause:hover { color: var(--accent); }
+.hero__play-icon,
+.hero__deck[data-rotating] .hero__pause-icon { display: block; }
+.hero__pause-icon,
+.hero__deck[data-rotating] .hero__play-icon { display: none; }
+
+.hero__tabs { display: flex; min-width: 0; }
+
+.hero__tab {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-left: calc(-1 * var(--border));
+  padding: 12px 16px 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.hero__tab:hover,
+.hero__tab[aria-selected="true"] { color: var(--fg); }
+.hero__tab-num { color: var(--accent); }
+
+/* The chosen tab's line: full while the slides stand still, filling while they turn. */
+.hero__tab-bar { position: absolute; inset: auto 0 0; height: 3px; overflow: hidden; }
+.hero__tab-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+.hero__tab[aria-selected="true"] .hero__tab-bar { background: var(--line); }
+.hero__tab[aria-selected="true"] .hero__tab-bar::after { transform: none; }
+.hero__deck[data-rotating] .hero__tab[aria-selected="true"] .hero__tab-bar::after { animation: heroHold var(--hero-hold) linear both; }
+/* As specific as the rule above, whose `animation` shorthand would otherwise set the play state back. */
+.hero__deck[data-held] .hero__tab[aria-selected="true"] .hero__tab-bar::after { animation-play-state: paused; }
+
+@keyframes heroHold { from { transform: scaleX(0); } to { transform: none; } }
+
+/* Too narrow for every tab's name: the others show their number, and keep the name for screen readers. */
+@media (max-width: 767px) {
+  .hero__tab:not([aria-selected="true"]) .hero__tab-name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 479px) {
+  .hero__tab { gap: 8px; padding-inline: 11px; font-size: 11px; letter-spacing: 0.08em; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__slide, .hero__slide[data-active] { transition: none; }
+}
+
+/* ---------- the video hero, and the switch between it and the deck ----------
+   The home hero comes in two versions: a centred headline over a framed product video (the
+   default) and the slide deck above. data-hero on <html> is set before first paint from the
+   stored choice; the hidden attribute is the no-script default and what the script keeps in
+   step. Site tokens only. */
+
+.hero__variant[hidden] { display: none; }
+html[data-hero="classic"] [data-hero-variant="video"] { display: none; }
+html[data-hero="classic"] [data-hero-variant="classic"] { display: block; }
+
+.hero__switch {
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.hero__switch[hidden] { display: none; }
+.hero__switch:hover { color: var(--accent); border-color: var(--accent); }
+.hero__switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* In the deck's controls row: after the tabs, at the end of the row, wrapping below them when narrow. */
+.hero__controls { flex-wrap: wrap; row-gap: 12px; }
+.hero__controls .hero__tabs { margin-right: 16px; }
+.hero__switch--classic { align-self: center; margin-left: auto; }
+
+.hero-video__stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  min-width: 0;
+  padding-block: 56px 64px;
+  text-align: center;
+}
+
+@media (min-width: 900px) {
+  .hero-video__stack { padding-block: 88px 80px; }
+}
+
+.hero-video__title { max-width: 100%; overflow-wrap: anywhere; }
+
+.hero-video__lede { max-width: 620px; }
+
+.hero-video__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.hero-video__actions .btn { min-width: 0; }
+
+.hero-video__window {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1120px;
+  min-width: 0;
+  margin: 26px 0 0;
+  overflow: hidden;
+  border: var(--border) solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--raised);
+  box-shadow: 0 24px 80px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.hero-video__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 38px;
+  padding: 0 12px;
+  border-bottom: var(--border) solid var(--line-strong);
+  background: var(--sunken);
+}
+
+.hero-video__dots { display: inline-flex; gap: 7px; }
+
+.hero-video__dots i {
+  display: block;
+  width: 11px;
+  height: 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+}
+
+.hero-video__toggle {
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.hero-video__toggle:hover { color: var(--accent); border-color: var(--accent); }
+
+.hero-video__toggle:focus-visible,
+.hero-video__actions .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.hero-video__media {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1440 / 900;
+  background: var(--sunken);
+}
+
+.hero-video__bar { flex-wrap: wrap; justify-content: flex-start; }
+
+.hero-video__toggle { margin-left: auto; }
+
+.hero-video__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 4px 18px;
+  min-width: 0;
+  margin-left: 12px;
+}
+
+.hero-video__tabs [role="tab"] {
+  min-height: 38px;
+  margin-bottom: -1px;
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.hero-video__tabs [role="tab"][aria-selected="true"] { border-bottom-color: var(--accent); color: var(--fg); }
+
+.hero-video__tabs [role="tab"]:hover { color: var(--accent); }
+
+.hero-video__tabs [role="tab"]:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+
+@media (max-width: 479px) {
+  .hero-video__dots { display: none; }
+  .hero-video__tabs { margin-left: 0; gap: 4px 14px; }
+}
+
+/* ---------- the builder-to-submission scene (CSS only) ----------
+   One 48-second loop, three screens crossfading: the builder (fields drop in, a French label
+   is typed into the translations grid, then the PDF layout is designed), the rendered form
+   (typed, switched to French with the answers kept, submitted, signed with a YubiKey), and
+   the signed PDF in the language it was submitted in. Every keyframe ends hidden at 96-100%
+   so the loop restarts clean; with reduced motion the static state is the signed PDF, in
+   English (.l-en is the base state, .l-fr only shows inside the loop). */
+
+.scene {
+  border: var(--border) solid var(--line-strong);
+  background: var(--raised);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.scene__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.scene__live { display: flex; align-items: center; gap: 8px; }
+
+@media (max-width: 600px) {
+  .scene__head { font-size: 10.5px; letter-spacing: 0.08em; }
+  .scene__live { display: none; }
+}
+
+.pulse {
+  width: 8px;
+  height: 8px;
+  background: var(--ok);
+  animation: pulse 1.6s infinite;
+}
+
+.scene__stage { position: relative; height: 396px; }
+
+.scene__screen { position: absolute; inset: 0; }
+
+.scene__builder {
+  opacity: 0;
+  display: grid;
+  grid-template-columns: 96px 1fr 124px;
+  animation: scrB 48s infinite;
+}
+
+.scene__page {
+  opacity: 0;
+  display: flex;
+  flex-direction: column;
+  animation: scrR 48s infinite;
+}
+
+.scene__pdf {
+  opacity: 1;
+  display: flex;
+  flex-direction: column;
+  animation: scrP 48s infinite;
+}
+
+.mini-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.mini-palette {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 10px;
+  border-right: 1px solid var(--line);
+}
+
+.pi {
+  display: grid;
+  font-size: 11px;
+  padding: 5px 8px;
+  border: 1px solid var(--muted);
+  color: var(--muted);
+}
+
+/* Each palette item carries its Form label and its PDF label; the mode switch crossfades them. */
+.pi > span { grid-area: 1 / 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pi__form { animation: piForm 48s infinite; }
+.pi__pdf { opacity: 0; animation: piPdf 48s infinite; }
+
+.mini-canvas { position: relative; padding: 14px; background: var(--bg); display: flex; flex-direction: column; }
+
+.mini-sheet {
+  flex: 1;
+  border: 1px solid var(--line);
+  background: var(--raised);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mini-sheet__bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.mini-modes { display: flex; border: 1px solid var(--muted); }
+
+.mini-mode { padding: 2px 7px; color: var(--muted); }
+.mini-mode--form { animation: modeForm 48s infinite; }
+.mini-mode--pdf { animation: modePdf 48s infinite; }
+
+/* The locales the definition carries; "+ fr" appears once the translation is typed. */
+.mini-loc { display: flex; gap: 5px; }
+.mini-loc__fr { color: var(--accent); opacity: 0; animation: loc 48s infinite; }
+
+.fb { display: flex; flex-direction: column; gap: 4px; opacity: 0; }
+.fb.mini-check { flex-direction: row; align-items: center; gap: 8px; }
+
+.mini-flabel { font-size: 11px; font-weight: 600; color: var(--fg); }
+.mini-box { height: 24px; border: 1px solid var(--muted); background: var(--bg); }
+
+/* The PDF layout being designed: paper is paper whatever the theme. */
+.mini-paper {
+  position: absolute;
+  inset: 14px;
+  opacity: 0;
+  padding: 12px 14px;
+  background: #f4f1ea;
+  color: #1a1a1a;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: paper 48s infinite;
+}
+
+.mini-paper__bar {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6b675f;
+}
+
+.mini-paper__title { font-family: var(--display); font-size: 20px; line-height: 1; text-transform: uppercase; letter-spacing: 0.03em; }
+
+/* The logo dropped onto the page: the org's mark and name, a layout element the form itself has no use for. */
+.mini-paper__brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #1a1a1a;
+  opacity: 0;
+}
+
+.mini-paper__logo { width: 16px; height: 16px; background: var(--accent); flex: none; }
+
+.pdfl {
+  display: grid;
+  grid-template-columns: 78px 1fr;
+  gap: 8px;
+  align-items: center;
+  font-size: 10.5px;
+  color: #3d3a34;
+  opacity: 0;
+}
+
+/* Two fields side by side: the print layout is not the form's one-per-row layout. */
+.pdfl--cols { grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
+.pdfl__cell { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.pdfl__cell > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.pdfl__box { height: 16px; border: 1px dashed #b8b3a8; }
+.pdfl__box--small { width: 16px; }
+
+.pdfsig {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 6px 8px;
+  border: 1px dashed #b8b3a8;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b675f;
+  opacity: 0;
+  animation: pdfsig 48s infinite;
+}
+
+.pdfsig__rule { display: flex; justify-content: space-between; padding-top: 4px; border-top: 1px solid #1a1a1a; }
+
+.mini-props {
+  border-left: 1px solid var(--line);
+  padding: 12px;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  align-content: start;
+  gap: 10px;
+  font-size: 11px;
+}
+
+/* The Form properties and the PDF layout properties share one slot; the mode switch crossfades them. */
+.mini-props__set { grid-area: 2 / 1; display: flex; flex-direction: column; gap: 10px; }
+.mini-props__set--form { animation: propsForm 48s infinite; }
+.mini-props__set--pdf { opacity: 0; animation: propsPdf 48s infinite; }
+
+/* After .mini-props so the narrow-screen rule wins the cascade. */
+@media (max-width: 600px) {
+  .scene__builder { grid-template-columns: 92px 1fr; }
+  .mini-palette { padding: 12px 8px; }
+  .pi { font-size: 10px; padding: 5px 6px; }
+  .mini-paper__bar > span:last-child { display: none; }
+  .mini-props { display: none; }
+  /* The sheet name gives way to the locale chip, which carries the translation beat on phones. */
+  .mini-sheet__bar > span:first-child { display: none; }
+}
+
+.mini-props__field { display: flex; flex-direction: column; gap: 3px; }
+.mini-props__field > span:first-child { font-size: 10.5px; color: var(--muted); }
+.mini-props__value { padding: 4px 6px; border: 1px solid var(--muted); }
+.mini-props__value--code { font-family: var(--mono); font-size: 10.5px; color: var(--accent); }
+.mini-props__switch { display: flex; justify-content: space-between; align-items: center; }
+
+/* The translations grid: one row per locale, the French label typed in. */
+.mini-grid { display: grid; grid-template-columns: 16px 1fr; gap: 3px 6px; align-items: center; }
+.mini-grid__k { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.mini-grid__v { display: block; min-height: 20px; padding: 3px 6px; border: 1px solid var(--muted); font-size: 10.5px; white-space: nowrap; overflow: hidden; }
+
+.mini-toggle {
+  position: relative;
+  width: 26px;
+  height: 14px;
+  background: var(--accent);
+}
+
+.mini-toggle::after {
+  content: "";
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  width: 10px;
+  height: 10px;
+  background: var(--accent-fg);
+}
+
+.mini-chrome {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--sunken);
+}
+
+.mini-dots { display: flex; gap: 5px; }
+.mini-dots span { width: 8px; height: 8px; background: var(--muted); }
+
+.mini-url {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.mini-form {
+  position: relative;
+  flex: 1;
+  padding: 16px 20px;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+@media (max-width: 600px) {
+  .mini-form { padding: 12px 14px; }
+}
+
+.mini-form__head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.mini-form__head > span:first-child { font-weight: 700; font-size: 15px; }
+
+/* Two languages stacked in one box; the loop crossfades them, the base state is English. */
+.l2 { display: grid; }
+.l2 > span { grid-area: 1 / 1; white-space: nowrap; }
+.l-en { opacity: 1; }
+.l-fr { opacity: 0; }
+.scene__page .l-en { animation: lEn 48s infinite; }
+.scene__page .l-fr { animation: lFr 48s infinite; }
+.scene__pdf .l-en { animation: swapOut 48s infinite; }
+.scene__pdf .l-fr { animation: swapIn 48s infinite; }
+
+/* The language switcher on the rendered form. */
+.mini-lang {
+  display: flex;
+  flex: none;
+  border: 1px solid var(--muted);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+.mini-lang__opt { padding: 3px 8px; color: var(--muted); }
+.mini-lang__opt--en { background: var(--fg); color: var(--bg); animation: langEn 48s infinite; }
+.mini-lang__opt--fr { animation: langFr 48s infinite; }
+
+.mini-submit.l2 { display: inline-grid; align-items: center; }
+
+.mini-field { display: flex; flex-direction: column; gap: 4px; }
+.mini-field .mini-flabel { font-size: 12px; }
+
+.mini-input {
+  height: 30px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--muted);
+  background: var(--raised);
+  font-size: 13px;
+  color: var(--fg);
+}
+
+.ty { white-space: nowrap; }
+
+.mini-check { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+
+.mini-cb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--muted);
+  background: var(--raised);
+  color: var(--accent);
+}
+
+.mini-cb--builder { width: 14px; height: 14px; background: var(--bg); }
+.mini-cb svg { display: block; }
+
+.mini-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 2px; min-width: 0; }
+
+.mini-submit {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 14px;
+  background: var(--fg);
+  color: var(--bg);
+  font-weight: 700;
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  animation: press 48s infinite;
+}
+
+.mini-pdf {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.mini-pdf svg { display: block; }
+.mini-print { animation: printPress 48s infinite; }
+.mini-print .l2 { display: inline-grid; }
+
+/* The print dialog over the form: the read-only rendition through the browser's own dialog. */
+.prt {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  opacity: 0;
+  animation: prt 48s infinite;
+}
+
+.prt__card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 340px;
+  padding: 14px 16px;
+  border: var(--border) solid var(--line-strong);
+  background: var(--raised);
+}
+
+.prt__head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-weight: 700; font-size: 14px; }
+.prt__head .mini-label { white-space: nowrap; }
+.prt__body { display: flex; gap: 14px; align-items: flex-start; }
+
+.prt__thumb {
+  flex: none;
+  width: 72px;
+  height: 94px;
+  padding: 7px;
+  background: #f4f1ea;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.prt__brand { display: flex; align-items: center; gap: 3px; height: 6px; }
+.prt__brand > span { width: 6px; height: 6px; background: var(--accent); }
+.prt__brand::after { content: ""; flex: 1; height: 3px; background: #1a1a1a; max-width: 24px; }
+.prt__line { display: block; height: 4px; background: #c9c3b6; }
+.prt__line--title { height: 6px; width: 60%; background: #1a1a1a; }
+.prt__line--short { width: 40%; }
+.prt__cols { display: flex; gap: 3px; }
+.prt__cols > span { flex: 1; height: 4px; background: #c9c3b6; }
+.prt__sig { margin-top: auto; height: 12px; border: 1px dashed #b8b3a8; }
+
+.prt__opts { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--muted); }
+.prt__opts li::before { content: "\2713"; margin-right: 8px; color: var(--ok); }
+.prt__actions { display: flex; justify-content: flex-end; gap: 10px; }
+.prt__go { animation: prtGo 48s infinite; }
+
+@media (max-width: 600px) {
+  .prt__body { gap: 10px; }
+  .prt__opts { font-size: 11px; }
+  /* Three actions on one row: Print keeps its icon only, the submit tightens a little. */
+  .mini-print .l2 { display: none; }
+  .mini-print { padding: 0 10px; }
+  .mini-form .mini-submit { padding: 0 12px; font-size: 11px; }
+}
+
+.rc {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--ok);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ok);
+  white-space: nowrap;
+  overflow: hidden;
+  animation: rc 48s infinite;
+}
+
+.rc svg { display: block; flex: none; }
+
+/* The YubiKey prompt over the form while the PDF is signed. */
+.yubi {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  opacity: 0;
+  animation: yubi 48s infinite;
+}
+
+.yubi__card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border: var(--border) solid var(--line-strong);
+  background: var(--raised);
+  max-width: 100%;
+}
+
+.yubi__key {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line-strong);
+  color: var(--accent);
+}
+
+.yubi__key svg { display: block; position: relative; }
+
+.yubi__ring {
+  position: absolute;
+  inset: -1px;
+  border: 2px solid var(--accent);
+  animation: ring 1s ease-out infinite, ringGate 48s infinite;
+}
+
+.yubi__text { position: relative; display: grid; min-width: 0; }
+.yubi__text > span { grid-area: 1 / 1; display: flex; flex-direction: column; gap: 3px; }
+.yubi__text strong { font-size: 14px; }
+.yubi__touch { opacity: 0; animation: yubiTouch 48s infinite; }
+.yubi__signed { opacity: 0; color: var(--ok); animation: yubiSigned 48s infinite; }
+.yubi__signed .mini-label { color: var(--ok); }
+
+/* The signed PDF. */
+.mini-viewer {
+  flex: 1;
+  padding: 16px 20px;
+  background: var(--sunken);
+  display: flex;
+  justify-content: center;
+}
+
+/* The signed PDF is the page the builder designed, filled: the same brand row, title,
+   two-column row, email, confirmation and signature field, in the same proportions. */
+.pdf-page {
+  width: 100%;
+  max-width: 420px;
+  padding: 14px 16px;
+  background: #f4f1ea;
+  color: #1a1a1a;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pdf-page__brand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pdf-page__logo { width: 16px; height: 16px; background: var(--accent); flex: none; }
+
+.pdf-page__title { font-family: var(--display); font-size: 20px; line-height: 1; text-transform: uppercase; letter-spacing: 0.03em; }
+
+.pdfrow {
+  display: grid;
+  grid-template-columns: 78px 1fr;
+  gap: 8px;
+  align-items: center;
+  font-size: 10.5px;
+  color: #3d3a34;
+}
+
+.pdfrow--cols { grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
+.pdfrow__cell { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+
+.pdfrow__val {
+  display: flex;
+  align-items: center;
+  min-height: 18px;
+  padding: 0 5px;
+  border: 1px solid #b8b3a8;
+  background: #fbfaf7;
+  color: #1a1a1a;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* The confirmation is the 16px checkbox the designer placed, ticked. */
+.pdfrow__check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #b8b3a8;
+  background: #fbfaf7;
+  color: #1a1a1a;
+}
+
+.pdfrow__check svg { display: block; }
+
+.pdf-sig {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid #1a1a1a;
+  color: #1a1a1a;
+}
+
+.pdf-sig__head { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: #6b675f; }
+.pdf-sig__rule { display: flex; justify-content: space-between; gap: 8px; padding-top: 4px; border-top: 1px solid #1a1a1a; font-size: 11px; font-weight: 600; }
+.pdf-sig__rule > span:last-child { font-family: var(--mono); font-weight: 400; color: #3d3a34; }
+.pdf-sig__text { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.pdf-sig__text svg { display: block; flex: none; color: #2f7d1f; }
+.pdf-sig__text > span { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.06em; color: #6b675f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.pdfrow1 { animation: pdfrow1 48s infinite; }
+.pdfrow2 { animation: pdfrow2 48s infinite; }
+.pdfrow3 { animation: pdfrow3 48s infinite; }
+.pdfrow4 { animation: pdfrow4 48s infinite; }
+.pdf-sig { animation: pdfsigblock 48s infinite; }
+
+.fb1 { animation: fb1 48s infinite; }
+.fb2 { animation: fb2 48s infinite; }
+.fb3 { animation: fb3 48s infinite; }
+.fb4 { animation: fb4 48s infinite; }
+.pi1 { animation: pi1 48s infinite; }
+.pi2 { animation: pi2 48s infinite; }
+.pi3 { animation: pi3 48s infinite; }
+.pi4 { animation: pi4 48s infinite; }
+.pdf1 { animation: pdf1 48s infinite; }
+/* .pdf1 is the brand row; .pdf2 to .pdf4 are .pdfl rows */
+.pdf2 { animation: pdf2 48s infinite; }
+.pdf3 { animation: pdf3 48s infinite; }
+.pdf4 { animation: pdf4 48s infinite; }
+.ty0 { animation: ty0 48s steps(11) infinite; }
+.ty1 { animation: ty1 48s steps(12) infinite; }
+.ty2 { animation: ty2 48s steps(14) infinite; }
+.ty3 { animation: ty3 48s steps(10) infinite; }
+.ck { animation: ck 48s infinite; }
+
+/* Screens */
+@keyframes scrB { 0%, 31.2% { opacity: 1; } 34.4%, 96.8% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes scrR { 0%, 31.2% { opacity: 0; } 34.4%, 79.5% { opacity: 1; } 82.7%, 100% { opacity: 0; } }
+@keyframes scrP { 0%, 79.5% { opacity: 0; } 82.7%, 96.8% { opacity: 1; } 100% { opacity: 0; } }
+/* Builder: fields drop in */
+@keyframes fb1 { 0%, 3.1% { opacity: 0; transform: translateX(-24px); } 4.4%, 96.4% { opacity: 1; transform: none; } 96.5%, 100% { opacity: 0; transform: translateX(-24px); } }
+@keyframes fb2 { 0%, 5.2% { opacity: 0; transform: translateX(-24px); } 6.5%, 96.4% { opacity: 1; transform: none; } 96.5%, 100% { opacity: 0; transform: translateX(-24px); } }
+@keyframes fb3 { 0%, 7.3% { opacity: 0; transform: translateX(-24px); } 8.6%, 96.4% { opacity: 1; transform: none; } 96.5%, 100% { opacity: 0; transform: translateX(-24px); } }
+@keyframes fb4 { 0%, 9.4% { opacity: 0; transform: translateX(-24px); } 10.7%, 96.4% { opacity: 1; transform: none; } 96.5%, 100% { opacity: 0; transform: translateX(-24px); } }
+/* Palette flashes: the Form items while fields drop in, then the same items as Logo / Field / Signature while the PDF layout is built */
+@keyframes pi1 { 0%, 2.4% { border-color: var(--muted); color: var(--muted); } 2.6%, 4.4% { border-color: var(--accent); color: var(--accent); } 4.8%, 19.3% { border-color: var(--muted); color: var(--muted); } 19.5%, 20.8% { border-color: var(--accent); color: var(--accent); } 21.2%, 100% { border-color: var(--muted); color: var(--muted); } }
+@keyframes pi2 { 0%, 4.5% { border-color: var(--muted); color: var(--muted); } 4.7%, 6.5% { border-color: var(--accent); color: var(--accent); } 6.9%, 100% { border-color: var(--muted); color: var(--muted); } }
+@keyframes pi3 { 0%, 6.6% { border-color: var(--muted); color: var(--muted); } 6.8%, 8.6% { border-color: var(--accent); color: var(--accent); } 9%, 21% { border-color: var(--muted); color: var(--muted); } 21.2%, 25.7% { border-color: var(--accent); color: var(--accent); } 26.1%, 100% { border-color: var(--muted); color: var(--muted); } }
+@keyframes pi4 { 0%, 8.7% { border-color: var(--muted); color: var(--muted); } 8.9%, 10.7% { border-color: var(--accent); color: var(--accent); } 11.1%, 26% { border-color: var(--muted); color: var(--muted); } 26.2%, 27.6% { border-color: var(--accent); color: var(--accent); } 28%, 100% { border-color: var(--muted); color: var(--muted); } }
+@keyframes piForm { 0%, 17% { opacity: 1; } 17.6%, 96.4% { opacity: 0; } 96.5%, 100% { opacity: 1; } }
+@keyframes piPdf { 0%, 17% { opacity: 0; } 17.6%, 96.4% { opacity: 1; } 96.5%, 100% { opacity: 0; } }
+@keyframes propsForm { 0%, 17% { opacity: 1; } 17.6%, 96.4% { opacity: 0; } 96.5%, 100% { opacity: 1; } }
+@keyframes propsPdf { 0%, 17% { opacity: 0; } 17.6%, 96.4% { opacity: 1; } 96.5%, 100% { opacity: 0; } }
+/* Builder: the French label is typed into the translations grid, the locale chip appears */
+@keyframes ty0 { 0%, 11.4% { clip-path: inset(0 100% 0 0); } 13.4%, 96.4% { clip-path: inset(0 0 0 0); } 96.5%, 100% { clip-path: inset(0 100% 0 0); } }
+@keyframes loc { 0%, 13.6% { opacity: 0; } 14.2%, 96.4% { opacity: 1; } 96.5%, 100% { opacity: 0; } }
+/* Builder: the PDF mode */
+@keyframes modeForm { 0%, 17% { background: var(--fg); color: var(--bg); } 17.1%, 96.4% { background: transparent; color: var(--muted); } 96.5%, 100% { background: var(--fg); color: var(--bg); } }
+@keyframes modePdf { 0%, 17% { background: transparent; color: var(--muted); } 17.1%, 96.4% { background: var(--accent); color: var(--accent-fg); } 96.5%, 100% { background: transparent; color: var(--muted); } }
+@keyframes paper { 0%, 17.1% { opacity: 0; } 19.2%, 96.4% { opacity: 1; } 96.5%, 100% { opacity: 0; } }
+/* Builder: the print layout is built up: logo, two-column row, email, confirmation, signature field */
+@keyframes pdf1 { 0%, 19.9% { opacity: 0; transform: translateX(-10px); } 20.8%, 96.4% { opacity: 1; transform: none; } 96.5%, 100% { opacity: 0; } }
+@keyframes pdf2 { 0%, 21.6% { opacity: 0; transform: translateY(6px); } 22.5%, 96.4% { opacity: 1; transform: none; } 96.5%, 100% { opacity: 0; } }
+@keyframes pdf3 { 0%, 23.2% { opacity: 0; transform: translateY(6px); } 24.1%, 96.4% { opacity: 1; transform: none; } 96.5%, 100% { opacity: 0; } }
+@keyframes pdf4 { 0%, 24.8% { opacity: 0; transform: translateY(6px); } 25.7%, 96.4% { opacity: 1; transform: none; } 96.5%, 100% { opacity: 0; } }
+@keyframes pdfsig { 0%, 26.6% { opacity: 0; transform: translateY(8px); } 27.6%, 96.4% { opacity: 1; transform: none; } 96.5%, 100% { opacity: 0; } }
+/* The rendered form: fill, switch to French, submit, sign */
+@keyframes ty1 { 0%, 35.4% { clip-path: inset(0 100% 0 0); } 38.1%, 96.4% { clip-path: inset(0 0 0 0); } 96.5%, 100% { clip-path: inset(0 100% 0 0); } }
+@keyframes ty2 { 0%, 38.7% { clip-path: inset(0 100% 0 0); } 41.4%, 96.4% { clip-path: inset(0 0 0 0); } 96.5%, 100% { clip-path: inset(0 100% 0 0); } }
+@keyframes ty3 { 0%, 42% { clip-path: inset(0 100% 0 0); } 44.7%, 96.4% { clip-path: inset(0 0 0 0); } 96.5%, 100% { clip-path: inset(0 100% 0 0); } }
+@keyframes ck { 0%, 45.6% { opacity: 0; } 46.2%, 96.4% { opacity: 1; } 96.5%, 100% { opacity: 0; } }
+@keyframes langEn { 0%, 47.2% { background: var(--fg); color: var(--bg); } 47.4%, 96.4% { background: transparent; color: var(--muted); } 96.5%, 100% { background: var(--fg); color: var(--bg); } }
+@keyframes langFr { 0%, 47.2% { background: transparent; color: var(--muted); } 47.4%, 96.4% { background: var(--fg); color: var(--bg); } 96.5%, 100% { background: transparent; color: var(--muted); } }
+@keyframes lEn { 0%, 47.4% { opacity: 1; } 48.4%, 96.4% { opacity: 0; } 96.5%, 100% { opacity: 1; } }
+@keyframes lFr { 0%, 47.4% { opacity: 0; } 48.4%, 96.4% { opacity: 1; } 96.5%, 100% { opacity: 0; } }
+/* Print: the button is pressed, the dialog shows the read-only rendition, its Print is pressed, it closes */
+@keyframes printPress { 0%, 49.2% { transform: scale(1); } 49.4% { transform: scale(0.94); } 49.6%, 100% { transform: scale(1); } }
+@keyframes prt { 0%, 49.5% { opacity: 0; } 50.3%, 57.5% { opacity: 1; } 58.3%, 100% { opacity: 0; } }
+@keyframes prtGo { 0%, 56.9% { transform: scale(1); } 57.1% { transform: scale(0.94); } 57.3%, 100% { transform: scale(1); } }
+@keyframes press { 0%, 59.2% { transform: scale(1); } 59.4% { transform: scale(0.94); } 59.6%, 100% { transform: scale(1); } }
+@keyframes yubi { 0%, 60.2% { opacity: 0; } 61.2%, 71.5% { opacity: 1; } 72.6%, 100% { opacity: 0; } }
+@keyframes yubiTouch { 0%, 60.2% { opacity: 0; } 61.2%, 66.5% { opacity: 1; } 67%, 100% { opacity: 0; } }
+@keyframes yubiSigned { 0%, 66.5% { opacity: 0; } 67%, 71.5% { opacity: 1; } 72.6%, 100% { opacity: 0; } }
+@keyframes ring { 0% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(1.6); opacity: 0; } }
+@keyframes ringGate { 0%, 60.2% { visibility: hidden; } 61.2%, 66.5% { visibility: visible; } 67%, 100% { visibility: hidden; } }
+@keyframes rc { 0%, 73.6% { opacity: 0; transform: translateY(6px); } 74.6%, 96.4% { opacity: 1; transform: none; } 96.5%, 100% { opacity: 0; } }
+/* The signed PDF is in the language it was submitted in; the base (no animation) state stays English */
+@keyframes swapOut { 0%, 100% { opacity: 0; } }
+@keyframes swapIn { 0%, 100% { opacity: 1; } }
+/* The signed PDF */
+@keyframes pdfrow1 { 0%, 83.7% { opacity: 0; } 84.8%, 96.4% { opacity: 1; } 96.5%, 100% { opacity: 0; } }
+@keyframes pdfrow2 { 0%, 85% { opacity: 0; } 86.2%, 96.4% { opacity: 1; } 96.5%, 100% { opacity: 0; } }
+@keyframes pdfrow3 { 0%, 86.2% { opacity: 0; } 87.5%, 96.4% { opacity: 1; } 96.5%, 100% { opacity: 0; } }
+@keyframes pdfrow4 { 0%, 87.5% { opacity: 0; } 88.7%, 96.4% { opacity: 1; } 96.5%, 100% { opacity: 0; } }
+@keyframes pdfsigblock { 0%, 89.2% { opacity: 0; transform: translateY(6px); } 90.4%, 96.4% { opacity: 1; transform: none; } 96.5%, 100% { opacity: 0; } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .scene__builder, .scene__page, .scene__pdf, .fb, .pi, .ty, .ck, .mini-submit, .rc, .pulse,
+  .mini-mode, .mini-paper, .pdfl, .pdfsig, .yubi, .yubi__touch, .yubi__signed, .yubi__ring,
+  .pdfrow, .pdf-sig, .mini-loc__fr, .mini-lang__opt, .l-en, .l-fr, .pi__form, .pi__pdf,
+  .mini-props__set, .mini-paper__brand, .mini-print, .prt, .prt__go { animation: none; }
+}
+
+/* ---------- the second slide's scene: one form kept three ways, then kept once ----------
+   Plays once each time its slide shows, spread over the slide's hold, and rests on its last
+   frame. Each moving part carries --at, the point in the hold where it moves (0.42 = 42%). The
+   base state, with no animation or with reduced motion, is that last frame: on the left the
+   copies that drifted (three labels for one field, two copies stale), on the right the
+   definition edited once and every output showing the edit. */
+
+.sprawl {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr);
+  padding: 16px 16px 18px;
+  background: var(--bg);
+}
+
+.sprawl__side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+
+.sprawl__arrow { align-self: center; justify-self: center; font-family: var(--mono); font-size: 20px; color: var(--accent); }
+
+.sprawl__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 10px 12px;
+  border: 1px solid var(--line-strong);
+  background: var(--raised);
+  color: var(--fg);
+}
+
+.sprawl__meta,
+.sprawl__kind,
+.sprawl__also {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.sprawl__meta { display: flex; justify-content: space-between; gap: 8px; }
+
+.sprawl__box { height: 22px; border: 1px solid var(--muted); background: var(--bg); }
+
+/* Paper is paper whatever the theme, and the printout sits a little askew. */
+.sprawl__card--paper { background: #f4f1ea; border-color: #b8b3a8; color: #1a1a1a; }
+.sprawl__card--paper .sprawl__meta { color: #6b675f; }
+.sprawl__card--paper .mini-flabel { color: #1a1a1a; }
+.sprawl__card--paper .sprawl__box { border: 1px dashed #b8b3a8; background: transparent; }
+.sprawl__card--tilt { rotate: -1.5deg; }
+
+.sprawl__stamp {
+  position: absolute;
+  top: -8px;
+  right: 8px;
+  padding: 2px 6px;
+  rotate: 4deg;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.sprawl__prop { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; }
+.sprawl__value { padding: 3px 6px; border: 1px solid var(--muted); background: var(--bg); font-size: 11px; font-weight: 600; }
+.sprawl__also { overflow: hidden; text-overflow: ellipsis; }
+
+/* What the definition delivers, hung from it by a short rule. */
+.sprawl__outs {
+  position: relative;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line-strong);
+  background: var(--raised);
+}
+
+.sprawl__outs::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  height: 20px;
+  border-left: 1px solid var(--line-strong);
+}
+
+.sprawl__outs li {
+  display: grid;
+  grid-template-columns: 3.6em minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  padding: 9px 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.sprawl__outs li + li { border-top: 1px solid var(--line); }
+
+.sprawl__note {
+  margin-top: auto;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg);
+}
+
+.sprawl__note--bad { color: var(--accent); }
+
+/* A word replaced in place: the old one and the new one share a cell. */
+.sw { display: grid; justify-items: start; min-width: 0; }
+.sw > span { grid-area: 1 / 1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sw-old { opacity: 0; }
+
+@media (max-width: 600px) {
+  .sprawl { grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr); padding-inline: 12px; }
+  .sprawl__card { padding-inline: 8px; }
+  .sprawl__meta, .sprawl__kind, .sprawl__also { letter-spacing: 0.05em; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero__slide[data-active] :is(.sprawl__card, .sprawl__note, .sprawl__outs, .sprawl__outs li, .sw-new) {
+    animation: sprawlIn 0.45s ease calc(var(--hero-hold) * var(--at)) both;
+  }
+  .hero__slide[data-active] .sprawl__stamp { animation: sprawlStamp 0.3s ease-out calc(var(--hero-hold) * var(--at)) both; }
+  .hero__slide[data-active] .sw-old { animation: sprawlGone 0.15s linear calc(var(--hero-hold) * var(--at)) both; }
+  .hero__slide[data-active] .sw-new.ty { animation: sprawlType 0.7s steps(9) calc(var(--hero-hold) * var(--at)) both; }
+  /* Every output takes the edit at the same moment, and says so with a brief mark. */
+  .hero__slide[data-active] .sprawl__outs li {
+    animation:
+      sprawlIn 0.45s ease calc(var(--hero-hold) * var(--at)) both,
+      sprawlFlash 1.4s ease calc(var(--hero-hold) * 0.66) forwards;
+  }
+}
+
+@keyframes sprawlIn { from { opacity: 0; translate: 0 6px; } }
+@keyframes sprawlStamp { from { opacity: 0; scale: 1.8; } }
+@keyframes sprawlGone { from { opacity: 1; } }
+@keyframes sprawlType { from { clip-path: inset(0 100% 0 0); } }
+@keyframes sprawlFlash { from { background-color: color-mix(in srgb, var(--accent) 16%, transparent); box-shadow: inset 3px 0 0 var(--accent); } }
+
+/* ---------- the third slide's scene: the ways in and out of one form ----------
+   Three ways in over the definition, five ways out under it. Like the sprawl scene it plays once
+   per showing, each part arriving at its --at of the hold, and its base state is the whole board. */
+
+.io {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 16px 18px;
+  background: var(--bg);
+}
+
+.io__ins { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+
+.io__in,
+.io__role,
+.io__detail {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.io__in {
+  padding: 10px 6px;
+  border: 1px solid var(--line-strong);
+  background: var(--raised);
+  color: var(--fg);
+  text-align: center;
+}
+
+.io__in--main { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+
+/* The definition every way in is held to and every way out is made from, with a rule above and below. */
+.io__def {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-block: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--fg);
+  background: var(--raised);
+}
+
+.io__def::before,
+.io__def::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  height: 13px;
+  border-left: 1px solid var(--line-strong);
+}
+
+.io__def::before { bottom: 100%; }
+.io__def::after { top: 100%; }
+
+.io__file { font-size: 12px; font-weight: 700; color: var(--fg); }
+.io__role { color: var(--accent); font-weight: 700; }
+
+/* Each way out is its own ruled row, so the list builds row by row with no empty frame waiting. */
+.io__outs { margin: 0; padding: 0; list-style: none; }
+
+.io__outs li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid var(--line-strong);
+  background: var(--raised);
+}
+
+.io__outs li + li { margin-top: -1px; border-top-color: var(--line); }
+.io__name { flex: none; font-size: 11.5px; font-weight: 600; color: var(--fg); }
+.io__detail { color: var(--muted); }
+
+@media (max-width: 600px) {
+  .io { padding-inline: 12px; }
+  .io__in, .io__role, .io__detail { letter-spacing: 0.05em; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero__slide[data-active] :is(.io__in, .io__def) {
+    animation: sprawlIn 0.45s ease calc(var(--hero-hold) * var(--at)) both;
+  }
+  /* Each way out arrives with a brief mark, one after another. */
+  .hero__slide[data-active] .io__outs li {
+    animation:
+      sprawlIn 0.45s ease calc(var(--hero-hold) * var(--at)) both,
+      sprawlFlash 1.4s ease calc(var(--hero-hold) * var(--at)) forwards;
+  }
+}
+
+/* ---------- the fourth slide's scene: a journey over one form ----------
+   A journey map on the left, drawn as the builder's map draws one: steps as boxes, a diamond
+   where the answers decide, conditional steps dashed on a branch that rejoins, the exit a "No"
+   leads to, and this person's way lit. Beside it, the step they see. Plays once per showing like
+   the other slides' scenes. Parts carry --at (when they arrive) and --out (when they leave); the
+   base state is the last frame: a renter on the landlord's step, the landlord's branch joined. */
+
+.jr {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 14px;
+  padding: 16px 16px 18px;
+  background: var(--bg);
+}
+
+.jr__col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+.jr__map { display: block; width: 100%; max-width: 300px; height: auto; overflow: visible; }
+
+.jr__edges path { fill: none; stroke: var(--line-strong); stroke-width: 1; }
+.jr__edges .jr__edge-exit { stroke: var(--accent); stroke-dasharray: 3 3; }
+.jr__lit path { fill: none; stroke: var(--accent); stroke-width: 2.5; }
+
+.jr__labels text,
+.jr__node--exit text,
+.jr__node--end text {
+  font-family: var(--mono);
+  font-size: 7.5px;
+  letter-spacing: 0.08em;
+}
+
+.jr__labels text { fill: var(--muted); }
+
+.jr__diamond { fill: var(--bg); stroke: var(--fg); stroke-width: 1; }
+.jr__diamond--lit { fill: var(--accent); stroke: var(--accent); }
+
+.jr__box { fill: var(--raised); stroke: var(--line-strong); stroke-width: 1; }
+.jr__node text { font-family: var(--body); font-size: 9.5px; font-weight: 600; fill: var(--fg); }
+
+/* A step that is on the path only when a condition holds, until this person's answers put it there. */
+.jr__node--if .jr__box { stroke-dasharray: 3 2; }
+.jr__joined { fill: none; stroke: var(--fg); stroke-width: 1.5; }
+
+.jr__node--exit .jr__box { fill: var(--bg); stroke: var(--accent); stroke-dasharray: 3 2; }
+.jr__node--exit text { fill: var(--accent); font-weight: 700; }
+.jr__node--end .jr__box { fill: var(--fg); stroke: var(--fg); }
+.jr__node--end text { fill: var(--bg); font-weight: 700; }
+
+.jr__m { fill: var(--bg); stroke: var(--line-strong); stroke-width: 1; }
+.jr__m--now { fill: var(--accent); stroke: var(--accent); }
+.jr__m--done { fill: var(--fg); stroke: var(--fg); }
+
+.jr__count,
+.jr__btn {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.jr__page { position: relative; flex: 1; display: grid; border: 1px solid var(--line-strong); background: var(--raised); }
+
+.jr__screen { grid-area: 1 / 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 12px 12px 14px; }
+.jr__count { color: var(--muted); }
+.jr__count .sw { display: inline-grid; }
+.jr__title { font-family: var(--display); font-size: 21px; line-height: 1; letter-spacing: 0.02em; text-transform: uppercase; color: var(--fg); }
+.jr__q { font-size: 11.5px; line-height: 1.35; color: var(--fg); }
+
+.jr__opt { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--fg); }
+
+.jr__radio,
+.jr__check { position: relative; flex: none; width: 13px; height: 13px; border: 1px solid var(--muted); background: var(--bg); }
+.jr__radio { border-radius: 50%; }
+.jr__dot { position: absolute; inset: 2px; border-radius: 50%; background: var(--fg); }
+
+.jr__field { display: flex; flex-direction: column; gap: 4px; font-size: 11px; font-weight: 600; color: var(--fg); }
+.jr__box { height: 22px; border: 1px solid var(--muted); background: var(--bg); }
+
+.jr__actions { display: flex; justify-content: space-between; gap: 8px; margin-top: auto; }
+.jr__btn { padding: 6px 10px; border: 1px solid var(--line-strong); color: var(--fg); }
+.jr__btn--go { margin-left: auto; background: var(--fg); border-color: var(--fg); color: var(--bg); }
+
+/* Parts that leave (--out) or come and go (--at, --out) are hidden in the last frame. */
+.jr-out,
+.jr-blink { opacity: 0; }
+
+/* On a phone the map is the story: it takes the stage, and the step on screen steps aside. */
+@media (max-width: 600px) {
+  .jr { grid-template-columns: minmax(0, 1fr); padding-inline: 12px; }
+  .jr__col--screen { display: none; }
+  .jr__map { max-width: 290px; margin-inline: auto; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero__slide[data-active] .jr-in { animation: jrShow 0.35s ease calc(var(--hero-hold) * var(--at)) both; }
+  .hero__slide[data-active] .jr-out { animation: sprawlGone 0.25s linear calc(var(--hero-hold) * var(--out)) both; }
+  .hero__slide[data-active] .jr-blink {
+    animation:
+      jrShow 0.35s ease calc(var(--hero-hold) * var(--at)) both,
+      jrHide 0.25s linear calc(var(--hero-hold) * var(--out)) forwards;
+  }
+  .hero__slide[data-active] .jr-press { animation: jrPress 0.5s ease calc(var(--hero-hold) * var(--at)) forwards; }
+}
+
+@keyframes jrShow { from { opacity: 0; } to { opacity: 1; } }
+@keyframes jrHide { to { opacity: 0; } }
+@keyframes jrPress { 0%, 60% { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); } }
+
+/* ---------- one definition, two sides: the usage map under the hero ----------
+   A diagram, not a scene: the definition on top forks into the browser (the rendered form)
+   and the server (the API contract), three lanes between them carry what crosses, and a
+   footer under each side names what else leaves the browser and what else enters the
+   server. The connectors are CSS: the fork's stem and bar are the fork row's pseudo-elements,
+   the drops are each side's, and the bar's ends sit on the sides' centres, which the grid
+   makes calc((100% - lane) / 4) from either edge. On phones everything stacks under one stem
+   and the lanes turn vertical. The lanes' dashes crawl in their direction; that is the only
+   motion, and reduced motion stops it. */
+
+.usage__lede { margin: -8px 0 28px; max-width: 760px; color: var(--muted); font-size: 16px; }
+
+.usage {
+  border: var(--border) solid var(--line-strong);
+  background: var(--raised);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.usage__stage {
+  --lane: 200px;
+  --fork: 64px;
+  --drop: 28px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--lane) minmax(0, 1fr);
+  grid-template-areas: "def def def" "fork fork fork" "browser lanes server" "leaves . also";
+  padding: 18px;
+  background: var(--bg);
+}
+
+.usage__def {
+  grid-area: def;
+  justify-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: min(100%, 440px);
+  padding: 12px 18px;
+  border: 1px solid var(--line-strong);
+  background: var(--raised);
+  text-align: center;
+}
+
+.usage__file { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+.usage__def-text { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
+/* The fork: the stem down from the definition, then the bar between the two sides' centres. */
+.usage__fork { grid-area: fork; position: relative; height: var(--fork); }
+.usage__fork::before { content: ""; position: absolute; left: 50%; top: 0; width: var(--border); height: 50%; margin-left: calc(var(--border) / -2); background: var(--line-strong); }
+.usage__fork::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: calc((100% - var(--lane)) / 4);
+  right: calc((100% - var(--lane)) / 4);
+  height: var(--border);
+  margin-top: calc(var(--border) / -2);
+  background: var(--line-strong);
+}
+
+.usage__side {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--line-strong);
+  background: var(--raised);
+}
+
+.usage__side--browser { grid-area: browser; }
+.usage__side--server { grid-area: server; }
+
+/* Each side's bar: the side's name, and where it runs. */
+.usage__bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--sunken);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.usage__bar > span:first-child { color: var(--fg); font-weight: 500; }
+.usage__bar > span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* Each side's drop from the bar, ending in an arrowhead on the side's top edge. */
+.usage__side::before { content: ""; position: absolute; left: 50%; top: calc(-1px - var(--drop)); width: var(--border); height: var(--drop); margin-left: calc(var(--border) / -2); background: var(--line-strong); }
+.usage__side::after { content: ""; position: absolute; left: 50%; top: -1px; margin-left: -4px; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid var(--line-strong); }
+
+.usage__role { margin: 12px 14px 0; font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); }
+
+.usage__list {
+  list-style: none;
+  margin: 0;
+  padding: 10px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.usage__list li { position: relative; padding-left: 18px; }
+.usage__list li::before { content: ""; position: absolute; left: 0; top: 0.65em; width: 10px; height: 3px; background: var(--accent); }
+.usage__list strong { color: var(--fg); font-weight: 700; }
+.usage__list code { font-family: var(--mono); font-size: 0.92em; color: var(--fg); white-space: nowrap; }
+
+/* The lanes: what crosses between the sides, each a dashed rule crawling its way. */
+.usage__lanes {
+  grid-area: lanes;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 26px;
+}
+
+.usage__lane { position: relative; display: grid; place-items: center; min-height: 28px; }
+.usage__lane::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: var(--border);
+  margin-top: calc(var(--border) / -2);
+  background-image: repeating-linear-gradient(90deg, var(--line-strong) 0 8px, transparent 8px 16px);
+  background-size: 32px 32px;
+}
+
+.usage__lane--to::before { animation: usageTo 3s linear infinite; }
+.usage__lane--back::before { animation: usageBack 3s linear infinite; }
+
+.usage__tag {
+  position: relative;
+  padding: 5px 9px;
+  border: 1px solid var(--line-strong);
+  background: var(--raised);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.usage__lane--to .usage__tag::after { content: "\2192"; margin-left: 6px; color: var(--accent); }
+.usage__lane--back .usage__tag::before { content: "\2190"; margin-right: 6px; color: var(--accent); }
+
+/* Under each side: what else leaves the browser, what else enters the server. */
+.usage__foot {
+  position: relative;
+  margin: var(--drop) 0 0;
+  padding: 9px 12px;
+  border: 1px dashed var(--muted);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  line-height: 1.6;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.usage__foot strong { display: block; font-weight: 500; color: var(--fg); }
+.usage__foot--leaves { grid-area: leaves; }
+.usage__foot--also { grid-area: also; }
+.usage__foot::before { content: ""; position: absolute; left: 50%; top: calc(-1px - var(--drop)); width: var(--border); height: var(--drop); margin-left: calc(var(--border) / -2); background: var(--line-strong); }
+/* Outputs point down into the footer; the other inputs point up into the server. */
+.usage__foot--leaves::after { content: ""; position: absolute; left: 50%; top: -1px; margin-left: -4px; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid var(--line-strong); }
+.usage__foot--also::after { content: ""; position: absolute; left: 50%; top: calc(-1px - var(--drop)); margin-left: -4px; border-left: 4px solid transparent; border-right: 4px solid transparent; border-bottom: 5px solid var(--line-strong); }
+
+@keyframes usageTo { from { background-position: 0 0; } to { background-position: 32px 32px; } }
+@keyframes usageBack { from { background-position: 0 0; } to { background-position: -32px -32px; } }
+
+@media (max-width: 859px) {
+  /* One column: the stem runs straight into the browser, the lanes stand between the sides. */
+  .usage__stage { --fork: 28px; grid-template-columns: minmax(0, 1fr); grid-template-areas: "def" "fork" "browser" "lanes" "server" "also" "leaves"; padding: 14px; }
+  .usage__fork::before { height: 100%; }
+  .usage__fork::after { display: none; }
+  .usage__side::before, .usage__side--server::after { display: none; }
+  .usage__lanes { position: relative; gap: 8px; padding: 14px 0; }
+  .usage__lanes::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: var(--border); margin-left: calc(var(--border) / -2); background-image: repeating-linear-gradient(180deg, var(--line-strong) 0 8px, transparent 8px 16px); background-size: 32px 32px; }
+  .usage__lane::before { display: none; }
+  .usage__lane--to .usage__tag::after { content: "\2193"; }
+  .usage__lane--back .usage__tag::before { content: "\2191"; }
+  /* The outputs note stands on its own at the end, so it loses its connector. */
+  .usage__foot--leaves { margin-top: 14px; }
+  .usage__foot--leaves::before, .usage__foot--leaves::after { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .usage__lane::before { animation: none; }
+}
+
+/* ---------- ruled grids: assurance strip and capability cells ----------
+   The container draws the top and left border; each cell draws its right and bottom
+   border, so adjacent borders never double up whatever the column count. */
+
+.ruled {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  border-top: var(--border) solid var(--line-strong);
+  border-left: var(--border) solid var(--line-strong);
+}
+
+.ruled > * {
+  border-right: var(--border) solid var(--line-strong);
+  border-bottom: var(--border) solid var(--line-strong);
+  min-width: 0;
+}
+
+.assurance { padding-block: 56px 0; }
+
+.assure {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px;
+}
+
+.assure__title { font-weight: 700; font-size: 16px; }
+.assure__text { margin: 0; font-size: 14px; color: var(--muted); }
+
+/* ---------- sections ---------- */
+
+.section { padding-block: 72px 0; }
+
+.section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 24px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+
+.section-head__text { display: flex; flex-direction: column; gap: 10px; }
+
+.section-title {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(2.25rem, 4.5vw, 3rem);
+  line-height: 0.95;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.section-link {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.section-link:hover { color: var(--fg); }
+
+/* A link under a section's grid rather than in its head: "All capabilities" under the Overview section. */
+.section-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin: 20px 0 0;
+}
+
+/* ---------- runs where you run ---------- */
+
+.runs {
+  display: flex;
+  align-items: center;
+  gap: 16px 32px;
+  flex-wrap: wrap;
+  padding-block: 28px;
+  margin-top: 56px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.runs__text { flex: 1 1 100%; margin: 0; color: var(--muted); font-size: 15px; line-height: 1.55; max-width: 720px; }
+
+.chips { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.chip {
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 7px 14px;
+  border: 1px solid var(--line-strong);
+  color: var(--fg);
+}
+
+/* ---------- closing band ---------- */
+
+.band {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  align-items: center;
+  margin-top: 56px;
+  padding: 40px 32px;
+  border: var(--border) solid var(--line-strong);
+  background: var(--raised);
+}
+
+@media (min-width: 900px) {
+  .band { grid-template-columns: 1fr auto; padding: 44px 48px; }
+}
+
+.band__text { display: flex; flex-direction: column; gap: 10px; }
+.band__lede { margin: 0; color: var(--muted); font-size: 16px; max-width: 640px; }
+.band__actions { display: flex; flex-direction: column; gap: 10px; }
+
+/* ---------- footer ---------- */
+
+.footer {
+  margin-top: 64px;
+  border-top: var(--border) solid var(--line-strong);
+}
+
+.footer__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 24px;
+  flex-wrap: wrap;
+  padding-block: 24px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+}
+
+.footer__links a,
+.footer__note a {
+  color: var(--fg);
+  text-underline-offset: 3px;
+}
+
+.footer__links a:hover,
+.footer__note a:hover { color: var(--accent); }
+
+/* The commercial line sits under the links, in sentence case so the address reads as one. */
+.footer__note {
+  flex-basis: 100%;
+  margin: 0;
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- features page ---------- */
+
+.intro { padding-block: 56px 0; display: flex; flex-direction: column; gap: 18px; }
+.intro__lede { margin: 0; font-size: 19px; line-height: 1.55; color: var(--muted); max-width: 720px; }
+
+.pillars { border-top: var(--border) solid var(--line-strong); }
+
+.pillar {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px 40px;
+  padding-block: 28px;
+  border-bottom: var(--border) solid var(--line-strong);
+}
+
+.pillar__scene { min-width: 0; }
+
+/* Two columns: the heading on the left, the text and the scene stacked in the right column,
+   so the scene stays aligned with the paragraphs rather than dropping under the number. */
+@media (min-width: 900px) {
+  .pillar { grid-template-columns: 240px minmax(0, 1fr); padding-block: 36px; }
+  .pillar__scene { grid-column: 2; max-width: 560px; margin-top: 8px; }
+}
+
+@media (min-width: 1100px) {
+  .pillar { grid-template-columns: 200px minmax(0, 1fr) 380px; }
+  .pillar__scene { grid-column: auto; max-width: none; margin-top: 0; }
+}
+
+.pillar__head { display: flex; align-items: flex-start; gap: 16px; }
+.pillar__num { font-family: var(--display); font-size: 56px; line-height: 0.85; color: var(--accent); }
+.pillar__title { font-family: var(--display); font-size: 34px; line-height: 0.95; text-transform: uppercase; letter-spacing: 0.02em; padding-top: 4px; }
+.pillar__body { display: flex; flex-direction: column; gap: 12px; }
+.pillar__blurb { margin: 0; font-weight: 500; }
+.pillar__points { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 15px; color: var(--muted); }
+.pillar__points li { position: relative; padding-left: 22px; }
+.pillar__points li::before { content: ""; position: absolute; left: 0; top: 0.7em; width: 12px; height: 3px; background: var(--accent); }
+
+/* Syntax colour (src/highlight.ts): the site's own three colours, nothing more. */
+.tok-tag, .tok-kw { color: var(--accent); }
+.tok-str, .tok-num { color: var(--ok); }
+.tok-cm { color: var(--muted); font-style: italic; }
+.tok-punct { color: var(--muted); }
+.tok-attr { color: var(--fg); }
+.tok-fn { color: var(--fg); font-weight: 500; }
+
+pre.code {
+  margin: 0;
+  padding: 22px 24px;
+  border: var(--border) solid var(--line-strong);
+  background: var(--sunken);
+  color: var(--fg);
+  font-family: var(--mono);
+  font-size: 13.5px;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* ---------- why datum: the business features, each with the advantage behind it ---------- */
+
+.advs { grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); }
+.adv { display: flex; flex-direction: column; gap: 10px; padding: 24px; background: var(--raised); }
+.adv__title { margin: 0; font-family: var(--display); font-weight: 400; font-size: 28px; line-height: 0.95; text-transform: uppercase; letter-spacing: 0.02em; }
+.adv__text { margin: 0; color: var(--muted); font-size: 14.5px; }
+
+/* ---------- by the numbers: the findings under the hero ----------
+   Topic chips over a ruled grid that shows six cells at a time (three columns by two rows on
+   a wide screen, two by three and then one by three as it narrows) and scrolls a row at a
+   time for the rest, snapping to rows. Rows are a fixed height so the "With Datum" answers
+   line up across a row and the scroller's height is known. The figure is the chart: the body
+   sans, large, the font's own proportional digits, in the text colour. */
+
+.numbers__lede { margin: -8px 0 28px; max-width: 760px; color: var(--muted); font-size: 16px; }
+
+.numbers {
+  --fact-row: 400px;
+  --fact-rows: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.numbers [hidden] { display: none; }
+
+.numbers__controls { display: flex; flex-direction: column; gap: 12px; }
+
+.numbers__filters { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* The sector and region dropdowns sit under the topic chips: each has many options and one is
+   picked at a time. */
+.numbers__selects { display: flex; align-items: center; gap: 12px 28px; flex-wrap: wrap; }
+/* Label above its dropdown. The minimum width is viewport-based: a percentage here resolved
+   against the field's own shrink-to-fit width, so labels sat inline or stacked depending on the
+   longest option. */
+.numbers__sector { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.numbers__select { min-width: min(280px, calc(100vw - 32px)); max-width: 100%; }
+
+.numbers__chip { cursor: pointer; background: var(--raised); }
+.numbers__chip:hover { border-color: var(--accent); color: var(--accent); }
+.numbers__chip[aria-pressed="true"] { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+.numbers__chip:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.numbers__grid {
+  position: relative;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  grid-auto-rows: var(--fact-row);
+  max-height: calc(var(--fact-rows) * var(--fact-row) + var(--border));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) var(--sunken);
+}
+
+.numbers__grid:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+@media (min-width: 900px) {
+  .numbers__grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Two columns: the cells are wider but the text wraps less, so rows can be taller than at three. */
+@media (max-width: 899px) {
+  .numbers { --fact-row: 440px; --fact-rows: 3; }
+}
+
+@media (max-width: 599px) {
+  .numbers { --fact-row: 400px; --fact-rows: 3; }
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px;
+  background: var(--raised);
+  overflow: hidden;
+  scroll-snap-align: start;
+}
+
+.fact__source { align-self: flex-start; text-decoration: none; color: var(--muted); }
+.fact__source:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+
+.fact__figure {
+  margin: 2px 0 0;
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: clamp(40px, 4.6vw + 8px, 56px);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  color: var(--fg);
+}
+
+.fact__claim { margin: 0; font-size: 15px; font-weight: 500; line-height: 1.45; color: var(--fg); }
+
+.fact__with {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.fact__answer { margin: 0; color: var(--muted); font-size: 14.5px; }
+
+.numbers__empty { margin: 0; padding: 24px; border: var(--border) solid var(--line-strong); color: var(--muted); }
+
+.numbers__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  flex-wrap: wrap;
+}
+
+.numbers__count {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.numbers__nav { display: flex; gap: 8px; }
+.numbers__nav .btn:disabled { opacity: 0.4; cursor: default; }
+.numbers__nav .btn:disabled:hover { background: transparent; color: var(--fg); border-color: var(--line-strong); }
+
+/* ---------- live demo: the real builder over the real form ----------
+   The bundles paint their own surfaces from the binding; the page gives them the frame,
+   the height (page CSS outranks :host, so the builder's contained layout takes it from here)
+   and the colour scheme: a form drawn light inside the dark site must not inherit the
+   site's dark native controls, nor sit on its dark page. */
+
+.demo__lede { margin: -8px 0 28px; max-width: 720px; color: var(--muted); font-size: 16px; }
+
+.demo {
+  display: flex;
+  flex-direction: column;
+  border: var(--border) solid var(--line-strong);
+  background: var(--raised);
+}
+
+.demo__control { display: flex; align-items: center; gap: 12px; }
+/* The View picker is there only for a form with journeys or variants; its own display would
+   otherwise outrank the hidden attribute. */
+.demo__control[hidden] { display: none; }
+
+.demo__select {
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 7px 12px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.demo__select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.demo__actions { display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap; }
+
+/* The box sets the builder's height (the element's own contained height is 720px; page CSS
+   outranks :host) and clips it, so nothing of the builder can reach the section under it. The
+   builder's scheme follows the site's (render-demo.ts, followSiteScheme) and its dark mode writes
+   color-scheme on its own roots; light here is what its light look's native controls take, so
+   they never inherit the dark page's while the builder is light. */
+.demo__builder { height: 640px; min-height: 460px; overflow: hidden; background: var(--bg); color-scheme: light; }
+.demo__builder datum-form-builder { height: 100%; }
+
+/* The bar above the builder: the example, its View, the shell's theme, then the GC Design
+   System toggle and Reset, in the renderer bar's controls. No rule under it: the builder's own
+   top bar draws the edge. */
+.demo__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+}
+.demo__bar > .demo__actions { flex: 1 1 auto; }
+/* Reset ends the row, last among the controls, so it never takes a row of its own (two rows at
+   most on a wide screen with View shown). */
+.demo__bar-end { flex: 1 0 auto; display: flex; align-items: center; justify-content: flex-end; gap: 10px 16px; }
+
+/* The renderer section: the tabs and the page's controls on one row, the panels under it. It
+   takes the site's scheme (data-scheme, set by render-demo.ts): Datum's light look sits on a
+   light page, controls and all (the light palette at the top), and its dark look on a dark one. */
+.demo__sheet { padding: 24px; border-top: var(--border) solid var(--line-strong); background: var(--raised); color: var(--fg); color-scheme: light; }
+.demo__sheet[data-scheme="dark"] { color-scheme: dark; }
+.demo__sheet-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.demo__sheet-bar .tabs { margin-bottom: 0; }
+
+/* The chrome menu: a disclosure styled as a button, its panel dropping under the bar. */
+.demo__menu { position: relative; }
+.demo__menu > summary { list-style: none; display: inline-flex; }
+.demo__menu > summary::-webkit-details-marker { display: none; }
+.demo__menu[open] > summary { background: var(--fg); color: var(--bg); }
+.demo__menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 5;
+  display: grid;
+  gap: 10px;
+  min-width: 280px;
+  padding: 16px;
+  border: var(--border) solid var(--line-strong);
+  background: var(--raised);
+  color: var(--fg);
+  font-size: 14px;
+}
+.demo__menu-row { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.demo__menu-row input { margin: 0; width: 16px; height: 16px; accent-color: var(--accent); }
+.demo__menu-row--select { justify-content: space-between; gap: 16px; }
+.demo__menu-row--select .demo__select { font-size: 12px; padding: 5px 10px; }
+.demo__panel[hidden] { display: none; }
+.demo__panel .label { display: block; margin-bottom: 12px; }
+.demo__sheet datum-form { display: block; }
+.demo__json { max-height: 520px; overflow: auto; font-size: 12.5px; }
+
+/* The PDF viewer: the browser's own, in a frame the site's dialog frames. */
+.demo__dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(960px, calc(100vw - 32px));
+  height: min(90vh, 900px);
+  margin: auto;
+  padding: 0;
+  border: var(--border) solid var(--line-strong);
+  border-radius: 0;
+  background: var(--raised);
+  color: var(--fg);
+}
+.demo__dialog:not([open]) { display: none; }
+.demo__dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
+.demo__dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: var(--border) solid var(--line-strong);
+}
+.demo__dialog-title { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; min-width: 0; }
+.demo__dialog-meta { color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+.demo__dialog-frame { flex: 1 1 auto; width: 100%; min-height: 0; border: 0; background: #525659; }
+
+.demo__fallback { margin: 0; padding: 28px 24px; color: var(--muted); font-size: 15px; }
+
+/* Nothing shows until the elements are defined: no flash of unstyled markup while the module loads. */
+datum-form:not(:defined),
+datum-form-builder:not(:defined) { visibility: hidden; }
+
+@media (max-width: 900px) {
+  .demo__builder { height: 520px; }
+  .demo__sheet { padding: 16px; }
+}
+
+@media (max-width: 640px) {
+  /* On a phone the bar stacks: the tabs on their own row, then the controls, each wrapping
+     as it needs; the menu's panel flows under them instead of hanging off the edge. */
+  .demo__bar { padding: 14px 16px; }
+  .demo__bar-end { flex: 1 1 100%; flex-wrap: wrap; row-gap: 12px; }
+  .demo__sheet-bar { flex-direction: column; align-items: stretch; gap: 14px; }
+  .demo__sheet-bar .tabs { display: flex; }
+  .demo__sheet-bar .tab { flex: 1 1 0; text-align: center; padding-inline: 8px; }
+  .demo__actions { justify-content: flex-start; }
+  .demo__control { flex: 1 1 100%; justify-content: space-between; }
+  .demo__menu { flex: 1 1 100%; }
+  .demo__menu-panel { position: static; margin-top: 8px; min-width: 0; }
+}
+
+/* ---------- partners page: the three routes, then the standards ----------
+   One route per full-width row: who and today on the left, what Datum gives them and where to
+   start on the right. Each block's id is the anchor the home page's hero rows link to. */
+
+.partners { grid-template-columns: 1fr; }
+
+.partner {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px 48px;
+  padding: 28px;
+  background: var(--raised);
+  scroll-margin-top: 24px;
+}
+
+@media (min-width: 900px) {
+  .partner { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); padding: 36px 40px; }
+}
+
+.partner__main,
+.partner__aside { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+.partner__title {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(2rem, 4vw, 2.6rem);
+  line-height: 0.95;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.partner__facts { margin: 4px 0 0; display: flex; flex-direction: column; gap: 6px; }
+.partner__facts dd { margin: 0 0 10px; font-size: 16px; line-height: 1.5; }
+.partner__facts dd:last-child { margin-bottom: 0; }
+.partner__evidence { display: table; margin-top: 8px; white-space: normal; }
+
+.partner__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; font-size: 15px; }
+.partner__list li { position: relative; padding-left: 22px; }
+.partner__list li::before { content: ""; position: absolute; left: 0; top: 0.7em; width: 12px; height: 3px; background: var(--accent); }
+
+.partner__start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px 24px;
+  margin: auto 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-strong);
+}
+
+/* Five standards: narrow enough cells that they sit in one row on a desktop, no orphan. */
+.standards { grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
+
+/* ---------- developers ---------- */
+
+.spec { width: 100%; border-collapse: collapse; font-size: 15px; }
+.spec th, .spec td { text-align: left; vertical-align: top; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line); }
+.spec th { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.spec td:first-child { font-family: var(--mono); font-size: 13.5px; white-space: nowrap; }
+.spec td:last-child { color: var(--muted); }
+.spec-wrap { overflow-x: auto; }
+
+/* Tabs: the two Start examples share one section. */
+.tabs { display: inline-flex; max-width: 100%; margin-bottom: 28px; border: var(--border) solid var(--line-strong); }
+
+.tab {
+  appearance: none;
+  margin: 0;
+  padding: 10px 18px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.tab + .tab { border-left: var(--border) solid var(--line-strong); }
+.tab:hover { color: var(--fg); }
+.tab[aria-selected="true"] { background: var(--fg); color: var(--bg); }
+.tab:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+
+.dev-grid { display: grid; grid-template-columns: 1fr; gap: 32px; }
+.dev-grid[hidden] { display: none; }
+@media (min-width: 1000px) { .dev-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; } }
+.dev-grid > * { min-width: 0; }
+.dev-text { display: flex; flex-direction: column; gap: 14px; }
+.dev-text p { margin: 0; color: var(--muted); }
+.dev-text code { font-family: var(--mono); font-size: 0.92em; color: var(--fg); }
+/* Blocks stacked in one section (the sandbox section: prose beside code, a table, a closing paragraph). */
+.dev-stack { display: grid; gap: 40px; }
+.dev-stack > * { min-width: 0; }
+
+/* ---------- binding pages (bindings.html, binding-<id>.html) ---------- */
+
+.binding-lede { margin: 0 0 16px; color: var(--muted); max-width: 760px; }
+.binding-note { margin: 20px 0 0; color: var(--muted); font-size: 15px; max-width: 760px; }
+.binding-scope { margin: 0; padding: 12px 16px; border-left: 4px solid var(--accent); background: var(--raised); max-width: 720px; font-size: 16px; }
+.binding-subtitle { margin: 24px 0 8px; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg); }
+.binding-list { margin: 0; padding-left: 20px; display: grid; gap: 6px; color: var(--muted); max-width: 760px; }
+/* A list inside a fact's value (the hosts a binding's files fetch from): in the value's own ink and tighter. */
+.binding-list--tight { gap: 4px; color: inherit; font-size: 15px; }
+.binding-top { padding-block: 28px 0; }
+.binding-note + .binding-list { margin-top: 8px; }
+
+.binding-facts { display: grid; grid-template-columns: 1fr; gap: 0; margin: 0; border-top: var(--border) solid var(--line); }
+.binding-facts > div { display: grid; grid-template-columns: 1fr; gap: 2px; padding: 10px 0; border-bottom: var(--border) solid var(--line); }
+.binding-facts dt { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.binding-facts dd { margin: 0; overflow-wrap: anywhere; }
+@media (min-width: 720px) {
+  .binding-facts > div { grid-template-columns: 200px minmax(0, 1fr); gap: 24px; }
+}
+
+.binding-cards { display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 8px; }
+@media (min-width: 720px) { .binding-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1040px) { .binding-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.binding-card { display: flex; flex-direction: column; gap: 8px; padding: 20px; border: var(--border) solid var(--line-strong); background: var(--raised); min-width: 0; }
+.binding-card--official { border-width: 2px; }
+.binding-card__title { margin: 0; font-family: var(--display); font-size: 30px; font-weight: 400; line-height: 1; }
+.binding-card__title a { color: inherit; text-decoration: none; }
+.binding-card__title a:hover, .binding-card__title a:focus-visible { text-decoration: underline; }
+.binding-card__by { margin: 0; font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; color: var(--muted); }
+.binding-card__summary { margin: 0; color: var(--muted); }
+
+.binding-notes { display: grid; grid-template-columns: 1fr; gap: 8px 40px; }
+@media (min-width: 900px) { .binding-notes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.binding-notes .binding-lede { margin-bottom: 0; }
+
+.binding-demo { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.binding-demo__fallback { margin: 0; color: var(--muted); }
+.binding-demo__surface { padding: 20px; border: var(--border) solid var(--line-strong); background: var(--raised); min-width: 0; }
+/* A design system draws on its own light page: the form keeps a light ground whatever the site's scheme. */
+.binding-demo__surface--light { background: #ffffff; color: #1b1b1b; color-scheme: light; }
+/* Datum's own form paints its own dark ground (the form's dark surface colour): in the dark scheme
+   the frame takes the same colour, so the form does not sit as a box inside a box. */
+:root[data-theme="dark"] .binding-demo__surface--own { background: #0f1720; }
+.binding-card .binding-facts > div { grid-template-columns: 1fr; gap: 2px; }

@@ -1,0 +1,8 @@
+{
+  "designSystem": "Nova Scotia (Bootstrap 3, saltire.css)",
+  "binding": "src/index.ts",
+  "stylesheets": [
+    "/vendor/saltire/saltire.css",
+    "/node_modules/font-awesome-4.7.0/css/font-awesome.min.css"
+  ]
+}

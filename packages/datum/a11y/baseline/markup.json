@@ -1,0 +1,138 @@
+{
+  "axeVersion": "4.14.1",
+  "states": [
+    "interactive",
+    "readonly",
+    "fr-CA"
+  ],
+  "results": {
+    "datum": {
+      "interactive": {
+        "violations": [],
+        "incomplete": [
+          {
+            "ruleId": "label-content-name-mismatch",
+            "impact": "serious",
+            "criteria": [
+              "2.5.3"
+            ],
+            "part": "text",
+            "componentId": "fullName",
+            "target": "datum-form,datum-form-renderer,.datum-form__tooltip-mark",
+            "summary": "Fix any of the following: Unable to determine if the visible text is part of the accessible name"
+          }
+        ],
+        "passes": [
+          "aria-allowed-attr",
+          "aria-command-name",
+          "aria-conditional-attr",
+          "aria-deprecated-role",
+          "aria-hidden-focus",
+          "aria-prohibited-attr",
+          "aria-required-attr",
+          "aria-required-children",
+          "aria-required-parent",
+          "aria-roles",
+          "aria-valid-attr",
+          "aria-valid-attr-value",
+          "autocomplete-valid",
+          "button-name",
+          "duplicate-id-aria",
+          "form-field-multiple-labels",
+          "image-alt",
+          "label",
+          "link-name",
+          "list",
+          "listitem",
+          "nested-interactive",
+          "select-name",
+          "target-size",
+          "valid-lang"
+        ]
+      },
+      "readonly": {
+        "violations": [],
+        "incomplete": [
+          {
+            "ruleId": "label-content-name-mismatch",
+            "impact": "serious",
+            "criteria": [
+              "2.5.3"
+            ],
+            "part": "text",
+            "componentId": "fullName",
+            "target": "datum-form,datum-form-renderer,.datum-form__tooltip-mark",
+            "summary": "Fix any of the following: Unable to determine if the visible text is part of the accessible name"
+          }
+        ],
+        "passes": [
+          "aria-allowed-attr",
+          "aria-command-name",
+          "aria-conditional-attr",
+          "aria-deprecated-role",
+          "aria-hidden-focus",
+          "aria-prohibited-attr",
+          "aria-required-attr",
+          "aria-roles",
+          "aria-valid-attr",
+          "aria-valid-attr-value",
+          "button-name",
+          "duplicate-id-aria",
+          "form-field-multiple-labels",
+          "image-alt",
+          "label",
+          "link-name",
+          "list",
+          "listitem",
+          "nested-interactive",
+          "select-name",
+          "target-size",
+          "valid-lang"
+        ]
+      },
+      "fr-CA": {
+        "violations": [],
+        "incomplete": [
+          {
+            "ruleId": "label-content-name-mismatch",
+            "impact": "serious",
+            "criteria": [
+              "2.5.3"
+            ],
+            "part": "text",
+            "componentId": "fullName",
+            "target": "datum-form,datum-form-renderer,.datum-form__tooltip-mark",
+            "summary": "Fix any of the following: Unable to determine if the visible text is part of the accessible name"
+          }
+        ],
+        "passes": [
+          "aria-allowed-attr",
+          "aria-command-name",
+          "aria-conditional-attr",
+          "aria-deprecated-role",
+          "aria-hidden-focus",
+          "aria-prohibited-attr",
+          "aria-required-attr",
+          "aria-required-children",
+          "aria-required-parent",
+          "aria-roles",
+          "aria-valid-attr",
+          "aria-valid-attr-value",
+          "autocomplete-valid",
+          "button-name",
+          "duplicate-id-aria",
+          "form-field-multiple-labels",
+          "image-alt",
+          "label",
+          "link-name",
+          "list",
+          "listitem",
+          "nested-interactive",
+          "select-name",
+          "target-size",
+          "valid-lang"
+        ]
+      }
+    }
+  }
+}

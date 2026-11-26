@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>My passkeys</title>
+    <style>
+      body { font: 16px/1.5 system-ui, sans-serif; margin: 0; padding: 2rem; }
+      main { max-width: 40rem; margin: 0 auto; }
+      li { margin: 0.5rem 0; }
+      #status { min-height: 1.5rem; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>My passkeys</h1>
+      <p><a href="/">Back to the petition</a></p>
+      <p id="status" role="status" aria-live="polite"></p>
+      <ul id="list"></ul>
+      <p><label>Name <input id="name" value="This device" maxlength="128" /></label> <button id="add" type="button">Add a passkey</button></p>
+    </main>
+
+    <script type="module" src="/datum/assets/datum-host.js"></script>
+    <script type="module">
+      // A passkey added ahead of time on the signed-in account signs any form (no `form` in the challenge request).
+      const datum = await DatumHost.load({ bundle: 'form' });
+      const base = '/api/webauthn';
+      const status = document.getElementById('status');
+      const say = (text) => { status.textContent = text; };
+      const b64 = (buffer) => btoa(String.fromCharCode(...new Uint8Array(buffer))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      const unb64 = (text) => Uint8Array.from(atob(text.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
+
+      async function call(path, method = 'GET', body) {
+        const headers = { Accept: 'application/json' };
+        if (method !== 'GET' && method !== 'DELETE') headers['Content-Type'] = 'application/json';
+        const token = await DatumHost.csrfToken();
+        if (method !== 'GET' && token) headers['X-XSRF-TOKEN'] = token;
+        const response = await fetch(base + path, { method, headers, credentials: 'same-origin', body: body === undefined ? undefined : JSON.stringify(body) });
+        const json = await response.json().catch(() => ({}));
+        return { ok: response.ok, json };
+      }
+      const problem = (json, fallback) => (json.errors && json.errors[0] && json.errors[0].message) || fallback;
+
+      async function reload() {
+        const { ok, json } = await call('/passkeys');
+        const list = document.getElementById('list');
+        list.replaceChildren();
+        if (!ok) return say(problem(json, 'The list could not be loaded.'));
+        for (const passkey of json.passkeys) {
+          const item = document.createElement('li');
+          item.textContent = `${passkey.label || 'Passkey'}${passkey.revoked ? ' (revoked)' : ''}, added ${passkey.createdAt.slice(0, 10)}${passkey.lastUsed ? ', last used ' + passkey.lastUsed.slice(0, 10) : ''} `;
+          for (const [label, action] of [['Test', () => test(passkey)], ['Remove', () => remove(passkey)]]) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = label;
+            button.addEventListener('click', action);
+            item.append(button, ' ');
+          }
+          list.append(item);
+        }
+      }
+
+      async function add() {
+        const label = document.getElementById('name').value.trim();
+        const asked = await call('/challenge', 'POST', { label });
+        if (!asked.ok) return say(problem(asked.json, 'A passkey cannot be made now.'));
+        const options = asked.json;
+        let record;
+        try {
+          record = await datum.registerCredential({
+            rpId: options.rp.id, rpName: options.rp.name, user: options.user, name: label || options.user.name, challenge: options.challenge,
+            residentKey: options.residentKey, userVerification: options.userVerification, excludeCredentials: options.excludeCredentials, timeout: 120000,
+          });
+        } catch (error) {
+          return say(`The passkey prompt did not finish: ${error.message}`);
+        }
+        const { id, publicKey, algorithm, transports, userHandle, response } = record;
+        const made = await call('/register', 'POST', { token: options.token, label, context: 'account', credential: { id, publicKey, algorithm, transports, userHandle, response } });
+        say(made.ok ? 'Your passkey was added.' : problem(made.json, 'The passkey could not be registered.'));
+        await reload();
+      }
+
+      async function test(passkey) {
+        const asked = await call(`/passkeys/${encodeURIComponent(passkey.id)}/check-challenge`, 'POST');
+        if (!asked.ok) return say(problem(asked.json, 'The passkey cannot be tested now.'));
+        const options = asked.json;
+        let assertion;
+        try {
+          assertion = await navigator.credentials.get({ publicKey: {
+            challenge: unb64(options.challenge), rpId: options.rpId, userVerification: options.userVerification,
+            allowCredentials: options.allowCredentials.map((entry) => ({ type: 'public-key', id: unb64(entry.id), transports: entry.transports })),
+          } });
+        } catch (error) {
+          return say(`The test did not finish: ${error.message}`);
+        }
+        const checked = await call(`/passkeys/${encodeURIComponent(passkey.id)}/check`, 'POST', { token: options.token, assertion: {
+          credentialId: b64(assertion.rawId), clientDataJSON: b64(assertion.response.clientDataJSON),
+          authenticatorData: b64(assertion.response.authenticatorData), signature: b64(assertion.response.signature),
+        } });
+        say(checked.ok ? 'Your device holds this passkey.' : problem(checked.json, 'The test did not verify.'));
+        await reload();
+      }
+
+      async function remove(passkey) {
+        const removed = await call(`/passkeys/${encodeURIComponent(passkey.id)}`, 'DELETE');
+        say(removed.ok ? 'The passkey was removed.' : problem(removed.json, 'The passkey could not be removed.'));
+        await reload();
+      }
+
+      document.getElementById('add').addEventListener('click', add);
+      await reload();
+    </script>
+  </body>
+</html>

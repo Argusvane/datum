@@ -1,0 +1,39 @@
+<!-- datum-reference
+{
+  "source": "bootstrap 5.3.8: https://getbootstrap.com/docs/5.3/forms/validation/#server-side (input.form-control.is-invalid, div.invalid-feedback, aria-describedby) under the alert of https://getbootstrap.com/docs/5.3/components/alerts/ (alert alert-danger, alert-heading, alert-link) listing the problem. The asterisk after the label (text-danger) is the binding's own required mark, not Bootstrap's: Bootstrap marks no required field.",
+  "note": "a required field left empty and validated: the error alert and the field's feedback",
+  "components": [
+    {
+      "id": "field1",
+      "type": "text",
+      "configuration": {
+        "label": "City",
+        "required": true,
+        "messages": {
+          "required": "Enter your city."
+        }
+      }
+    }
+  ],
+  "steps": [
+    {
+      "op": "validate"
+    }
+  ],
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate>
+<div class="alert alert-danger" role="alert" tabindex="-1">
+<h2 class="alert-heading h5">1 error</h2>
+<ul class="mb-0">
+<li><a class="alert-link" href="#field1">City: Enter your city.</a></li>
+</ul>
+</div>
+<div class="mb-3">
+<label class="form-label" for="field1">City <span class="text-danger" aria-hidden="true">*</span></label>
+<input class="form-control is-invalid" id="field1" name="field1" type="text" aria-describedby="field1-error" aria-invalid="true" required>
+<div id="field1-error" class="invalid-feedback">Enter your city.</div>
+</div>
+</form>

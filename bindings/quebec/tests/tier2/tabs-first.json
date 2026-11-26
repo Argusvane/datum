@@ -1,0 +1,43 @@
+{
+  "note": "Datum's tabs in the toolkit's tokens (the toolkit has no tabs)",
+  "components": [
+    {
+      "id": "sections",
+      "type": "tabs",
+      "configuration": {
+        "label": "Sections",
+        "tabs": [
+          {
+            "id": "applicant",
+            "label": "Applicant"
+          },
+          {
+            "id": "items",
+            "label": "Items"
+          }
+        ]
+      },
+      "children": {
+        "applicant": [
+          {
+            "id": "name",
+            "type": "text",
+            "configuration": {
+              "label": "Full name"
+            }
+          }
+        ],
+        "items": [
+          {
+            "id": "email",
+            "type": "text",
+            "configuration": {
+              "label": "Email address"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "width": 560
+}

@@ -1,0 +1,1 @@
+{"id":"trip","version":"2","root":{"id":"root","type":"form","configuration":{},"children":{"content":[{"id":"name","type":"text","configuration":{"required":true}},{"id":"city","type":"text","configuration":{}}]}},"journey":{"journeys":[{"id":"main","pages":[{"id":"p1","components":["name"]},{"id":"p2","components":["city"]},{"id":"stop","kind":"exit","components":[]}]}]}}

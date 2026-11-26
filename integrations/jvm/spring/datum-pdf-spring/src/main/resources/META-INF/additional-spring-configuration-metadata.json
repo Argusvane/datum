@@ -1,0 +1,21 @@
+{
+  "hints": [
+    {
+      "name": "datum.pdf.fonts",
+      "values": [
+        { "value": "default", "description": "DejaVu Sans and Sans Bold." },
+        { "value": "standard", "description": "Five faces: sans, bold, oblique, mono and mono bold." },
+        { "value": "all", "description": "All seven faces." }
+      ]
+    },
+    {
+      "name": "datum.pdf.seal.certify",
+      "values": [
+        { "value": "noChanges", "description": "A certifying signature that allows no change afterwards (DocMDP P=1)." },
+        { "value": "formFill", "description": "A certifying signature that allows form filling (DocMDP P=2)." },
+        { "value": "annotate", "description": "A certifying signature that allows form filling and annotations (DocMDP P=3)." },
+        { "value": "none", "description": "An approval signature, not a certifying one." }
+      ]
+    }
+  ]
+}

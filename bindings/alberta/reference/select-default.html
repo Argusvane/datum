@@ -1,0 +1,28 @@
+<!-- datum-reference
+{
+  "note": "a select: the dropdown drawn native, its empty first choice worded as the placeholder (a native dropdown draws no empty option of its own)",
+  "components": [
+    {
+      "id": "province",
+      "type": "select",
+      "configuration": {
+        "label": "Province",
+        "options": [
+          {
+            "value": "AB",
+            "label": "Alberta"
+          },
+          {
+            "value": "BC",
+            "label": "British Columbia"
+          }
+        ]
+      }
+    }
+  ],
+  "source": "https://design.alberta.ca/components/dropdown (Alberta Design System, component page), properties per @abgov/web-components 3.2.0 (the release's index.js element definitions) (native)",
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate><goa-form-item label="Province" helptext="" error="" requirement="" type=""><goa-dropdown name="province" native="true" placeholder="Select…" error="false" disabled="false" arialabel=""><goa-dropdown-item value="" label="Select…"></goa-dropdown-item><goa-dropdown-item value="AB" label="Alberta"></goa-dropdown-item><goa-dropdown-item value="BC" label="British Columbia"></goa-dropdown-item></goa-dropdown></goa-form-item></form>

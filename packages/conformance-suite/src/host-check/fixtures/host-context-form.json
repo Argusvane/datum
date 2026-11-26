@@ -1,0 +1,31 @@
+{
+  "id": "datum-host-context",
+  "version": "1",
+  "schemaVersion": "1",
+  "root": {
+    "id": "form",
+    "type": "form",
+    "configuration": { "label": "Datum host context fixture" },
+    "children": {
+      "content": [
+        { "id": "name", "type": "text", "configuration": { "label": "Name", "required": true } },
+        {
+          "id": "admin_note",
+          "type": "text",
+          "configuration": { "label": "Admin note", "required": true },
+          "rules": { "visibleWhen": "host.role = \"admin\"" }
+        }
+      ]
+    }
+  },
+  "journey": {
+    "journeys": [
+      {
+        "id": "main",
+        "pages": [
+          { "id": "p1", "components": ["name", "admin_note"], "routes": [{ "to": "$end" }] }
+        ]
+      }
+    ]
+  }
+}

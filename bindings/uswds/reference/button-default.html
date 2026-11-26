@@ -1,0 +1,40 @@
+<!-- datum-reference
+{
+  "source": "uswds 3.14.0: packages/usa-button/src/usa-button.twig (usa-button, usa-button--outline) in packages/usa-button-group/src/usa-button-group.twig (usa-button-group, usa-button-group__item)",
+  "note": "a primary and an outline button in a button group",
+  "components": [
+    {
+      "id": "actions",
+      "type": "button-group",
+      "configuration": {},
+      "children": {
+        "content": [
+          {
+            "id": "go",
+            "type": "button",
+            "configuration": {
+              "label": "Continue"
+            }
+          },
+          {
+            "id": "back",
+            "type": "button",
+            "configuration": {
+              "label": "Back",
+              "variant": "secondary"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate class="usa-form usa-form--large">
+<ul class="usa-button-group">
+<li class="usa-button-group__item"><button type="button" class="usa-button">Continue</button></li>
+<li class="usa-button-group__item"><button type="button" class="usa-button usa-button--outline">Back</button></li>
+</ul>
+</form>

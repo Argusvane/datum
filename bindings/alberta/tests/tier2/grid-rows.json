@@ -1,0 +1,26 @@
+{
+  "note": "a data grid the author left to the form: stacked rows, each a fieldset with its goa-buttons",
+  "components": [
+    {
+      "id": "items",
+      "type": "dataGrid",
+      "configuration": {
+        "label": "Items",
+        "initialRows": 2,
+        "canReorder": true
+      },
+      "children": {
+        "content": [
+          {
+            "id": "item",
+            "type": "text",
+            "configuration": {
+              "label": "Item"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "width": 560
+}

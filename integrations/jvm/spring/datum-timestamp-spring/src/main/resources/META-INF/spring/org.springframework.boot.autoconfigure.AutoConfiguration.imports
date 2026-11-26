@@ -1,0 +1,2 @@
+com.argusvane.datum.timestamp.spring.DatumTimestampAutoConfiguration
+com.argusvane.datum.timestamp.spring.DatumTimestampOpenApiAutoConfiguration

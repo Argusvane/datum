@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Agent evaluation: a sealed form</title>
+    <link rel="stylesheet" href="/dist/datum-form.css" />
+    <!-- datum-form.js, never datum-builder.js: in the builder bundle a form carries no agent tools. -->
+    <script type="module">
+      await import("/dist/datum-form.js");
+    </script>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; background: #f6f7f9; color: #1d2b36; }
+      main { max-width: 760px; margin: 0 auto; padding: 24px 20px 60px; display: grid; gap: 24px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <!-- The WebMCP pass's sealed and two-form page: the author said off on the first form, allowed on the second. -->
+      <datum-form id="sealed" features="all agent" src="/eval/forms/declaration.json"></datum-form>
+      <datum-form id="claim" features="all agent" src="/eval/forms/travel-claim.json"></datum-form>
+    </main>
+  </body>
+</html>

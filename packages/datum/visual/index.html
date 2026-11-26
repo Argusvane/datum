@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>datum-form — visual workbench</title>
+    <!-- The canonical fixture form, drawn by Datum's own binding, in one variant and one state:
+         the workbench a person opens (?variant=<id>&state=<s>&locale=<code>&frame=<id>)
+         and the page the visual-regression driver (scripts/visual-browser.mjs) mounts every
+         variant × state on. The built renderer bundle and the fixture the accessibility audit
+         shares (a11y/form.json). A variant is the binding under a colour scheme. Served by
+         scripts/serve-demo.mjs over the package root. -->
+    <link rel="stylesheet" href="/dist/datum-form.css" />
+    <script type="module" src="/dist/datum-form.js"></script>
+    <style>
+      html { background: #ffffff; }
+      html, body { margin: 0; color: #14212b; font-family: system-ui, sans-serif; }
+      #bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid #c7d0d9; font-size: 13px; }
+      #bar label { display: inline-flex; gap: 4px; align-items: center; }
+      #bar[hidden] { display: none; }
+      #stage { padding: 0; }
+      /* Transitions and caret blinks would make two captures of one state differ. */
+      #stage.capturing *, #stage.capturing *::before, #stage.capturing *::after { transition: none !important; animation: none !important; caret-color: transparent !important; }
+    </style>
+  </head>
+  <body>
+    <div id="bar">
+      <label>Variant <select id="variant"></select></label>
+      <label>State <select id="state"></select></label>
+      <label>Locale <select id="locale"><option>en</option><option>fr-CA</option></select></label>
+      <label>Frame <select id="frame"><option value="">(none)</option></select></label>
+      <a id="link" href="#">link to this view</a>
+    </div>
+    <main id="stage"></main>
+    <script type="module">
+      import "/dist/datum-form.js";
+
+      const fixture = await (await fetch("/a11y/form.json")).json();
+      const stage = document.getElementById("stage");
+      const bar = document.getElementById("bar");
+      const query = new URLSearchParams(location.search);
+
+      /** The states the driver captures; a person picks them too. */
+      const STATES = [
+        { id: "default", mode: "interactive", invalid: false, label: "Interactive" },
+        { id: "invalid", mode: "interactive", invalid: true, label: "Interactive, after an invalid submit" },
+        { id: "readonly", mode: "readonly", invalid: false, label: "Readonly review" }
+      ];
+
+      const wait = (check, timeoutMs = 15000) =>
+        new Promise((resolve, reject) => {
+          const started = Date.now();
+          const tick = () => {
+            let value;
+            try {
+              value = check();
+            } catch {}
+            if (value) return resolve(value);
+            if (Date.now() - started > timeoutMs) return reject(new Error("workbench: condition not met in time"));
+            setTimeout(tick, 25);
+          };
+          tick();
+        });
+      const frame = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+      /** The variants of Datum's binding the driver captures: the binding under a colour scheme; the page carries the scheme's surface. */
+      const VARIANTS = [
+        { id: "datum-light", scheme: "light", surface: "#ffffff", frames: [] },
+        { id: "datum-dark", scheme: "dark", surface: "#0f1720", frames: [] }
+      ];
+      window.__variants = () => VARIANTS.map(({ id, frames }) => ({ id, frames }));
+      window.__states = () => STATES;
+
+      /** Mounts the fixture in `variantId` in a state; resolves with the form element's page rect. */
+      window.__mount = async ({ variant: variantId, state: stateId = "default", locale = "en", frame: frameId = "" }) => {
+        const state = STATES.find((entry) => entry.id === stateId);
+        if (!state) throw new Error(`workbench: unknown state "${stateId}"`);
+        const variant = VARIANTS.find((entry) => entry.id === variantId);
+        if (!variant) throw new Error(`workbench: unknown variant "${variantId}"`);
+        stage.innerHTML = "";
+        stage.classList.add("capturing");
+        document.documentElement.style.background = variant.surface;
+        document.documentElement.style.colorScheme = variant.scheme;
+        const element = document.createElement("datum-form");
+        element.colorScheme = variant.scheme;
+        element.setAttribute("language-switcher", "");
+        element.setAttribute("locale", locale);
+        element.setAttribute("mode", state.mode);
+        if (frameId) element.setAttribute("frame", frameId);
+        element.definition = fixture;
+        stage.append(element);
+        await wait(() => element.renderer?.shadowRoot?.querySelector("form"));
+        if (state.invalid) {
+          await element.validate();
+          await wait(() => element.renderer.shadowRoot.querySelector(".datum-form__summary"));
+        }
+        await document.fonts.ready;
+        await frame();
+        // Blur whatever validate() focused, so no capture carries a focus ring by accident.
+        element.renderer?.shadowRoot?.activeElement?.blur?.();
+        document.activeElement?.blur?.();
+        await frame();
+        const rect = element.getBoundingClientRect();
+        return { x: rect.x + window.scrollX, y: rect.y + window.scrollY, width: Math.ceil(rect.width), height: Math.ceil(rect.height) };
+      };
+
+      /**
+       * The perceptual signature of a PNG (base64): its size, a 16×16 difference hash and a
+       * 24×24 luma grid — what the committed baseline holds, so a look is compared by
+       * content rather than by bytes, and antialiasing on another machine is not drift.
+       */
+      window.__signature = async (base64) => {
+        const image = new Image();
+        image.src = `data:image/png;base64,${base64}`;
+        await image.decode();
+        const luma = (width, height) => {
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const context = canvas.getContext("2d", { willReadFrequently: true });
+          context.imageSmoothingEnabled = true;
+          context.imageSmoothingQuality = "high";
+          context.fillStyle = "#ffffff";
+          context.fillRect(0, 0, width, height);
+          context.drawImage(image, 0, 0, width, height);
+          const data = context.getImageData(0, 0, width, height).data;
+          const out = [];
+          for (let index = 0; index < data.length; index += 4) {
+            out.push(Math.round(0.299 * data[index] + 0.587 * data[index + 1] + 0.114 * data[index + 2]));
+          }
+          return out;
+        };
+        const wide = luma(17, 16);
+        let bits = "";
+        for (let y = 0; y < 16; y += 1) for (let x = 0; x < 16; x += 1) bits += wide[y * 17 + x] < wide[y * 17 + x + 1] ? "1" : "0";
+        const dhash = BigInt(`0b${bits}`).toString(16).padStart(64, "0");
+        const grid = btoa(String.fromCharCode(...luma(24, 24)));
+        return { width: image.naturalWidth, height: image.naturalHeight, dhash, grid };
+      };
+
+      // --- The workbench for a person ---------------------------------------------------
+      const controls = {
+        variant: document.getElementById("variant"),
+        state: document.getElementById("state"),
+        locale: document.getElementById("locale"),
+        frame: document.getElementById("frame")
+      };
+      for (const entry of window.__variants()) controls.variant.append(new Option(entry.id, entry.id));
+      for (const state of STATES) controls.state.append(new Option(state.label, state.id));
+      const fillFrames = () => {
+        const entry = window.__variants().find((candidate) => candidate.id === controls.variant.value);
+        controls.frame.replaceChildren(new Option("(none)", ""), ...(entry?.frames ?? []).map((id) => new Option(id, id)));
+      };
+      const show = async () => {
+        const request = {
+          variant: controls.variant.value,
+          state: controls.state.value,
+          locale: controls.locale.value,
+          frame: controls.frame.value
+        };
+        const params = new URLSearchParams(Object.entries(request).filter(([, value]) => value && value !== "default" && value !== "en"));
+        document.getElementById("link").href = `?${params}`;
+        await window.__mount(request);
+        stage.classList.remove("capturing");
+      };
+      for (const control of Object.values(controls)) control.addEventListener("change", () => { if (control === controls.variant) fillFrames(); show(); });
+      controls.variant.value = query.get("variant") ?? window.__variants()[0]?.id ?? "datum-light";
+      fillFrames();
+      controls.state.value = query.get("state") ?? "default";
+      controls.locale.value = query.get("locale") ?? "en";
+      controls.frame.value = query.get("frame") ?? "";
+      if (query.has("driver")) {
+        bar.hidden = true;
+      } else {
+        await show();
+      }
+      window.__ready = true;
+    </script>
+  </body>
+</html>

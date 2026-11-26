@@ -1,0 +1,8 @@
+from datum_core.pdf import PdfRequestCustomizer, PdfRequestDraft
+
+
+def answers(draft: PdfRequestDraft) -> dict[str, str]:
+    return {"changed": "yes"}
+
+
+bad: PdfRequestCustomizer = answers

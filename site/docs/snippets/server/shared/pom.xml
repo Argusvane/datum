@@ -1,0 +1,101 @@
+<!-- pom.xml — beside Application.java. Spring Boot for the endpoint; Endive, the Bytecode Alliance's
+     WebAssembly runtime for the JVM, for the engine: its Maven plugin compiles qjs-wasi.wasm at build
+     time — to native code through Redline (Cranelift, the code generator behind wasmtime) for the six
+     platforms it knows, and to JVM bytecode as the fallback for any other — into the class datum.Qjs,
+     packaged in the jar. No native library to install, no JNI: the jar runs wherever a JDK does. Redline
+     is experimental in Endive 1.1.0; the bytecode runs the same program the same way, more slowly. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>4.2.0</version>
+  </parent>
+  <groupId>example</groupId>
+  <artifactId>intake</artifactId>
+  <version>1.0.0</version>
+  <properties>
+    <!-- The native runner uses the Panama FFM API, so Java 25; on 17 to 24, redline-runner-jffi-experimental instead. -->
+    <java.version>25</java.version>
+    <endive.version>1.1.0</endive.version>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-webmvc</artifactId>
+    </dependency>
+    <!-- Endive: the WASI layer (stdin, stdout, the mount) and the runner for the native code. -->
+    <dependency>
+      <groupId>run.endive</groupId>
+      <artifactId>wasi</artifactId>
+      <version>${endive.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>run.endive</groupId>
+      <artifactId>redline-runner-experimental</artifactId>
+      <version>${endive.version}</version>
+    </dependency>
+    <!-- An in-memory file system: the one directory a run is given. -->
+    <dependency>
+      <groupId>com.google.jimfs</groupId>
+      <artifactId>jimfs</artifactId>
+      <version>1.3.2</version>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+        <configuration>
+          <!-- The native runner is a restricted API: without this the JDK warns at the first run. -->
+          <jvmArguments>--enable-native-access=ALL-UNNAMED</jvmArguments>
+        </configuration>
+      </plugin>
+      <!-- The file is checked before it is compiled: only the release this build names goes into the jar. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>engine-checksum</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireFileChecksum>
+                  <file>src/main/resources/qjs-wasi.wasm</file>
+                  <!-- v0.16.2 -->
+                  <checksum>d2939e98c808e8b9f4164cd0d7b0398cbc0121ddf52862bcd92157d923e461cc</checksum>
+                  <type>sha256</type>
+                </requireFileChecksum>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>run.endive</groupId>
+        <artifactId>endive-compiler-maven-plugin</artifactId>
+        <version>${endive.version}</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+            <configuration>
+              <name>datum.Qjs</name>
+              <wasmFile>src/main/resources/qjs-wasi.wasm</wasmFile>
+              <redlineExperimental>true</redlineExperimental>
+              <!-- QuickJS's interpreter loop, JS_CallInternal, is too big for one JVM method: the bytecode
+                   fallback interprets that one function. The native code has no such limit. -->
+              <interpreterFallback>WARN</interpreterFallback>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

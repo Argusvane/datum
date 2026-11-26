@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>datum-form-builder — full page</title>
+    <link rel="stylesheet" href="/dist/datum-builder.css" />
+    <!-- The builder bundle is evaluated by the page's script below; fetched now. -->
+    <link rel="modulepreload" href="/dist/datum-builder.js" />
+    <style>
+      :root { --host-bar-h: 48px; }
+      body { font-family: system-ui, sans-serif; margin: 0; }
+      /* The page's own bar owns the top of the window; the builder's chrome starts below it
+         (--db-shell-top), as the default page layout expects. */
+      .host-bar { position: fixed; top: 0; left: 0; right: 0; height: var(--host-bar-h); z-index: 100; background: #1d2b36; color: #fff; padding: 0 20px; display: flex; gap: 16px; align-items: center; box-sizing: border-box; }
+      .host-bar h1 { font-size: 16px; margin: 0; }
+      .host-bar a { color: #9fc4ff; }
+      main { padding-top: var(--host-bar-h); height: calc(100vh - var(--host-bar-h)); overflow: hidden; }
+      datum-form-builder { --db-shell-top: var(--host-bar-h); }
+    </style>
+  </head>
+  <body>
+    <div class="host-bar">
+      <h1>Full-page builder</h1>
+      <a href="/demo/">All demos</a>
+      <a href="/demo/builder.html">Contained layout</a>
+    </div>
+    <main>
+      <datum-form-builder id="builder" src="/demo/intake-form.json"></datum-form-builder>
+    </main>
+    <script type="module">
+      await import("/dist/datum-builder.js");
+
+      const builder = document.getElementById("builder");
+      builder.dataSources = { countries: [{ value: "CA", label: "Canada" }, { value: "US", label: "United States" }] };
+      builder.addEventListener("datum-builder-change", (event) => console.log("datum-builder-change", event.detail));
+    </script>
+  </body>
+</html>

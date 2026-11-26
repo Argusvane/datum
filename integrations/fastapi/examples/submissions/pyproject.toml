@@ -1,0 +1,16 @@
+# The submissions example: a workspace member of the Datum for FastAPI tree, never built or published.
+[project]
+name = "datum-example-submissions"
+version = "0.1.0"
+description = "Datum for FastAPI example: submissions over HTTP and from an async queue consumer (not published)."
+requires-python = ">=3.12"
+dependencies = [
+  "argusvane-datum-fastapi[submissions]",
+  "uvicorn>=0.30",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+argusvane-datum-fastapi = { workspace = true }

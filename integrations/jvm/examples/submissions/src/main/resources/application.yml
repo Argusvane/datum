@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: datum-example-submissions
+
+datum:
+  # The decision the sandbox's host options need: the time zone "today()" and date rules read in.
+  host:
+    time-zone: America/Toronto
+  # Story one: every Datum route is off until switched on. This host receives
+  # POST /api/submissions, checks a page with POST /api/submissions/validate and serves the form it receives for
+  # (GET /api/forms/{key}/definition). The dry-run route (datum.web.api.endpoints.test) and the kernel inspection
+  # (datum.web.api.endpoints.inspect) stay off; the kits switch the dry run on when they need it.
+  web:
+    api:
+      endpoints:
+        submissions: true
+        validate: true
+        definition: true
+  # The form is a file on the class path (datum/forms/*.json); its key is its id, "datum-security-suite".
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      # The example has no security: show the datum runtime check (state, slots in use, ABI). Behind Spring Security
+      # prefer when-authorized.
+      show-details: always

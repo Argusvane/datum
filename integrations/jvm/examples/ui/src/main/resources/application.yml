@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: datum-example-ui
+
+datum:
+  # The decisions the sandbox's host options need: the time zone "today()" and date rules read in.
+  host:
+    time-zone: America/Toronto
+  # Story two: every Datum route is off until switched on. The form is read from
+  # /api/forms/contact/definition, its data sources from /api/data-sources/{id}, submissions go to /api/submissions (and
+  # /api/submissions/validate for a page's check), and the browser bundles come from /datum/assets. The builder
+  # (datum.builder.enabled) is story three: see examples/ui-builder-jpa.
+  web:
+    assets:
+      enabled: true
+    api:
+      endpoints:
+        definition: true
+        data-sources: true
+        submissions: true
+        validate: true

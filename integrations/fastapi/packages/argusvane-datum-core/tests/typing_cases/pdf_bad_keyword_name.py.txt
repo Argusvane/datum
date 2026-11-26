@@ -1,0 +1,3 @@
+from datum_core import Datum
+
+Datum(pdf_signers=None)

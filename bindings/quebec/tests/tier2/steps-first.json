@@ -1,0 +1,53 @@
+{
+  "note": "Datum's steps in the toolkit's tokens (the toolkit has no stepper): the step heading over the first panel and Continue",
+  "components": [
+    {
+      "id": "c",
+      "type": "steps",
+      "configuration": {
+        "label": "Application"
+      },
+      "children": {
+        "content": [
+          {
+            "id": "p0",
+            "type": "step",
+            "configuration": {
+              "label": "About you"
+            },
+            "children": {
+              "content": [
+                {
+                  "id": "f0",
+                  "type": "text",
+                  "configuration": {
+                    "label": "Field 1"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "id": "p1",
+            "type": "step",
+            "configuration": {
+              "label": "Where"
+            },
+            "children": {
+              "content": [
+                {
+                  "id": "f1",
+                  "type": "text",
+                  "configuration": {
+                    "label": "Field 2"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "width": 560
+}

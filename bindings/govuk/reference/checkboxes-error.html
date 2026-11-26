@@ -1,0 +1,78 @@
+<!-- datum-reference
+{
+  "source": "govuk-frontend 6.6.0: components/error-summary/template.njk with options of this case; components/checkboxes/template.njk with options of this case",
+  "note": "checkboxes left unanswered and validated: the error summary and the group's error",
+  "components": [
+    {
+      "id": "field1",
+      "type": "checkboxes",
+      "configuration": {
+        "label": "How do you want to be contacted?",
+        "description": "Select all options that are relevant to you.",
+        "required": true,
+        "options": [
+          {
+            "value": "email",
+            "label": "Email"
+          },
+          {
+            "value": "phone",
+            "label": "Phone"
+          },
+          {
+            "value": "text",
+            "label": "Text message"
+          }
+        ],
+        "messages": {
+          "required": "Select how you want to be contacted"
+        }
+      }
+    }
+  ],
+  "steps": [
+    {
+      "op": "validate"
+    }
+  ],
+  "root": "form",
+  "width": 560,
+  "init": "window.GOVUKFrontend.initAll();"
+}
+-->
+<form novalidate>
+<div class="govuk-error-summary" data-module="govuk-error-summary">
+<div role="alert">
+<h2 class="govuk-error-summary__title"> There is a problem </h2>
+<div class="govuk-error-summary__body">
+<ul class="govuk-list govuk-error-summary__list">
+<li>
+<a href="#field1">Select how you want to be contacted</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="govuk-form-group govuk-form-group--error">
+<fieldset class="govuk-fieldset" aria-describedby="field1-hint field1-error">
+<legend class="govuk-fieldset__legend"> How do you want to be contacted? </legend>
+<div id="field1-hint" class="govuk-hint"> Select all options that are relevant to you. </div>
+<p id="field1-error" class="govuk-error-message">
+<span class="govuk-visually-hidden">Error:</span> Select how you want to be contacted </p>
+<div class="govuk-checkboxes" data-module="govuk-checkboxes">
+<div class="govuk-checkboxes__item">
+<input class="govuk-checkboxes__input" id="field1" name="field1" type="checkbox" value="email">
+<label class="govuk-label govuk-checkboxes__label" for="field1"> Email </label>
+</div>
+<div class="govuk-checkboxes__item">
+<input class="govuk-checkboxes__input" id="field1-2" name="field1" type="checkbox" value="phone">
+<label class="govuk-label govuk-checkboxes__label" for="field1-2"> Phone </label>
+</div>
+<div class="govuk-checkboxes__item">
+<input class="govuk-checkboxes__input" id="field1-3" name="field1" type="checkbox" value="text">
+<label class="govuk-label govuk-checkboxes__label" for="field1-3"> Text message </label>
+</div>
+</div>
+</fieldset>
+</div>
+</form>

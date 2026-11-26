@@ -1,0 +1,11 @@
+from datetime import datetime
+
+from datum_core.timestamp import TsaTimeSource
+
+
+class Wrong:
+    def read(self) -> datetime:
+        return datetime.now()
+
+
+bad: TsaTimeSource = Wrong()

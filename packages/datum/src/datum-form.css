@@ -1,0 +1,13 @@
+/*
+ * Optional companion sheet for <datum-form>. The element styles itself inside its shadow
+ * root; this only keeps the page tidy around it: a block box, and nothing painted until the
+ * script has defined the element (no flash of an unstyled tag while datum-form.js loads).
+ * Load it with <link rel="stylesheet" href=".../datum-form.css">.
+ */
+datum-form {
+  display: block;
+}
+
+datum-form:not(:defined) {
+  visibility: hidden;
+}

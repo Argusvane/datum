@@ -1,0 +1,8 @@
+from datum_core.events import listener
+from datum_core.submissions import SubmissionThrottledEvent, SubmissionValidatedEvent
+
+
+def takes_validated(event: SubmissionValidatedEvent) -> None: ...
+
+
+listener(SubmissionThrottledEvent, takes_validated)

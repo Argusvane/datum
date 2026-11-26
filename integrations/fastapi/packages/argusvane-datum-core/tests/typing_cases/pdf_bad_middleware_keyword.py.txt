@@ -1,0 +1,10 @@
+# A pdf_middleware entry must answer a PdfKernel: a function answering an int is refused.
+from datum_core import Datum
+from datum_sandbox.protocol import PdfKernel
+
+
+def not_a_middleware(kernel: PdfKernel) -> int:
+    return 1
+
+
+Datum(pdf_middleware=[not_a_middleware])

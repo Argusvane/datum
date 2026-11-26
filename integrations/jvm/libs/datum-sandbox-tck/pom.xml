@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-sandbox-tck</artifactId>
+  <packaging>jar</packaging>
+  <name>datum-sandbox-tck</name>
+  <description>Datum engine test kit: JUnit 5 contract interfaces an engine module implements against its GuestRuntime, in
+    process (the WASI hardening with no program, golden verdicts, byte-equal PDF renders, the sandbox hardening, caps,
+    cancellation, confinement, leaks).</description>
+  <!-- The in-process sibling of datum-host-tck: where the host kit judges a deployed
+       binding over HTTP, this kit judges an engine through datum-sandbox's GuestRuntime (sandbox.wasi), alone and with the
+       real programs and the pinned fixtures, so every engine is held to the same contracts. JUnit and AssertJ are compile scope because the
+       contract interfaces are the product; datum-programs because the real programs are what the contracts run. -->
+  <dependencies>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-sandbox</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-programs</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+    </dependency>
+    <!-- The shared test helpers (the library-boundary rule, the settings-record copy check, the recording observation registry);
+         datum-core-test-support is never published. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-core-test-support</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <resources>
+      <resource><directory>${basedir}/src/main/resources</directory></resource>
+      <!-- The golden answers, the fixture form and the ABI 3.8 documents the asset generation writes to
+           target/datum-assets/<artifactId> land under META-INF/datum-sandbox-tck/; NOTICE (and LICENSE) reach META-INF/
+           through the parent pom's copy-legal execution. -->
+      <resource>
+        <directory>${datum.assets.dir}/${project.artifactId}</directory>
+        <targetPath>META-INF/datum-sandbox-tck</targetPath>
+        <excludes><exclude>NOTICE</exclude></excludes>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <!-- The generated fixtures are build output (target/datum-assets, written by the root build); a -pl build with none must say how to make them. Checked at process-resources, where they are used, so a build that stops earlier (the CI runtime compile, up to generate-sources) needs none. -->
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>require-assets</id>
+            <phase>process-resources</phase>
+            <goals><goal>enforce</goal></goals>
+            <configuration>
+              <rules>
+                <requireFilesExist>
+                  <files>
+                    <file>${datum.assets.dir}/${project.artifactId}/golden.json</file>
+                    <file>${datum.assets.dir}/${project.artifactId}/fixture-form.json</file>
+                    <file>${datum.assets.dir}/${project.artifactId}/documents-3.8/hashes.json</file>
+                  </files>
+                  <message>the engine kit's fixtures are missing (${datum.assets.dir}/${project.artifactId}): run ./mvnw -N generate-resources in integrations/jvm (or npm run jvm:assets at the repository root), or build the whole reactor, which generates them first</message>
+                </requireFilesExist>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

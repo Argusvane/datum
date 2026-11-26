@@ -1,0 +1,20 @@
+<!-- datum-reference
+{
+  "note": "a text field with a prefix and a suffix: the input's leading and trailing content slots",
+  "components": [
+    {
+      "id": "amount",
+      "type": "text",
+      "configuration": {
+        "label": "Amount",
+        "prefix": "$",
+        "suffix": "CAD"
+      }
+    }
+  ],
+  "source": "https://design.alberta.ca/components/input (Alberta Design System, component page), properties per @abgov/web-components 3.2.0 (the release's index.js element definitions) (leading and trailing content)",
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate><goa-form-item label="Amount" helptext="" error="" requirement="" type="text-input"><goa-input id="amount" name="amount" type="text" placeholder="" autocomplete="" arialabel="" error="false" disabled="false" readonly="false"><div slot="leadingContent">$</div><div slot="trailingContent">CAD</div></goa-input></goa-form-item></form>

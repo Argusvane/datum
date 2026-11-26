@@ -1,0 +1,3 @@
+test "the sidecar scenario"
+  set applicant_name = "Ada"
+  expect applicant_name not empty

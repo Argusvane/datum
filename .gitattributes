@@ -1,0 +1,41 @@
+# Line endings: text is stored with LF and checked out with LF on every platform, so
+# a script that runs on a Linux runner is never a CRLF script from a Windows clone.
+* text=auto eol=lf
+
+# Scripts run by a shell or Maven's wrapper break on a stray CR.
+mvnw text eol=lf
+*.sh text eol=lf
+
+# Windows batch files keep the CRLF they are committed with, byte for byte.
+*.cmd -text
+*.bat -text
+
+# Licence texts shipped verbatim from their upstream, which uses CRLF.
+OFL-*.txt -text
+
+# PEM text is compared byte for byte by the timestamp fixtures.
+*.pem text eol=lf
+
+# Binary fixtures and assets: never converted, never diffed as text.
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.wasm binary
+*.zip binary
+*.gz binary
+*.jar binary
+*.p12 binary
+*.der binary
+*.mp4 binary
+*.webm binary
+# RFC 3161 timestamp requests, replies and tokens (DER).
+*.tsq binary
+*.tsr binary
+*.token binary

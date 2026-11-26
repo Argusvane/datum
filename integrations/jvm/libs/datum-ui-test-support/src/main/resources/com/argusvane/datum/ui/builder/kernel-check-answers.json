@@ -1,0 +1,104 @@
+{
+  "//": "Answers of the real sandbox program to the check op, captured for the builder save tests. Program: packages/datum/dist/datum-sandbox-program.js, ABI 2.14.0, sha256 8731e6413d7c69a1bc117f49c04574344935946dd4d260e74c50f6049c565b24, engine commit 6210f24f551abcd71d8733b22d13629bb3f017a5. Command (in packages/conformance-suite): node bin/datum-security-check.mjs --program ../datum/dist/datum-sandbox-program.js --only DEF-12,DEF-03 --format json --out -. riskyPattern = vector DEF-12 variant risky-pattern (the suite fixture plus a text component fx whose visibleWhen is {run: both, formula: matches(name, \"(a|a?)+\")}); duplicateIds = vector DEF-03 (the suite fixture plus two text components with the id dup). The suite sent its own types list; the refusal members (verdict, problems, structure) do not depend on it. Re-capture after a kernel change. browserFunctionUnderWarn = vector DEF-12 variant browser-function-under-warn (the fixture plus fx whose visibleWhen is {run: browser, formula: nosuchfn(name) = 1}, checked under formulaErrors warn).",
+  "riskyPattern": {
+    "limits": {
+      "components": 10000,
+      "depth": 32,
+      "journeys": 32,
+      "locales": 64,
+      "optionsPerComponent": 2000,
+      "optionsTotal": 50000,
+      "pages": 1000,
+      "pdfLayouts": 64,
+      "problems": 200,
+      "routesPerPage": 64
+    },
+    "ok": true,
+    "op": "check",
+    "policy": "fail",
+    "problems": [
+      {
+        "code": "pattern.risky",
+        "end": 7,
+        "message": "The pattern \"(a|a?)+\" repeats a repeat (or a back-reference), which can take very long on some text; rewrite it, or have the host allow risky patterns",
+        "params": {
+          "pattern": "(a|a?)+"
+        },
+        "start": 0,
+        "text": "matches(name, \"(a|a?)+\")",
+        "where": "rules:fx:visibleWhen"
+      }
+    ],
+    "structure": [],
+    "structureWarnings": [],
+    "verdict": "fail",
+    "warnings": []
+  },
+  "duplicateIds": {
+    "limits": {
+      "components": 10000,
+      "depth": 32,
+      "journeys": 32,
+      "locales": 64,
+      "optionsPerComponent": 2000,
+      "optionsTotal": 50000,
+      "pages": 1000,
+      "pdfLayouts": 64,
+      "problems": 200,
+      "routesPerPage": 64
+    },
+    "ok": true,
+    "op": "check",
+    "policy": "fail",
+    "problems": [],
+    "structure": [
+      {
+        "code": "component.id.duplicate",
+        "message": "Another component already has this id.",
+        "where": "root > content > dup"
+      },
+      {
+        "code": "component.dataPath.duplicate",
+        "message": "Two components would store their answers in one place; give one another data key.",
+        "where": "root > content > dup"
+      }
+    ],
+    "structureWarnings": [],
+    "verdict": "fail",
+    "warnings": []
+  },
+  "browserFunctionUnderWarn": {
+    "limits": {
+      "components": 10000,
+      "depth": 32,
+      "journeys": 32,
+      "locales": 64,
+      "optionsPerComponent": 2000,
+      "optionsTotal": 50000,
+      "pages": 1000,
+      "pdfLayouts": 64,
+      "problems": 200,
+      "routesPerPage": 64
+    },
+    "ok": true,
+    "op": "check",
+    "policy": "warn",
+    "problems": [
+      {
+        "code": "unknownFunction",
+        "end": 8,
+        "message": "Unknown function \"nosuchfn\".",
+        "params": {
+          "name": "nosuchfn"
+        },
+        "start": 0,
+        "text": "nosuchfn(name) = 1",
+        "where": "rules:fx:visibleWhen"
+      }
+    ],
+    "structure": [],
+    "structureWarnings": [],
+    "verdict": "warn",
+    "warnings": []
+  }
+}

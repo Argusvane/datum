@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>datum-form — accessibility audit</title>
+    <!-- The page the browser audit drives: the built renderer bundle, axe-core from
+         the package's own node_modules, the shared fixture, and one function the driver calls
+         per variant (Datum's binding under a colour scheme) and state. Served by
+         scripts/serve-demo.mjs over the package root; never a demo. -->
+    <link rel="stylesheet" href="/dist/datum-form.css" />
+    <script src="/node_modules/axe-core/axe.min.js"></script>
+    <script type="module" src="/dist/datum-form.js"></script>
+    <style>
+      body { margin: 0; background: transparent; color: #14212b; font-family: system-ui, sans-serif; }
+      main { max-width: 900px; margin: 0 auto; padding: 24px; }
+    </style>
+  </head>
+  <body>
+    <main id="stage"></main>
+    <script type="module">
+      import { AUDIT_STATES, axeRunOptions, normaliseAxeResults } from "/a11y/audit-support.mjs";
+      import "/dist/datum-form.js";
+
+      const fixture = await (await fetch("/a11y/form.json")).json();
+      const stage = document.getElementById("stage");
+
+      const wait = (check, timeoutMs = 15000) =>
+        new Promise((resolve, reject) => {
+          const started = Date.now();
+          const tick = () => {
+            let value;
+            try {
+              value = check();
+            } catch {}
+            if (value) return resolve(value);
+            if (Date.now() - started > timeoutMs) return reject(new Error("audit: condition not met in time"));
+            setTimeout(tick, 25);
+          };
+          tick();
+        });
+      const frame = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+      /** The variants audited: Datum's binding under a colour scheme; the page carries the scheme's surface. */
+      const VARIANTS = [
+        { id: "datum-light", scheme: "light", surface: "#ffffff" },
+        { id: "datum-dark", scheme: "dark", surface: "#0f1720" }
+      ];
+      window.__variants = () => VARIANTS.map(({ id }) => ({ id }));
+      window.__states = () => AUDIT_STATES;
+
+      /** Mounts the fixture in `variantId` in `stateId`, runs axe with colour on, returns the normalised result. */
+      window.__audit = async (variantId, stateId) => {
+        const state = AUDIT_STATES.find((entry) => entry.id === stateId);
+        if (!state) throw new Error(`audit: unknown state "${stateId}"`);
+        const variant = VARIANTS.find((entry) => entry.id === variantId);
+        if (!variant) throw new Error(`audit: unknown variant "${variantId}"`);
+        stage.innerHTML = "";
+        document.documentElement.style.background = variant.surface;
+        document.documentElement.style.colorScheme = variant.scheme;
+        const element = document.createElement("datum-form");
+        element.colorScheme = variant.scheme;
+        element.setAttribute("language-switcher", "");
+        element.setAttribute("locale", state.locale);
+        element.setAttribute("mode", state.mode);
+        element.definition = fixture;
+        stage.append(element);
+        await wait(() => element.renderer?.shadowRoot?.querySelector("form"));
+        if (state.invalid) {
+          await element.validate();
+          await wait(() => element.renderer.shadowRoot.querySelector(".datum-form__summary"));
+        }
+        await document.fonts.ready;
+        await frame();
+        const raw = await axe.run(element, axeRunOptions({ colour: true }));
+        const result = normaliseAxeResults(raw, (node) => node.element);
+        result.axeVersion = axe.version;
+        return result;
+      };
+
+      window.__ready = true;
+    </script>
+  </body>
+</html>

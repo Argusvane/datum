@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Datum: sovereign forms</title>
+    <meta
+      name="description"
+      content="Datum is forms infrastructure you run in your own environment. Define a form once, deliver it as a web form, a PDF or a printed page, and own it completely."
+    />
+    <link rel="icon" href="/favicon.svg?v=4" type="image/svg+xml" />
+    <script>
+      // Apply the stored theme and hero before first paint. Light and the video hero are the defaults.
+      try {
+        if (localStorage.getItem("datum-theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");
+      } catch (e) {}
+      try {
+        if (localStorage.getItem("datum-hero") === "classic") document.documentElement.setAttribute("data-hero", "classic");
+      } catch (e) {}
+    </script>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <header class="nav">
+      <div class="container nav__row">
+        <a class="nav__brand" href="./">
+          <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true">
+            <path d="M4 6h8M4 11h20" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" />
+            <path d="M4 17h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" />
+            <path d="M4 22h20" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="square" />
+          </svg>
+          <span>Datum</span>
+        </a>
+        <nav class="nav__links" aria-label="Site">
+          <a href="./#why">Overview</a>
+          <a href="./features.html">Capabilities</a>
+          <a href="./bindings.html" data-pages="bindings.html binding-*">Examples</a>
+          <a href="./partners.html">Partners</a>
+          <a href="./docs/">Docs</a>
+          <a class="btn btn--small" href="https://github.com/argusvane/datum" data-github>GitHub</a>
+          <a class="btn btn--small" href="./#demo">Try it</a>
+          <button class="nav__toggle" type="button" data-theme-toggle aria-label="Switch to the dark theme">
+            <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+            </svg>
+            <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+            </svg>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero__variant" data-hero-variant="video">
+          <div class="container hero-video__stack">
+            <p class="eyebrow">Define once. Deliver anywhere. Own it completely.</p>
+            <h1 class="hero__title hero-video__title">Sovereign forms<span class="accent">.</span></h1>
+            <p class="hero__lede hero-video__lede">
+              Datum is forms infrastructure you run in your own environment. Define a form once, deliver it as a web
+              form, a PDF or a printed page, and own it completely.
+            </p>
+            <div class="hero-video__actions">
+              <a class="btn btn--primary" href="#demo">Try it</a>
+              <a class="btn" href="https://github.com/argusvane/datum" data-github>GitHub</a>
+            </div>
+            <figure class="hero-video__window" data-hero-video>
+              <div class="hero-video__bar">
+                <span class="hero-video__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                <div class="hero-video__tabs" role="tablist" aria-label="Two short videos">
+                  <button type="button" role="tab" id="hero-video-tab-form" aria-selected="true" aria-controls="hero-video-media" tabindex="0" data-hero-video-tab="form">Build a form</button>
+                  <button type="button" role="tab" id="hero-video-tab-journey" aria-selected="false" aria-controls="hero-video-media" tabindex="-1" data-hero-video-tab="journey">Build a journey</button>
+                </div>
+                <button class="hero-video__toggle" type="button" data-hero-video-toggle>Pause</button>
+              </div>
+              <video
+                id="hero-video-media"
+                class="hero-video__media"
+                autoplay
+                muted
+                loop
+                playsinline
+                preload="metadata"
+                poster="/video/datum-demo-poster.jpg"
+                width="1440"
+                height="900"
+                aria-label="Datum: a form built in the builder, then filled in and submitted"
+              >
+                <source src="/video/datum-demo.webm" type="video/webm" />
+                <source src="/video/datum-demo.mp4" type="video/mp4" />
+              </video>
+            </figure>
+            <button class="hero__switch" type="button" data-hero-switch hidden>Show the overview</button>
+          </div>
+        </div>
+        <div class="hero__variant" data-hero-variant="classic" hidden>
+          <div class="container hero__deck" role="region" aria-roledescription="carousel" aria-label="About Datum" data-hero>
+            <div class="hero__slides" data-hero-slides>
+              <div class="hero__slide" id="hero-what" role="tabpanel" aria-labelledby="hero-tab-what" data-hero-slide data-active>
+                <div class="hero__row">
+                  <div class="hero__copy">
+                    <p class="eyebrow">Define once. Deliver anywhere. Own it completely.</p>
+                    <h2 class="hero__title"><span class="hero__break">Sovereign</span> forms<span class="accent">.</span></h2>
+                    <p class="hero__lede">
+                      Datum is forms infrastructure you run in your own environment. Define a form once, deliver it as a web
+                      form, a PDF or a printed page, and own it completely.
+                    </p>
+                    <ul class="hero__routes" aria-label="Ways to use Datum">
+                      <li>
+                        <a class="hero__route" href="./partners.html#run">
+                          <span class="hero__route-label">Run it</span>
+                          <span class="hero__route-text">Your organization's forms, in your own environment.</span>
+                        </a>
+                      </li>
+                      <li>
+                        <a class="hero__route" href="./partners.html#embed">
+                          <span class="hero__route-label">Embed it</span>
+                          <span class="hero__route-text">A form builder inside your product, without building one.</span>
+                        </a>
+                      </li>
+                      <li>
+                        <a class="hero__route" href="./partners.html#deliver">
+                          <span class="hero__route-label">Deliver it</span>
+                          <span class="hero__route-text">One forms layer for every client project.</span>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="scene" aria-hidden="true">
+                    <div class="scene__head">
+                      <span>Build &rarr; PDF &rarr; Fill &rarr; Sign &rarr; Submit</span>
+                      <span class="scene__live"><span class="pulse"></span>One form</span>
+                    </div>
+                    <div class="scene__stage">
+                      <div class="scene__screen scene__builder">
+                        <div class="mini-palette">
+                          <span class="mini-label">Palette</span>
+                          <span class="pi pi1"><span class="pi__form">Text</span><span class="pi__pdf">Logo</span></span>
+                          <span class="pi pi2"><span class="pi__form">Email</span><span class="pi__pdf">Heading</span></span>
+                          <span class="pi pi3"><span class="pi__form">Date</span><span class="pi__pdf">Field</span></span>
+                          <span class="pi pi4"><span class="pi__form">Checkbox</span><span class="pi__pdf">Signature</span></span>
+                          <span class="pi"><span class="pi__form">Button</span><span class="pi__pdf">Columns</span></span>
+                        </div>
+                        <div class="mini-canvas">
+                          <div class="mini-sheet">
+                            <div class="mini-sheet__bar">
+                              <span>intake-v3</span>
+                              <span class="mini-loc"><span>en</span><span class="mini-loc__fr">+ fr</span></span>
+                              <span class="mini-modes"><span class="mini-mode mini-mode--form">Form</span><span class="mini-mode mini-mode--pdf">PDF</span></span>
+                            </div>
+                            <div class="fb fb1"><span class="mini-flabel">Full name</span><div class="mini-box"></div></div>
+                            <div class="fb fb2"><span class="mini-flabel">Email</span><div class="mini-box"></div></div>
+                            <div class="fb fb3"><span class="mini-flabel">Date of birth</span><div class="mini-box"></div></div>
+                            <div class="fb fb4 mini-check"><span class="mini-cb mini-cb--builder"></span><span class="mini-flabel">I confirm this is accurate</span></div>
+                          </div>
+                          <div class="mini-paper">
+                            <div class="mini-paper__bar"><span>Letter &middot; PDF/A-3a</span><span>Layout: print</span></div>
+                            <div class="mini-paper__brand pdf1"><span class="mini-paper__logo"></span><span>Example Org</span></div>
+                            <div class="mini-paper__title">Intake form</div>
+                            <div class="pdfl pdfl--cols pdf2">
+                              <span class="pdfl__cell"><span>Full name</span><span class="pdfl__box"></span></span>
+                              <span class="pdfl__cell"><span>Date of birth</span><span class="pdfl__box"></span></span>
+                            </div>
+                            <div class="pdfl pdf3"><span>Email</span><span class="pdfl__box"></span></div>
+                            <div class="pdfl pdf4"><span>Confirmation</span><span class="pdfl__box pdfl__box--small"></span></div>
+                            <div class="pdfsig">
+                              <span>Signature field &middot; PAdES</span>
+                              <span class="pdfsig__rule"><span>Signed by</span><span>Date</span></span>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="mini-props">
+                          <span class="mini-label">Properties</span>
+                          <div class="mini-props__set mini-props__set--form">
+                            <div class="mini-props__field"><span>Label</span><div class="mini-props__value">Full name</div></div>
+                            <div class="mini-props__switch"><span>Required</span><span class="mini-toggle"></span></div>
+                            <div class="mini-props__field"><span>Rules</span><div class="mini-props__value mini-props__value--code">visibleWhen: "not(empty(email))"</div></div>
+                            <div class="mini-props__field">
+                              <span>Translations</span>
+                              <div class="mini-grid">
+                                <span class="mini-grid__k">en</span><span class="mini-grid__v">Full name</span>
+                                <span class="mini-grid__k">fr</span><span class="mini-grid__v"><span class="ty ty0">Nom complet</span></span>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="mini-props__set mini-props__set--pdf">
+                            <div class="mini-props__field"><span>Page</span><div class="mini-props__value">Letter</div></div>
+                            <div class="mini-props__field"><span>Logo</span><div class="mini-props__value mini-props__value--code">logo.svg</div></div>
+                            <div class="mini-props__field"><span>Columns</span><div class="mini-props__value">2</div></div>
+                            <div class="mini-props__switch"><span>Signature</span><span class="mini-toggle"></span></div>
+                            <div class="mini-props__field"><span>Signer</span><div class="mini-props__value mini-props__value--code">PAdES &middot; PIV</div></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="scene__screen scene__page">
+                        <div class="mini-chrome">
+                          <span class="mini-dots"><span></span><span></span><span></span></span>
+                          <span class="mini-url">forms.example.org/intake</span>
+                        </div>
+                        <div class="mini-form">
+                          <div class="mini-form__head">
+                            <span class="l2"><span class="l-en">Intake form</span><span class="l-fr">Formulaire d'admission</span></span>
+                            <span class="mini-lang"><span class="mini-lang__opt mini-lang__opt--en">EN</span><span class="mini-lang__opt mini-lang__opt--fr">FR</span></span>
+                          </div>
+                          <div class="mini-field"><span class="mini-flabel l2"><span class="l-en">Full name</span><span class="l-fr">Nom complet</span></span><div class="mini-input"><span class="ty ty1">Ada Lovelace</span></div></div>
+                          <div class="mini-field"><span class="mini-flabel l2"><span class="l-en">Email</span><span class="l-fr">Courriel</span></span><div class="mini-input"><span class="ty ty2">ada@example.org</span></div></div>
+                          <div class="mini-field"><span class="mini-flabel l2"><span class="l-en">Date of birth</span><span class="l-fr">Date de naissance</span></span><div class="mini-input"><span class="ty ty3">1815-12-10</span></div></div>
+                          <div class="mini-check">
+                            <span class="mini-cb"
+                              ><svg class="ck" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10" /></svg
+                            ></span>
+                            <span class="l2"><span class="l-en">I confirm this is accurate</span><span class="l-fr">Je confirme l'exactitude</span></span>
+                          </div>
+                          <div class="mini-actions">
+                            <span class="mini-submit l2"><span class="l-en">Sign &amp; submit</span><span class="l-fr">Signer et soumettre</span></span>
+                            <span class="mini-pdf"
+                              ><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M6 9l6 6 6-6M4 21h16" /></svg
+                              >PDF</span
+                            >
+                            <span class="mini-pdf mini-print"
+                              ><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z" /></svg
+                              ><span class="l2"><span class="l-en">Print</span><span class="l-fr">Imprimer</span></span></span
+                            >
+                            <span class="rc"
+                              ><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10" /></svg
+                              ><span class="l2"><span class="l-en">Accepted &middot; signed &middot; intake.pdf</span><span class="l-fr">Accepté &middot; signé &middot; intake.pdf</span></span></span
+                            >
+                          </div>
+                          <div class="prt">
+                            <div class="prt__card">
+                              <div class="prt__head"><span>Print</span><span class="mini-label">intake &middot; Letter &middot; 1 page</span></div>
+                              <div class="prt__body">
+                                <div class="prt__thumb">
+                                  <span class="prt__brand"><span></span></span>
+                                  <span class="prt__line prt__line--title"></span>
+                                  <span class="prt__cols"><span></span><span></span></span>
+                                  <span class="prt__line"></span>
+                                  <span class="prt__line prt__line--short"></span>
+                                  <span class="prt__sig"></span>
+                                </div>
+                                <ul class="prt__opts">
+                                  <li>Read-only rendition</li>
+                                  <li>Running header</li>
+                                  <li>Page numbers</li>
+                                  <li>Browser's print dialog</li>
+                                </ul>
+                              </div>
+                              <div class="prt__actions"><span class="mini-pdf">Cancel</span><span class="mini-submit prt__go">Print</span></div>
+                            </div>
+                          </div>
+                          <div class="yubi">
+                            <div class="yubi__card">
+                              <span class="yubi__key">
+                                <span class="yubi__ring"></span>
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3" /></svg>
+                              </span>
+                              <span class="yubi__text">
+                                <span class="yubi__touch"><strong>Touch your YubiKey</strong><span class="mini-label">PIV slot 9c &middot; PIN in the OS dialog</span></span>
+                                <span class="yubi__signed"><strong>Signed</strong><span class="mini-label">PAdES &middot; X.509 on the token</span></span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="scene__screen scene__pdf">
+                        <div class="mini-chrome">
+                          <span class="mini-dots"><span></span><span></span><span></span></span>
+                          <span class="mini-url">intake.pdf &middot; PDF/A-3a &middot; 1 page</span>
+                        </div>
+                        <div class="mini-viewer">
+                          <div class="pdf-page">
+                            <div class="pdf-page__brand pdfrow1"><span class="pdf-page__logo"></span><span>Example Org</span></div>
+                            <div class="pdf-page__title l2"><span class="l-en">Intake form</span><span class="l-fr">Formulaire d'admission</span></div>
+                            <div class="pdfrow pdfrow--cols pdfrow2">
+                              <span class="pdfrow__cell"><span class="l2"><span class="l-en">Full name</span><span class="l-fr">Nom complet</span></span><span class="pdfrow__val">Ada Lovelace</span></span>
+                              <span class="pdfrow__cell"><span class="l2"><span class="l-en">Date of birth</span><span class="l-fr">Date de naissance</span></span><span class="pdfrow__val">1815-12-10</span></span>
+                            </div>
+                            <div class="pdfrow pdfrow3"><span class="l2"><span class="l-en">Email</span><span class="l-fr">Courriel</span></span><span class="pdfrow__val">ada@example.org</span></div>
+                            <div class="pdfrow pdfrow4"><span>Confirmation</span><span class="pdfrow__check"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10" /></svg></span></div>
+                            <div class="pdf-sig">
+                              <span class="pdf-sig__head">Signature &middot; PAdES</span>
+                              <span class="pdf-sig__rule"><span class="l2"><span class="l-en">Signed by Ada Lovelace</span><span class="l-fr">Signé par Ada Lovelace</span></span><span>2026-09-17</span></span>
+                              <span class="pdf-sig__text">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10" /></svg>
+                                <span>PIV slot 9c &middot; SHA-256 &middot; record.json attached</span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="hero__slide" id="hero-why" role="tabpanel" aria-labelledby="hero-tab-why" data-hero-slide hidden>
+                <div class="hero__row">
+                  <div class="hero__copy">
+                    <p class="eyebrow">One source. Clean data. No big bang.</p>
+                    <h2 class="hero__title"><span class="hero__break">End form</span> sprawl<span class="accent">.</span></h2>
+                    <p class="hero__lede">
+                      When a form lives as a web page, a PDF and a printout, each change becomes a project and answers get
+                      rekeyed by hand. Datum turns the copies into one form you define once and own.
+                    </p>
+                    <ul class="hero__routes" aria-label="What changes with Datum">
+                      <li>
+                        <a class="hero__route" href="./#why">
+                          <span class="hero__route-label">Change once</span>
+                          <span class="hero__route-text">One edit reaches every output at once.</span>
+                        </a>
+                      </li>
+                      <li>
+                        <a class="hero__route" href="./#demo">
+                          <span class="hero__route-label">No rekeying</span>
+                          <span class="hero__route-text">Checked as typed and again on your server.</span>
+                        </a>
+                      </li>
+                      <li>
+                        <a class="hero__route" href="./#demo">
+                          <span class="hero__route-label">Start small</span>
+                          <span class="hero__route-text">One form at a time. Keep the PDF you have.</span>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="scene" aria-hidden="true">
+                    <div class="scene__head">
+                      <span>Three copies &rarr; one definition</span>
+                      <span class="scene__live"><span class="pulse"></span>One form</span>
+                    </div>
+                    <div class="scene__stage sprawl">
+                      <div class="sprawl__side">
+                        <span class="mini-label">Today</span>
+                        <div class="sprawl__card" style="--at: 0.02">
+                          <span class="sprawl__meta"><span>Web page</span><span>v7</span></span>
+                          <span class="mini-flabel sw"><span class="sw-old" style="--at: 0.16">Name</span><span class="sw-new ty" style="--at: 0.16">Full name</span></span>
+                          <span class="sprawl__box"></span>
+                        </div>
+                        <div class="sprawl__card sprawl__card--paper" style="--at: 0.06">
+                          <span class="sprawl__meta"><span>PDF &middot; 2019</span><span>v4</span></span>
+                          <span class="mini-flabel">Name</span>
+                          <span class="sprawl__box"></span>
+                          <span class="sprawl__stamp" style="--at: 0.26">Stale</span>
+                        </div>
+                        <div class="sprawl__card sprawl__card--paper sprawl__card--tilt" style="--at: 0.1">
+                          <span class="sprawl__meta"><span>Printout</span><span>v2</span></span>
+                          <span class="mini-flabel">Applicant</span>
+                          <span class="sprawl__box"></span>
+                          <span class="sprawl__stamp" style="--at: 0.3">Rekeyed</span>
+                        </div>
+                        <span class="sprawl__note sprawl__note--bad" style="--at: 0.36">3 labels, 1 field</span>
+                      </div>
+                      <span class="sprawl__arrow">&rarr;</span>
+                      <div class="sprawl__side">
+                        <span class="mini-label">With Datum</span>
+                        <div class="sprawl__card sprawl__card--def" style="--at: 0.42">
+                          <span class="sprawl__meta"
+                            ><span>intake.json</span><span class="sw"><span class="sw-old" style="--at: 0.62">v7</span><span class="sw-new" style="--at: 0.62">v8</span></span></span
+                          >
+                          <span class="sprawl__prop"
+                            ><span class="mini-label">Label</span
+                            ><span class="sprawl__value sw"><span class="sw-old" style="--at: 0.52">Name</span><span class="sw-new ty" style="--at: 0.52">Full name</span></span></span
+                          >
+                          <span class="sprawl__also">Rules &middot; fr &middot; layout</span>
+                        </div>
+                        <ul class="sprawl__outs" style="--at: 0.44">
+                          <li style="--at: 0.46"><span class="sprawl__kind">Web</span><span class="sw"><span class="sw-old" style="--at: 0.66">Name</span><span class="sw-new" style="--at: 0.66">Full name</span></span></li>
+                          <li style="--at: 0.48"><span class="sprawl__kind">PDF/A</span><span class="sw"><span class="sw-old" style="--at: 0.66">Name</span><span class="sw-new" style="--at: 0.66">Full name</span></span></li>
+                          <li style="--at: 0.5"><span class="sprawl__kind">Print</span><span class="sw"><span class="sw-old" style="--at: 0.66">Name</span><span class="sw-new" style="--at: 0.66">Full name</span></span></li>
+                        </ul>
+                        <span class="sprawl__note" style="--at: 0.72">1 edit, every copy</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="hero__slide" id="hero-io" role="tabpanel" aria-labelledby="hero-tab-io" data-hero-slide hidden>
+                <div class="hero__row">
+                  <div class="hero__copy">
+                    <p class="eyebrow">Change the front end. Keep the back office.</p>
+                    <h2 class="hero__title"><span class="hero__break hero__break--narrow">Web in.</span> PDF out<span class="accent">.</span></h2>
+                    <p class="hero__lede">
+                      Put a web form in front of the process you run today. The office still gets its PDF, other systems
+                      can post JSON, and each step moves off paper when you are ready.
+                    </p>
+                    <ul class="hero__routes" aria-label="Ways in and out">
+                      <li>
+                        <a class="hero__route" href="./features.html#pdf">
+                          <span class="hero__route-label">Keep the PDF</span>
+                          <span class="hero__route-text">Your own PDF filled in, or one from a layout.</span>
+                        </a>
+                      </li>
+                      <li>
+                        <a class="hero__route" href="./#demo">
+                          <span class="hero__route-label">On paper</span>
+                          <span class="hero__route-text">Print it, or send a blank fillable PDF.</span>
+                        </a>
+                      </li>
+                      <li>
+                        <a class="hero__route" href="./docs/server-hosts">
+                          <span class="hero__route-label">JSON in</span>
+                          <span class="hero__route-text">Any client posts JSON, held to the form.</span>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="scene" aria-hidden="true">
+                    <div class="scene__head">
+                      <span>3 ways in &rarr; 5 ways out</span>
+                      <span class="scene__live"><span class="pulse"></span>One form</span>
+                    </div>
+                    <div class="scene__stage io">
+                      <span class="mini-label">In</span>
+                      <div class="io__ins">
+                        <span class="io__in io__in--main" style="--at: 0.02">Web form</span>
+                        <span class="io__in" style="--at: 0.06">JSON &middot; API</span>
+                        <span class="io__in" style="--at: 0.1">Filled PDF</span>
+                      </div>
+                      <div class="io__def" style="--at: 0.16">
+                        <span class="io__file">intake.json</span>
+                        <span class="io__role">The contract</span>
+                      </div>
+                      <span class="mini-label">Out</span>
+                      <ul class="io__outs">
+                        <li style="--at: 0.24"><span class="io__name">PDF from a layout</span><span class="io__detail">PDF/A &middot; record inside</span></li>
+                        <li style="--at: 0.34"><span class="io__name">Your PDF, filled</span><span class="io__detail">Fields mapped</span></li>
+                        <li style="--at: 0.44"><span class="io__name">Printed page</span><span class="io__detail">In your theme</span></li>
+                        <li style="--at: 0.54"><span class="io__name">Blank fillable PDF</span><span class="io__detail">To send out</span></li>
+                        <li style="--at: 0.64"><span class="io__name">JSON record</span><span class="io__detail">Checked &middot; canonical</span></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="hero__slide" id="hero-journey" role="tabpanel" aria-labelledby="hero-tab-journey" data-hero-slide hidden>
+                <div class="hero__row">
+                  <div class="hero__copy">
+                    <p class="eyebrow">From journey map to working form.</p>
+                    <h2 class="hero__title"><span class="hero__break">Build the</span> journey<span class="accent">.</span></h2>
+                    <p class="hero__lede">
+                      Your team maps the journey. Datum builds it over one form: steps that branch on the answers, exits
+                      for anyone who cannot go on, and a server that follows the same path.
+                    </p>
+                    <ul class="hero__routes" aria-label="What a journey does">
+                      <li>
+                        <a class="hero__route" href="./#demo">
+                          <span class="hero__route-label">Branch</span>
+                          <span class="hero__route-text">A rule sends the person on to the step that applies.</span>
+                        </a>
+                      </li>
+                      <li>
+                        <a class="hero__route" href="./features.html#builder">
+                          <span class="hero__route-label">Map it</span>
+                          <span class="hero__route-text">See every path as a map in the builder.</span>
+                        </a>
+                      </li>
+                      <li>
+                        <a class="hero__route" href="./#why">
+                          <span class="hero__route-label">One record</span>
+                          <span class="hero__route-text">The same form, checks and PDF underneath.</span>
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div class="scene" aria-hidden="true">
+                    <div class="scene__head">
+                      <span>Journey &middot; energy rebate</span>
+                      <span class="scene__live"><span class="pulse"></span>One form</span>
+                    </div>
+                    <div class="scene__stage jr">
+                      <div class="jr__col">
+                        <span class="mini-label">Journey map</span>
+                        <svg class="jr__map" viewBox="0 0 280 318" focusable="false">
+                          <g class="jr__edges">
+                            <path d="M66 25V39M66 53V69M66 91V105M66 119V167M66 189V203M66 217V263M66 285V297" />
+                            <path d="M73 112H217V129M217 151V160H66M73 210H217V227M217 249V256H66" />
+                            <path class="jr__edge-exit" d="M73 46H162" />
+                          </g>
+                          <g class="jr__lit">
+                            <path class="jr-in" style="--at: 0.2" d="M66 25V39M66 53V69" />
+                            <path class="jr-in" style="--at: 0.34" d="M66 91V105M73 112H217V129" />
+                          </g>
+                          <g class="jr__labels">
+                            <text x="71" y="64">YES</text>
+                            <text x="117" y="42" text-anchor="middle">NO</text>
+                            <text x="71" y="143">OWN</text>
+                            <text x="145" y="108" text-anchor="middle">RENT</text>
+                            <text x="71" y="241">UNDER $5K</text>
+                            <text x="145" y="206" text-anchor="middle">OVER $5K</text>
+                          </g>
+                          <path class="jr__diamond" d="M66 39L73 46L66 53L59 46Z" />
+                          <path class="jr__diamond jr__diamond--lit jr-in" style="--at: 0.2" d="M66 39L73 46L66 53L59 46Z" />
+                          <path class="jr__diamond" d="M66 105L73 112L66 119L59 112Z" />
+                          <path class="jr__diamond jr__diamond--lit jr-in" style="--at: 0.34" d="M66 105L73 112L66 119L59 112Z" />
+                          <path class="jr__diamond" d="M66 203L73 210L66 217L59 210Z" />
+                          <g class="jr__node">
+                            <rect class="jr__box" x="6" y="3" width="128" height="22" />
+                            <rect class="jr__m" x="12" y="9" width="10" height="10" />
+                            <rect class="jr__m jr__m--now jr-out" style="--out: 0.22" x="12" y="9" width="10" height="10" />
+                            <rect class="jr__m jr__m--done jr-in" style="--at: 0.22" x="12" y="9" width="10" height="10" />
+                            <text x="30" y="17.5">Your home</text>
+                          </g>
+                          <g class="jr__node jr__node--exit">
+                            <rect class="jr__box" x="162" y="35" width="110" height="22" />
+                            <text x="217" y="49" text-anchor="middle">EXIT &#183; NO SUBMIT</text>
+                          </g>
+                          <g class="jr__node">
+                            <rect class="jr__box" x="6" y="69" width="128" height="22" />
+                            <rect class="jr__m" x="12" y="75" width="10" height="10" />
+                            <rect class="jr__m jr__m--now jr-blink" style="--at: 0.22; --out: 0.46" x="12" y="75" width="10" height="10" />
+                            <rect class="jr__m jr__m--done jr-in" style="--at: 0.46" x="12" y="75" width="10" height="10" />
+                            <text x="30" y="83.5">Owning or renting</text>
+                          </g>
+                          <g class="jr__node jr__node--if">
+                            <rect class="jr__box" x="162" y="129" width="110" height="22" />
+                            <rect class="jr__joined jr-in" style="--at: 0.34" x="162" y="129" width="110" height="22" />
+                            <rect class="jr__m" x="168" y="135" width="10" height="10" />
+                            <rect class="jr__m jr__m--now jr-in" style="--at: 0.46" x="168" y="135" width="10" height="10" />
+                            <text x="186" y="143.5">Your landlord</text>
+                          </g>
+                          <g class="jr__node">
+                            <rect class="jr__box" x="6" y="167" width="128" height="22" />
+                            <rect class="jr__m" x="12" y="173" width="10" height="10" />
+                            <text x="30" y="181.5">The work</text>
+                          </g>
+                          <g class="jr__node jr__node--if">
+                            <rect class="jr__box" x="162" y="227" width="110" height="22" />
+                            <rect class="jr__m" x="168" y="233" width="10" height="10" />
+                            <text x="186" y="241.5">Two quotes</text>
+                          </g>
+                          <g class="jr__node">
+                            <rect class="jr__box" x="6" y="263" width="128" height="22" />
+                            <rect class="jr__m" x="12" y="269" width="10" height="10" />
+                            <text x="30" y="277.5">How to reach you</text>
+                          </g>
+                          <g class="jr__node jr__node--end">
+                            <rect class="jr__box" x="26" y="297" width="80" height="18" />
+                            <text x="66" y="309" text-anchor="middle">SUBMIT</text>
+                          </g>
+                        </svg>
+                      </div>
+                      <div class="jr__col jr__col--screen">
+                        <span class="mini-label">On screen</span>
+                        <div class="jr__page">
+                          <div class="jr__screen jr-out" style="--out: 0.22">
+                            <span class="jr__count">Step 1 of 4</span>
+                            <span class="jr__title">Your home</span>
+                            <span class="jr__q">Do you live in this home most of the year?</span>
+                            <span class="jr__opt"><span class="jr__radio"><span class="jr__dot jr-in" style="--at: 0.1"></span></span>Yes</span>
+                            <span class="jr__opt"><span class="jr__radio"></span>No</span>
+                            <span class="jr__actions"><span class="jr__btn jr__btn--go jr-press" style="--at: 0.16">Continue</span></span>
+                          </div>
+                          <div class="jr__screen jr-blink" style="--at: 0.22; --out: 0.46">
+                            <span class="jr__count">Step 2 of <span class="sw"><span class="sw-old" style="--at: 0.34">4</span><span class="sw-new" style="--at: 0.34">5</span></span></span>
+                            <span class="jr__title">Owning or renting</span>
+                            <span class="jr__q">Do you own the home or rent it?</span>
+                            <span class="jr__opt"><span class="jr__radio"></span>I own it</span>
+                            <span class="jr__opt"><span class="jr__radio"><span class="jr__dot jr-in" style="--at: 0.3"></span></span>I rent it</span>
+                            <span class="jr__actions"><span class="jr__btn">Back</span><span class="jr__btn jr__btn--go jr-press" style="--at: 0.4">Continue</span></span>
+                          </div>
+                          <div class="jr__screen jr-in" style="--at: 0.46">
+                            <span class="jr__count">Step 3 of 5</span>
+                            <span class="jr__title">Your landlord</span>
+                            <span class="jr__q">Renters need their landlord's agreement.</span>
+                            <span class="jr__field"><span>Landlord's name</span><span class="jr__box"></span></span>
+                            <span class="jr__opt"><span class="jr__check"></span>My landlord agrees</span>
+                            <span class="jr__actions"><span class="jr__btn">Back</span><span class="jr__btn jr__btn--go">Continue</span></span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="hero__controls" data-hero-controls hidden>
+              <button class="hero__pause" type="button" aria-label="Pause the slides" data-hero-pause>
+                <svg class="hero__pause-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4h4v16H6zM14 4h4v16h-4z" /></svg>
+                <svg class="hero__play-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4l13 8-13 8z" /></svg>
+              </button>
+              <div class="hero__tabs" role="tablist" aria-label="Slides">
+                <button class="hero__tab" id="hero-tab-what" type="button" role="tab" aria-controls="hero-what" aria-selected="true" data-hero-tab>
+                  <span class="hero__tab-num">01</span><span class="hero__tab-name">What it is</span><span class="hero__tab-bar" aria-hidden="true"></span>
+                </button>
+                <button class="hero__tab" id="hero-tab-why" type="button" role="tab" aria-controls="hero-why" aria-selected="false" tabindex="-1" data-hero-tab>
+                  <span class="hero__tab-num">02</span><span class="hero__tab-name">Why it matters</span><span class="hero__tab-bar" aria-hidden="true"></span>
+                </button>
+                <button class="hero__tab" id="hero-tab-io" type="button" role="tab" aria-controls="hero-io" aria-selected="false" tabindex="-1" data-hero-tab>
+                  <span class="hero__tab-num">03</span><span class="hero__tab-name">In and out</span><span class="hero__tab-bar" aria-hidden="true"></span>
+                </button>
+                <button class="hero__tab" id="hero-tab-journey" type="button" role="tab" aria-controls="hero-journey" aria-selected="false" tabindex="-1" data-hero-tab>
+                  <span class="hero__tab-num">04</span><span class="hero__tab-name">Journeys</span><span class="hero__tab-bar" aria-hidden="true"></span>
+                </button>
+              </div>
+              <button class="hero__switch hero__switch--classic" type="button" data-hero-switch>Show the video</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section container" id="numbers" aria-labelledby="numbers-heading">
+        <div class="section-head">
+          <div class="section-head__text">
+            <span class="eyebrow">By the numbers</span>
+            <h2 id="numbers-heading" class="section-title">A thousand forms.<br />One file each.</h2>
+          </div>
+          <a class="section-link" href="./#demo">Try the builder &rarr;</a>
+        </div>
+        <p class="numbers__lede">
+          Most organizations do not have a form problem. They have form sprawl: the same form as a PDF, a web page
+          and a printout, each kept its own way.
+        </p>
+        <div class="numbers" data-evidence>
+          <noscript><p class="fact">The figures need JavaScript. The overview below says what Datum does.</p></noscript>
+        </div>
+      </section>
+
+      <section class="section container" id="why" aria-labelledby="why-heading">
+        <div class="section-head">
+          <div class="section-head__text">
+            <span class="eyebrow">Overview</span>
+            <h2 id="why-heading" class="section-title">One form, every output,<br />nothing taken on trust.</h2>
+          </div>
+        </div>
+        <div class="ruled advs" data-advantages>
+          <noscript><p class="adv">This overview needs JavaScript. The features page lists everything.</p></noscript>
+        </div>
+        <p class="section-foot">
+          <a class="section-link" href="./features.html#capabilities">All capabilities &rarr;</a>
+        </p>
+      </section>
+
+      <section class="section container" id="demo" aria-labelledby="demo-heading">
+        <div class="section-head">
+          <div class="section-head__text">
+            <span class="eyebrow">Try it</span>
+            <h2 id="demo-heading" class="section-title">Build a form.<br />Watch it render.</h2>
+          </div>
+          <a class="section-link" href="./docs/getting-started">The snippet &rarr;</a>
+        </div>
+        <p class="demo__lede">
+          The builder and the form below are the real elements, loaded from the same files you would host. Add a
+          field, change a label, write a rule, and the form under the builder follows. Press Try it to use the form
+          on the canvas, read every rule as a sentence in Logic, see where each answer is saved in Data, and find
+          the journeys and PDF layouts in their own workspaces; Ctrl+K finds any command. Switch its theme, fill it in, send it, print it,
+          preview the PDF, and read the data and the schema as JSON. Example 6 asks one form two ways: a
+          journey a page at a time, and one with every question on a single page. Switch between them with View;
+          either one fills the same form. To start from a fillable PDF of your own, open the builder's PDF workspace, press + New layout, then
+          Load a PDF, and press Create form fields. Nothing leaves this page.
+        </p>
+        <div class="demo" data-demo>
+          <noscript><p class="demo__fallback">The live demo needs JavaScript. The docs have the snippet.</p></noscript>
+          <p class="demo__fallback" data-demo-fallback>
+            The live demo loads the bundles this site is built beside, and they are not here. The docs have
+            the snippet and the files to host.
+          </p>
+        </div>
+      </section>
+
+      <section class="section container" id="usage" aria-labelledby="usage-heading">
+        <div class="section-head">
+          <div class="section-head__text">
+            <span class="eyebrow">One definition</span>
+            <h2 id="usage-heading" class="section-title">A form in the browser.<br />A contract on your server.</h2>
+          </div>
+          <a class="section-link" href="./docs/server-hosts">Server hosts &rarr;</a>
+        </div>
+        <p class="usage__lede">
+          A Datum form is one JSON document: fields, rules, translations and the PDF layout. The browser renders it.
+          Your server holds the same document and accepts only what it describes, so the form is also the contract
+          for every record that reaches you: from the rendered form, from a PDF filled elsewhere and imported, or
+          from any client that sends the JSON.
+        </p>
+        <div class="usage">
+          <div class="scene__head">
+            <span>One definition &middot; two sides</span>
+            <span>intake-v3.json</span>
+          </div>
+          <div class="usage__stage">
+            <div class="usage__def">
+              <span class="usage__file">intake-v3.json</span>
+              <span class="usage__def-text">Fields &middot; rules &middot; validation &middot; translations &middot; PDF layout</span>
+            </div>
+            <div class="usage__fork" aria-hidden="true"></div>
+
+            <div class="usage__side usage__side--browser">
+              <div class="usage__bar"><span>In the browser</span><span>&lt;datum-form&gt; on any page</span></div>
+              <p class="usage__role">The rendered form</p>
+              <ul class="usage__list">
+                <li><strong>View and fill</strong> it on any page, in your theme, in the person's language.</li>
+                <li><strong>Rules</strong> run as they type; a draft saves as they go.</li>
+                <li><strong>Print</strong> it: the read-only rendition, through the browser's own dialog.</li>
+                <li><strong>Generate the PDF</strong> from the designed layout, or fill an existing PDF, in the page.</li>
+                <li><strong>Sign the PDF</strong> with a certificate of their own: a file, or a YubiKey.</li>
+                <li><strong>Sign the submission</strong> with a passkey or security key.</li>
+                <li><strong>Submit</strong> it to your server, or <strong>download</strong> the JSON or the PDF and send it by email.</li>
+              </ul>
+            </div>
+
+            <ul class="usage__lanes">
+              <li class="usage__lane usage__lane--to"><span class="usage__tag"><span class="sr-only">To the server: </span>record.json &middot; signed</span></li>
+              <li class="usage__lane usage__lane--back"><span class="usage__tag"><span class="sr-only">Back: </span>receipt &middot; JSON</span></li>
+              <li class="usage__lane usage__lane--back"><span class="usage__tag"><span class="sr-only">Back: </span>PDF &middot; server-signed</span></li>
+            </ul>
+
+            <div class="usage__side usage__side--server">
+              <div class="usage__bar"><span>On your server</span><span>any host that runs WASM</span></div>
+              <p class="usage__role">The API contract</p>
+              <ul class="usage__list">
+                <li><strong>Accept</strong> the record at <code>POST /api/submissions</code>: the fields the definition names, nothing else.</li>
+                <li><strong>Validate</strong> it in the WASM sandbox: same rules, same verdict, byte for byte.</li>
+                <li><strong>Verify</strong> the submission's signature, and every signature on a PDF, check by check.</li>
+                <li><strong>Generate the PDF</strong>, PDF/A with the record inside, and <strong>sign it</strong> with the server's certificate, so the signature covers the record too.</li>
+                <li><strong>Keep</strong> the record and <strong>answer</strong> with the receipt and the signed PDF.</li>
+                <li><strong>Inspect</strong> any JSON or PDF without storing it.</li>
+              </ul>
+            </div>
+
+            <p class="usage__foot usage__foot--leaves"><strong>From the browser alone</strong> a printed page &middot; a PDF &middot; a JSON record</p>
+            <p class="usage__foot usage__foot--also"><strong>Also into the server</strong> JSON from any client</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="container" aria-label="Runtimes">
+        <div class="runs">
+          <span class="label">Runs where you run</span>
+          <div class="chips">
+            <span class="chip">Browser</span>
+            <span class="chip">Node.js</span>
+            <span class="chip">Java</span>
+            <span class="chip">.NET</span>
+            <span class="chip">Python</span>
+            <span class="chip">Air-gapped</span>
+          </div>
+          <p class="runs__text">
+            The browser alone is enough. The builder, the renderer, the validation sandbox, PDF generation and the
+            signature tooling all run in the page, so a team can build a complete form with no server, and a person
+            can fill it in, download the signed PDF and send it by email. When submissions should be kept in one
+            place, any host that runs WASM can be the server. Datum and its own look fetch nothing from a third
+            party, so all of it runs air-gapped; a design-system binding lists on its page what that system fetches.
+          </p>
+        </div>
+      </section>
+
+      <section class="container" aria-labelledby="source-heading">
+        <div class="band">
+          <div class="band__text">
+            <span class="eyebrow">Start with yours</span>
+            <h2 id="source-heading" class="section-title">Bring one form.<br />See it run.</h2>
+            <p class="band__lede">
+              Take one form you run today, a fillable PDF will do, and build it in the demo above: nothing leaves the
+              page. When it is ready to run, the builder, the renderer, the sandbox, the PDF kernel, the signing agent
+              and the server hosts are in one repository, to host wherever you need them.
+            </p>
+          </div>
+          <div class="band__actions">
+            <a class="btn btn--primary" href="./#demo">Try it</a>
+            <a class="btn" href="https://github.com/argusvane/datum" data-github>Open on GitHub</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer__row">
+        <span>Datum</span>
+        <nav class="footer__links" aria-label="Project">
+          <a href="https://github.com/argusvane/datum/blob/main/LICENSE" data-github-file="LICENSE">MIT licence</a>
+          <a href="https://github.com/argusvane/datum" data-github>Repository</a>
+          <a href="https://github.com/argusvane/datum/blob/main/SECURITY.md" data-github-file="SECURITY.md">Security policy</a>
+          <a href="https://github.com/argusvane/datum/blob/main/CONTRIBUTING.md" data-github-file="CONTRIBUTING.md">Contributing</a>
+        </nav>
+        <p class="footer__note">Commercial support and services from Argusvane: <a href="mailto:contact@argusvane.com" data-contact>contact@argusvane.com</a></p>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

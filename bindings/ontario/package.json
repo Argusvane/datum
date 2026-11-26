@@ -1,0 +1,62 @@
+{
+  "name": "@argusvane/datum-binding-ontario",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "author": "Argusvane <maintainers@argusvane.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/argusvane/datum.git",
+    "directory": "bindings/ontario"
+  },
+  "homepage": "https://datum.argusvane.com",
+  "bugs": {
+    "url": "https://github.com/argusvane/datum/issues"
+  },
+  "keywords": [
+    "datum",
+    "forms",
+    "form-renderer",
+    "design-system",
+    "binding"
+  ],
+  "description": "Ontario Design System (designsystem.ontario.ca) binding for the Datum form renderer: Datum's components drawn in the design system's own markup.",
+  "type": "module",
+  "datumBinding": {
+    "id": "ontario",
+    "designSystem": "Ontario Design System",
+    "release": "9.2.2",
+    "bundle": "dist/ontario.js",
+    "global": "DatumBindingOntario",
+    "budgetKb": 14,
+    "checks": [
+      "tests/checks.mjs"
+    ]
+  },
+  "scripts": {
+    "build": "node ../../packages/datum/binding-kit/build.mjs --binding ontario",
+    "typecheck": "tsc --noEmit",
+    "kit:check": "node ../../packages/datum/binding-kit/check.mjs --binding ontario",
+    "kit:build": "node ../../packages/datum/binding-kit/build.mjs --binding ontario",
+    "kit:equality": "node ../../packages/datum/binding-kit/equality.mjs --binding ontario",
+    "kit:behaviour": "node ../../packages/datum/binding-kit/behaviour.mjs --binding ontario",
+    "kit:conformance": "node ../../packages/datum/binding-kit/conformance.ts --binding ontario",
+    "kit:serve": "node ../../packages/datum/binding-kit/serve.mjs --binding ontario",
+    "checks": "node ./tests/checks.mjs",
+    "checks:hooks": "node ./tests/hooks-check.mjs",
+    "test:official-date": "node ../../packages/datum/binding-kit/conformance.ts --binding tests/official-date/binding.ts --assets tests/official-date/binding-check.json"
+  },
+  "devDependencies": {
+    "@argusvane/datum-engine": "file:../../engine",
+    "esbuild": "^0.28.2",
+    "ontario-design-system-component-library-9.2.2": "npm:@ongov/ontario-design-system-component-library@9.2.2",
+    "ontario-design-system-global-styles-9.2.2": "npm:@ongov/ontario-design-system-global-styles@9.2.2",
+    "typescript": "^7.0.2"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/binding.ts",
+      "import": "./src/binding.ts"
+    }
+  }
+}

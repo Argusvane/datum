@@ -1,0 +1,8 @@
+from datum_core.submissions import AcceptedSubmission, SubmissionHandler
+
+
+def wrong(accepted: AcceptedSubmission) -> int:
+    return 1
+
+
+bad: SubmissionHandler = wrong

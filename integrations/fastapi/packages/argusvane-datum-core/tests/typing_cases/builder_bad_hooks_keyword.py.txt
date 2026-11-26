@@ -1,0 +1,7 @@
+from datum_core import Datum
+
+
+def validator_with_the_wrong_shape(candidate: int) -> None: ...
+
+
+Datum(builder_save_validators=[validator_with_the_wrong_shape])

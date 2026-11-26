@@ -1,0 +1,158 @@
+<!-- datum-reference
+{
+  "source": "govuk-frontend 6.6.0: the binding's journey page caption: the step count a journey shows unless its progress is none (form.ts page.heading); the binding's journey page heading (form.ts page.heading); patterns/check-answers: a heading per section; components/summary-list/template.njk with options of this case; components/summary-list/template.njk with options of this case; the binding's journey page buttons (form.ts page.actions)",
+  "note": "a journey's Check answers page: a summary list with Change links and a missing answer, a data grid's row as a summary card",
+  "components": [],
+  "definition": {
+    "id": "kit-summary-list-check-answers",
+    "version": "1.0.0",
+    "schemaVersion": "1",
+    "localization": {
+      "defaultLocale": "en",
+      "supportedLocales": [
+        {
+          "code": "en",
+          "label": "English"
+        }
+      ]
+    },
+    "root": {
+      "id": "root",
+      "type": "form",
+      "configuration": {},
+      "children": {
+        "content": [
+          {
+            "id": "fullName",
+            "type": "text",
+            "configuration": {
+              "label": "Full name",
+              "required": true
+            }
+          },
+          {
+            "id": "town",
+            "type": "text",
+            "configuration": {
+              "label": "Town"
+            }
+          },
+          {
+            "id": "landlord",
+            "type": "text",
+            "configuration": {
+              "label": "Landlord's name",
+              "required": true
+            }
+          },
+          {
+            "id": "people",
+            "type": "dataGrid",
+            "configuration": {
+              "label": "People",
+              "initialRows": 0,
+              "rowLabel": "Person {{n}}"
+            },
+            "collection": {
+              "collectionPath": "people"
+            },
+            "children": {
+              "content": [
+                {
+                  "id": "name",
+                  "type": "text",
+                  "configuration": {
+                    "label": "Name"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "journey": {
+      "journeys": [
+        {
+          "id": "apply",
+          "name": "Apply",
+          "pages": [
+            {
+              "id": "about",
+              "title": "About you",
+              "components": [
+                "fullName",
+                "town",
+                "landlord",
+                "people"
+              ]
+            },
+            {
+              "id": "check",
+              "kind": "review",
+              "title": "Check your answers"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "preset": {
+    "fullName": "Ana Silva",
+    "people[0].name": "Leo Silva"
+  },
+  "steps": [
+    {
+      "op": "click",
+      "selector": "[data-journey-continue]"
+    }
+  ],
+  "root": "form",
+  "width": 560,
+  "init": "window.GOVUKFrontend.initAll();"
+}
+-->
+<form novalidate>
+<span class="govuk-caption-l">Step 2 of 2<span class="govuk-visually-hidden">: </span></span>
+<h1 class="govuk-heading-l" tabindex="-1">Check your answers</h1>
+<h2 class="govuk-heading-m">About you</h2>
+<dl class="govuk-summary-list">
+<div class="govuk-summary-list__row">
+<dt class="govuk-summary-list__key"> Full name </dt>
+<dd class="govuk-summary-list__value"> Ana Silva </dd>
+<dd class="govuk-summary-list__actions">
+<a class="govuk-link" href="#about__page-heading">Change<span class="govuk-visually-hidden"> Full name</span></a>
+</dd>
+</div>
+<div class="govuk-summary-list__row">
+<dt class="govuk-summary-list__key"> Town </dt>
+<dd class="govuk-summary-list__value"> Not provided </dd>
+<dd class="govuk-summary-list__actions">
+<a class="govuk-link" href="#about__page-heading">Change<span class="govuk-visually-hidden"> Town</span></a>
+</dd>
+</div>
+<div class="govuk-summary-list__row govuk-summary-list__row--no-actions">
+<dt class="govuk-summary-list__key"> Landlord&#39;s name </dt>
+<dd class="govuk-summary-list__value">
+<a class="govuk-link" href="#about__page-heading">Enter Landlord's name</a>
+</dd>
+</div>
+</dl>
+<div class="govuk-summary-card">
+<div class="govuk-summary-card__title-wrapper">
+<h3 class="govuk-summary-card__title"> Person 1 </h3>
+<div class="govuk-summary-card__actions">
+<a class="govuk-link" href="#about__page-heading">Change<span class="govuk-visually-hidden"> (Person 1)</span></a>
+</div>
+</div>
+<div class="govuk-summary-card__content">
+<dl class="govuk-summary-list">
+<div class="govuk-summary-list__row">
+<dt class="govuk-summary-list__key"> Name </dt>
+<dd class="govuk-summary-list__value"> Leo Silva </dd>
+</div>
+</dl>
+</div>
+</div>
+<div class="govuk-button-group"><button type="button" class="govuk-button" data-module="govuk-button" aria-disabled="false">Submit</button><button type="button" class="govuk-button govuk-button--secondary" data-module="govuk-button" aria-disabled="false">Back</button></div>
+</form>

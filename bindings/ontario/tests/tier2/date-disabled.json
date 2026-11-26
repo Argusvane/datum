@@ -1,0 +1,19 @@
+{
+  "note": "a disabled date",
+  "components": [
+    {
+      "id": "start",
+      "type": "date",
+      "configuration": {
+        "label": "Start date",
+        "description": "For example, 2026 5 14.",
+        "required": true,
+        "disabled": true
+      }
+    }
+  ],
+  "preset": {
+    "start": "2026-05-14"
+  },
+  "width": 560
+}

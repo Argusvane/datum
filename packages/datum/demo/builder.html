@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>datum-form-builder — contained</title>
+    <link rel="stylesheet" href="/dist/datum-builder.css" />
+    <!-- The builder bundle is evaluated by the page's script below; fetched now. -->
+    <link rel="modulepreload" href="/dist/datum-builder.js" />
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; background: #eef1f4; color: #1d2b36; }
+      .host-bar { position: sticky; top: 0; z-index: 10; background: #1d2b36; color: #fff; padding: 12px 20px; display: flex; gap: 16px; align-items: center; }
+      .host-bar h1 { font-size: 16px; margin: 0; }
+      .host-bar a { color: #9fc4ff; }
+      .page { max-width: 1400px; margin: 0 auto; padding: 20px; display: grid; gap: 16px; }
+      .intro { background: #fff; border: 1px solid #dfe5ec; border-radius: 10px; padding: 16px 20px; }
+      .intro p { margin: 0; }
+      /* The page sizes the builder; everything the builder draws stays inside this box. */
+      datum-form-builder { height: 720px; border: 1px solid #c9d3dd; border-radius: 10px; overflow: hidden; background: #fff; }
+      .below { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+      .card { background: #fff; border: 1px solid #dfe5ec; border-radius: 10px; padding: 16px; font-size: 13px; }
+      .card h2 { font-size: 14px; margin: 0 0 8px; }
+      .card pre { margin: 0; white-space: pre-wrap; word-break: break-word; max-height: 40vh; overflow: auto; }
+      .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+      button, select { font: inherit; padding: 6px 10px; border-radius: 6px; border: 1px solid #c9d3dd; background: #fff; cursor: pointer; }
+      @media (max-width: 900px) { .below { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="host-bar">
+      <h1>A host page with the builder inside it</h1>
+      <a href="/demo/">All demos</a>
+      <a href="/demo/builder-page.html">Full-page layout</a>
+    </div>
+    <div class="page">
+      <section class="intro">
+        <p>
+          The builder below is <code>&lt;datum-form-builder layout="contained"&gt;</code>: its bar,
+          panels and canvas all sit inside the 720px box the page gave it, and the page keeps its
+          own header and the content below. Drag a component from the palette onto the canvas and
+          the definition on the right updates. <code>persist-panels="demo-builder"</code> makes it
+          remember which strip panel is open, the column widths and the inspector's fold between
+          visits; narrow the window under 900px and the side column and the inspector open as
+          drawers over the canvas instead.
+        </p>
+      </section>
+
+      <datum-form-builder
+        id="builder"
+        layout="contained"
+        persist-panels="demo-builder"
+        src="/demo/intake-form.json"
+      >
+        <!-- The page's own controls, on the builder's bar. -->
+        <button slot="toolbar" type="button" id="save">Save</button>
+        <button slot="canvas-actions" type="button" id="reset" title="Reload the sample form">Reset</button>
+      </datum-form-builder>
+
+      <div class="below">
+        <div class="card">
+          <div class="controls">
+            <button id="undo" type="button">Undo</button>
+            <button id="redo" type="button">Redo</button>
+          </div>
+          <h2>Events</h2>
+          <pre id="events">(waiting)</pre>
+        </div>
+        <div class="card">
+          <h2>Definition (as authored)</h2>
+          <pre id="definition"></pre>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      await import("/dist/datum-builder.js");
+
+      const builder = document.getElementById("builder");
+      const events = document.getElementById("events");
+      const definition = document.getElementById("definition");
+      const lines = [];
+      const log = (line) => {
+        lines.unshift(`${new Date().toLocaleTimeString()}  ${line}`);
+        events.textContent = lines.slice(0, 30).join("\n");
+      };
+
+      builder.dataSources = {
+        countries: [
+          { value: "CA", label: "Canada" },
+          { value: "US", label: "United States" }
+        ]
+      };
+      builder.addEventListener("datum-builder-change", (event) => {
+        log(`datum-builder-change (${event.detail.mode}: ${event.detail.reason}) selected=${event.detail.selectedComponentId ?? "-"}`);
+        definition.textContent = JSON.stringify(event.detail.definition, null, 2);
+      });
+      // Form | PDF on the builder's own top bar: the PDF side needs no attribute, and fetches
+      // its executor (a chunk of datum-builder.js) on the first preview, test fill or inspection.
+      builder.addEventListener("datum-builder-mode-change", (event) => {
+        log(`datum-builder-mode-change ${event.detail.previous ?? "-"} → ${event.detail.mode}`);
+      });
+      builder.addEventListener("datum-pdf-layout-select", (event) => log(`datum-pdf-layout-select ${event.detail.layout.id}`));
+      builder.addEventListener("datum-error", (event) => log(`datum-error ${event.detail.message}`));
+
+      document.getElementById("undo").addEventListener("click", () => builder.undo());
+      document.getElementById("redo").addEventListener("click", () => builder.redo());
+      document.getElementById("save").addEventListener("click", () => {
+        // A real page persists builder.definition here (what datum-builder-change carries).
+        log(`save → ${JSON.stringify(builder.definition).length} bytes`);
+      });
+      document.getElementById("reset").addEventListener("click", () => {
+        builder.requestLeave(() => {
+          builder.src = "/demo/intake-form.json?" + Date.now();
+        });
+      });
+    </script>
+  </body>
+</html>

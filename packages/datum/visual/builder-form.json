@@ -1,0 +1,458 @@
+{
+  "id": "customer-intake",
+  "version": "1.0.0",
+  "schemaVersion": "1",
+  "localization": {
+    "defaultLocale": "en",
+    "supportedLocales": [
+      {
+        "code": "en",
+        "label": "English"
+      },
+      {
+        "code": "fr-CA",
+        "label": "Français"
+      }
+    ]
+  },
+  "root": {
+    "id": "root",
+    "type": "form",
+    "configuration": {
+      "title": "Customer Intake"
+    },
+    "children": {
+      "content": [
+        {
+          "id": "fullName",
+          "type": "text",
+          "configuration": {
+            "label": "Full name",
+            "description": "As it appears on a government ID",
+            "required": true
+          }
+        },
+        {
+          "id": "country",
+          "type": "select",
+          "configuration": {
+            "label": "Country",
+            "data": {
+              "sourceId": "countries"
+            }
+          }
+        },
+        {
+          "id": "contactMethod",
+          "type": "radio",
+          "configuration": {
+            "label": "Preferred contact method",
+            "options": [
+              {
+                "value": "email",
+                "label": "Email"
+              },
+              {
+                "value": "phone",
+                "label": "Phone"
+              }
+            ]
+          }
+        },
+        {
+          "id": "birthDate",
+          "type": "date",
+          "configuration": {
+            "label": "Date of birth"
+          }
+        },
+        {
+          "id": "newsletter",
+          "type": "fieldset",
+          "configuration": {
+            "label": "Newsletter"
+          },
+          "children": {
+            "content": [
+              {
+                "id": "subscribe",
+                "type": "checkbox",
+                "configuration": {
+                  "label": "Subscribe to the newsletter"
+                }
+              },
+              {
+                "id": "newsletterEmail",
+                "type": "text",
+                "configuration": {
+                  "label": "Newsletter email",
+                  "pattern": "[^@\\s]+@[^@\\s]+\\.[^@\\s]+",
+                  "patternMessage": "Enter an email address."
+                },
+                "rules": {
+                  "visibleWhen": {
+                    "kind": "path",
+                    "path": "subscribe"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "dependants",
+          "type": "dataGrid",
+          "configuration": {
+            "label": "Dependants",
+            "minRows": 1,
+            "maxRows": 6,
+            "canReorder": true,
+            "addLabel": "Add a dependant"
+          },
+          "collection": {
+            "collectionPath": "dependants"
+          },
+          "children": {
+            "content": [
+              {
+                "id": "dependantName",
+                "type": "text",
+                "configuration": {
+                  "label": "Name"
+                }
+              },
+              {
+                "id": "dependantBorn",
+                "type": "date",
+                "configuration": {
+                  "label": "Date of birth"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "notes",
+          "type": "textarea",
+          "configuration": {
+            "label": "Additional notes",
+            "maxLength": 500
+          }
+        },
+        {
+          "id": "submit",
+          "type": "button",
+          "configuration": {
+            "label": "Submit",
+            "action": "submit"
+          }
+        }
+      ]
+    }
+  },
+  "pdf": {
+    "layouts": [
+      {
+        "id": "standard",
+        "kind": "generated",
+        "name": "Standard",
+        "page": {
+          "footer": {
+            "height": 24
+          }
+        },
+        "root": {
+          "id": "document",
+          "type": "pdf-document",
+          "configuration": {},
+          "children": {
+            "body": [
+              {
+                "id": "title",
+                "type": "pdf-text",
+                "configuration": {
+                  "text": "Customer Intake",
+                  "variant": "h1"
+                }
+              },
+              {
+                "id": "pdf-fullName",
+                "type": "pdf-field",
+                "configuration": {
+                  "componentId": "fullName"
+                }
+              },
+              {
+                "id": "pdf-country",
+                "type": "pdf-field",
+                "configuration": {
+                  "componentId": "country"
+                }
+              },
+              {
+                "id": "pdf-contactMethod",
+                "type": "pdf-field",
+                "configuration": {
+                  "componentId": "contactMethod"
+                }
+              },
+              {
+                "id": "pdf-birthDate",
+                "type": "pdf-field",
+                "configuration": {
+                  "componentId": "birthDate"
+                }
+              },
+              {
+                "id": "sec-newsletter",
+                "type": "pdf-section",
+                "configuration": {
+                  "label": "Newsletter",
+                  "skipWhenEmpty": true
+                },
+                "children": {
+                  "content": [
+                    {
+                      "id": "pdf-subscribe",
+                      "type": "pdf-field",
+                      "configuration": {
+                        "componentId": "subscribe"
+                      }
+                    },
+                    {
+                      "id": "pdf-newsletterEmail",
+                      "type": "pdf-field",
+                      "configuration": {
+                        "componentId": "newsletterEmail"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "pdf-notes",
+                "type": "pdf-field",
+                "configuration": {
+                  "componentId": "notes"
+                }
+              }
+            ],
+            "header": [],
+            "footer": [
+              {
+                "id": "footer",
+                "type": "pdf-table",
+                "configuration": {
+                  "rows": 1,
+                  "columns": 2,
+                  "header": false,
+                  "borders": "none",
+                  "style": {
+                    "spacingBefore": 0,
+                    "spacingAfter": 0
+                  }
+                },
+                "children": {
+                  "r1c1": [
+                    {
+                      "id": "footer-title",
+                      "type": "pdf-text",
+                      "configuration": {
+                        "text": "Customer Intake",
+                        "variant": "muted",
+                        "style": {
+                          "spacingBefore": 0,
+                          "spacingAfter": 0
+                        }
+                      }
+                    }
+                  ],
+                  "r1c2": [
+                    {
+                      "id": "footer-pages",
+                      "type": "pdf-text",
+                      "configuration": {
+                        "text": "Page {{page}} of {{pages}}",
+                        "variant": "muted",
+                        "align": "end",
+                        "style": {
+                          "spacingBefore": 0,
+                          "spacingAfter": 0
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "defaultLayoutId": "standard"
+  },
+  "journey": {
+    "journeys": [
+      {
+        "id": "intake",
+        "name": "Intake",
+        "pages": [
+          {
+            "id": "start",
+            "title": "Start",
+            "components": [
+              "fullName",
+              "country"
+            ],
+            "routes": [
+              {
+                "when": {
+                  "kind": "binary",
+                  "operator": "neq",
+                  "left": {
+                    "kind": "path",
+                    "path": "country"
+                  },
+                  "right": {
+                    "kind": "literal",
+                    "value": "CA"
+                  }
+                },
+                "to": "$end"
+              }
+            ]
+          },
+          {
+            "id": "contact",
+            "title": "Contact",
+            "components": [
+              "contactMethod"
+            ]
+          },
+          {
+            "id": "preferences",
+            "title": "Newsletter Preferences",
+            "components": [
+              "subscribe",
+              "newsletterEmail",
+              "dependants"
+            ]
+          }
+        ]
+      }
+    ],
+    "opensAs": "form"
+  },
+  "translations": {
+    "fr-CA": {
+      "components": {
+        "fullName": {
+          "label": {
+            "text": "Nom complet",
+            "source": "13z0t9r"
+          },
+          "description": {
+            "text": "Tel qu'il apparaît sur une pièce d'identité",
+            "source": "1u3kqke"
+          }
+        },
+        "country": {
+          "label": {
+            "text": "Pays",
+            "source": "1diicx"
+          }
+        },
+        "contactMethod": {
+          "label": {
+            "text": "Mode de contact préféré",
+            "source": "1asuvwb"
+          },
+          "options": {
+            "email": {
+              "label": {
+                "text": "Courriel",
+                "source": "inbfc7"
+              }
+            },
+            "phone": {
+              "label": {
+                "text": "Téléphone",
+                "source": "kb2lhr"
+              }
+            }
+          }
+        },
+        "birthDate": {
+          "label": {
+            "text": "Date de naissance",
+            "source": "15n54cn"
+          }
+        },
+        "newsletter": {
+          "label": {
+            "text": "Infolettre",
+            "source": "oapagq"
+          }
+        },
+        "subscribe": {
+          "label": {
+            "text": "S'abonner à l'infolettre",
+            "source": "1l7gaq6"
+          }
+        },
+        "newsletterEmail": {
+          "label": {
+            "text": "Courriel de l'infolettre",
+            "source": "fwj2oq"
+          }
+        },
+        "dependants": {
+          "label": {
+            "text": "Personnes à charge",
+            "source": "97qag5"
+          },
+          "addLabel": {
+            "text": "Ajouter une personne à charge",
+            "source": "fbhqok"
+          }
+        },
+        "dependantName": {
+          "label": {
+            "text": "Nom",
+            "source": "4el6o6"
+          }
+        },
+        "dependantBorn": {
+          "label": {
+            "text": "Date de naissance",
+            "source": "15n54cn"
+          }
+        },
+        "notes": {
+          "label": {
+            "text": "Notes supplémentaires",
+            "source": "126tvmx"
+          }
+        },
+        "submit": {
+          "label": {
+            "text": "Envoyer",
+            "source": "hvztxh"
+          }
+        }
+      },
+      "pdf": {
+        "standard": {
+          "nodes": {
+            "sec-newsletter": {
+              "label": {
+                "text": "Infolettre",
+                "source": "oapagq"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

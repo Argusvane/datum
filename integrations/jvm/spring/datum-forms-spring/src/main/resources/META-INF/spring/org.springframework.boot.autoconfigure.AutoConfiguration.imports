@@ -1,0 +1,3 @@
+com.argusvane.datum.forms.spring.DatumFormsAutoConfiguration
+com.argusvane.datum.forms.spring.DatumFormsWebAutoConfiguration
+com.argusvane.datum.forms.spring.DatumFormsOpenApiAutoConfiguration

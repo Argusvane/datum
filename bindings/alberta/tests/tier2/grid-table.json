@@ -1,0 +1,34 @@
+{
+  "note": "a data grid the author set to the table layout: goa-table, the column heading naming each cell",
+  "components": [
+    {
+      "id": "items",
+      "type": "dataGrid",
+      "configuration": {
+        "label": "Items",
+        "layout": "table",
+        "initialRows": 2,
+        "canReorder": true
+      },
+      "children": {
+        "content": [
+          {
+            "id": "item",
+            "type": "text",
+            "configuration": {
+              "label": "Item"
+            }
+          },
+          {
+            "id": "qty",
+            "type": "text",
+            "configuration": {
+              "label": "Quantity"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "width": 560
+}

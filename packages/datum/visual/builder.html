@@ -1,0 +1,1261 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>datum-form-builder — builder workbench</title>
+    <!-- The builder in one state at one size the page the
+         builder harness (scripts/builder-browser.mjs) mounts every state × size tier on, for the
+         visual signatures, the axe pass, the keyboard walk and the keystroke-to-paint timing; a
+         person opens it too (?state=<id>&size=<id>). The built builder bundle with the engine's own
+         icons, and the fixture in visual/builder-form.json (a frozen copy of the intake demo, so a
+         demo edit cannot move the baseline). Served by scripts/serve-demo.mjs over the package root. -->
+    <link rel="stylesheet" href="/dist/datum-builder.css" />
+    <script src="/node_modules/axe-core/axe.min.js"></script>
+    <style>
+      html, body { margin: 0; background: #ffffff; color: #14212b; font-family: system-ui, sans-serif; }
+      #bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid #c7d0d9; font-size: 13px; }
+      #bar label { display: inline-flex; gap: 4px; align-items: center; }
+      #bar[hidden] { display: none; }
+      /* A contained size is a box the page gives the builder, the way a host does. */
+      #stage[data-layout="contained"] datum-form-builder { display: block; border: 0; overflow: hidden; }
+      /* Transitions and caret blinks would make two captures of one state differ. */
+      #stage.capturing *, #stage.capturing *::before, #stage.capturing *::after { transition: none !important; animation: none !important; caret-color: transparent !important; }
+    </style>
+  </head>
+  <body>
+    <div id="bar">
+      <label>State <select id="state"></select></label>
+      <label>Size <select id="size"></select></label>
+      <a id="link" href="#">link to this view</a>
+    </div>
+    <main id="stage"></main>
+    <script type="module">
+      import { axeRunOptions } from "/a11y/audit-support.mjs";
+      await import("/dist/datum-builder.js");
+      const fixture = await (await fetch("/visual/builder-form.json")).json();
+      const stage = document.getElementById("stage");
+      const bar = document.getElementById("bar");
+      const query = new URLSearchParams(location.search);
+
+      /**
+       * The size tiers of the responsive strategy: the builder's own box at each tier's
+       * edge, so the tiers compare one by one. Full-window tiers use the page layout; Short is
+       * the site demo's contained 640 px box.
+       */
+      const SIZES = [
+        { id: "wide", width: 1440, height: 1000, layout: "page" },
+        { id: "medium", width: 1024, height: 768, layout: "page" },
+        { id: "narrow", width: 768, height: 1024, layout: "page" },
+        { id: "phone", width: 390, height: 844, layout: "page" },
+        { id: "short", width: 1070, height: 640, layout: "contained" },
+        // The phone tier: WCAG reflow's 320px, and a host's small box on a phone (Phone + Short).
+        { id: "phone-small", width: 320, height: 568, layout: "page" },
+        { id: "phone-box", width: 360, height: 640, layout: "contained" }
+      ];
+
+      /** The states the harness captures. `apply` puts a mounted builder in the state; `false` when the state does not exist here. */
+      const PANELS = ["components", "outline", "form", "chrome", "variables", "view", "settings"];
+      const STATES = [
+        { id: "canvas", label: "Canvas, nothing selected", apply: async (el) => el.builder.activeController.select(undefined) },
+        { id: "selected", label: "A field selected (the inspector)", apply: async (el) => el.builder.activeController.select("fullName") },
+        // Dark mode: the same state under the studio look's dark palette, for axe's contrast pass and a look.
+        { id: "dark", label: "Dark mode, a field selected", apply: async (el) => { el.scheme = "dark"; el.builder.activeController.select("fullName"); } },
+        // The lazy surfaces and the palette under the dark scheme: each prints the
+        // token defaults on its own host, so each has to be given the dark vars; the wide and short
+        // tiers only (they are not core states), enough for axe's contrast pass and a look.
+        {
+          id: "dark-logic",
+          label: "Dark mode, Logic workspace",
+          apply: async (el) => {
+            el.scheme = "dark";
+            el.builder.activeController.select(undefined);
+            el.builder.setWorkspace("logic");
+            await wait(() => el.builder.shadowRoot.querySelector("datum-builder-logic")?.shadowRoot?.querySelector("[data-logic-rule]"));
+            return el.builder.workspace === "logic";
+          }
+        },
+        {
+          id: "dark-languages",
+          label: "Dark mode, Languages workspace",
+          apply: async (el) => {
+            el.scheme = "dark";
+            el.builder.activeController.select(undefined);
+            el.builder.setWorkspace("languages");
+            await wait(() => el.builder.shadowRoot.querySelector("datum-builder-languages")?.shadowRoot?.querySelector("[data-languages-main] > *"));
+            return el.builder.workspace === "languages";
+          }
+        },
+        {
+          id: "dark-palette",
+          label: "Dark mode, command palette open",
+          apply: async (el) => {
+            el.scheme = "dark";
+            el.builder.activeController.select(undefined);
+            await el.builder.openPalette();
+            return el.builder.shadowRoot.querySelector("datum-builder-palette")?.shadowRoot?.querySelector("dialog")?.open === true;
+          }
+        },
+        {
+          // A data grid selected: its header and one template row of drop zones on the
+          // canvas, the inspector's Rows section beside it.
+          id: "datagrid",
+          label: "A data grid selected (the Rows section)",
+          apply: async (el) => {
+            el.builder.activeController.select("dependants");
+            const inspector = await wait(() => el.builder.shadowRoot.querySelector("datum-builder-properties")?.shadowRoot?.querySelector('details[data-inspector-section="rows"]') && el.builder.shadowRoot.querySelector("datum-builder-properties").shadowRoot);
+            inspector.querySelector('details[data-inspector-section="rows"]').open = true;
+            await frame();
+            return true;
+          }
+        },
+        {
+          // The inspector's Logic tab as formulas: a field whose rule is stored as a
+          // tree opens in the formula box (CodeMirror, from its lazy chunk), the Runs control beside it.
+          id: "inspector-logic",
+          label: "A field selected, the inspector's Logic tab",
+          apply: async (el) => {
+            el.builder.activeController.select("newsletterEmail");
+            const inspector = await wait(() => el.builder.shadowRoot.querySelector("datum-builder-properties")?.shadowRoot?.querySelector('[data-inspector-tab="rules"]') && el.builder.shadowRoot.querySelector("datum-builder-properties").shadowRoot);
+            inspector.querySelector('[data-inspector-tab="rules"]').click();
+            const section = await wait(() => inspector.querySelector('[data-rule-section="visibleWhen"]'));
+            section.open = true;
+            await wait(() => section.querySelector("[data-rule-formula-host] .formula-editor"));
+            await frame();
+            return true;
+          }
+        },
+        ...PANELS.map((panel) => ({
+          id: `panel-${panel}`,
+          label: `Strip panel: ${panel}`,
+          apply: async (el) => {
+            el.builder.activeController.select(undefined);
+            el.builder.panel = panel;
+            return el.builder.panel === panel;
+          }
+        })),
+        {
+          // The Languages workspace: the cards, the switcher row and the all-languages grid.
+          id: "languages",
+          label: "Languages workspace, the all-languages grid",
+          apply: async (el) => {
+            el.builder.activeController.select(undefined);
+            el.builder.setWorkspace("languages");
+            await wait(() => el.builder.shadowRoot.querySelector("datum-builder-languages")?.shadowRoot?.querySelector("[data-languages-row]"));
+            await frame();
+            return el.builder.workspace === "languages";
+          }
+        },
+        {
+          // The import dialog with a file chosen: the preview before anything changes. The
+          // file is a JSON export with one changed text, one new language, one stale source and one
+          // address the form does not have, so each count of the preview is drawn.
+          id: "languages-import",
+          label: "Languages workspace, the import preview",
+          apply: async (el) => {
+            el.builder.activeController.select(undefined);
+            el.builder.setWorkspace("languages");
+            const surface = await wait(() => {
+              const element = el.builder.shadowRoot.querySelector("datum-builder-languages");
+              return element?.shadowRoot?.querySelector("[data-languages-row]") ? element : undefined;
+            });
+            surface.shadowRoot.querySelector("[data-languages-import]").click();
+            const input = await wait(() => surface.shadowRoot.querySelector("[data-exchange-file]"));
+            const fullName = el.builder.activeController.translatableTexts().find((row) => row.componentId === "fullName" && row.propertyPath === "label");
+            const file = new File(
+              [
+                JSON.stringify({
+                  defaultLocale: "en",
+                  locales: ["fr-CA", "es"],
+                  texts: [
+                    { kind: "components", key: "fullName", path: "label", default: fullName?.default ?? "", "fr-CA": "Nom et prénom", es: "Nombre completo" },
+                    { kind: "components", key: "country", path: "label", default: "Country", source: "0000", "fr-CA": "Pays de résidence" },
+                    { kind: "components", key: "noSuchField", path: "label", default: "Nothing", "fr-CA": "Rien" }
+                  ]
+                })
+              ],
+              "translations.json",
+              { type: "application/json" }
+            );
+            const transfer = new DataTransfer();
+            transfer.items.add(file);
+            input.files = transfer.files;
+            input.dispatchEvent(new Event("change", { bubbles: true }));
+            await wait(() => surface.shadowRoot.querySelector("[data-exchange-count]"));
+            await frame();
+            return true;
+          }
+        },
+        {
+          // The canvas's zoom: two steps out, the level on the bar.
+          id: "canvas-zoomed",
+          label: "Canvas zoomed out",
+          apply: async (el) => {
+            const canvas = el.builder.shadowRoot.querySelector("datum-builder-canvas");
+            canvas.zoomTo(0.64);
+            await frame();
+            return canvas.zoom === 0.64;
+          }
+        },
+        {
+          id: "documents-menu",
+          label: "Document menu open",
+          apply: async (el) => {
+            // The bar's label for a PDF layout: its options menu.
+            if (!el.builder.modes.some((mode) => mode.id === "pdf")) return false;
+            el.builder.setMode("pdf");
+            await wait(() => el.builder.shadowRoot.querySelector("button[data-document-menu]"));
+            const button = el.builder.shadowRoot.querySelector("button[data-document-menu]");
+            button.click();
+            await frame();
+            return button.getAttribute("aria-expanded") === "true";
+          }
+        },
+        {
+          // The Logic workspace: its surface in the canvas's place, from its own chunk.
+          id: "logic",
+          label: "Logic workspace",
+          apply: async (el) => {
+            el.builder.activeController.select(undefined);
+            el.builder.setWorkspace("logic");
+            await wait(() => el.builder.shadowRoot.querySelector("datum-builder-logic")?.shadowRoot?.querySelector("[data-logic-rule]"));
+            return el.builder.workspace === "logic";
+          }
+        },
+        {
+          id: "logic-rule",
+          label: "Logic workspace, a rule open",
+          apply: async (el) => {
+            el.builder.setWorkspace("logic");
+            const surface = await wait(() => el.builder.shadowRoot.querySelector("datum-builder-logic")?.shadowRoot?.querySelector("[data-logic-rule]") && el.builder.shadowRoot.querySelector("datum-builder-logic").shadowRoot);
+            surface.querySelector("[data-logic-rule]").click();
+            await wait(() => surface.querySelector("[data-logic-editor]"));
+            return true;
+          }
+        },
+        {
+          // The Data workspace: the schema table in the canvas's place.
+          id: "data",
+          label: "Data workspace",
+          apply: async (el) => {
+            el.builder.activeController.select(undefined);
+            el.builder.setWorkspace("data");
+            await wait(() => el.builder.shadowRoot.querySelector("datum-builder-data")?.shadowRoot?.querySelector("[data-data-row]"));
+            return el.builder.workspace === "data";
+          }
+        },
+        {
+          // Try it's panel: the form previewed, the panel on the canvas's end edge, its checks run.
+          id: "try-it",
+          label: "Try it, checks run",
+          apply: async (el) => {
+            el.builder.activeController.select(undefined);
+            const canvas = el.builder.shadowRoot.querySelector("datum-builder-canvas");
+            canvas.previewing = true;
+            const panel = await wait(() => canvas.shadowRoot.querySelector("[data-try-panel]:not([hidden]) [data-try-check]") && canvas.shadowRoot.querySelector("[data-try-panel]"));
+            panel.querySelector("[data-try-check]").click();
+            await wait(() => panel.querySelector(".try-problem, .try-ok"));
+            return true;
+          }
+        },
+        {
+          // The Data workspace's import: the dialog over the schema table.
+          id: "data-import",
+          label: "Data workspace, the import dialog",
+          apply: async (el) => {
+            el.builder.setWorkspace("data");
+            const surface = await wait(() => el.builder.shadowRoot.querySelector("datum-builder-data")?.shadowRoot?.querySelector("[data-data-import]") && el.builder.shadowRoot.querySelector("datum-builder-data").shadowRoot);
+            surface.querySelector("[data-data-import]").click();
+            await wait(() => surface.querySelector("dialog[open]"));
+            return true;
+          }
+        },
+        {
+          id: "data-row",
+          label: "Data workspace, an answer open",
+          apply: async (el) => {
+            el.builder.setWorkspace("data");
+            const surface = await wait(() => el.builder.shadowRoot.querySelector("datum-builder-data")?.shadowRoot?.querySelector("[data-data-row]") && el.builder.shadowRoot.querySelector("datum-builder-data").shadowRoot);
+            surface.querySelector("[data-data-row]").click();
+            await wait(() => surface.querySelector("[data-data-editor]"));
+            return true;
+          }
+        },
+        {
+          // The Journeys overview: the journeys in the canvas's place, with New.
+          id: "journeys-overview",
+          label: "Journeys overview",
+          apply: async (el) => {
+            el.builder.activeController.select(undefined);
+            el.builder.setWorkspace("journeys");
+            await wait(() => el.builder.shadowRoot.querySelector("datum-builder-overview")?.shadowRoot?.querySelector('[data-overview-section="journeys"] [data-overview-add]'));
+            return el.builder.workspace === "journeys";
+          }
+        },
+        {
+          // The PDF overview: the layouts in the order they are tried, with New.
+          id: "pdf-overview",
+          label: "PDF overview",
+          apply: async (el) => {
+            el.builder.activeController.select(undefined);
+            el.builder.setWorkspace("pdf");
+            await wait(() => el.builder.shadowRoot.querySelector("datum-builder-overview")?.shadowRoot?.querySelector('[data-overview-section="pdf"] [data-overview-add]'));
+            return el.builder.workspace === "pdf";
+          }
+        },
+        // The Print workspace: the settings card beside the sheet, drawn with a filled sample and a receipt.
+        { id: "print", label: "Print workspace, a filled sample", apply: async (el) => (await openPrint(el, { filled: true })) !== undefined },
+        {
+          id: "print-header-footer",
+          label: "Print workspace, the header and footer slots",
+          apply: async (el) => {
+            const surface = await openPrint(el, { filled: true });
+            const slot = surface?.shadowRoot.querySelector('[data-print-slot="header.end"]');
+            if (!slot) return false;
+            slot.scrollIntoView({ block: "center" });
+            slot.focus();
+            await frame();
+            return true;
+          }
+        },
+        {
+          id: "print-selected",
+          label: "Print workspace, a component selected (its On paper fields)",
+          apply: async (el) => {
+            const surface = await openPrint(el, { filled: true });
+            const doc = surface?.shadowRoot.querySelector("iframe[data-print-frame]:not([data-print-frame-back])")?.contentDocument;
+            const target = doc?.querySelector('[data-component-id="fullName"]');
+            if (!target) return false;
+            target.click();
+            await wait(() => surface.shadowRoot.querySelector("[data-print-on-paper] [data-prop]"));
+            await frame();
+            return true;
+          }
+        },
+        {
+          // A form of about three sheets with one component set to start a new page: the estimated page start and the author's own break are both in view.
+          id: "print-breaks",
+          label: "Print workspace, an estimated page start and an authored break",
+          definition: (base) => {
+            const long = structuredClone(base);
+            const content = long.root.children.content;
+            const at = content.findIndex((node) => node.id === "submit");
+            const extra = Array.from({ length: 18 }, (_, index) => ({ id: `question${index + 1}`, type: "text", configuration: { label: `Question ${index + 1}` } }));
+            content.splice(at < 0 ? content.length : at, 0, ...extra);
+            return long;
+          },
+          apply: async (el) => {
+            const surface = await openPrint(el, { filled: true });
+            if (!surface) return false;
+            const root = surface.shadowRoot;
+            // No sample box open: the sheet starts right under the toolbar.
+            const sample = root.querySelector("[data-print-sample]");
+            sample.value = "none";
+            sample.dispatchEvent(new Event("change", { bubbles: true }));
+            await surface.previewSettled();
+            const overlayLine = (kind) => root.querySelector(`[data-print-break="${kind}"]`);
+            const frameDoc = () => root.querySelector("iframe[data-print-frame]:not([data-print-frame-back])")?.contentDocument;
+            await wait(() => overlayLine("estimated"));
+            // The authored break goes on the first question a good way below the first estimated start, so both fit one screen.
+            const firstStart = parseFloat(overlayLine("estimated").style.top);
+            const body = frameDoc().body.getBoundingClientRect();
+            const target = Array.from({ length: 18 }, (_, index) => `question${index + 1}`).find((id) => {
+              const node = frameDoc().querySelector(`[data-component-id="${id}"]`);
+              return node && node.getBoundingClientRect().top - body.top >= firstStart + 320;
+            });
+            if (!target) return false;
+            el.controller.setProperty(target, "print.breakBefore", true);
+            await wait(() => overlayLine("forced"));
+            await surface.previewSettled();
+            await settle();
+            const scroller = root.querySelector("[data-print-scroller]");
+            const box = root.querySelector("[data-print-zoom-box]");
+            const zoom = parseFloat(getComputedStyle(root.querySelector("[data-print-sheet]")).transform.split(",")[0].replace("matrix(", "")) || 1;
+            scroller.scrollTop = Math.max(0, box.offsetTop + parseFloat(overlayLine("estimated").style.top) * zoom - 90);
+            await frame();
+            return true;
+          }
+        },
+        {
+          id: "dark-print",
+          label: "Dark mode, Print workspace (the sheet stays light)",
+          apply: async (el) => {
+            el.scheme = "dark";
+            const surface = await openPrint(el, { filled: true });
+            // Both sample boxes open, to see the dark controls.
+            surface?.shadowRoot.querySelector("[data-print-receipt-toggle]")?.click();
+            await frame();
+            return surface !== undefined;
+          }
+        },
+        {
+          id: "phone-print",
+          label: "Phone: the Print workspace, settings above the sheet",
+          apply: async (el) => {
+            if (!el.builder.phoneLayout) return false;
+            return (await openPrint(el, { filled: true })) !== undefined;
+          }
+        },
+        {
+          // The command palette, open over the builder.
+          id: "palette",
+          label: "Command palette open",
+          apply: async (el) => {
+            el.builder.activeController.select(undefined);
+            await el.builder.openPalette();
+            return el.builder.shadowRoot.querySelector("datum-builder-palette")?.shadowRoot?.querySelector("dialog")?.open === true;
+          }
+        },
+        // The phone tier: states that exist only on a phone (false elsewhere, so skipped).
+        {
+          id: "phone-edit",
+          label: "Phone: a field's settings sheet",
+          apply: async (el) => {
+            if (!el.builder.phoneLayout) return false;
+            el.builder.activeController.select("fullName");
+            const canvas = el.builder.shadowRoot.querySelector("datum-builder-canvas");
+            const edit = await wait(() => canvas.shadowRoot.querySelector("[data-selection-edit]:not([hidden])"));
+            edit.click();
+            await wait(() => el.builder.shadowRoot.querySelector('[data-shell="wrap"][data-sheet="props"]'));
+            return true;
+          }
+        },
+        {
+          id: "phone-more",
+          label: "Phone: the More sheet",
+          apply: async (el) => {
+            if (!el.builder.phoneLayout) return false;
+            el.builder.activeController.select(undefined);
+            el.builder.shadowRoot.querySelector("[data-bottom-more]:not([hidden])")?.click();
+            await wait(() => el.builder.shadowRoot.querySelector('[data-shell="wrap"][data-sheet="more"]'));
+            return true;
+          }
+        },
+        {
+          id: "phone-menu",
+          label: "Phone: the menu drawer",
+          apply: async (el) => {
+            if (!el.builder.phoneLayout) return false;
+            el.builder.activeController.select(undefined);
+            el.builder.shadowRoot.querySelector("[data-menu-open]").click();
+            await wait(() => el.builder.shadowRoot.querySelector('[data-shell="wrap"][data-sheet="menu"]'));
+            return true;
+          }
+        },
+        {
+          id: "phone-try-results",
+          label: "Phone: Try it's results sheet",
+          apply: async (el) => {
+            if (!el.builder.phoneLayout) return false;
+            el.builder.activeController.select(undefined);
+            el.builder.shadowRoot.querySelector("[data-bottom-try]").click();
+            const results = await wait(() => el.builder.shadowRoot.querySelector("[data-bottom-results]:not([hidden])"));
+            results.click();
+            await wait(() => el.builder.shadowRoot.querySelector('[data-shell="wrap"][data-sheet="results"]'));
+            return true;
+          }
+        },
+        {
+          // A sheet held mid-drag: the real gesture code, driven by dispatched pointer
+          // events (no real touch), the finger left down 140 px below the handle's rest. The capture shows the
+          // sheet and its handle row following together, and the scrim still behind.
+          id: "phone-sheet-drag",
+          label: "Phone: the field's settings sheet held mid-drag",
+          apply: async (el) => {
+            if (!el.builder.phoneLayout) return false;
+            el.builder.activeController.select("fullName");
+            const canvas = el.builder.shadowRoot.querySelector("datum-builder-canvas");
+            const edit = await wait(() => canvas.shadowRoot.querySelector("[data-selection-edit]:not([hidden])"));
+            edit.click();
+            await wait(() => el.builder.shadowRoot.querySelector('[data-shell="wrap"][data-sheet="props"]'));
+            const head = el.builder.shadowRoot.querySelector("[data-sheet-head]");
+            const box = head.getBoundingClientRect();
+            const at = (type, y) => head.dispatchEvent(new PointerEvent(type, { pointerId: 41, pointerType: "touch", isPrimary: true, clientX: box.left + box.width / 2, clientY: y, bubbles: true, composed: true, cancelable: true }));
+            at("pointerdown", box.top + 20);
+            at("pointermove", box.top + 40);
+            at("pointermove", box.top + 160);
+            return true;
+          }
+        },
+        {
+          // The same for Try it's results sheet, which is drawn in the canvas's shadow root and swiped by touch events.
+          id: "phone-try-results-drag",
+          label: "Phone: Try it's results sheet held mid-drag",
+          apply: async (el) => {
+            if (!el.builder.phoneLayout) return false;
+            el.builder.activeController.select(undefined);
+            el.builder.shadowRoot.querySelector("[data-bottom-try]").click();
+            const results = await wait(() => el.builder.shadowRoot.querySelector("[data-bottom-results]:not([hidden])"));
+            results.click();
+            await wait(() => el.builder.shadowRoot.querySelector('[data-shell="wrap"][data-sheet="results"]'));
+            const canvas = el.builder.shadowRoot.querySelector("datum-builder-canvas");
+            const title = await wait(() => canvas.shadowRoot.querySelector("[data-try-panel] [data-try-sheet-title]"));
+            const box = title.getBoundingClientRect();
+            const at = (type, y) => {
+              const event = new Event(type, { bubbles: true, composed: true, cancelable: true });
+              Object.defineProperty(event, "touches", { value: type === "touchend" ? [] : [{ clientX: box.left + 10, clientY: y }] });
+              title.dispatchEvent(event);
+            };
+            at("touchstart", box.top + 4);
+            at("touchmove", box.top + 24);
+            at("touchmove", box.top + 120);
+            return true;
+          }
+        },
+        {
+          id: "phone-pdf-designer",
+          label: "Phone: a PDF layout's designer",
+          apply: async (el) => {
+            if (!el.builder.phoneLayout || !el.builder.modes.some((mode) => mode.id === "pdf")) return false;
+            await el.builder.setMode("pdf");
+            await wait(() => el.builder.shadowRoot.querySelector('[data-shell="wrap"][data-designer]'));
+            await new Promise((resolve) => setTimeout(resolve, 120));
+            return true;
+          }
+        },
+        {
+          id: "phone-menu-pdf",
+          label: "Phone: the menu drawer in a PDF layout's designer",
+          apply: async (el) => {
+            if (!el.builder.phoneLayout || !el.builder.modes.some((mode) => mode.id === "pdf")) return false;
+            await el.builder.setMode("pdf");
+            await wait(() => el.builder.shadowRoot.querySelector('[data-shell="wrap"][data-designer]'));
+            el.builder.shadowRoot.querySelector("[data-menu-open]").click();
+            await wait(() => el.builder.shadowRoot.querySelector('[data-shell="wrap"][data-sheet="menu"]'));
+            return true;
+          }
+        },
+        {
+          // Journeys mode with the Step view showing one step in the canvas.
+          id: "journeys-designer",
+          label: "Journeys mode: designer",
+          apply: async (el) => {
+            if (!el.builder.modes.some((m) => m.id === "journeys")) return false;
+            await el.builder.setMode("journeys");
+            await wait(() => el.builder.shadowRoot.querySelector('[data-shell="wrap"][data-mode="journeys"]'));
+            await settle();
+            // A journey opens on its map; this state is one step drawn as the person sees it (the Step view).
+            el.builder.shadowRoot.querySelector('[data-mode-actions] [data-journey-view="step"]')?.click();
+            await settle();
+            const heading = el.builder.shadowRoot.querySelector("datum-builder-canvas")?.shadowRoot?.querySelector("datum-form-renderer")?.shadowRoot?.querySelector("[data-journey-heading]");
+            return heading ? true : false;
+          }
+        },
+        {
+          // Journeys mode with the flow map view displayed.
+          id: "journeys-map",
+          label: "Journeys mode: flow map",
+          apply: async (el) => {
+            if (!el.builder.modes.some((m) => m.id === "journeys")) return false;
+            await el.builder.setMode("journeys");
+            await wait(() => el.builder.shadowRoot.querySelector('[data-shell="wrap"][data-mode="journeys"]'));
+            await settle();
+            const mapButton = el.builder.shadowRoot.querySelector('[data-mode-actions] [data-journey-view="map"]');
+            if (!mapButton) return false;
+            mapButton.click();
+            const map = await wait(() => el.builder.shadowRoot.querySelector("datum-builder-canvas")?.shadowRoot?.querySelector(".datum-journey-map") || el.builder.shadowRoot.querySelector("datum-builder-canvas")?.shadowRoot?.querySelector("datum-form-renderer")?.shadowRoot?.querySelector(".datum-journey-map"), 5000);
+            return map ? true : false;
+          }
+        },
+        {
+          // Journeys mode with Try it panel open.
+          id: "journeys-try",
+          label: "Journeys mode: Try it",
+          apply: async (el) => {
+            if (!el.builder.modes.some((m) => m.id === "journeys")) return false;
+            await el.builder.setMode("journeys");
+            await wait(() => el.builder.shadowRoot.querySelector('[data-shell="wrap"][data-mode="journeys"]'));
+            await settle();
+            // A journey opens on its map, which has no Try it: this state tries it from a step.
+            el.builder.shadowRoot.querySelector('[data-mode-actions] [data-journey-view="step"]')?.click();
+            await settle();
+            const canvas = el.builder.shadowRoot.querySelector("datum-builder-canvas");
+            const tryButton = canvas?.shadowRoot?.querySelector('[data-try-it]');
+            if (!tryButton || tryButton.hidden) return false;
+            const zone = tryButton.closest('[data-canvas-bar-zone]');
+            if (zone?.hidden) return false;
+            tryButton.click();
+            const panel = await wait(() => canvas.shadowRoot.querySelector('[data-try-panel]:not([hidden])'), 5000).catch(() => null);
+            return panel ? true : false;
+          }
+        },
+        {
+          // PDF mode with the designer view.
+          id: "pdf-designer",
+          label: "PDF mode: designer",
+          apply: async (el) => {
+            if (!el.builder.modes.some((m) => m.id === "pdf")) return false;
+            await el.builder.setMode("pdf");
+            await wait(() => el.builder.shadowRoot.querySelector('[data-shell="wrap"][data-mode="pdf"]'));
+            await settle();
+            return true;
+          }
+        },
+        {
+          // PDF mode with Try it panel open.
+          id: "pdf-try",
+          label: "PDF mode: Try it",
+          apply: async (el) => {
+            if (!el.builder.modes.some((m) => m.id === "pdf")) return false;
+            await el.builder.setMode("pdf");
+            await wait(() => el.builder.shadowRoot.querySelector('[data-shell="wrap"][data-mode="pdf"]'));
+            await settle();
+            const canvas = el.builder.shadowRoot.querySelector("datum-builder-canvas");
+            const tryButton = canvas?.shadowRoot?.querySelector('[data-try-it]');
+            if (!tryButton || tryButton.hidden) return false;
+            const zone = tryButton.closest('[data-canvas-bar-zone]');
+            if (zone?.hidden) return false;
+            tryButton.click();
+            const panel = await wait(() => canvas.shadowRoot.querySelector('[data-try-panel]:not([hidden])'), 5000).catch(() => null);
+            return panel ? true : false;
+          }
+        },
+        {
+          // PDF mode with the preview dialog open.
+          id: "pdf-preview",
+          label: "PDF mode: preview",
+          apply: async (el) => {
+            if (!el.builder.modes.some((m) => m.id === "pdf")) return false;
+            await el.builder.setMode("pdf");
+            await wait(() => el.builder.shadowRoot.querySelector('[data-shell="wrap"][data-mode="pdf"]'));
+            await settle();
+            // In the canvas's toolbar; on a phone, in the menu drawer with the mode's other actions.
+            const previewButton =
+              el.builder.shadowRoot.querySelector("datum-builder-canvas")?.shadowRoot?.querySelector("[data-preview-pdf]") ?? el.builder.shadowRoot.querySelector("[data-preview-pdf]");
+            if (!previewButton) return false;
+            previewButton.click();
+            const dialog = await wait(() => el.builder.shadowRoot.querySelector("[data-preview-dialog][open]"), 20000).catch(() => null);
+            return dialog ? true : false;
+          }
+        },
+        {
+          // Phone tier: Journeys mode with Try it panel at the bottom.
+          id: "phone-journeys-try",
+          label: "Phone: Journeys mode, Try it",
+          apply: async (el) => {
+            if (!el.builder.phoneLayout) return false;
+            if (!el.builder.modes.some((m) => m.id === "journeys")) return false;
+            await el.builder.setMode("journeys");
+            await wait(() => el.builder.shadowRoot.querySelector('[data-shell="wrap"][data-mode="journeys"]'));
+            await settle();
+            // A journey opens on its map, which has no Try it: this state tries it from a step.
+            el.builder.shadowRoot.querySelector('[data-mode-actions] [data-journey-view="step"]')?.click();
+            await settle();
+            const tryButton = el.builder.shadowRoot.querySelector("[data-bottom-try]");
+            if (!tryButton || tryButton.hidden) return false;
+            tryButton.click();
+            const results = await wait(() => el.builder.shadowRoot.querySelector("[data-bottom-results]:not([hidden])"), 5000).catch(() => null);
+            return results ? true : false;
+          }
+        },
+        {
+          // Phone tier: PDF mode with Try it panel and results sheet.
+          id: "phone-pdf-try",
+          label: "Phone: a PDF layout tried on the canvas",
+          apply: async (el) => {
+            if (!el.builder.phoneLayout) return false;
+            if (!el.builder.modes.some((m) => m.id === "pdf")) return false;
+            await el.builder.setMode("pdf");
+            await wait(() => el.builder.shadowRoot.querySelector('[data-shell="wrap"][data-mode="pdf"]'));
+            await settle();
+            const tryButton = el.builder.shadowRoot.querySelector("[data-bottom-try]");
+            if (!tryButton || tryButton.hidden) return false;
+            tryButton.click();
+            const results = await wait(() => el.builder.shadowRoot.querySelector("[data-bottom-results]:not([hidden])"), 5000).catch(() => null);
+            if (!results) return false;
+            results.click();
+            await wait(() => el.builder.shadowRoot.querySelector('[data-shell="wrap"][data-sheet="results"]'));
+            return true;
+          }
+        },
+        {
+          // The Tests drawer on a form with two scenarios, one of them failing: the list with its status
+          // dots and summaries. At the phone tiers it is the sheet.
+          id: "tests-panel",
+          label: "Tests panel, two scenarios, one failing",
+          apply: async (el) => {
+            if (!(await openTestsPanel(el))) return false;
+            const panel = testsPanelOf(el);
+            await wait(() => panel.shadowRoot?.querySelector('[data-tests-entry][data-status="failed"]') && panel.shadowRoot.querySelector('[data-tests-entry][data-status="passed"]'), 30000);
+            return true;
+          }
+        },
+        {
+          // Record on: at the wide tiers the drawer stays open beside Try it with the first
+          // scenario open; on a phone the sheet folds and the bar carries Stop recording.
+          id: "tests-recording",
+          label: "Tests panel, Record on",
+          apply: async (el) => {
+            if (!(await openTestsPanel(el))) return false;
+            const panel = testsPanelOf(el);
+            // The form's opening run (Run as I edit) lands first, whether the panel's chunk was cold or
+            // already on the page: the entry's header then reads its result in every capture, and no
+            // run finishes between Record and the shot.
+            await wait(() => panel.shadowRoot?.querySelector('[data-tests-entry][data-status="failed"]') && panel.shadowRoot.querySelector('[data-tests-entry][data-status="passed"]'), 30000);
+            await panel.whenIdle();
+            panel.shadowRoot.querySelector('[data-tests-entry][data-status="passed"]').click();
+            await panel.whenIdle();
+            const record = await wait(() => panel.shadowRoot.querySelector("[data-tests-record]:not([disabled])"), 30000);
+            record.click();
+            // On: the bar's Stop recording, and the panel's own "Recording · n lines" where the drawer stays
+            // open (wide); on a phone the sheet folds on Record, so there the bar alone says it.
+            const canvasRoot = () => el.builder.shadowRoot.querySelector("datum-builder-canvas")?.shadowRoot;
+            await wait(() => panel.recording === true && canvasRoot()?.querySelector("[data-try-record-stop]") && (panel.hidden || panel.shadowRoot.querySelector("[data-tests-recording]")), 30000);
+            return panel.recording === true;
+          }
+        },
+        {
+          id: "mode-pdf",
+          label: "PDF mode",
+          apply: async (el) => (el.builder.modes.some((mode) => mode.id === "pdf") ? el.builder.setMode("pdf") : false)
+        },
+        {
+          id: "mode-journeys",
+          label: "Journeys mode",
+          apply: async (el) => (el.builder.modes.some((mode) => mode.id === "journeys") ? el.builder.setMode("journeys") : false)
+        }
+      ];
+
+      /** Two scenarios over the fixture: the first passes, the second fails (the email is hidden until the box is ticked). */
+      const TESTS_HARNESS = {
+        scenarios: [
+          { id: "test-1", source: 'test "Newsletter email follows the tick"\n  given journey = none\n  set subscribe = true\n  expect newsletterEmail visible\n' },
+          { id: "test-2", source: 'test "Newsletter email starts shown"\n  given journey = none\n  expect newsletterEmail visible\n' }
+        ]
+      };
+      const testsPanelOf = (el) => el.builder.shadowRoot.querySelector("datum-builder-tests-panel");
+      /** Puts the scenarios on the form and the Tests panel on the page; false when this builder has no Tests panel. */
+      async function openTestsPanel(el) {
+        el.builder.activeController.select(undefined);
+        // Not silent: a panel wired before this line (its chunk already on the page from the last state) hears of the block only by the change.
+        el.controller.setTests(TESTS_HARNESS);
+        el.builder.panel = "tests";
+        if (el.builder.panel !== "tests") return false;
+        await wait(() => testsPanelOf(el)?.shadowRoot?.querySelector("[data-tests-entry]"), 30000);
+        return true;
+      }
+
+      const wait = (check, timeoutMs = 15000) =>
+        new Promise((resolve, reject) => {
+          const started = Date.now();
+          const tick = () => {
+            let value;
+            try {
+              value = check();
+            } catch {}
+            if (value) return resolve(value);
+            if (Date.now() - started > timeoutMs) return reject(new Error("builder workbench: condition not met in time"));
+            setTimeout(tick, 25);
+          };
+          tick();
+        });
+      const frame = () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const settle = async () => {
+        await document.fonts.ready;
+        await frame();
+        await new Promise((resolve) => setTimeout(resolve, 60));
+        await frame();
+      };
+
+      /** Opens Print and, with `filled`, draws it from a pasted submission and a sample receipt; resolves with the surface once its sheet is drawn. */
+      async function openPrint(el, { filled = false } = {}) {
+        el.builder.activeController.select(undefined);
+        el.builder.setWorkspace("print");
+        const surface = await wait(() => {
+          const element = el.builder.shadowRoot.querySelector("datum-builder-print");
+          return element?.shadowRoot?.querySelector("[data-print-settings] h2") ? element : undefined;
+        });
+        if (filled) {
+          const root = surface.shadowRoot;
+          const sample = root.querySelector("[data-print-sample]");
+          sample.value = "pasted";
+          sample.dispatchEvent(new Event("change", { bubbles: true }));
+          const pasted = root.querySelector("[data-print-pasted]");
+          pasted.value = JSON.stringify({ fullName: "Marguerite Okafor-Tremblay", email: "m.okafor.tremblay@example.ca" });
+          pasted.dispatchEvent(new Event("input", { bubbles: true }));
+          const receipt = root.querySelector("[data-print-receipt]");
+          receipt.value = JSON.stringify({ reference: "CG-2026-00418" });
+          receipt.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+        await surface.previewSettled();
+        await wait(() => surface.prepared !== undefined);
+        await settle();
+        if (filled) {
+          // The pasted box takes focus deep in the settings column, which scrolls it to the bottom: the states are captured from the top.
+          const active = surface.shadowRoot.activeElement;
+          if (active instanceof HTMLElement) active.blur();
+          const side = surface.shadowRoot.querySelector("[data-print-side]");
+          if (side) side.scrollTop = 0;
+          // Folded (narrow, phone) the column does not scroll itself: whatever did, up the tree, goes back to the top too.
+          for (let node = side; node; node = node.parentElement ?? node.getRootNode().host) node.scrollTop = 0;
+          document.scrollingElement.scrollTop = 0;
+          await frame();
+        }
+        return el.builder.workspace === "print" ? surface : undefined;
+      }
+
+      window.__states = () => STATES.map(({ id, label }) => ({ id, label }));
+      window.__sizes = () => SIZES;
+
+      /** A fresh builder in `layout`, loaded with `definition`, sized as the stage says; resolves when the canvas has painted. */
+      async function mountBuilder(size, definition) {
+        stage.innerHTML = "";
+        stage.dataset.layout = size.layout;
+        stage.classList.add("capturing");
+        const element = document.createElement("datum-form-builder");
+        element.setAttribute("layout", size.layout);
+        // The builder's own faces (Geist): captures show the look as shipped, not the system fallback.
+        element.setAttribute("load-fonts", "");
+        if (size.layout === "contained") {
+          element.style.width = `${size.width}px`;
+          element.style.height = `${size.height}px`;
+        }
+        element.dataSources = { countries: [{ value: "CA", label: "Canada" }, { value: "US", label: "United States" }] };
+        // A phone's top row carries the host's Save, and its drawer the file actions.
+        if (size.id.startsWith("phone")) {
+          const save = document.createElement("button");
+          save.type = "button";
+          save.slot = "toolbar-start";
+          save.setAttribute("data-builder-primary", "");
+          save.textContent = "Save";
+          element.append(save);
+          element.fileActions = { save() {}, new() {}, open() {}, download() {} };
+        }
+        element.definition = definition;
+        stage.append(element);
+        await wait(() => element.builder?.shadowRoot?.querySelector("datum-builder-canvas") && element.controller);
+        await wait(() => element.controller.definition?.id === definition.id || element.builder.value?.id !== undefined);
+        await settle();
+        return element;
+      }
+
+      /** Mounts the fixture at a size in a state; resolves with the builder's page rect, or null when the state does not exist. */
+      window.__mount = async ({ state: stateId = "canvas", size: sizeId = "wide" }) => {
+        const state = STATES.find((entry) => entry.id === stateId);
+        const size = SIZES.find((entry) => entry.id === sizeId);
+        if (!state || !size) throw new Error(`builder workbench: unknown state "${stateId}" or size "${sizeId}"`);
+        bar.hidden = true;
+        const element = await mountBuilder(size, state.definition ? state.definition(structuredClone(fixture)) : structuredClone(fixture));
+        const applied = await state.apply(element);
+        if (applied === false) return null;
+        await settle();
+        // Nothing carries a focus ring by accident.
+        let active = document.activeElement;
+        while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
+        active?.blur?.();
+        await frame();
+        const rect = element.getBoundingClientRect();
+        return { x: rect.x + window.scrollX, y: rect.y + window.scrollY, width: Math.ceil(rect.width), height: Math.ceil(rect.height) };
+      };
+
+      /** axe over the mounted builder, colour contrast on (the WCAG 2.2 A/AA rule set); violations only, normalised. */
+      /**
+       * What the phone's sheet measures: the handle's hit area, the sheet's
+       * rect, how much of the inspector's body shows, and the transform a held drag left on it.
+       * The harness checks these against the contract; none of it is in the baseline.
+       */
+      window.__sheetChecks = () => {
+        const element = stage.querySelector("datum-form-builder");
+        const root = element.builder.shadowRoot;
+        const wrap = root.querySelector('[data-shell="wrap"]');
+        const rect = (node) => {
+          const box = node?.getBoundingClientRect();
+          return box ? { width: Math.round(box.width), height: Math.round(box.height), top: Math.round(box.top) } : null;
+        };
+        const props = root.querySelector("datum-builder-properties");
+        const body = props?.shadowRoot?.querySelector(".inspector-body");
+        const canvas = root.querySelector("datum-builder-canvas");
+        return {
+          sheet: wrap?.dataset.sheet ?? null,
+          tall: wrap?.hasAttribute("data-sheet-tall") ?? false,
+          grab: rect(root.querySelector("[data-sheet-grab]:not([hidden])")),
+          head: rect(root.querySelector("[data-sheet-head]:not([hidden])")),
+          close: rect(root.querySelector("[data-sheet-close]")),
+          inspectorBody: wrap?.dataset.sheet === "props" ? rect(body) : null,
+          dragged: [root.querySelector("[data-sheet-head]"), props, canvas?.shadowRoot?.querySelector("[data-try-panel]")].map((node) => node?.style.transform ?? "").filter(Boolean),
+          scrimTouchAction: getComputedStyle(root.querySelector("[data-scrim]")).touchAction,
+          bodyScrollLocked: document.documentElement.style.overflow === "hidden"
+        };
+      };
+
+      window.__axe = async () => {
+        const element = stage.querySelector("datum-form-builder");
+        const raw = await axe.run(element, { ...axeRunOptions({ colour: true }), resultTypes: ["violations"], elementRef: false });
+        return raw.violations
+          .flatMap((rule) =>
+            rule.nodes.map((node) => ({
+              ruleId: rule.id,
+              impact: node.impact ?? rule.impact ?? "unknown",
+              target: Array.isArray(node.target) ? node.target.map((part) => (Array.isArray(part) ? part.join(" >>> ") : String(part))).join(" ") : String(node.target)
+            }))
+          )
+          .sort((a, b) => (a.ruleId + a.target).localeCompare(b.ruleId + b.target));
+      };
+
+      /**
+       * What is inert on the drawn canvas. In edit mode a field's leaf
+       * template (the design system's component, `.db-leaf`) is `inert` and nothing else is: a container's
+       * shell holds nodes and drop zones, which inert descendants could not take back. Every node keeps
+       * the canvas's tabindex model (focusables inside it at tabindex -1, marked `data-db-inert`) and stays
+       * out of any inert or hidden ancestor, so the accessibility tree still holds it. Previewed, the
+       * same canvas has no inert element, no node and no marker. The driver judges the lists.
+       */
+      window.__inertChecks = async ({ preview }) => {
+        const element = stage.querySelector("datum-form-builder");
+        const canvas = element.builder.shadowRoot.querySelector("datum-builder-canvas");
+        if (preview) {
+          canvas.previewing = true;
+          await wait(() => !canvas.shadowRoot.querySelector("[data-preview]")?.shadowRoot?.querySelector(".db-node"));
+          await settle();
+        }
+        const root = canvas.shadowRoot.querySelector("[data-preview]").shadowRoot;
+        const desc = (node) => {
+          const id = node.dataset?.componentId ?? node.dataset?.containerId ?? node.closest?.("[data-component-id]")?.dataset.componentId;
+          return `${node.tagName.toLowerCase()}${typeof node.className === "string" && node.className.trim() ? `.${node.className.trim().split(/\s+/).join(".")}` : ""}${id ? `[${id}]` : ""}`;
+        };
+        const FOCUSABLES = "input, select, textarea, button, a[href], summary, [tabindex]";
+        const report = { previewing: canvas.previewing === true, inertCount: root.querySelectorAll("[inert]").length, markers: root.querySelectorAll("[data-db-inert]").length, nodeCount: root.querySelectorAll(".db-node").length, fields: 0 };
+        if (preview) {
+          report.fields = root.querySelectorAll(".datum-live-field").length;
+          return report;
+        }
+        const nodes = [...root.querySelectorAll(".db-node")];
+        const fieldNodes = nodes.filter((node) => !node.classList.contains("db-node--container"));
+        const containerNodes = nodes.filter((node) => node.classList.contains("db-node--container"));
+        // The composed ancestors of a node that would take it out of the accessibility tree.
+        const hiddenAbove = (node) => {
+          for (let current = node; current; current = current.parentElement ?? current.getRootNode().host) {
+            if (current.hasAttribute?.("inert") || current.getAttribute?.("aria-hidden") === "true" || current.hidden === true) return true;
+          }
+          return false;
+        };
+        Object.assign(report, {
+          fields: fieldNodes.length,
+          containers: containerNodes.length,
+          fieldsWithoutInertLeaf: fieldNodes.filter((node) => !node.querySelector(":scope > .db-leaf[inert]")).map(desc),
+          inertOutsideLeaves: [...root.querySelectorAll("[inert]")].filter((node) => !node.classList.contains("db-leaf")).map(desc),
+          inertContainers: [...containerNodes, ...root.querySelectorAll("[data-dropzone]")].filter((node) => hiddenAbove(node) || node.closest(".db-leaf")).map(desc),
+          nodesOutsideTree: nodes.filter(hiddenAbove).map(desc),
+          nodesWithoutTabindex: nodes.flatMap((node) => [...node.querySelectorAll(FOCUSABLES)].filter((focusable) => !focusable.closest(".db-handle") && !(focusable.getAttribute("tabindex") === "-1" && focusable.hasAttribute("data-db-inert"))).map(desc)),
+          focusableInLeaves: 0
+        });
+        // An inert leaf refuses focus: try each control in each one.
+        for (const control of root.querySelectorAll(".db-leaf input, .db-leaf select, .db-leaf textarea, .db-leaf button")) {
+          control.focus({ preventScroll: true });
+          if (root.activeElement === control) report.focusableInLeaves += 1;
+          control.blur();
+        }
+        return report;
+      };
+
+      /**
+       * Where the canvas's tags land. A container's type chip, shown as if the container were
+       * selected, must not meet the text of a legend, heading, caption or tab list a binding drew at its
+       * own top or its parent container's. The hidden tag, always shown, must sit on its own node's top
+       * edge (not on the component above) and take the pointer, so its title can be read. Measured on the
+       * text itself (a Range), not the legend's box, which may run the width of the form. The driver
+       * judges the lists.
+       */
+      window.__chipChecks = async () => {
+        const element = stage.querySelector("datum-form-builder");
+        const canvas = element.builder.shadowRoot.querySelector("datum-builder-canvas");
+        const root = canvas.shadowRoot.querySelector("[data-preview]").shadowRoot;
+        const HEADINGS = "legend, h1, h2, h3, h4, h5, h6, caption, [role=tablist], [id$='group-label']";
+        const idOf = (node) => node.dataset.componentId ?? node.dataset.containerId ?? "?";
+        const textRects = (heading) => {
+          const range = document.createRange();
+          range.selectNodeContents(heading);
+          return [...range.getClientRects()].filter((rect) => rect.width > 0 && rect.height > 0);
+        };
+        const meets = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+        // The headings drawn at a container's own top: in its node, not inside a nested container's node or a field's leaf.
+        const ownHeadings = (node) =>
+          [...node.querySelectorAll(HEADINGS)].filter((heading) => heading.closest(".db-node--container") === node && !heading.closest(".db-leaf, .db-tag"));
+        const containers = [...root.querySelectorAll(".db-node--container")];
+        const report = { containers: containers.length, chips: 0, chipOverHeading: [], hiddenTags: 0, hiddenTagOffEdge: [], hiddenTagNoPointer: [] };
+        for (const node of containers) {
+          const chip = [...node.children].find((child) => child.matches(".db-tag:not(.db-tag--hidden)"));
+          if (!chip) continue;
+          const wasSelected = node.classList.contains("db-selected");
+          node.classList.add("db-selected");
+          const rect = chip.getBoundingClientRect();
+          if (!wasSelected) node.classList.remove("db-selected");
+          if (rect.width === 0) continue;
+          report.chips += 1;
+          const parent = node.parentElement?.closest(".db-node--container");
+          for (const heading of [...ownHeadings(node), ...(parent ? ownHeadings(parent) : [])]) {
+            if (textRects(heading).some((text) => meets(rect, text))) report.chipOverHeading.push(`${idOf(node)} chip over "${heading.textContent.trim().slice(0, 30)}"`);
+          }
+        }
+        for (const tag of root.querySelectorAll(".db-node--hidden > .db-tag--hidden")) {
+          const rect = tag.getBoundingClientRect();
+          if (rect.width === 0) continue;
+          report.hiddenTags += 1;
+          const node = tag.parentElement;
+          const top = node.getBoundingClientRect().top;
+          if (!(rect.top <= top && top <= rect.bottom)) report.hiddenTagOffEdge.push(`${idOf(node)}: tag ${Math.round(rect.top)}-${Math.round(rect.bottom)}, node top ${Math.round(top)}`);
+          if (getComputedStyle(tag).pointerEvents === "none") report.hiddenTagNoPointer.push(idOf(node));
+        }
+        return report;
+      };
+
+      /** Where focus is, through every shadow root: host tags, then the element's tag, its data-* names and its accessible text. */
+      window.__focus = () => {
+        let active = document.activeElement;
+        const hosts = [];
+        while (active?.shadowRoot?.activeElement) {
+          hosts.push(active.tagName.toLowerCase());
+          active = active.shadowRoot.activeElement;
+        }
+        if (!active || active === document.body) return "(body)";
+        const data = Object.keys(active.dataset ?? {}).sort().map((key) => `data-${key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`);
+        const name = (active.getAttribute("aria-label") ?? active.getAttribute("title") ?? active.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 40);
+        const role = active.getAttribute("role");
+        return `${hosts.join(" > ")} > ${active.tagName.toLowerCase()}${role ? `[role=${role}]` : ""}${data.length ? ` [${data.join(" ")}]` : ""}${name ? ` "${name}"` : ""}`;
+      };
+
+      /** Puts focus at the start of the builder, as a keyboard user arriving from the page would. */
+      window.__focusStart = () => {
+        const before = document.createElement("button");
+        before.textContent = "before the builder";
+        before.id = "before-builder";
+        stage.prepend(before);
+        before.focus();
+      };
+
+      /**
+       * Keystroke-to-paint: a form of `fields` short-text fields, the first selected, and `samples`
+       * keystrokes typed into the inspector's label box. Each sample is the builder's whole share
+       * of a keystroke: the input event, the microtasks and tasks it queued, then the style and
+       * layout pass forced by reading the canvas's geometry. Waiting for the next frame instead
+       * would only measure the display's refresh (every sample ~16.7 ms at 60 Hz). Then `samples`
+       * commits (the inspector's Save, after the box is left, as a click takes focus off it), each timed the same way, since the canvas repaints on a
+       * commit. Median, 90th percentile and worst, in ms.
+       */
+      window.__perf = async ({ fields, samples = 21, size: sizeId = "wide" }) => {
+        const size = SIZES.find((entry) => entry.id === sizeId);
+        const definition = {
+          id: `perf-${fields}`,
+          version: "1.0.0",
+          root: {
+            id: "form",
+            type: "form",
+            configuration: { title: `Timing, ${fields} fields` },
+            children: { default: Array.from({ length: fields }, (_, index) => ({ id: `f${index + 1}`, type: "text", configuration: { label: `Field ${index + 1}` } })) }
+          }
+        };
+        const element = await mountBuilder(size, definition);
+        element.builder.activeController.select("f1");
+        await settle();
+        const props = element.builder.shadowRoot.querySelector("datum-builder-properties");
+        const input = await wait(() => props?.shadowRoot?.querySelector('input[data-prop="label"], input[data-prop$=".label"], textarea[data-prop="label"]'));
+        input.focus();
+        const canvas = element.builder.shadowRoot.querySelector("datum-builder-canvas");
+        // The canvas draws the form inside shadow roots of its own; reading a host's offsetHeight
+        // forces the style and layout of the tree it is in.
+        const layoutHosts = [canvas, ...(canvas.shadowRoot ? canvas.shadowRoot.querySelectorAll("*") : [])].filter((node) => node.shadowRoot).slice(0, 8);
+        const settleWork = async () => {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          void canvas.getBoundingClientRect().height;
+          for (const host of layoutHosts) void host.offsetHeight;
+        };
+        const stats = (times) => {
+          const sorted = [...times].sort((a, b) => a - b);
+          const at = (q) => Math.round(sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))] * 10) / 10;
+          return { median: at(0.5), p90: at(0.9), max: Math.round(sorted[sorted.length - 1] * 10) / 10 };
+        };
+        // A keystroke into the draft (the inspector edits a working copy).
+        const keystroke = [];
+        for (let index = 0; index < samples; index += 1) {
+          const started = performance.now();
+          input.value += "x";
+          input.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+          await settleWork();
+          keystroke.push(performance.now() - started);
+          await frame();
+        }
+        // A commit: the draft saved, which repaints the canvas — where a form's size shows.
+        const commit = [];
+        for (let index = 0; index < samples; index += 1) {
+          const box = props.shadowRoot.querySelector('input[data-prop="label"], input[data-prop$=".label"], textarea[data-prop="label"]');
+          box.focus();
+          box.value = `Field 1, take ${index + 1}`;
+          box.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+          await frame();
+          // A click on Save takes focus off the box first, and the box sends its plain change on
+          // leaving (the panel repaints on that event): the canvas catches up there, not inside the Save.
+          box.blur();
+          await frame();
+          const save = props.shadowRoot.querySelector("[data-inspector-save]");
+          const started = performance.now();
+          save.click();
+          await settleWork();
+          commit.push(performance.now() - started);
+          await frame();
+        }
+        return { fields, samples, keystroke: stats(keystroke), commit: stats(commit) };
+      };
+
+      /**
+       * The Languages workspace's share of three things, on a form of `fields`
+       * short-text fields declared in English and `locales` more languages, half the labels translated
+       * in each: `open`, the switch from the Form workspace to Languages until the grid's rows are
+       * there (the first open, from a fresh mount, is `firstOpen`); `keystroke`, a character typed
+       * into a grid cell; `search`, a search term confirmed with Enter (the box's debounce flushed), so
+       * the table filters and repaints. Each sample is timed the way `__perf` times a keystroke: the
+       * event, the work it queued, then the style and layout pass forced by reading the surface's
+       * geometry. Median, 90th percentile and worst, in ms.
+       */
+      window.__perfLanguages = async ({ fields, locales = 2, samples = 21, size: sizeId = "wide" }) => {
+        const size = SIZES.find((entry) => entry.id === sizeId);
+        // The fingerprint of a default string (core/localization/translations.ts `sourceHash`): FNV-1a
+        // 32-bit over the UTF-16 code units, base 36. Copied so the page needs no engine export.
+        const sourceHash = (text) => {
+          let hash = 0x811c9dc5;
+          for (let i = 0; i < text.length; i += 1) hash = Math.imul(hash ^ text.charCodeAt(i), 0x01000193);
+          return (hash >>> 0).toString(36);
+        };
+        const codes = ["fr-CA", "es", "de", "pt-BR", "it", "nl"].slice(0, locales);
+        const translations = {};
+        for (const [index, code] of codes.entries()) {
+          const components = {};
+          for (let field = 1; field <= fields; field += 1) {
+            // Half the labels translated in each language, staggered so no row is empty in every column.
+            if ((field + index) % 2 === 0) {
+              const label = `Field ${field}`;
+              components[`f${field}`] = { label: { text: `${code} ${label}`, source: sourceHash(label) } };
+            }
+          }
+          translations[code] = { components };
+        }
+        const definition = {
+          id: `perf-languages-${fields}`,
+          version: "1.0.0",
+          localization: { defaultLocale: "en", supportedLocales: [{ code: "en", label: "English" }, ...codes.map((code) => ({ code }))] },
+          translations,
+          root: {
+            id: "form",
+            type: "form",
+            configuration: { title: `Timing, ${fields} fields, ${locales + 1} languages` },
+            children: { default: Array.from({ length: fields }, (_, index) => ({ id: `f${index + 1}`, type: "text", configuration: { label: `Field ${index + 1}` } })) }
+          }
+        };
+        const element = await mountBuilder(size, definition);
+        const surfaceOf = () => element.builder.shadowRoot.querySelector("datum-builder-languages");
+        const rowsOf = () => surfaceOf()?.shadowRoot?.querySelectorAll("[data-languages-row]").length ?? 0;
+        const stats = (times) => {
+          const sorted = [...times].sort((a, b) => a - b);
+          const at = (q) => Math.round(sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))] * 10) / 10;
+          return { median: at(0.5), p90: at(0.9), max: Math.round(sorted[sorted.length - 1] * 10) / 10 };
+        };
+        // The open: the workspace switched, then the grid's rows awaited and laid out. The wait polls every
+        // 25 ms, so the number is the work plus up to one poll; the same for every run, so comparable.
+        const openOnce = async () => {
+          const started = performance.now();
+          element.builder.setWorkspace("languages");
+          await wait(() => rowsOf() > 0);
+          void surfaceOf().offsetHeight;
+          void surfaceOf().shadowRoot.querySelector("table")?.getBoundingClientRect().height;
+          return performance.now() - started;
+        };
+        const firstOpen = await openOnce();
+        await settle();
+        const open = [];
+        for (let index = 0; index < Math.min(samples, 7); index += 1) {
+          element.builder.setWorkspace("form");
+          await wait(() => element.builder.workspace === "form");
+          await frame();
+          open.push(await openOnce());
+          await frame();
+        }
+        await settle();
+        const surface = surfaceOf();
+        const settleWork = async () => {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          void surface.offsetHeight;
+          void surface.shadowRoot.querySelector("table")?.getBoundingClientRect().height;
+        };
+        // A character typed into a cell: the surface holds the pending edit and marks the cell.
+        const keystroke = [];
+        const cell = await wait(() => surface.shadowRoot.querySelector("input[data-languages-cell]"));
+        cell.focus();
+        for (let index = 0; index < samples; index += 1) {
+          const started = performance.now();
+          cell.value += "x";
+          cell.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+          await settleWork();
+          keystroke.push(performance.now() - started);
+          await frame();
+        }
+        // A search confirmed with Enter: the debounce flushed, the table filtered and repainted. The box is
+        // cleared the same way between samples, outside the timing.
+        const search = [];
+        const box = surface.shadowRoot.querySelector("[data-languages-search]");
+        const enter = () => box.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, composed: true }));
+        for (let index = 0; index < samples; index += 1) {
+          box.focus();
+          box.value = `Field ${(index % 9) + 1}`;
+          box.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+          const started = performance.now();
+          enter();
+          await settleWork();
+          search.push(performance.now() - started);
+          await frame();
+          box.value = "";
+          box.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
+          enter();
+          await frame();
+        }
+        return { fields, locales, samples, rows: rowsOf(), firstOpen: stats([firstOpen]), open: stats(open), keystroke: stats(keystroke), search: stats(search) };
+      };
+
+      /** The perceptual signature of a PNG (base64), as visual/index.html computes it for forms. */
+      window.__signature = async (base64) => {
+        const image = new Image();
+        image.src = `data:image/png;base64,${base64}`;
+        await image.decode();
+        const luma = (width, height) => {
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const context = canvas.getContext("2d", { willReadFrequently: true });
+          context.imageSmoothingEnabled = true;
+          context.imageSmoothingQuality = "high";
+          context.fillStyle = "#ffffff";
+          context.fillRect(0, 0, width, height);
+          context.drawImage(image, 0, 0, width, height);
+          const data = context.getImageData(0, 0, width, height).data;
+          const out = [];
+          for (let index = 0; index < data.length; index += 4) {
+            out.push(Math.round(0.299 * data[index] + 0.587 * data[index + 1] + 0.114 * data[index + 2]));
+          }
+          return out;
+        };
+        const wide = luma(17, 16);
+        let bits = "";
+        for (let y = 0; y < 16; y += 1) for (let x = 0; x < 16; x += 1) bits += wide[y * 17 + x] < wide[y * 17 + x + 1] ? "1" : "0";
+        const dhash = BigInt(`0b${bits}`).toString(16).padStart(64, "0");
+        const grid = btoa(String.fromCharCode(...luma(24, 24)));
+        return { width: image.naturalWidth, height: image.naturalHeight, dhash, grid };
+      };
+
+      // --- The workbench for a person ---------------------------------------------------
+      const controls = { state: document.getElementById("state"), size: document.getElementById("size") };
+      for (const state of STATES) controls.state.append(new Option(state.label, state.id));
+      for (const size of SIZES) controls.size.append(new Option(`${size.id} (${size.width} × ${size.height}, ${size.layout})`, size.id));
+      const show = async () => {
+        const request = { state: controls.state.value, size: controls.size.value };
+        document.getElementById("link").href = `?${new URLSearchParams(request)}`;
+        const keepBar = !query.has("driver");
+        await window.__mount(request);
+        bar.hidden = !keepBar;
+        stage.classList.remove("capturing");
+      };
+      controls.state.value = query.get("state") ?? "canvas";
+      controls.size.value = query.get("size") ?? "wide";
+      for (const control of Object.values(controls)) control.addEventListener("change", show);
+      if (!query.has("driver")) await show();
+      window.__ready = true;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,77 @@
+{
+  "id": "visit-sources",
+  "version": "1.0.0",
+  "schemaVersion": "1",
+  "localization": {
+    "defaultLocale": "en",
+    "supportedLocales": [
+      {
+        "code": "en",
+        "label": "English"
+      },
+      {
+        "code": "fr",
+        "label": "Français"
+      },
+      {
+        "code": "fr-CA",
+        "label": "Français (Canada)"
+      }
+    ]
+  },
+  "root": {
+    "id": "root",
+    "type": "form",
+    "configuration": {
+      "title": "Visit kind"
+    },
+    "children": {
+      "content": [
+        {
+          "id": "kindByLocale",
+          "type": "select",
+          "configuration": {
+            "label": "Answered per language",
+            "data": {
+              "sourceId": "visitTypesByLocale"
+            }
+          }
+        },
+        {
+          "id": "kindLocalized",
+          "type": "select",
+          "configuration": {
+            "label": "Every language at once",
+            "data": {
+              "sourceId": "visitTypesLocalized"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "translations": {
+    "fr": {
+      "form": {
+        "title": {
+          "text": "Genre de visite",
+          "source": "la98w6"
+        }
+      },
+      "components": {
+        "kindByLocale": {
+          "label": {
+            "text": "Réponse par langue",
+            "source": "ihj1"
+          }
+        },
+        "kindLocalized": {
+          "label": {
+            "text": "Toutes les langues à la fois",
+            "source": "1i0w1jo"
+          }
+        }
+      }
+    }
+  }
+}

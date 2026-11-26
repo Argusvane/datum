@@ -1,0 +1,42 @@
+<!-- datum-reference
+{
+  "source": "bootstrap 5.3.8: https://getbootstrap.com/docs/5.3/forms/select/ (select.form-select, the empty first option) with label.form-label of https://getbootstrap.com/docs/5.3/forms/overview/",
+  "note": "a select",
+  "components": [
+    {
+      "id": "field1",
+      "type": "select",
+      "configuration": {
+        "label": "Number",
+        "options": [
+          {
+            "value": "one",
+            "label": "One"
+          },
+          {
+            "value": "two",
+            "label": "Two"
+          },
+          {
+            "value": "three",
+            "label": "Three"
+          }
+        ]
+      }
+    }
+  ],
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate>
+<div class="mb-3">
+<label class="form-label" for="field1">Number</label>
+<select class="form-select" id="field1" name="field1">
+<option value>Select…</option>
+<option value="one">One</option>
+<option value="two">Two</option>
+<option value="three">Three</option>
+</select>
+</div>
+</form>

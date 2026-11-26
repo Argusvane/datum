@@ -1,0 +1,85 @@
+{
+  "id": "intake",
+  "version": "1",
+  "schemaVersion": "1",
+  "localization": {
+    "defaultLocale": "en",
+    "supportedLocales": [
+      {
+        "code": "en",
+        "label": "English"
+      },
+      {
+        "code": "fr",
+        "label": "Français"
+      }
+    ]
+  },
+  "translations": {
+    "fr": {
+      "form": {
+        "title": {
+          "text": "Accueil",
+          "source": "1yn4r9x"
+        }
+      },
+      "components": {
+        "name": {
+          "label": {
+            "text": "Votre nom",
+            "source": "g3lfb1"
+          }
+        },
+        "reason": {
+          "label": {
+            "text": "De quoi avez-vous besoin ?",
+            "source": "q455me"
+          }
+        },
+        "send": {
+          "label": {
+            "text": "Envoyer",
+            "source": "1vatbdb"
+          }
+        }
+      }
+    }
+  },
+  "root": {
+    "id": "root",
+    "type": "form",
+    "configuration": {
+      "title": "Intake"
+    },
+    "children": {
+      "content": [
+        {
+          "id": "name",
+          "type": "text",
+          "configuration": {
+            "label": "Your name",
+            "required": true,
+            "maxLength": 80
+          }
+        },
+        {
+          "id": "reason",
+          "type": "textarea",
+          "configuration": {
+            "label": "What do you need?",
+            "required": true,
+            "maxLength": 2000
+          }
+        },
+        {
+          "id": "send",
+          "type": "button",
+          "configuration": {
+            "label": "Send",
+            "action": "submit"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,30 @@
+<!-- datum-reference
+{
+  "note": "a group with a legend and a hint around a field",
+  "components": [
+    {
+      "id": "address",
+      "type": "fieldset",
+      "configuration": {
+        "label": "Address",
+        "description": "Where you live."
+      },
+      "children": {
+        "content": [
+          {
+            "id": "street",
+            "type": "text",
+            "configuration": {
+              "label": "Street"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "source": "https://design-system.canada.ca/en/components/fieldset/ (GC Design System, usage examples), attributes per gcds-components 1.7.0 specs/custom-elements.json",
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate><gcds-fieldset legend="Address" legend-size="h2" hint="Where you live."><gcds-input input-id="street" name="street" label="Street"></gcds-input></gcds-fieldset></form>

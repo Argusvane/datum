@@ -1,0 +1,7 @@
+{
+  "designSystem": "Bootstrap 5",
+  "binding": "src/index.ts",
+  "stylesheets": [
+    "/node_modules/bootstrap-5.3.8/dist/css/bootstrap.min.css"
+  ]
+}

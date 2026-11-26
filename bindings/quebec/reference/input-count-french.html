@@ -1,0 +1,46 @@
+<!-- datum-reference
+{
+  "source": "qc-trousse-sdg 1.6.1: src/sdg/components/TextField/_textField.html (attribute max-length; the toolkit words the count in the page's language, French here)",
+  "note": "a counted text box with an answer, in a French form on a French page: the count words are the toolkit's own",
+  "root": "form",
+  "width": 560,
+  "locale": "fr-CA",
+  "preset": {
+    "field1": "Québec"
+  },
+  "ignoreText": [
+    {
+      "match": "^\\[live\\] \\d+ caract",
+      "reason": "the toolkit's count is a polite live region that speaks on every keystroke; Datum's is hidden from assistive technology and announced once by the renderer after typing pauses (the same words are drawn)"
+    },
+    {
+      "match": "^\\[visual\\] \\d+ caract",
+      "reason": "the same count, seen by everyone and heard through the renderer's announcer (see the [live] line)"
+    },
+    {
+      "match": "^\\[sr\\] Vous pouvez saisir",
+      "reason": "the limit sentence Datum reads as the field's description; the toolkit has none"
+    }
+  ],
+  "ignoreBoxes": [
+    {
+      "match": "^Vous pouvez saisir",
+      "reason": "the limit sentence Datum reads as the field's description (visually hidden); the toolkit has none"
+    }
+  ],
+  "components": [
+    {
+      "id": "field1",
+      "type": "text",
+      "configuration": {
+        "label": "Ville",
+        "characterCount": true,
+        "maxLength": 20
+      }
+    }
+  ]
+}
+-->
+<form novalidate lang="fr">
+<qc-textfield label="Ville" max-length="20"><input id="field1" name="field1" type="text" value="Québec"></qc-textfield>
+</form>

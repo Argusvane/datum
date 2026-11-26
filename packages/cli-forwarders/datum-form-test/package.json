@@ -1,0 +1,46 @@
+{
+  "name": "datum-form-test",
+  "version": "0.1.0",
+  "private": false,
+  "license": "MIT",
+  "author": "Argusvane <maintainers@argusvane.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/argusvane/datum.git",
+    "directory": "packages/cli-forwarders/datum-form-test"
+  },
+  "homepage": "https://datum.argusvane.com",
+  "bugs": {
+    "url": "https://github.com/argusvane/datum/issues"
+  },
+  "keywords": [
+    "datum",
+    "forms",
+    "cli"
+  ],
+  "description": "Runs the datum-form-test command of @argusvane/datum-form-test, which runs a Datum form's tests (scenarios over its rules, journeys and verdicts) from the command line and in CI. A forwarding command: the tool is @argusvane/datum-form-test.",
+  "type": "module",
+  "bin": {
+    "datum-form-test": "./bin/datum-form-test.mjs"
+  },
+  "files": [
+    "bin",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "prepack": "node ../../../scripts/npm/prepack.mjs",
+    "pack:check": "node ../../../scripts/npm/pack-check.mjs ."
+  },
+  "dependencies": {
+    "@argusvane/datum-form-test": "0.1.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,0 +1,30 @@
+<!-- datum-reference
+{
+  "note": "radios with help text and an option description",
+  "components": [
+    {
+      "id": "contact",
+      "type": "radio",
+      "configuration": {
+        "label": "Preferred contact",
+        "description": "Choose one.",
+        "options": [
+          {
+            "value": "email",
+            "label": "Email",
+            "description": "Within a day"
+          },
+          {
+            "value": "phone",
+            "label": "Phone"
+          }
+        ]
+      }
+    }
+  ],
+  "source": "https://design.alberta.ca/components/radio (Alberta Design System, component page), properties per @abgov/web-components 3.2.0 (the release's index.js element definitions)",
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate><goa-form-item label="Preferred contact" helptext="Choose one." error="" requirement="" type="radio-group"><goa-radio-group name="contact" error="false" disabled="false" arialabel=""><goa-radio-item value="email" label="Email" description="Within a day"></goa-radio-item><goa-radio-item value="phone" label="Phone"></goa-radio-item></goa-radio-group></goa-form-item></form>

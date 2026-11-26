@@ -1,0 +1,61 @@
+{
+  "name": "@argusvane/datum-binding-quebec",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "author": "Argusvane <maintainers@argusvane.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/argusvane/datum.git",
+    "directory": "bindings/quebec"
+  },
+  "homepage": "https://datum.argusvane.com",
+  "bugs": {
+    "url": "https://github.com/argusvane/datum/issues"
+  },
+  "keywords": [
+    "datum",
+    "forms",
+    "form-renderer",
+    "design-system",
+    "binding"
+  ],
+  "description": "Québec design system (design.quebec.ca) binding for the Datum form renderer: Datum's components drawn in the design system's own markup.",
+  "type": "module",
+  "datumBinding": {
+    "id": "quebec",
+    "designSystem": "Québec design system",
+    "release": "1.6.1",
+    "bundle": "dist/quebec.js",
+    "global": "DatumBindingQuebec",
+    "budgetKb": 14,
+    "checks": [
+      "tests/extras.mjs"
+    ]
+  },
+  "scripts": {
+    "build": "node ../../packages/datum/binding-kit/build.mjs --binding quebec",
+    "typecheck": "tsc --noEmit",
+    "reference": "node ./reference/generate.mjs",
+    "kit:check": "node ../../packages/datum/binding-kit/check.mjs --binding quebec",
+    "kit:build": "node ../../packages/datum/binding-kit/build.mjs --binding quebec",
+    "kit:equality": "node ../../packages/datum/binding-kit/equality.mjs --binding quebec",
+    "kit:behaviour": "node ../../packages/datum/binding-kit/behaviour.mjs --binding quebec",
+    "kit:conformance": "node ../../packages/datum/binding-kit/conformance.ts --binding quebec",
+    "kit:serve": "node ../../packages/datum/binding-kit/serve.mjs --binding quebec",
+    "test": "npm run test:extras",
+    "test:extras": "node tests/extras.mjs"
+  },
+  "devDependencies": {
+    "@argusvane/datum-engine": "file:../../engine",
+    "esbuild": "^0.28.2",
+    "qc-trousse-sdg-1.6.1": "npm:qc-trousse-sdg@1.6.1",
+    "typescript": "^7.0.2"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  }
+}

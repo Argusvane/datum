@@ -1,0 +1,16 @@
+{
+  "note": "tier 2: the language switcher (Fluent has none as a component, so the part is Datum's): a fluent-field with a labelled fluent-dropdown type=select, one fluent-option per locale, the current one selected",
+  "definition": {
+    "id": "kit-language-switcher",
+    "version": "1.0.0",
+    "schemaVersion": "1",
+    "localization": { "defaultLocale": "en", "supportedLocales": [ { "code": "en", "label": "English" }, { "code": "fr-CA", "label": "Français" } ] },
+    "root": {
+      "id": "root",
+      "type": "form",
+      "configuration": { "chrome": { "header": [ { "id": "lang", "type": "language-switcher" } ] } },
+      "children": { "content": [ { "id": "full-name", "type": "text", "configuration": { "label": "Full name" } } ] }
+    }
+  },
+  "width": 560
+}

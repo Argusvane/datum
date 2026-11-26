@@ -1,0 +1,26 @@
+<!-- datum-reference
+{
+  "source": "govuk-frontend 6.6.0: components/textarea/fixtures.json, fixture \"with hint\"",
+  "note": "a textarea with a hint",
+  "components": [
+    {
+      "id": "field1",
+      "type": "textarea",
+      "configuration": {
+        "label": "Can you provide more detail?",
+        "description": "Don't include personal or financial information, eg your National Insurance number or credit card details.",
+        "required": true,
+        "rows": 5
+      }
+    }
+  ],
+  "root": "form",
+  "width": 560,
+  "init": "window.GOVUKFrontend.initAll();"
+}
+-->
+<form novalidate>
+<div class="govuk-form-group">
+<label class="govuk-label" for="more-detail"> Can you provide more detail? </label>
+<div id="more-detail-hint" class="govuk-hint"> Don&#39;t include personal or financial information, eg your National Insurance number or credit card details. </div> <textarea class="govuk-textarea" id="more-detail" name="more-detail" rows="5" aria-describedby="more-detail-hint"></textarea> </div>
+</form>

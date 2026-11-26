@@ -1,0 +1,61 @@
+{
+  "name": "@argusvane/datum-binding-bootstrap",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "author": "Argusvane <maintainers@argusvane.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/argusvane/datum.git",
+    "directory": "bindings/bootstrap"
+  },
+  "homepage": "https://datum.argusvane.com",
+  "bugs": {
+    "url": "https://github.com/argusvane/datum/issues"
+  },
+  "keywords": [
+    "datum",
+    "forms",
+    "form-renderer",
+    "design-system",
+    "binding"
+  ],
+  "description": "Bootstrap 5 (getbootstrap.com) binding for the Datum form renderer: Datum's components drawn in the design system's own markup.",
+  "type": "module",
+  "datumBinding": {
+    "id": "bootstrap",
+    "designSystem": "Bootstrap 5",
+    "release": "5.3.8",
+    "bundle": "dist/bootstrap.js",
+    "global": "DatumBindingBootstrap",
+    "budgetKb": 12,
+    "checks": [
+      "src/checks.mjs",
+      "src/hooks-check.mjs"
+    ]
+  },
+  "devDependencies": {
+    "@argusvane/datum-engine": "file:../../engine",
+    "bootstrap-5.3.8": "npm:bootstrap@5.3.8",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  },
+  "scripts": {
+    "build": "node ../../packages/datum/binding-kit/build.mjs --binding bootstrap",
+    "typecheck": "tsc --noEmit",
+    "kit:check": "node ../../packages/datum/binding-kit/check.mjs --binding bootstrap",
+    "kit:build": "node ../../packages/datum/binding-kit/build.mjs --binding bootstrap",
+    "kit:equality": "node ../../packages/datum/binding-kit/equality.mjs --binding bootstrap",
+    "kit:behaviour": "node ../../packages/datum/binding-kit/behaviour.mjs --binding bootstrap",
+    "kit:conformance": "node ../../packages/datum/binding-kit/conformance.ts --binding bootstrap",
+    "kit:serve": "node ../../packages/datum/binding-kit/serve.mjs --binding bootstrap",
+    "checks": "node ./src/checks.mjs",
+    "checks:hooks": "node ./src/hooks-check.mjs"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  }
+}

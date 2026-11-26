@@ -1,0 +1,29 @@
+{
+  "id": "petition",
+  "version": "1",
+  "schemaVersion": "1",
+  "root": {
+    "id": "root",
+    "type": "form",
+    "configuration": { "title": "Sign the petition" },
+    "children": {
+      "content": [
+        {
+          "id": "fullName",
+          "type": "text",
+          "configuration": { "label": "Your full name", "required": true, "maxLength": 120 }
+        },
+        {
+          "id": "reason",
+          "type": "textarea",
+          "configuration": { "label": "Why you sign", "required": true, "maxLength": 1000 }
+        },
+        {
+          "id": "send",
+          "type": "button",
+          "configuration": { "label": "Sign and send", "action": "submit" }
+        }
+      ]
+    }
+  }
+}

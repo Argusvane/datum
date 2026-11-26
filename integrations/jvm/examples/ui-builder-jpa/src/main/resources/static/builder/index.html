@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Build the intake form</title>
+    <style>
+      body { font: 16px/1.5 system-ui, sans-serif; margin: 0; }
+      header { padding: 0.5rem 1rem; display: flex; gap: 1rem; align-items: baseline; }
+      [data-kind="error"] { color: #a00; }
+      [data-kind="warning"] { color: #8a5a00; }
+      datum-form-builder { display: block; height: calc(100vh - 3rem); }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>Intake</strong>
+      <span id="status" role="status" aria-live="polite">Loading the builder…</span>
+      <a href="/">Open the form</a>
+    </header>
+    <!-- The page sets every attribute of the element; the server decides none of them. pdf="off": this example
+         ships no PDF module, so the builder offers no PDF layouts. -->
+    <datum-form-builder id="builder" layout="contained" pdf="off"></datum-form-builder>
+
+    <script type="module" src="/datum/assets/datum-host.js"></script>
+    <script type="module">
+      // Loads the builder bundle, the full definition (public=false) and the translations, and saves with
+      // PUT /api/forms/intake + If-Match, the CSRF header from Spring Security's XSRF-TOKEN cookie included.
+      // Refusals (409 another save came first, 422 the server's check, 403 not a form admin) show on the status line.
+      await DatumHost.builder(document.getElementById('builder'), {
+        formKey: 'intake',
+        status: document.getElementById('status'),
+      });
+    </script>
+  </body>
+</html>

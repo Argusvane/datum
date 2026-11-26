@@ -1,0 +1,35 @@
+<!-- datum-reference
+{
+  "source": "qc-trousse-sdg 1.6.1: src/sdg/components/ChoiceGroup/_choiceGroup.html, \"Exemple de groupes de boutons radio et de cases à cocher\"",
+  "note": "checkboxes in a qc-choice-group, one chosen",
+  "root": "form",
+  "width": 560,
+  "preset": {
+    "field1": {
+      "email": true
+    }
+  },
+  "components": [
+    {
+      "id": "field1",
+      "type": "checkboxes",
+      "configuration": {
+        "label": "Channels",
+        "options": [
+          {
+            "value": "email",
+            "label": "Email"
+          },
+          {
+            "value": "phone",
+            "label": "Phone"
+          }
+        ]
+      }
+    }
+  ]
+}
+-->
+<form novalidate>
+<qc-choice-group legend="Channels" name="field1"><label><input id="field1-email" type="checkbox" name="field1" value="email" checked><span>Email</span></label><label><input id="field1-phone" type="checkbox" name="field1" value="phone"><span>Phone</span></label></qc-choice-group>
+</form>

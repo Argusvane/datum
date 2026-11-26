@@ -1,0 +1,10 @@
+<!-- datum-reference
+{
+  "note": "a text field with a hint",
+  "components": [ { "id": "full-name", "type": "text", "configuration": { "label": "Full name", "description": "As it appears on your passport." } } ],
+  "source": "Fluent UI Web Components 3.2.1: field.stories.ts ComponentExamples (fluent-field label-position='above', label slot='label' for, fluent-text-input slot='input'), https://github.com/microsoft/fluentui/tree/master/packages/web-components/src/field; attributes per custom-elements.json 3.2.1; hint: field.stories.ts Hint (fluent-text slot='message' size='200'), the hint inside it as the one message element",
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate><fluent-field label-position="above"><label slot="label" for="full-name">Full name</label><fluent-text-input slot="input" id="full-name" name="full-name"></fluent-text-input><fluent-text slot="message" size="200"><div id="full-name-hint">As it appears on your passport.</div></fluent-text></fluent-field></form>

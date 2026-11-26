@@ -1,0 +1,10 @@
+from datum_core.hooks import Hook
+
+type Admit = Hook[[str], bool]
+
+
+def wrong(s: str) -> int:
+    return 1
+
+
+bad: Admit = wrong

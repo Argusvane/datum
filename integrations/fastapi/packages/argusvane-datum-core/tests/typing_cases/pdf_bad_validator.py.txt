@@ -1,0 +1,8 @@
+from datum_core.pdf import PdfResultCandidate, PdfResultValidator
+
+
+def wrong(candidate: PdfResultCandidate) -> int:
+    return candidate.page_count
+
+
+bad: PdfResultValidator = wrong

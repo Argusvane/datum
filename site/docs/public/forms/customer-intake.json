@@ -1,0 +1,211 @@
+{
+  "id": "customer-intake",
+  "version": "1.0.0",
+  "schemaVersion": "1",
+  "localization": {
+    "defaultLocale": "en",
+    "supportedLocales": [
+      {
+        "code": "en",
+        "label": "English"
+      },
+      {
+        "code": "fr-CA",
+        "label": "Français"
+      }
+    ]
+  },
+  "root": {
+    "id": "root",
+    "type": "form",
+    "configuration": {
+      "title": "Customer Intake",
+      "messages": {
+        "maxLength": "Keep it under {maxLength} characters."
+      }
+    },
+    "children": {
+      "content": [
+        {
+          "id": "fullName",
+          "type": "text",
+          "configuration": {
+            "label": "Full name",
+            "description": "As it appears on a government ID",
+            "required": true,
+            "messages": {
+              "required": "Enter your full name."
+            }
+          }
+        },
+        {
+          "id": "country",
+          "type": "select",
+          "configuration": {
+            "label": "Country",
+            "data": {
+              "sourceId": "countries"
+            }
+          }
+        },
+        {
+          "id": "contactMethod",
+          "type": "radio",
+          "configuration": {
+            "label": "Preferred contact method",
+            "options": [
+              {
+                "value": "email",
+                "label": "Email"
+              },
+              {
+                "value": "phone",
+                "label": "Phone"
+              }
+            ]
+          }
+        },
+        {
+          "id": "newsletter",
+          "type": "fieldset",
+          "configuration": {
+            "label": "Newsletter"
+          },
+          "children": {
+            "content": [
+              {
+                "id": "subscribe",
+                "type": "checkbox",
+                "configuration": {
+                  "label": "Subscribe to the newsletter"
+                }
+              },
+              {
+                "id": "newsletterEmail",
+                "type": "text",
+                "configuration": {
+                  "label": "Newsletter email",
+                  "pattern": "[^@\\s]+@[^@\\s]+\\.[^@\\s]+",
+                  "patternMessage": "Enter an email address."
+                },
+                "rules": {
+                  "visibleWhen": "subscribe"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "notes",
+          "type": "textarea",
+          "configuration": {
+            "label": "Additional notes",
+            "maxLength": 500
+          }
+        },
+        {
+          "id": "submit",
+          "type": "button",
+          "configuration": {
+            "label": "Submit",
+            "action": "submit"
+          }
+        }
+      ]
+    }
+  },
+  "translations": {
+    "fr-CA": {
+      "form": {
+        "messages": {
+          "maxLength": {
+            "text": "Au plus {maxLength} caractères.",
+            "source": "7cdk7t"
+          }
+        }
+      },
+      "components": {
+        "fullName": {
+          "label": {
+            "text": "Nom complet",
+            "source": "13z0t9r"
+          },
+          "description": {
+            "text": "Tel qu'il apparaît sur une pièce d'identité",
+            "source": "1u3kqke"
+          },
+          "messages": {
+            "required": {
+              "text": "Entrez votre nom complet.",
+              "source": "8bi3le"
+            }
+          }
+        },
+        "country": {
+          "label": {
+            "text": "Pays",
+            "source": "1diicx"
+          }
+        },
+        "contactMethod": {
+          "label": {
+            "text": "Mode de contact préféré",
+            "source": "1asuvwb"
+          },
+          "options": {
+            "email": {
+              "label": {
+                "text": "Courriel",
+                "source": "inbfc7"
+              }
+            },
+            "phone": {
+              "label": {
+                "text": "Téléphone",
+                "source": "kb2lhr"
+              }
+            }
+          }
+        },
+        "newsletter": {
+          "label": {
+            "text": "Infolettre",
+            "source": "oapagq"
+          }
+        },
+        "subscribe": {
+          "label": {
+            "text": "S'abonner à l'infolettre",
+            "source": "1l7gaq6"
+          }
+        },
+        "newsletterEmail": {
+          "label": {
+            "text": "Courriel de l'infolettre",
+            "source": "fwj2oq"
+          }
+        },
+        "notes": {
+          "label": {
+            "text": "Notes supplémentaires",
+            "source": "126tvmx"
+          }
+        },
+        "submit": {
+          "label": {
+            "text": "Envoyer",
+            "source": "hvztxh"
+          }
+        }
+      },
+      "texts": {
+        "form": {
+          "noticeSuccess": {
+            "text": "Succès : ",
+            "source": "1gkv322"
+          }
+        }
+      }
+    }
+  }
+}

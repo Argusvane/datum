@@ -1,0 +1,41 @@
+{
+  "designSystem": "GC Design System",
+  "binding": "src/binding.ts",
+  "stylesheets": [
+    "/node_modules/gcds-components-1.7.0/dist/gcds/gcds.css"
+  ],
+  "scripts": [
+    "/node_modules/gcds-components-1.7.0/dist/gcds/gcds.esm.js"
+  ],
+  "print": "print/index.ts",
+  "pdf": "pdf/index.ts",
+  "routes": [
+    {
+      "match": "https://fonts.googleapis.com/css2",
+      "stylesheets": [
+        {
+          "path": "/node_modules/gcds-fonts-1.1.1/fonts/lato/gcds-lato.css",
+          "rebase": {
+            "path/to/file/": "/node_modules/gcds-fonts-1.1.1/fonts/lato/"
+          }
+        },
+        {
+          "path": "/node_modules/gcds-fonts-1.1.1/fonts/noto-sans/gcds-noto-sans.css",
+          "rebase": {
+            "path/to/file/": "/node_modules/gcds-fonts-1.1.1/fonts/noto-sans/"
+          }
+        },
+        {
+          "path": "/node_modules/gcds-fonts-1.1.1/fonts/noto-sans-mono/gcds-noto-sans-mono.css",
+          "rebase": {
+            "path/to/file/": "/node_modules/gcds-fonts-1.1.1/fonts/noto-sans-mono/"
+          }
+        }
+      ]
+    },
+    {
+      "match": "https://cdn.design-system.canada.ca/@gcds-core/fonts@1.1.1/",
+      "files": "/node_modules/gcds-fonts-1.1.1/fonts/"
+    }
+  ]
+}

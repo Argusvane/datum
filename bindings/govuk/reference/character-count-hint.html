@@ -1,0 +1,42 @@
+<!-- datum-reference
+{
+  "source": "govuk-frontend 6.6.0: components/character-count/fixtures.json, fixture \"with hint\"",
+  "note": "a character count with a hint",
+  "components": [
+    {
+      "id": "field1",
+      "type": "textarea",
+      "configuration": {
+        "label": "Can you provide more detail?",
+        "description": "Don't include personal or financial information, eg your National Insurance number or credit card details.",
+        "required": true,
+        "rows": 5,
+        "maxLength": 10,
+        "characterCount": true
+      }
+    }
+  ],
+  "root": "form",
+  "width": 560,
+  "init": "window.GOVUKFrontend.initAll();",
+  "compareWith": "plain",
+  "ignoreText": [
+    {
+      "match": "^\\[live\\] \\[sr\\] You have",
+      "reason": "GOV.UK's script writes its own visually hidden status; the count's live region is the renderer's announcer"
+    }
+  ],
+  "ignoreBoxes": [
+    {
+      "match": "^You have \\d+ characters? r",
+      "reason": "the script's visually hidden status element (see ignoreText)"
+    }
+  ]
+}
+-->
+<form novalidate>
+<div class="govuk-form-group govuk-character-count" data-module="govuk-character-count" data-maxlength="10">
+<label class="govuk-label" for="with-hint"> Can you provide more detail? </label>
+<div id="with-hint-hint" class="govuk-hint"> Don&#39;t include personal or financial information, eg your National Insurance number or credit card details. </div> <textarea class="govuk-textarea govuk-js-character-count" id="with-hint" name="with-hint" rows="5" aria-describedby="with-hint-info with-hint-hint"></textarea> <div id="with-hint-info" class="govuk-hint govuk-character-count__message"> You can enter up to 10 characters </div>
+</div>
+</form>

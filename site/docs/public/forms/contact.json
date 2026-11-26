@@ -1,0 +1,43 @@
+{
+  "id": "contact",
+  "version": "1.0.0",
+  "schemaVersion": "1",
+  "localization": {
+    "defaultLocale": "en",
+    "supportedLocales": [{ "code": "en", "label": "English" }]
+  },
+  "root": {
+    "id": "root",
+    "type": "form",
+    "configuration": { "title": "Contact us" },
+    "children": {
+      "content": [
+        { "id": "fullName", "type": "text", "configuration": { "label": "Full name", "required": true } },
+        {
+          "id": "email",
+          "type": "text",
+          "configuration": {
+            "label": "Email",
+            "required": true,
+            "pattern": "[^@\\s]+@[^@\\s]+\\.[^@\\s]+",
+            "patternMessage": "Enter an email address."
+          }
+        },
+        {
+          "id": "topic",
+          "type": "radio",
+          "configuration": {
+            "label": "What is this about?",
+            "options": [
+              { "value": "question", "label": "A question" },
+              { "value": "problem", "label": "A problem" },
+              { "value": "other", "label": "Something else" }
+            ]
+          }
+        },
+        { "id": "message", "type": "textarea", "configuration": { "label": "Message", "maxLength": 1000 } },
+        { "id": "submit", "type": "button", "configuration": { "label": "Send", "action": "submit" } }
+      ]
+    }
+  }
+}

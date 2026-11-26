@@ -1,0 +1,73 @@
+name: DCO
+
+# Every commit in a pull request must carry a Signed-off-by line that names its author
+# (`git commit -s`). The line certifies the Developer Certificate of Origin, https://developercertificate.org/.
+# Merge commits are checked too (`git merge --signoff`). Commits from dependabot[bot] are skipped
+# only when GitHub verified their signature: the bot adds no sign-off, and a commit that merely
+# claims the bot's email is not verified, so it is checked like any other.
+#
+# The workflow runs from the base branch (pull_request_target), so a pull request cannot change the
+# check that judges it, and it checks out nothing: it reads the commits through the API and never
+# touches the pull request's code. Keep it that way; do not add a checkout of the head.
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+
+# Read-only token: the job reads the commits and writes nothing.
+permissions:
+  pull-requests: read
+  contents: read
+
+concurrency:
+  group: dco-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  dco:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check the sign-off of every commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PULL_NUMBER: ${{ github.event.number }}
+          COMMIT_COUNT: ${{ github.event.pull_request.commits }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          # The API lists at most 250 commits of a pull request, so a longer one cannot be checked whole.
+          if [ "$COMMIT_COUNT" -gt 250 ]; then
+            echo "::error::This pull request has $COMMIT_COUNT commits; the check reads at most 250. Split it or squash it."
+            exit 1
+          fi
+          # One line per checked commit: ok|missing, the sha, the author as "Name <email>". A commit is
+          # skipped only when its author is dependabot[bot] and GitHub verified it. The message is split into lines
+          # and trailing whitespace (a carriage return included) is trimmed before the exact-line match.
+          report="$(gh api "repos/${REPOSITORY}/pulls/${PULL_NUMBER}/commits" --paginate --jq '
+            .[]
+            | select(((.author.login // "") == "dependabot[bot]" and .commit.verification.verified == true) | not)
+            | ((.commit.author.name + " <" + .commit.author.email + ">") as $author
+              | ((.commit.message | split("\n") | map(sub("\\s+$"; ""))) | index("Signed-off-by: " + $author)) as $found
+              | [(if $found == null then "missing" else "ok" end), .sha, $author])
+            | @tsv')"
+          missing=0
+          while IFS=$'\t' read -r status sha author; do
+            [ -n "$status" ] || continue
+            if [ "$status" = "ok" ]; then
+              echo "ok       $sha  Signed-off-by: $author"
+            else
+              echo "::error::Commit $sha has no line 'Signed-off-by: $author'"
+              missing=1
+            fi
+          done <<< "$report"
+          if [ "$missing" -ne 0 ]; then
+            {
+              echo "Every commit needs a Signed-off-by line that matches its author."
+              echo "Add it to the last commit with:  git commit --amend -s --no-edit (a merge: git merge --signoff)"
+              echo "Add it to every commit of the branch with:  git rebase --signoff $BASE_SHA"
+              echo "Then push again with:  git push --force-with-lease"
+              echo "Details: CONTRIBUTING.md, section 'Sign your commits (DCO)'."
+            } >&2
+            exit 1
+          fi

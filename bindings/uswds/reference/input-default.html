@@ -1,0 +1,25 @@
+<!-- datum-reference
+{
+  "source": "uswds 3.14.0: packages/templates/usa-address-form.twig, the City field (label with abbr[title=required], input with required), wrapped in usa-form-group; the required note of packages/templates/usa-address-form.twig above the fields",
+  "note": "a required text field",
+  "components": [
+    {
+      "id": "field1",
+      "type": "text",
+      "configuration": {
+        "label": "City",
+        "required": true
+      }
+    }
+  ],
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate class="usa-form usa-form--large">
+<p>Required fields are marked with an asterisk (<abbr title="required" class="usa-hint usa-hint--required">*</abbr>).</p>
+<div class="usa-form-group">
+<label class="usa-label" for="field1">City <abbr title="required" class="usa-hint usa-hint--required">*</abbr></label>
+<input class="usa-input" id="field1" name="field1" type="text" required>
+</div>
+</form>

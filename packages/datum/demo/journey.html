@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>datum-form — a journey</title>
+    <link rel="stylesheet" href="/dist/datum-form.css" />
+    <script type="module" src="/dist/datum-form.js"></script>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; background: #f6f7f9; color: #1d2b36; }
+      .page { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; }
+      header { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+      header h1 { font-size: 20px; margin: 0; }
+      header a { color: #2f6feb; }
+      .sheet { background: #fff; border: 1px solid #dfe5ec; border-radius: 10px; padding: 24px; }
+      .log { background: #fff; border: 1px solid #dfe5ec; border-radius: 10px; padding: 16px; font-size: 13px; }
+      .log h2 { font-size: 14px; margin: 16px 0 8px; }
+      .log h2:first-child { margin-top: 0; }
+      .log p { margin: 0 0 8px; }
+      .log pre { margin: 0; white-space: pre-wrap; word-break: break-word; max-height: 50vh; overflow: auto; }
+      .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+      .checks a { margin-right: 8px; color: #2f6feb; }
+      .checks a[aria-current="true"] { font-weight: 600; color: inherit; text-decoration: none; }
+      button, select { font: inherit; padding: 6px 10px; border-radius: 6px; border: 1px solid #c9d3dd; background: #fff; cursor: pointer; }
+      @media (max-width: 800px) { .page { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <h1>&lt;datum-form&gt; — a journey</h1>
+        <a href="/demo/">All demos</a>
+      </header>
+
+      <main class="sheet">
+        <!-- One form, asked a page at a time. The journey is in the definition; the
+             page only says how to reach its service for the checks the journey asks for
+             (`serverValidator` below) and keeps a draft. -->
+        <datum-form id="form" language-switcher draft="journey-demo"></datum-form>
+      </main>
+
+      <aside class="log">
+        <h2>The service's checks</h2>
+        <p>The permit page and the final Submit ask the service. Its stand-in here answers:</p>
+        <p class="checks">
+          <a href="?check=ok" data-check="ok">ok</a>
+          <a href="?check=slow" data-check="slow">slow</a>
+          <a href="?check=invalid" data-check="invalid">invalid</a>
+          <a href="?check=down" data-check="down">down</a>
+        </p>
+        <p>With <code>ok</code>, a permit number starting with X is unknown to it.</p>
+        <div class="controls">
+          <select id="journey" aria-label="Journey">
+            <option value="">Form's choice</option>
+            <option value="form">Whole form</option>
+          </select>
+          <button id="restart" type="button">Start over</button>
+        </div>
+        <h2>Events</h2>
+        <pre id="events">(waiting for datum-ready)</pre>
+      </aside>
+    </div>
+
+    <script type="module">
+      const form = document.getElementById("form");
+      const events = document.getElementById("events");
+      const lines = [];
+      const log = (line) => {
+        lines.unshift(`${new Date().toLocaleTimeString()}  ${line}`);
+        events.textContent = lines.slice(0, 40).join("\n");
+      };
+      // The host's own words (the messages catalog, the page's texts, a notice) are `{ default, locales }`.
+      const text = (en, fr) => ({ default: en, locales: { "fr-CA": fr } });
+      // The form's texts are plain strings in its default language; the French wording is
+      // the definition's `translations` map, keyed by the id of the thing that holds the text.
+      // `say` records one French text at its address and answers the English string for the definition.
+      const hash = (value) => {
+        let h = 0x811c9dc5;
+        for (let i = 0; i < value.length; i += 1) {
+          h = Math.imul(h ^ value.charCodeAt(i), 0x01000193);
+        }
+        return (h >>> 0).toString(36);
+      };
+      const french = {};
+      const say = (path, en, fr) => {
+        let tree = french;
+        for (const key of path.slice(0, -1)) {
+          tree = tree[key] ??= {};
+        }
+        tree[path.at(-1)] = { text: fr, source: hash(en) };
+        return en;
+      };
+      const is = (field, value) => ({ kind: "binary", operator: "eq", left: { kind: "path", path: field }, right: { kind: "literal", value } });
+      const yesNo = (id) => [
+        { value: "yes", label: say(["components", id, "options", "yes", "label"], "Yes", "Oui") },
+        { value: "no", label: say(["components", id, "options", "no", "label"], "No", "Non") }
+      ];
+
+      // Who may apply for a fishing permit: an adult, living in Canada (a province and a postal
+      // code) or abroad (a country and the permit number the service checks on Continue).
+      form.definition = {
+        id: "fishing-permit",
+        version: "1.0.0",
+        schemaVersion: "1",
+        localization: {
+          defaultLocale: "en",
+          supportedLocales: [
+            { code: "en", label: "English" },
+            { code: "fr-CA", label: "Français" }
+          ]
+        },
+        root: {
+          id: "root",
+          type: "form",
+          configuration: { title: say(["form", "title"], "Fishing permit", "Permis de pêche") },
+          children: {
+            content: [
+              { id: "adult", type: "radio", configuration: { label: say(["components", "adult", "label"], "Are you 18 or older?", "Avez-vous 18 ans ou plus?"), required: true, options: yesNo("adult") } },
+              { id: "resident", type: "radio", configuration: { label: say(["components", "resident", "label"], "Do you live in Canada?", "Habitez-vous au Canada?"), required: true, options: yesNo("resident") } },
+              {
+                id: "province",
+                type: "select",
+                configuration: {
+                  label: say(["components", "province", "label"], "Province or territory", "Province ou territoire"),
+                  required: true,
+                  options: [
+                    { value: "NS", label: say(["components", "province", "options", "NS", "label"], "Nova Scotia", "Nouvelle-Écosse") },
+                    { value: "ON", label: "Ontario" },
+                    { value: "QC", label: "Québec" },
+                    { value: "YT", label: "Yukon" }
+                  ]
+                }
+              },
+              { id: "postalCode", type: "text", configuration: { label: say(["components", "postalCode", "label"], "Postal code", "Code postal"), required: true } },
+              { id: "country", type: "text", configuration: { label: say(["components", "country", "label"], "Country", "Pays"), required: true } },
+              {
+                id: "permitNumber",
+                type: "text",
+                configuration: {
+                  label: say(["components", "permitNumber", "label"], "Your permit number at home", "Votre numéro de permis dans votre pays"),
+                  description: say(["components", "permitNumber", "description"], "We check it with the issuing office.", "Nous le vérifions auprès du bureau qui l'a délivré."),
+                  required: true
+                }
+              },
+              { id: "email", type: "text", configuration: { label: say(["components", "email", "label"], "Email", "Courriel"), required: true } },
+              { id: "phone", type: "text", configuration: { label: say(["components", "phone", "label"], "Phone (optional)", "Téléphone (facultatif)") } }
+            ]
+          }
+        },
+        translations: { "fr-CA": french },
+        journey: {
+          journeys: [
+            {
+              id: "apply",
+              name: say(["journeys", "apply", "name"], "Apply for a permit", "Demander un permis"),
+              progress: "count",
+              // The whole journey is checked with the service before it is sent.
+              validation: { continue: "page", end: "server" },
+              texts: {
+                back: say(["journeys", "apply", "texts", "back"], "Back", "Retour"),
+                continue: say(["journeys", "apply", "texts", "continue"], "Continue", "Continuer"),
+                submit: say(["journeys", "apply", "texts", "submit"], "Send the application", "Envoyer la demande"),
+                pageOf: say(["journeys", "apply", "texts", "pageOf"], "Step {{n}} of {{total}}", "Étape {{n}} de {{total}}"),
+                checking: say(["journeys", "apply", "texts", "checking"], "Checking your answers…", "Vérification de vos réponses…")
+              },
+              pages: [
+                { id: "about", title: say(["journeys", "apply", "pages", "about", "title"], "About you", "À propos de vous"), components: ["adult", "resident"], routes: [{ when: is("adult", "no"), to: "not-eligible" }, { when: is("resident", "no"), to: "abroad" }] },
+                { id: "residence", title: say(["journeys", "apply", "pages", "residence", "title"], "Where you live", "Où vous habitez"), components: ["province", "postalCode"], routes: [{ to: "contact" }] },
+                {
+                  id: "abroad",
+                  title: say(["journeys", "apply", "pages", "abroad", "title"], "Where you live abroad", "Où vous habitez à l'étranger"),
+                  components: ["country", "permitNumber"],
+                  validation: { server: true }
+                },
+                { id: "contact", title: say(["journeys", "apply", "pages", "contact", "title"], "How to reach you", "Comment vous joindre"), components: ["email", "phone"], routes: [{ to: "$end" }] },
+                {
+                  id: "not-eligible",
+                  kind: "exit",
+                  title: say(["journeys", "apply", "pages", "not-eligible", "title"], "You cannot apply", "Vous ne pouvez pas faire de demande"),
+                  description: say(
+                    ["journeys", "apply", "pages", "not-eligible", "description"],
+                    "Only adults may hold a fishing permit. A parent can apply for you.",
+                    "Seuls les adultes peuvent détenir un permis de pêche. Un parent peut faire la demande pour vous."
+                  )
+                }
+              ]
+            }
+          ]
+        }
+      };
+
+      // The page's wording for the codes its service reports, and for the check that could
+      // not be made, in both languages.
+      form.messages = {
+        "permit.unknown": text("We have no record of this permit number.", "Nous n'avons aucune trace de ce numéro de permis."),
+        "email.blocked": text("We cannot send messages to this address.", "Nous ne pouvons pas envoyer de messages à cette adresse."),
+        "journey.server-unavailable": text("We could not check your answers. Try again.", "Nous n'avons pas pu vérifier vos réponses. Réessayez."),
+        required: text("Answer this question.", "Répondez à cette question.")
+      };
+      form.texts = {
+        summaryHeading: text("There is a problem", "Il y a un problème")
+      };
+
+      // A stand-in for the service: `?check=ok|slow|invalid|down`. A real page posts the check
+      // to its server — `validate-url="/api/submissions/validate"` does exactly that — and
+      // answers `{ errors: [{ field, code }] }`.
+      const params = new URLSearchParams(location.search);
+      const check = ["ok", "slow", "invalid", "down"].includes(params.get("check")) ? params.get("check") : "ok";
+      for (const link of document.querySelectorAll("[data-check]")) {
+        link.setAttribute("aria-current", String(link.dataset.check === check));
+      }
+      form.serverValidator = async (request, { signal } = {}) => {
+        log(`check ${request.scope}${request.pageId ? ` "${request.pageId}"` : ""} (${check})`);
+        await new Promise((resolve, reject) => {
+          const timer = setTimeout(resolve, check === "slow" ? 3000 : 500);
+          signal?.addEventListener("abort", () => {
+            clearTimeout(timer);
+            reject(new DOMException("The check was abandoned", "AbortError"));
+          });
+        });
+        if (check === "down") {
+          throw Object.assign(new Error("Service Unavailable"), { status: 503 });
+        }
+        if (check === "invalid") {
+          return request.scope === "page"
+            ? { errors: [{ field: "permitNumber", code: "permit.unknown" }] }
+            : { errors: [{ field: "email", code: "email.blocked" }] };
+        }
+        const permit = String(request.values.permitNumber ?? "");
+        return request.scope === "page" && permit.toUpperCase().startsWith("X")
+          ? { errors: [{ field: "permitNumber", code: "permit.unknown" }] }
+          : { errors: [] };
+      };
+
+      // The address bar follows the journey — a new history entry for every move the person
+      // makes (Continue, the form's Back, a jump, a blocked submit's move to an error), the
+      // entry replaced when a journey starts or a draft resumes — and Back and Forward in the
+      // browser go back and forth a page; the title says "Error:" while the page has errors.
+      const baseTitle = document.title;
+      const pageInUrl = () => new URLSearchParams(location.search).get("page") ?? undefined;
+      const remember = (page, push) => {
+        const url = new URL(location.href);
+        url.searchParams.set("page", page);
+        history[push ? "pushState" : "replaceState"]({ page }, "", url);
+      };
+      let heading = "";
+      const retitle = (errors) => {
+        document.title = `${errors > 0 ? "Error: " : ""}${heading ? `${heading} — ` : ""}${baseTitle}`;
+      };
+      form.addEventListener("datum-page-change", ({ detail }) => {
+        log(`datum-page-change ${detail.fromPageId ?? "(start)"} → ${detail.pageId} (${detail.direction}, ${detail.index + 1} of ${detail.total}, ${detail.errorCount} error(s))`);
+        heading = detail.title;
+        retitle(detail.errorCount);
+        // A move the address bar made (Back or Forward in the browser) is in the history already.
+        if (pageInUrl() !== detail.pageId) {
+          remember(detail.pageId, detail.direction !== "start" && detail.direction !== "resume");
+        }
+      });
+      addEventListener("popstate", async (event) => {
+        const page = event.state?.page ?? pageInUrl();
+        // A browser move is a jump; one the journey refuses (a page no longer on the path, a
+        // check still out) puts the address back on the page the form shows.
+        if (page && page !== form.page && !(await form.goToPage(page)).ok && form.page) {
+          remember(form.page, false);
+        }
+      });
+
+      form.addEventListener("datum-ready", async ({ detail }) => {
+        log("datum-ready");
+        // A Continue the page's errors stopped moves nowhere, so the runtime is the one to ask.
+        detail.runtime.events().subscribe("PAGE_BLOCKED", ({ data }) => {
+          if (data.reason === "validation" || data.reason === "server") {
+            retitle(1);
+          }
+        });
+        const select = document.getElementById("journey");
+        if (select.options.length === 2) {
+          for (const journey of form.journeys()) {
+            select.add(new Option(journey.label, journey.id));
+          }
+        }
+        // Where the person left off: the draft, then the page the address names, when they may reach it.
+        if (await form.hasDraft()) {
+          await form.restoreDraft();
+          log("draft restored");
+        }
+        const page = params.get("page");
+        if (page && page !== form.page) {
+          await form.goToPage(page);
+        }
+        if (form.page) {
+          remember(form.page, false);
+        }
+      });
+      form.addEventListener("datum-validated", (event) => log(`datum-validated ${event.detail.errors.length} error(s)`));
+      form.addEventListener("datum-locale-applied", (event) => log(`datum-locale-applied ${event.detail.locale}`));
+      form.addEventListener("datum-error", (event) => log(`datum-error ${event.detail.message}`));
+      form.addEventListener("datum-submit", (event) => {
+        const { accepted, submission, errors } = event.detail;
+        log(accepted ? `datum-submit accepted\n${JSON.stringify(submission.submission.values, null, 2)}` : `datum-submit rejected: ${errors.map((e) => `${e.componentId ?? "form"}:${e.code}`).join(", ")}`);
+        if (accepted) {
+          form.setNotice({ title: text("Application received", "Demande reçue") });
+          void form.clearDraft();
+        }
+      });
+
+      document.getElementById("journey").addEventListener("change", (event) => {
+        if (event.target.value) {
+          form.setAttribute("journey", event.target.value);
+        } else {
+          form.removeAttribute("journey");
+        }
+      });
+      document.getElementById("restart").addEventListener("click", async () => {
+        await form.clearDraft();
+        const url = new URL(location.href);
+        url.searchParams.delete("page");
+        location.href = url.toString();
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,79 @@
+[
+  {
+    "name": "plain",
+    "input": "{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"fullName\":\"Ada Lovelace\",\"email\":\"ada@example.com\"}}}",
+    "engine": "{\"submission\":{\"locale\":\"en\",\"values\":{\"email\":\"ada@example.com\",\"fullName\":\"Ada Lovelace\"}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+    "codeUnit": "{\"submission\":{\"locale\":\"en\",\"values\":{\"email\":\"ada@example.com\",\"fullName\":\"Ada Lovelace\"}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+    "divergent": false
+  },
+  {
+    "name": "nested and lists",
+    "input": "{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"items[0].sku\":\"A-1\",\"items[1].sku\":\"B-2\",\"tags\":[\"b\",\"a\"],\"address\":{\"street\":\"1 Main\",\"city\":\"Ottawa\"}}}}",
+    "engine": "{\"submission\":{\"locale\":\"en\",\"values\":{\"address\":{\"city\":\"Ottawa\",\"street\":\"1 Main\"},\"items[0].sku\":\"A-1\",\"items[1].sku\":\"B-2\",\"tags\":[\"b\",\"a\"]}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+    "codeUnit": "{\"submission\":{\"locale\":\"en\",\"values\":{\"address\":{\"city\":\"Ottawa\",\"street\":\"1 Main\"},\"items[0].sku\":\"A-1\",\"items[1].sku\":\"B-2\",\"tags\":[\"b\",\"a\"]}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+    "divergent": false
+  },
+  {
+    "name": "empty object and array",
+    "input": "{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"empty\":{},\"list\":[],\"nothing\":null}}}",
+    "engine": "{\"submission\":{\"locale\":\"en\",\"values\":{\"empty\":{},\"list\":[],\"nothing\":null}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+    "codeUnit": "{\"submission\":{\"locale\":\"en\",\"values\":{\"empty\":{},\"list\":[],\"nothing\":null}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+    "divergent": false
+  },
+  {
+    "name": "integer-like keys first",
+    "input": "{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"1\":\"one\",\"2\":\"two\",\"10\":\"ten\",\"b\":1,\"a\":2,\"01\":\"zero-one\"}}}",
+    "engine": "{\"submission\":{\"locale\":\"en\",\"values\":{\"1\":\"one\",\"2\":\"two\",\"10\":\"ten\",\"01\":\"zero-one\",\"a\":2,\"b\":1}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+    "codeUnit": "{\"submission\":{\"locale\":\"en\",\"values\":{\"1\":\"one\",\"2\":\"two\",\"10\":\"ten\",\"01\":\"zero-one\",\"a\":2,\"b\":1}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+    "divergent": false
+  },
+  {
+    "name": "numbers",
+    "input": "{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"int\":42,\"neg\":-7,\"frac\":0.1,\"third\":0.3333333333333333,\"big\":1e+21,\"bigger\":1.5e+300,\"small\":1e-7,\"smallish\":0.000001,\"e20\":123456789012345680000,\"zero\":0,\"negZero\":0,\"whole\":5}}}",
+    "engine": "{\"submission\":{\"locale\":\"en\",\"values\":{\"big\":1e+21,\"bigger\":1.5e+300,\"e20\":123456789012345680000,\"frac\":0.1,\"int\":42,\"neg\":-7,\"negZero\":0,\"small\":1e-7,\"smallish\":0.000001,\"third\":0.3333333333333333,\"whole\":5,\"zero\":0}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+    "codeUnit": "{\"submission\":{\"locale\":\"en\",\"values\":{\"big\":1e+21,\"bigger\":1.5e+300,\"e20\":123456789012345680000,\"frac\":0.1,\"int\":42,\"neg\":-7,\"negZero\":0,\"small\":1e-7,\"smallish\":0.000001,\"third\":0.3333333333333333,\"whole\":5,\"zero\":0}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+    "divergent": false
+  },
+  {
+    "name": "strings",
+    "input": "{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"quote\":\"say \\\"hi\\\"\",\"slash\":\"a/b\\\\c\",\"nl\":\"line\\nbreak\\ttab\",\"ctl\":\"\\u0001\\u001f\",\"unicode\":\"café 你好 🙂\",\"sep\":\"a b c\",\"html\":\"<b>&amp;</b>\"}}}",
+    "engine": "{\"submission\":{\"locale\":\"en\",\"values\":{\"ctl\":\"\\u0001\\u001f\",\"html\":\"<b>&amp;</b>\",\"nl\":\"line\\nbreak\\ttab\",\"quote\":\"say \\\"hi\\\"\",\"sep\":\"a b c\",\"slash\":\"a/b\\\\c\",\"unicode\":\"café 你好 🙂\"}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+    "codeUnit": "{\"submission\":{\"locale\":\"en\",\"values\":{\"ctl\":\"\\u0001\\u001f\",\"html\":\"<b>&amp;</b>\",\"nl\":\"line\\nbreak\\ttab\",\"quote\":\"say \\\"hi\\\"\",\"sep\":\"a b c\",\"slash\":\"a/b\\\\c\",\"unicode\":\"café 你好 🙂\"}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+    "divergent": false
+  },
+  {
+    "name": "booleans",
+    "input": "{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"yes\":true,\"no\":false}}}",
+    "engine": "{\"submission\":{\"locale\":\"en\",\"values\":{\"no\":false,\"yes\":true}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+    "codeUnit": "{\"submission\":{\"locale\":\"en\",\"values\":{\"no\":false,\"yes\":true}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+    "divergent": false
+  },
+  {
+    "name": "wrapper",
+    "input": "{\"format\":{\"scope\":\"envelope\",\"placement\":\"wrapper\"},\"payload\":{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"x\":1}}},\"signatures\":[{\"provider\":\"demo\",\"value\":\"abc\"}]}",
+    "engine": "{\"format\":{\"placement\":\"wrapper\",\"scope\":\"envelope\"},\"payload\":{\"submission\":{\"locale\":\"en\",\"values\":{\"x\":1}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}},\"signatures\":[{\"provider\":\"demo\",\"value\":\"abc\"}]}",
+    "codeUnit": "{\"format\":{\"placement\":\"wrapper\",\"scope\":\"envelope\"},\"payload\":{\"submission\":{\"locale\":\"en\",\"values\":{\"x\":1}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}},\"signatures\":[{\"provider\":\"demo\",\"value\":\"abc\"}]}",
+    "divergent": false
+  },
+  {
+    "name": "case",
+    "input": "{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"B\":1,\"a\":2,\"Ab\":3,\"aa\":4}}}",
+    "engine": "{\"submission\":{\"locale\":\"en\",\"values\":{\"Ab\":3,\"B\":1,\"a\":2,\"aa\":4}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+    "codeUnit": "{\"submission\":{\"locale\":\"en\",\"values\":{\"Ab\":3,\"B\":1,\"a\":2,\"aa\":4}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+    "divergent": false
+  },
+  {
+    "name": "punctuation",
+    "input": "{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"a-b\":1,\"ab\":2,\"a_b\":3,\"a.b\":4,\"a b\":5}}}",
+    "engine": "{\"submission\":{\"locale\":\"en\",\"values\":{\"a b\":5,\"a-b\":1,\"a.b\":4,\"a_b\":3,\"ab\":2}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+    "codeUnit": "{\"submission\":{\"locale\":\"en\",\"values\":{\"a b\":5,\"a-b\":1,\"a.b\":4,\"a_b\":3,\"ab\":2}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+    "divergent": false
+  },
+  {
+    "name": "astral",
+    "input": "{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"😀\":\"emoji key\",\"�\":\"replacement\",\"z\":\"z\"}}}",
+    "engine": "{\"submission\":{\"locale\":\"en\",\"values\":{\"z\":\"z\",\"😀\":\"emoji key\",\"�\":\"replacement\"}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+    "codeUnit": "{\"submission\":{\"locale\":\"en\",\"values\":{\"z\":\"z\",\"😀\":\"emoji key\",\"�\":\"replacement\"}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+    "divergent": false
+  }
+]

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-spring-boot-starter-ui</artifactId>
+  <packaging>jar</packaging>
+  <name>datum-spring-boot-starter-ui</name>
+  <description>Starter: serve the Datum elements and glue from the server.</description>
+  <properties>
+    <!-- No tests here and no JUnit on the class path: surefire refuses a groups filter without a JUnit engine, so the root
+         pom's default exclusion of the containers tag is switched off for a module that has none. -->
+    <datum.test.excludedGroups></datum.test.excludedGroups>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-spring-boot-starter-submissions</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-ui-spring</artifactId>
+    </dependency>
+  </dependencies>
+</project>

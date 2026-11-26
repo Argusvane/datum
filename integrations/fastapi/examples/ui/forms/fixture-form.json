@@ -1,0 +1,154 @@
+{
+  "id": "datum-security-suite",
+  "version": "1",
+  "schemaVersion": "1",
+  "root": {
+    "id": "form",
+    "type": "form",
+    "configuration": {
+      "label": "Datum security suite fixture",
+      "securitySuiteFixture": "1",
+      "formulaErrors": "fail"
+    },
+    "children": {
+      "content": [
+        {
+          "id": "name",
+          "type": "text",
+          "configuration": {
+            "label": "Name",
+            "required": true,
+            "maxLength": 40
+          }
+        },
+        {
+          "id": "code",
+          "type": "text",
+          "configuration": {
+            "label": "Code",
+            "pattern": "^[A-Z]{2}[0-9]{4}$"
+          }
+        },
+        {
+          "id": "addr",
+          "type": "container",
+          "configuration": {},
+          "children": {
+            "default": [
+              {
+                "id": "city",
+                "type": "text",
+                "configuration": {
+                  "required": true
+                }
+              },
+              {
+                "id": "pick",
+                "type": "select",
+                "configuration": {
+                  "options": [
+                    {
+                      "value": "ok",
+                      "label": "Ok"
+                    },
+                    {
+                      "value": "fine",
+                      "label": "Fine"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "tags",
+          "type": "checkboxes",
+          "configuration": {
+            "options": [
+              {
+                "value": "x",
+                "label": "X"
+              },
+              {
+                "value": "y",
+                "label": "Y"
+              }
+            ]
+          }
+        },
+        {
+          "id": "risky",
+          "type": "text",
+          "configuration": {
+            "pattern": "(a|a?)+"
+          }
+        },
+        {
+          "id": "doc",
+          "type": "file",
+          "configuration": {
+            "maxFileSizeMb": 0.001
+          }
+        },
+        {
+          "id": "secret",
+          "type": "text",
+          "configuration": {},
+          "rules": {
+            "requiredWhen": {
+              "run": "server-secret",
+              "formula": "name = \"ZZSECRETZZ\""
+            }
+          }
+        }
+      ]
+    }
+  },
+  "journey": {
+    "journeys": [
+      {
+        "id": "main",
+        "pages": [
+          {
+            "id": "p1",
+            "components": [
+              "name",
+              "code",
+              "addr",
+              "tags",
+              "risky",
+              "doc",
+              "secret"
+            ],
+            "routes": [
+              {
+                "when": {
+                  "kind": "binary",
+                  "operator": "eq",
+                  "left": {
+                    "kind": "path",
+                    "path": "name"
+                  },
+                  "right": {
+                    "kind": "literal",
+                    "value": "STOPZZ"
+                  }
+                },
+                "to": "stop"
+              },
+              {
+                "to": "$end"
+              }
+            ]
+          },
+          {
+            "id": "stop",
+            "kind": "exit",
+            "components": []
+          }
+        ]
+      }
+    ]
+  }
+}

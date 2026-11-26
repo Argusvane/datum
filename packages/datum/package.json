@@ -1,0 +1,140 @@
+{
+  "name": "@argusvane/datum",
+  "version": "0.1.0",
+  "private": false,
+  "license": "MIT",
+  "author": "Argusvane <maintainers@argusvane.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/argusvane/datum.git",
+    "directory": "packages/datum"
+  },
+  "homepage": "https://datum.argusvane.com",
+  "bugs": {
+    "url": "https://github.com/argusvane/datum/issues"
+  },
+  "keywords": [
+    "datum",
+    "forms",
+    "form-builder",
+    "form-renderer",
+    "web-components",
+    "custom-elements"
+  ],
+  "description": "Embeddable web components for the Datum form builder (<datum-form-builder>) and form renderer (<datum-form>), built as bundles a page loads with <script> and <link>.",
+  "type": "module",
+  "main": "./dist/datum-builder.js",
+  "types": "./dist/types/packages/datum/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/packages/datum/src/index.d.ts",
+      "import": "./dist/datum-builder.js"
+    },
+    "./form": {
+      "types": "./dist/types/packages/datum/src/form.d.ts",
+      "import": "./dist/datum-form.js"
+    },
+    "./builder": {
+      "types": "./dist/types/packages/datum/src/builder.d.ts",
+      "import": "./dist/datum-builder.js"
+    },
+    "./engine": {
+      "types": "./dist/types/packages/datum/src/engine.d.ts",
+      "import": "./dist/datum-engine.js"
+    },
+    "./pdf": {
+      "types": "./dist/types/packages/datum/src/pdf.d.ts",
+      "import": "./dist/datum-pdf.js"
+    },
+    "./pdf-pages": {
+      "types": "./dist/types/packages/datum/src/pdf-pages.d.ts",
+      "import": "./dist/datum-pdf-pages.js"
+    },
+    "./wasm": {
+      "types": "./dist/types/packages/datum/src/wasm.d.ts",
+      "import": "./dist/datum-wasm.js"
+    },
+    "./webauthn": {
+      "types": "./dist/types/packages/datum/src/webauthn.d.ts",
+      "import": "./dist/datum-webauthn.js"
+    },
+    "./package.json": "./package.json",
+    "./dist/*": "./dist/*"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.map",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "node ../../scripts/with-lock.mjs datum-dist -- npm run build:unlocked",
+    "build:unlocked": "node ./scripts/build-bundles.mjs && node ./scripts/copy-assets.mjs && vite-node ./scripts/write-sandbox-program.ts && node ./scripts/check-bundles.mjs && node ./scripts/bundle-notices.mjs && node ./scripts/strip-source-maps.mjs && node ./scripts/feature-files.mjs && node ../../scripts/npm/build-types.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "attributes": "node ./scripts/gen-attribute-reference.mjs",
+    "attributes:check": "node ./scripts/gen-attribute-reference.mjs --check",
+    "notices": "node ./scripts/notices.mjs --write",
+    "notices:check": "node ./scripts/notices.mjs --check",
+    "a11y": "A11Y_UPDATE=1 vitest run tests/a11y-markup.test.ts && npm run a11y:report",
+    "a11y:browser": "node ./scripts/a11y-browser.mjs",
+    "absent-code:browser": "node ./scripts/absent-code-browser.mjs",
+    "a11y:report": "node ./scripts/a11y-report.mjs",
+    "demo": "node ./scripts/serve-demo.mjs",
+    "visual": "node ./scripts/visual-browser.mjs",
+    "builder:browser": "node ./scripts/builder-browser.mjs",
+    "agent:eval": "node ./scripts/agent-eval.mjs",
+    "kit:check": "node ./binding-kit/check.mjs",
+    "kit:check:datum": "node ./binding-kit/check.mjs --binding datum",
+    "kit:test": "vitest run tests/binding-kit",
+    "prepack": "node ../../scripts/npm/prepack.mjs",
+    "pack:check": "node ../../scripts/npm/pack-check.mjs .",
+    "release:assets": "node ./scripts/release-assets.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "peerDependencies": {
+    "@cantoo/pdf-lib": "^2.11.1",
+    "@codemirror/autocomplete": "^6.20.4",
+    "lit-html": "^3.3.3",
+    "quickjs-emscripten-core": "^0.32.0"
+  },
+  "peerDependenciesMeta": {
+    "@cantoo/pdf-lib": {
+      "optional": true
+    },
+    "@codemirror/autocomplete": {
+      "optional": true
+    },
+    "lit-html": {
+      "optional": true
+    },
+    "quickjs-emscripten-core": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@argusvane/datum-conformance-suite": "file:../conformance-suite",
+    "@argusvane/datum-engine": "file:../../engine",
+    "@argusvane/datum-pdf-kernel": "file:../pdf-kernel",
+    "@argusvane/datum-quickjs-wasm-host": "file:../quickjs-wasm-host",
+    "@types/node": "^26.6.6",
+    "axe-core": "^4.14.1",
+    "dejavu-fonts-ttf": "2.37.3",
+    "esbuild": "^0.28.2",
+    "jsdom": "^31.0.1",
+    "pdfjs-dist": "6.5.438",
+    "playwright": "^1.65.1",
+    "typescript": "^7.0.2",
+    "typescript-api": "npm:typescript@^6.0.3",
+    "vite": "^8.3.8",
+    "vite-node": "^6.0.0",
+    "vitest": "^5.0.5"
+  }
+}

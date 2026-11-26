@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-webauthn-test-support</artifactId>
+  <packaging>jar</packaging>
+  <name>datum-webauthn-test-support</name>
+  <description>Test helpers of datum-webauthn that its -spring binding's tests share: the software authenticator and the WebAuthn test kit. Never published.</description>
+  <properties>
+    <!-- Test helpers are not part of a release: neither the deploy plugin nor Central publishing may touch this module, and the
+         BOM does not list it (the root pom's central-publishing configuration also names it in excludeArtifacts). -->
+    <maven.deploy.skip>true</maven.deploy.skip>
+    <skipPublishing>true</skipPublishing>
+  </properties>
+  <dependencies>
+    <!-- The helpers are written against the library, so they sit above it; datum-webauthn's own tests compile the same sources
+         (build-helper in its pom) because a dependency from the library back on this module would be a cycle. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-webauthn</artifactId>
+    </dependency>
+    <!-- The test frameworks the helpers are written against: compile scope here, test scope in a consumer. -->
+    <!-- The software authenticator signs over the RFC 8785 form with the reference implementation, which the library itself
+         keeps at test scope (its own Jcs is the one under test). -->
+    <dependency>
+      <groupId>io.github.erdtman</groupId>
+      <artifactId>java-json-canonicalization</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+    </dependency>
+  </dependencies>
+</project>

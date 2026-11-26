@@ -1,0 +1,5 @@
+com.argusvane.datum.ui.spring.DatumUiAutoConfiguration
+com.argusvane.datum.ui.spring.DatumBuilderServiceAutoConfiguration
+com.argusvane.datum.ui.spring.DatumBuilderAutoConfiguration
+com.argusvane.datum.ui.spring.DatumBuilderOpenApiAutoConfiguration
+com.argusvane.datum.ui.spring.DatumBuilderMethodsAutoConfiguration

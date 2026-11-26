@@ -1,0 +1,20 @@
+{
+  "note": "a required date left empty and validated: the error line under the boxes, every box in error",
+  "components": [
+    {
+      "id": "start",
+      "type": "date",
+      "configuration": {
+        "label": "Start date",
+        "description": "For example, 27 3 2027.",
+        "required": true
+      }
+    }
+  ],
+  "steps": [
+    {
+      "op": "validate"
+    }
+  ],
+  "width": 560
+}

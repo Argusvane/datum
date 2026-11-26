@@ -1,0 +1,29 @@
+<!-- datum-reference
+{
+  "note": "checkboxes with a hint",
+  "components": [
+    {
+      "id": "channels",
+      "type": "checkboxes",
+      "configuration": {
+        "label": "Channels",
+        "description": "Choose any.",
+        "options": [
+          {
+            "value": "email",
+            "label": "Email"
+          },
+          {
+            "value": "post",
+            "label": "Post"
+          }
+        ]
+      }
+    }
+  ],
+  "source": "https://design-system.canada.ca/en/components/checkboxes/ (GC Design System, usage examples), attributes per gcds-components 1.7.0 specs/custom-elements.json",
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate><gcds-checkboxes name="channels" legend="Channels" hint="Choose any." options='[{"id":"channels-email","label":"Email","value":"email"},{"id":"channels-post","label":"Post","value":"post"}]'></gcds-checkboxes></form>

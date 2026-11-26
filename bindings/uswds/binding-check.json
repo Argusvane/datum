@@ -1,0 +1,7 @@
+{
+  "designSystem": "U.S. Web Design System",
+  "binding": "src/index.ts",
+  "stylesheets": [
+    "/node_modules/uswds-3.14.0/dist/css/uswds.min.css"
+  ]
+}

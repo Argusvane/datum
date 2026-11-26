@@ -1,0 +1,33 @@
+{
+  "id": "declaration",
+  "version": "1.0.0",
+  "schemaVersion": "1",
+  "localization": {
+    "defaultLocale": "en",
+    "supportedLocales": [{ "code": "en", "label": "English" }]
+  },
+  "root": {
+    "id": "root",
+    "type": "form",
+    "configuration": { "label": "Statutory declaration", "agentTools": "off" },
+    "children": {
+      "content": [
+        {
+          "id": "fullName",
+          "type": "text",
+          "configuration": { "label": "Full name", "required": true }
+        },
+        {
+          "id": "declaration",
+          "type": "checkbox",
+          "configuration": { "label": "I solemnly declare that the above is true", "required": true }
+        },
+        {
+          "id": "submit",
+          "type": "button",
+          "configuration": { "label": "Submit", "action": "submit" }
+        }
+      ]
+    }
+  }
+}

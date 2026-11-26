@@ -1,0 +1,58 @@
+{
+  "name": "@argusvane/datum-binding-uswds",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "author": "Argusvane <maintainers@argusvane.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/argusvane/datum.git",
+    "directory": "bindings/uswds"
+  },
+  "homepage": "https://datum.argusvane.com",
+  "bugs": {
+    "url": "https://github.com/argusvane/datum/issues"
+  },
+  "keywords": [
+    "datum",
+    "forms",
+    "form-renderer",
+    "design-system",
+    "binding"
+  ],
+  "description": "U.S. Web Design System (designsystem.digital.gov) binding for the Datum form renderer: Datum's components drawn in the design system's own markup.",
+  "type": "module",
+  "datumBinding": {
+    "id": "uswds",
+    "designSystem": "U.S. Web Design System",
+    "release": "3.14.0",
+    "bundle": "dist/uswds.js",
+    "global": "DatumBindingUswds",
+    "budgetKb": 12,
+    "checks": [
+      "src/checks.mjs"
+    ]
+  },
+  "scripts": {
+    "build": "node ../../packages/datum/binding-kit/build.mjs --binding uswds",
+    "typecheck": "tsc --noEmit",
+    "kit:check": "node ../../packages/datum/binding-kit/check.mjs --binding uswds",
+    "kit:build": "node ../../packages/datum/binding-kit/build.mjs --binding uswds",
+    "kit:equality": "node ../../packages/datum/binding-kit/equality.mjs --binding uswds",
+    "kit:behaviour": "node ../../packages/datum/binding-kit/behaviour.mjs --binding uswds",
+    "kit:conformance": "node ../../packages/datum/binding-kit/conformance.ts --binding uswds",
+    "kit:serve": "node ../../packages/datum/binding-kit/serve.mjs --binding uswds"
+  },
+  "devDependencies": {
+    "@argusvane/datum-engine": "file:../../engine",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2",
+    "uswds-3.14.0": "npm:@uswds/uswds@3.14.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  }
+}

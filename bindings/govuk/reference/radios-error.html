@@ -1,0 +1,70 @@
+<!-- datum-reference
+{
+  "source": "govuk-frontend 6.6.0: components/error-summary/template.njk with options of this case; components/radios/template.njk with options of this case",
+  "note": "radios left unanswered and validated: the error summary and the group's error",
+  "components": [
+    {
+      "id": "field1",
+      "type": "radio",
+      "configuration": {
+        "label": "Have you changed your name?",
+        "description": "This includes changing your last name or spelling your name differently.",
+        "required": true,
+        "options": [
+          {
+            "value": "yes",
+            "label": "Yes"
+          },
+          {
+            "value": "no",
+            "label": "No"
+          }
+        ],
+        "messages": {
+          "required": "Select yes if you have changed your name"
+        }
+      }
+    }
+  ],
+  "steps": [
+    {
+      "op": "validate"
+    }
+  ],
+  "root": "form",
+  "width": 560,
+  "init": "window.GOVUKFrontend.initAll();"
+}
+-->
+<form novalidate>
+<div class="govuk-error-summary" data-module="govuk-error-summary">
+<div role="alert">
+<h2 class="govuk-error-summary__title"> There is a problem </h2>
+<div class="govuk-error-summary__body">
+<ul class="govuk-list govuk-error-summary__list">
+<li>
+<a href="#field1">Select yes if you have changed your name</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="govuk-form-group govuk-form-group--error">
+<fieldset class="govuk-fieldset" aria-describedby="field1-hint field1-error">
+<legend class="govuk-fieldset__legend"> Have you changed your name? </legend>
+<div id="field1-hint" class="govuk-hint"> This includes changing your last name or spelling your name differently. </div>
+<p id="field1-error" class="govuk-error-message">
+<span class="govuk-visually-hidden">Error:</span> Select yes if you have changed your name </p>
+<div class="govuk-radios" data-module="govuk-radios">
+<div class="govuk-radios__item">
+<input class="govuk-radios__input" id="field1" name="field1" type="radio" value="yes">
+<label class="govuk-label govuk-radios__label" for="field1"> Yes </label>
+</div>
+<div class="govuk-radios__item">
+<input class="govuk-radios__input" id="field1-2" name="field1" type="radio" value="no">
+<label class="govuk-label govuk-radios__label" for="field1-2"> No </label>
+</div>
+</div>
+</fieldset>
+</div>
+</form>

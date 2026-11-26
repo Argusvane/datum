@@ -1,0 +1,7 @@
+from datum_core.pdf import PdfRequestCustomizer
+
+
+def wrong(draft: int) -> None: ...
+
+
+bad: PdfRequestCustomizer = wrong

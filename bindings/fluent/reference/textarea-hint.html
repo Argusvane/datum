@@ -1,0 +1,10 @@
+<!-- datum-reference
+{
+  "note": "a textarea with a hint",
+  "components": [ { "id": "about", "type": "textarea", "configuration": { "label": "About you", "description": "Tell us a little about yourself." } } ],
+  "source": "Fluent UI Web Components 3.2.1: fluent-textarea (textarea.stories.ts) in the input slot of fluent-field label-position='above' (field.stories.ts ComponentExamples, the field's docs list TextArea among its controls), hint as field.stories.ts Hint (fluent-text slot='message' size='200'); https://github.com/microsoft/fluentui/tree/master/packages/web-components/src/textarea; attributes per custom-elements.json 3.2.1",
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate><fluent-field label-position="above"><label slot="label" for="about">About you</label><fluent-textarea slot="input" id="about" name="about"></fluent-textarea><fluent-text slot="message" size="200"><div id="about-hint">Tell us a little about yourself.</div></fluent-text></fluent-field></form>

@@ -1,0 +1,16 @@
+{
+  "note": "the French date: Ontario's year, month, day order with the French words",
+  "locale": "fr-CA",
+  "components": [
+    {
+      "id": "start",
+      "type": "date",
+      "configuration": {
+        "label": "Date de d\u00e9but",
+        "description": "Par exemple, 2026 5 14.",
+        "required": true
+      }
+    }
+  ],
+  "width": 560
+}

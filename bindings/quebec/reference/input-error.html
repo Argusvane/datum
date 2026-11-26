@@ -1,0 +1,29 @@
+<!-- datum-reference
+{
+  "source": "qc-trousse-sdg 1.6.1: src/sdg/components/TextField/_textField.html (\"Exemples 1\", attribute invalid-text) under the error notice of src/sdg/components/Notice/_notice.html (\"Exemple d'avis d'erreur\")",
+  "note": "a required field left empty and validated: the error notice with its link, and the field's own error",
+  "root": "form",
+  "width": 560,
+  "steps": [
+    {
+      "op": "validate"
+    }
+  ],
+  "components": [
+    {
+      "id": "field1",
+      "type": "text",
+      "configuration": {
+        "label": "City",
+        "required": true,
+        "messages": {
+          "required": "Enter your city."
+        }
+      }
+    }
+  ]
+}
+-->
+<form novalidate>
+<qc-notice type="error"><h2>There are errors in the form:</h2><ul><li><a href="#field1">City: Enter your city.</a></li></ul></qc-notice><qc-textfield label="City" required invalid invalid-text="Enter your city."><input id="field1" name="field1" type="text"></qc-textfield>
+</form>

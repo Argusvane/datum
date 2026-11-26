@@ -1,0 +1,13 @@
+from datum_core.pdf import PdfSigner
+
+
+class NoSign:
+    @property
+    def algorithm(self) -> str:
+        return "x"
+
+    def certificates(self) -> tuple[bytes, ...]:
+        return ()
+
+
+bad: PdfSigner = NoSign()

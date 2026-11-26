@@ -1,0 +1,9 @@
+from datum_core import Datum
+
+
+class Serials:
+    def allocate(self) -> str:
+        return "1"
+
+
+Datum(tsa_serial_allocator=Serials())

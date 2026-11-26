@@ -1,0 +1,3 @@
+from datum_core import Datum
+
+Datum(tsa_keymaterial=None)

@@ -1,0 +1,17 @@
+{
+  "note": "an affixed number",
+  "components": [
+    {
+      "id": "weight",
+      "type": "number",
+      "configuration": {
+        "label": "Weight",
+        "suffix": "kg"
+      }
+    }
+  ],
+  "preset": {
+    "weight": 70
+  },
+  "width": 560
+}

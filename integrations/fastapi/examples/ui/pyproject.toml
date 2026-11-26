@@ -1,0 +1,15 @@
+[project]
+name = "datum-example-ui"
+version = "0.1.0"
+description = "Datum for FastAPI example: the form builder and its forms over memory stores (not published)."
+requires-python = ">=3.12"
+dependencies = [
+  "argusvane-datum-fastapi",
+  "uvicorn>=0.30",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+argusvane-datum-fastapi = { workspace = true }

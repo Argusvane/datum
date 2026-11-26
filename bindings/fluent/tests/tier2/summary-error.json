@@ -1,0 +1,9 @@
+{
+  "note": "tier 2: the error summary after a refused validation (Fluent has no error summary): a fluent-message-bar intent=error over one fluent-link per field in error; Fluent has no error summary, so the whole picture (two entries, the heading, the spacing) is held to its own baseline, beside input-error and radios-error, which hold the same elements to Fluent's own markup for one entry",
+  "components": [
+    { "id": "full-name", "type": "text", "configuration": { "label": "Full name", "required": true } },
+    { "id": "email", "type": "text", "configuration": { "label": "Email address", "required": true } }
+  ],
+  "steps": [ { "op": "validate" } ],
+  "width": 560
+}

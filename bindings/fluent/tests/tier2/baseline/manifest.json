@@ -1,0 +1,71 @@
+{
+  "format": 1,
+  "environment": {
+    "platform": "darwin",
+    "browser": "chromium 158.0.8127.18"
+  },
+  "files": {
+    "input-count-over.png": {
+      "sha256": "838f353c2d6d3ab67d04ddd934048ae2c525fa456b46896d4d563624ef4993cd"
+    },
+    "textarea-count.png": {
+      "sha256": "d914c39ecf95b1a81d70a2602827f4fff7882adec29e2f9585c6a33e7e0fbdf5"
+    },
+    "date-empty.png": {
+      "sha256": "10593a919b3f866fd12fa669953b3b523fecd1f74bab1fab06a6b407d482e66b"
+    },
+    "date-error.png": {
+      "sha256": "d64dfdb6a4d7e809d6999644497df5e00b6251018036c56cc7c6c44b75f05ff9"
+    },
+    "date-value.png": {
+      "sha256": "c7daa9f6b8b09e17cdf0035300fce91b39a952735f1e6ff3bd509eb397025a19"
+    },
+    "fieldset-legend.png": {
+      "sha256": "2b7d19e3e65060028175dd9de634549ada1129c3a934705469fa691f2600e949"
+    },
+    "language-switcher.png": {
+      "sha256": "672ef18f3b0e198882ff6f73466f404357881ed1485699330e7d981c67bb14c6"
+    },
+    "summary-error.png": {
+      "sha256": "c322fa1be649c1e532b9849b7090d1fa82175b29a3fb3b5be584bfd4c69cc48b"
+    }
+  },
+  "signOff": {
+    "reviewer": "Argusvane maintainers",
+    "date": "2026-11-14",
+    "pngs": [
+      {
+        "file": "date-empty.png",
+        "sha256": "10593a919b3f866fd12fa669953b3b523fecd1f74bab1fab06a6b407d482e66b"
+      },
+      {
+        "file": "date-error.png",
+        "sha256": "d64dfdb6a4d7e809d6999644497df5e00b6251018036c56cc7c6c44b75f05ff9"
+      },
+      {
+        "file": "date-value.png",
+        "sha256": "c7daa9f6b8b09e17cdf0035300fce91b39a952735f1e6ff3bd509eb397025a19"
+      },
+      {
+        "file": "fieldset-legend.png",
+        "sha256": "2b7d19e3e65060028175dd9de634549ada1129c3a934705469fa691f2600e949"
+      },
+      {
+        "file": "input-count-over.png",
+        "sha256": "838f353c2d6d3ab67d04ddd934048ae2c525fa456b46896d4d563624ef4993cd"
+      },
+      {
+        "file": "language-switcher.png",
+        "sha256": "672ef18f3b0e198882ff6f73466f404357881ed1485699330e7d981c67bb14c6"
+      },
+      {
+        "file": "summary-error.png",
+        "sha256": "c322fa1be649c1e532b9849b7090d1fa82175b29a3fb3b5be584bfd4c69cc48b"
+      },
+      {
+        "file": "textarea-count.png",
+        "sha256": "d914c39ecf95b1a81d70a2602827f4fff7882adec29e2f9585c6a33e7e0fbdf5"
+      }
+    ]
+  }
+}

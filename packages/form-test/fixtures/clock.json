@@ -1,0 +1,35 @@
+{
+  "id": "form-tests-clock",
+  "version": "1.0.0",
+  "schemaVersion": "1.0.0",
+  "root": {
+    "id": "form",
+    "type": "form",
+    "configuration": {},
+    "children": {
+      "content": [
+        {
+          "id": "event_date",
+          "type": "date",
+          "configuration": {
+            "label": "Event date",
+            "messages": {
+              "rule": "The event cannot be in the past."
+            }
+          },
+          "rules": {
+            "validWhen": "event_date >= today()"
+          }
+        }
+      ]
+    }
+  },
+  "tests": {
+    "scenarios": [
+      {
+        "id": "clock-1",
+        "source": "test \"an event must not be in the past\"\n  given today = @\"2026-03-01\"\n  set event_date = @\"2026-02-01\"\n  check\n  expect refused\n  expect error on event_date: rule\n  set event_date = \"2026-04-01\"\n  check\n  expect accepted"
+      }
+    ]
+  }
+}

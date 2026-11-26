@@ -1,0 +1,63 @@
+{
+  "name": "@argusvane/datum-binding-alberta",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "author": "Argusvane <maintainers@argusvane.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/argusvane/datum.git",
+    "directory": "bindings/alberta"
+  },
+  "homepage": "https://datum.argusvane.com",
+  "bugs": {
+    "url": "https://github.com/argusvane/datum/issues"
+  },
+  "keywords": [
+    "datum",
+    "forms",
+    "form-renderer",
+    "design-system",
+    "binding"
+  ],
+  "description": "Alberta Design System (design.alberta.ca) binding for the Datum form renderer: Datum's components drawn in the design system's own markup.",
+  "type": "module",
+  "datumBinding": {
+    "id": "alberta",
+    "designSystem": "Alberta Design System",
+    "release": "3.2.0",
+    "bundle": "dist/alberta.js",
+    "global": "DatumBindingAlberta",
+    "budgetKb": 12,
+    "checks": [
+      "tests/extras.mjs",
+      "tests/page-heading.mjs"
+    ]
+  },
+  "scripts": {
+    "build": "node ../../packages/datum/binding-kit/build.mjs --binding alberta",
+    "typecheck": "tsc --noEmit",
+    "reference": "node ./reference/generate.mjs",
+    "kit:check": "node ../../packages/datum/binding-kit/check.mjs --binding alberta",
+    "kit:build": "node ../../packages/datum/binding-kit/build.mjs --binding alberta",
+    "kit:equality": "node ../../packages/datum/binding-kit/equality.mjs --binding alberta",
+    "kit:behaviour": "node ../../packages/datum/binding-kit/behaviour.mjs --binding alberta",
+    "kit:conformance": "node ../../packages/datum/binding-kit/conformance.ts --binding alberta",
+    "kit:serve": "node ../../packages/datum/binding-kit/serve.mjs --binding alberta",
+    "test": "npm run test:extras && npm run test:page",
+    "test:extras": "node tests/extras.mjs",
+    "test:page": "node tests/page-heading.mjs"
+  },
+  "devDependencies": {
+    "@argusvane/datum-engine": "file:../../engine",
+    "abgov-web-components-3.2.0": "npm:@abgov/web-components@3.2.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    }
+  }
+}

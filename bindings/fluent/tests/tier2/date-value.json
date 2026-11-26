@@ -1,0 +1,8 @@
+{
+  "note": "tier 2: a date with an answer, the parts as stored",
+  "components": [
+    { "id": "start", "type": "date", "configuration": { "label": "Start date" } }
+  ],
+  "preset": { "start": "2026-05-14" },
+  "width": 560
+}

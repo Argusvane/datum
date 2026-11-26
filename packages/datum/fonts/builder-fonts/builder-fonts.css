@@ -1,0 +1,18 @@
+/* The builder's own faces (the studio look): Geist and Geist Mono,
+   variable weights, from the geist package 1.7.2 (SIL Open Font License 1.1, OFL-geist.txt),
+   self-hosted beside the bundles. Linked by <datum-form-builder load-fonts>; without it
+   the builder draws in the system face (--db-font's fallback). */
+@font-face {
+  font-family: "Geist";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("./geist-variable.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Geist Mono";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("./geist-mono-variable.woff2") format("woff2");
+}

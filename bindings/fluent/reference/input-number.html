@@ -1,0 +1,11 @@
+<!-- datum-reference
+{
+  "note": "a number field: a text input asking for a number keyboard (inputmode is on the box inside, not drawn)",
+  "components": [ { "id": "age", "type": "number", "configuration": { "label": "Age", "min": 1, "max": 120 } } ],
+  "preset": { "age": 42 },
+  "source": "Fluent UI Web Components 3.2.1: field.stories.ts ComponentExamples (fluent-field label-position=\"above\", label slot=\"label\" for, fluent-text-input slot=\"input\"), https://github.com/microsoft/fluentui/tree/master/packages/web-components/src/field; attributes per custom-elements.json 3.2.1; Fluent documents no number type (text-input.options.js TextInputType: email, password, tel, text, url)",
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate><fluent-field label-position="above"><label slot="label" for="age">Age</label><fluent-text-input slot="input" id="age" name="age" type="text" value="42"></fluent-text-input></fluent-field></form>

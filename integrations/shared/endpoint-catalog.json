@@ -1,0 +1,1708 @@
+{
+  "bases": {
+    "api": "/api",
+    "tsa": "/tsa",
+    "webauthn": "/api/webauthn"
+  },
+  "endpoints": [
+    {
+      "capability": "forms",
+      "groups": [
+        "forms"
+      ],
+      "tag": "datum-forms",
+      "operationId": "getFormDefinition",
+      "method": "GET",
+      "base": "api",
+      "path": "/forms/{key}/definition",
+      "switch": "datum.web.api.endpoints.definition",
+      "body": false,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": [
+            "ETag"
+          ]
+        },
+        {
+          "status": 304,
+          "codes": [],
+          "headers": [
+            "ETag"
+          ]
+        },
+        {
+          "status": 400,
+          "codes": [
+            "bad_request"
+          ],
+          "headers": []
+        },
+        {
+          "status": 403,
+          "codes": [
+            "access.denied"
+          ],
+          "headers": []
+        },
+        {
+          "status": 404,
+          "codes": [
+            "form.notFound"
+          ],
+          "headers": []
+        }
+      ]
+    },
+    {
+      "capability": "forms",
+      "groups": [
+        "forms"
+      ],
+      "tag": "datum-forms",
+      "operationId": "getFormTranslations",
+      "method": "GET",
+      "base": "api",
+      "path": "/forms/{key}/translations",
+      "switch": "datum.web.api.endpoints.definition",
+      "body": false,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": [
+            "ETag"
+          ]
+        },
+        {
+          "status": 304,
+          "codes": [],
+          "headers": [
+            "ETag"
+          ]
+        },
+        {
+          "status": 403,
+          "codes": [
+            "access.denied"
+          ],
+          "headers": []
+        },
+        {
+          "status": 404,
+          "codes": [
+            "form.notFound"
+          ],
+          "headers": []
+        }
+      ]
+    },
+    {
+      "capability": "forms",
+      "groups": [
+        "forms"
+      ],
+      "tag": "datum-forms",
+      "operationId": "getDataSourceItems",
+      "method": "GET",
+      "base": "api",
+      "path": "/data-sources/{id}",
+      "switch": "datum.web.api.endpoints.data-sources",
+      "body": false,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 403,
+          "codes": [
+            "access.denied"
+          ],
+          "headers": []
+        },
+        {
+          "status": 404,
+          "codes": [
+            "data_source.notFound"
+          ],
+          "headers": []
+        },
+        {
+          "status": 503,
+          "codes": [
+            "server.unavailable",
+            "server.busy",
+            "data_source.unavailable"
+          ],
+          "headers": [
+            "Retry-After"
+          ],
+          "headerCodes": {
+            "Retry-After": [
+              "server.busy"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "capability": "ui",
+      "groups": [
+        "ui",
+        "forms"
+      ],
+      "tag": "datum-ui",
+      "operationId": "createForm",
+      "method": "POST",
+      "base": "api",
+      "path": "/forms",
+      "switch": "datum.builder.enabled",
+      "body": true,
+      "statuses": [
+        {
+          "status": 201,
+          "codes": [],
+          "headers": [
+            "ETag",
+            "Location"
+          ]
+        },
+        {
+          "status": 403,
+          "codes": [
+            "access.denied"
+          ],
+          "headers": []
+        },
+        {
+          "status": 409,
+          "codes": [
+            "form.exists"
+          ],
+          "headers": []
+        },
+        {
+          "status": 422,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 501,
+          "codes": [
+            "forms.readOnly"
+          ],
+          "headers": []
+        }
+      ]
+    },
+    {
+      "capability": "ui",
+      "groups": [
+        "ui",
+        "forms"
+      ],
+      "tag": "datum-ui",
+      "operationId": "saveForm",
+      "method": "PUT",
+      "base": "api",
+      "path": "/forms/{key}",
+      "switch": "datum.builder.enabled",
+      "body": true,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": [
+            "ETag",
+            "X-Datum-Removed-Locales"
+          ]
+        },
+        {
+          "status": 403,
+          "codes": [
+            "access.denied"
+          ],
+          "headers": []
+        },
+        {
+          "status": 404,
+          "codes": [
+            "form.notFound"
+          ],
+          "headers": []
+        },
+        {
+          "status": 409,
+          "codes": [
+            "form.outdated"
+          ],
+          "headers": [
+            "ETag"
+          ]
+        },
+        {
+          "status": 422,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 501,
+          "codes": [
+            "forms.readOnly"
+          ],
+          "headers": []
+        }
+      ]
+    },
+    {
+      "capability": "ui",
+      "groups": [
+        "ui",
+        "forms"
+      ],
+      "tag": "datum-ui",
+      "operationId": "saveFormTranslations",
+      "method": "PUT",
+      "base": "api",
+      "path": "/forms/{key}/translations",
+      "switch": "datum.builder.enabled",
+      "body": true,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": [
+            "ETag"
+          ]
+        },
+        {
+          "status": 403,
+          "codes": [
+            "access.denied"
+          ],
+          "headers": []
+        },
+        {
+          "status": 404,
+          "codes": [
+            "form.notFound"
+          ],
+          "headers": []
+        },
+        {
+          "status": 409,
+          "codes": [
+            "form.outdated"
+          ],
+          "headers": [
+            "ETag"
+          ]
+        },
+        {
+          "status": 422,
+          "codes": [
+            "catalog.invalid"
+          ],
+          "headers": []
+        }
+      ]
+    },
+    {
+      "capability": "submissions",
+      "groups": [
+        "submissions"
+      ],
+      "tag": "datum-submissions",
+      "operationId": "submitSubmission",
+      "method": "POST",
+      "base": "api",
+      "path": "/submissions",
+      "switch": "datum.web.api.endpoints.submissions",
+      "body": true,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 403,
+          "codes": [
+            "access.denied"
+          ],
+          "headers": []
+        },
+        {
+          "status": 404,
+          "codes": [
+            "form.notFound"
+          ],
+          "headers": []
+        },
+        {
+          "status": 409,
+          "codes": [
+            "form.outdated",
+            "submission.keyConflict"
+          ],
+          "headers": []
+        },
+        {
+          "status": 503,
+          "codes": [
+            "server.unavailable",
+            "server.busy",
+            "validator_unavailable",
+            "data_source.unavailable",
+            "wasm.execution_error",
+            "outcome_too_large",
+            "definition.tooDeep"
+          ],
+          "headers": [
+            "Retry-After"
+          ],
+          "headerCodes": {
+            "Retry-After": [
+              "server.busy"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "capability": "submissions",
+      "groups": [
+        "submissions"
+      ],
+      "tag": "datum-submissions",
+      "operationId": "validateSubmission",
+      "method": "POST",
+      "base": "api",
+      "path": "/submissions/validate",
+      "switch": "datum.web.api.endpoints.validate",
+      "body": true,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 403,
+          "codes": [
+            "access.denied"
+          ],
+          "headers": []
+        },
+        {
+          "status": 404,
+          "codes": [
+            "form.notFound"
+          ],
+          "headers": []
+        },
+        {
+          "status": 409,
+          "codes": [
+            "form.outdated"
+          ],
+          "headers": []
+        },
+        {
+          "status": 503,
+          "codes": [
+            "server.unavailable",
+            "server.busy",
+            "validator_unavailable",
+            "data_source.unavailable",
+            "wasm.execution_error",
+            "outcome_too_large",
+            "definition.tooDeep"
+          ],
+          "headers": [
+            "Retry-After"
+          ],
+          "headerCodes": {
+            "Retry-After": [
+              "server.busy"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "capability": "submissions",
+      "groups": [
+        "submissions"
+      ],
+      "tag": "datum-submissions",
+      "operationId": "testSubmission",
+      "method": "POST",
+      "base": "api",
+      "path": "/submissions/test",
+      "switch": "datum.web.api.endpoints.test",
+      "body": true,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 403,
+          "codes": [
+            "access.denied"
+          ],
+          "headers": []
+        },
+        {
+          "status": 404,
+          "codes": [
+            "form.notFound"
+          ],
+          "headers": []
+        },
+        {
+          "status": 503,
+          "codes": [
+            "server.unavailable",
+            "server.busy",
+            "validator_unavailable",
+            "data_source.unavailable",
+            "wasm.execution_error",
+            "outcome_too_large",
+            "definition.tooDeep"
+          ],
+          "headers": [
+            "Retry-After"
+          ],
+          "headerCodes": {
+            "Retry-After": [
+              "server.busy"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "capability": "submissions",
+      "groups": [
+        "submissions"
+      ],
+      "tag": "datum-submissions",
+      "operationId": "inspectDefinition",
+      "method": "POST",
+      "base": "api",
+      "path": "/inspect",
+      "switch": "datum.web.api.endpoints.inspect",
+      "body": true,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 403,
+          "codes": [
+            "access.denied"
+          ],
+          "headers": []
+        },
+        {
+          "status": 404,
+          "codes": [
+            "form.notFound"
+          ],
+          "headers": []
+        },
+        {
+          "status": 503,
+          "codes": [
+            "server.unavailable",
+            "server.busy",
+            "wasm.execution_error",
+            "outcome_too_large",
+            "definition.tooDeep"
+          ],
+          "headers": [
+            "Retry-After"
+          ],
+          "headerCodes": {
+            "Retry-After": [
+              "server.busy"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "capability": "pdf",
+      "groups": [
+        "pdf"
+      ],
+      "tag": "datum-pdf",
+      "operationId": "renderPdf",
+      "method": "POST",
+      "base": "api",
+      "path": "/pdf",
+      "switch": "datum.web.api.endpoints.pdf",
+      "body": true,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": [
+            "X-Page-Count"
+          ]
+        },
+        {
+          "status": 400,
+          "codes": [
+            "bad_request",
+            "bad_document"
+          ],
+          "headers": []
+        },
+        {
+          "status": 403,
+          "codes": [
+            "access.denied"
+          ],
+          "headers": []
+        },
+        {
+          "status": 404,
+          "codes": [
+            "form.notFound",
+            "layout.notFound"
+          ],
+          "headers": []
+        },
+        {
+          "status": 413,
+          "codes": [
+            "bad_document"
+          ],
+          "headers": []
+        },
+        {
+          "status": 415,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 422,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 429,
+          "codes": [
+            "flood"
+          ],
+          "headers": [
+            "Retry-After"
+          ]
+        },
+        {
+          "status": 503,
+          "codes": [
+            "server.unavailable",
+            "server.busy",
+            "wasm.execution_error",
+            "outcome_too_large",
+            "definition.tooDeep"
+          ],
+          "headers": [
+            "Retry-After"
+          ],
+          "headerCodes": {
+            "Retry-After": [
+              "server.busy"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "capability": "pdf",
+      "groups": [
+        "pdf"
+      ],
+      "tag": "datum-pdf",
+      "operationId": "fillPdf",
+      "method": "POST",
+      "base": "api",
+      "path": "/pdf/fill",
+      "switch": "datum.web.api.endpoints.fill",
+      "body": true,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": [
+            "X-Page-Count"
+          ]
+        },
+        {
+          "status": 400,
+          "codes": [
+            "bad_request",
+            "bad_document",
+            "layout.notTemplate"
+          ],
+          "headers": []
+        },
+        {
+          "status": 403,
+          "codes": [
+            "access.denied"
+          ],
+          "headers": []
+        },
+        {
+          "status": 404,
+          "codes": [
+            "form.notFound",
+            "layout.notFound"
+          ],
+          "headers": []
+        },
+        {
+          "status": 413,
+          "codes": [
+            "bad_document"
+          ],
+          "headers": []
+        },
+        {
+          "status": 415,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 422,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 429,
+          "codes": [
+            "flood"
+          ],
+          "headers": [
+            "Retry-After"
+          ]
+        },
+        {
+          "status": 503,
+          "codes": [
+            "server.unavailable",
+            "server.busy",
+            "wasm.execution_error",
+            "outcome_too_large",
+            "definition.tooDeep"
+          ],
+          "headers": [
+            "Retry-After"
+          ],
+          "headerCodes": {
+            "Retry-After": [
+              "server.busy"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "capability": "pdf",
+      "groups": [
+        "pdf"
+      ],
+      "tag": "datum-pdf",
+      "operationId": "signPdf",
+      "method": "POST",
+      "base": "api",
+      "path": "/pdf/sign",
+      "switch": "datum.web.api.endpoints.sign",
+      "body": true,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": [
+            "X-Page-Count"
+          ]
+        },
+        {
+          "status": 400,
+          "codes": [
+            "bad_request",
+            "bad_document"
+          ],
+          "headers": []
+        },
+        {
+          "status": 403,
+          "codes": [
+            "access.denied"
+          ],
+          "headers": []
+        },
+        {
+          "status": 404,
+          "codes": [
+            "form.notFound",
+            "layout.notFound"
+          ],
+          "headers": []
+        },
+        {
+          "status": 413,
+          "codes": [
+            "bad_document"
+          ],
+          "headers": []
+        },
+        {
+          "status": 415,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 422,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 429,
+          "codes": [
+            "flood"
+          ],
+          "headers": [
+            "Retry-After"
+          ]
+        },
+        {
+          "status": 503,
+          "codes": [
+            "server.unavailable",
+            "server.busy",
+            "wasm.execution_error",
+            "outcome_too_large",
+            "definition.tooDeep"
+          ],
+          "headers": [
+            "Retry-After"
+          ],
+          "headerCodes": {
+            "Retry-After": [
+              "server.busy"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "capability": "pdf",
+      "groups": [
+        "pdf"
+      ],
+      "tag": "datum-pdf",
+      "operationId": "verifyPdf",
+      "method": "POST",
+      "base": "api",
+      "path": "/pdf/verify",
+      "switch": "datum.web.api.endpoints.verify",
+      "body": true,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 400,
+          "codes": [
+            "pdf.notAPdf",
+            "pdf.unreadable"
+          ],
+          "headers": []
+        },
+        {
+          "status": 413,
+          "codes": [
+            "bad_document"
+          ],
+          "headers": []
+        },
+        {
+          "status": 415,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 429,
+          "codes": [
+            "flood"
+          ],
+          "headers": [
+            "Retry-After"
+          ]
+        },
+        {
+          "status": 503,
+          "codes": [
+            "server.unavailable",
+            "server.busy",
+            "wasm.execution_error",
+            "outcome_too_large"
+          ],
+          "headers": [
+            "Retry-After"
+          ],
+          "headerCodes": {
+            "Retry-After": [
+              "server.busy"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "capability": "pdf",
+      "groups": [
+        "pdf"
+      ],
+      "tag": "datum-pdf",
+      "operationId": "serverCertificate",
+      "method": "GET",
+      "base": "api",
+      "path": "/server/certificate",
+      "switch": "datum.web.api.endpoints.certificate",
+      "body": false,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 404,
+          "codes": [
+            "certificate.notFound"
+          ],
+          "headers": []
+        }
+      ]
+    },
+    {
+      "capability": "timestamp",
+      "groups": [
+        "tsa"
+      ],
+      "tag": "datum-tsa",
+      "operationId": "issueTimestamp",
+      "method": "POST",
+      "base": "tsa",
+      "path": "",
+      "switch": "datum.tsa.enabled",
+      "body": true,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 400,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 401,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 403,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 413,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 415,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 429,
+          "codes": [],
+          "headers": [
+            "Retry-After"
+          ]
+        },
+        {
+          "status": 503,
+          "codes": [],
+          "headers": [
+            "Retry-After"
+          ]
+        }
+      ]
+    },
+    {
+      "capability": "timestamp",
+      "groups": [
+        "tsa"
+      ],
+      "tag": "datum-tsa",
+      "operationId": "getTimestampCertificate",
+      "method": "GET",
+      "base": "tsa",
+      "path": "/certificate",
+      "switch": "datum.tsa.enabled",
+      "body": false,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 503,
+          "codes": [],
+          "headers": []
+        }
+      ]
+    },
+    {
+      "capability": "timestamp",
+      "groups": [
+        "tsa"
+      ],
+      "tag": "datum-tsa",
+      "operationId": "getTimestampCertificates",
+      "method": "GET",
+      "base": "tsa",
+      "path": "/certificates",
+      "switch": "datum.tsa.enabled",
+      "body": false,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 503,
+          "codes": [],
+          "headers": []
+        }
+      ]
+    },
+    {
+      "capability": "webauthn",
+      "groups": [
+        "webauthn"
+      ],
+      "tag": "datum-webauthn",
+      "operationId": "passkeyChallenge",
+      "method": "POST",
+      "base": "webauthn",
+      "path": "/challenge",
+      "switch": "datum.webauthn.enabled",
+      "body": true,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 403,
+          "codes": [
+            "access.denied",
+            "signing.sign_in",
+            "signing.context",
+            "signing.register_off"
+          ],
+          "headers": []
+        },
+        {
+          "status": 404,
+          "codes": [
+            "signing.off"
+          ],
+          "headers": []
+        },
+        {
+          "status": 429,
+          "codes": [
+            "flood"
+          ],
+          "headers": [
+            "Retry-After"
+          ]
+        },
+        {
+          "status": 503,
+          "codes": [
+            "signing.not_set_up"
+          ],
+          "headers": []
+        }
+      ]
+    },
+    {
+      "capability": "webauthn",
+      "groups": [
+        "webauthn"
+      ],
+      "tag": "datum-webauthn",
+      "operationId": "passkeyRegister",
+      "method": "POST",
+      "base": "webauthn",
+      "path": "/register",
+      "switch": "datum.webauthn.enabled",
+      "body": true,
+      "statuses": [
+        {
+          "status": 201,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 400,
+          "codes": [
+            "passkey.bad_request",
+            "passkey.challenge"
+          ],
+          "headers": []
+        },
+        {
+          "status": 403,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 404,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 409,
+          "codes": [
+            "passkey.exists"
+          ],
+          "headers": []
+        },
+        {
+          "status": 422,
+          "codes": [
+            "passkey.invalid"
+          ],
+          "headers": []
+        },
+        {
+          "status": 429,
+          "codes": [
+            "flood"
+          ],
+          "headers": [
+            "Retry-After"
+          ]
+        },
+        {
+          "status": 503,
+          "codes": [
+            "signing.not_set_up"
+          ],
+          "headers": []
+        }
+      ]
+    },
+    {
+      "capability": "webauthn",
+      "groups": [
+        "webauthn"
+      ],
+      "tag": "datum-webauthn",
+      "operationId": "listPasskeys",
+      "method": "GET",
+      "base": "webauthn",
+      "path": "/passkeys",
+      "switch": "datum.webauthn.enabled",
+      "body": false,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 403,
+          "codes": [
+            "access.denied"
+          ],
+          "headers": []
+        },
+        {
+          "status": 404,
+          "codes": [],
+          "headers": []
+        }
+      ]
+    },
+    {
+      "capability": "webauthn",
+      "groups": [
+        "webauthn"
+      ],
+      "tag": "datum-webauthn",
+      "operationId": "removePasskey",
+      "method": "DELETE",
+      "base": "webauthn",
+      "path": "/passkeys/{id}",
+      "switch": "datum.webauthn.enabled",
+      "body": false,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 404,
+          "codes": [
+            "passkey.notFound"
+          ],
+          "headers": []
+        }
+      ]
+    },
+    {
+      "capability": "webauthn",
+      "groups": [
+        "webauthn"
+      ],
+      "tag": "datum-webauthn",
+      "operationId": "passkeyCheckChallenge",
+      "method": "POST",
+      "base": "webauthn",
+      "path": "/passkeys/{id}/check-challenge",
+      "switch": "datum.webauthn.enabled",
+      "body": false,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 404,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 409,
+          "codes": [
+            "passkey.revoked"
+          ],
+          "headers": []
+        },
+        {
+          "status": 429,
+          "codes": [
+            "flood"
+          ],
+          "headers": [
+            "Retry-After"
+          ]
+        },
+        {
+          "status": 503,
+          "codes": [
+            "signing.not_set_up"
+          ],
+          "headers": []
+        }
+      ]
+    },
+    {
+      "capability": "webauthn",
+      "groups": [
+        "webauthn"
+      ],
+      "tag": "datum-webauthn",
+      "operationId": "passkeyCheck",
+      "method": "POST",
+      "base": "webauthn",
+      "path": "/passkeys/{id}/check",
+      "switch": "datum.webauthn.enabled",
+      "body": true,
+      "statuses": [
+        {
+          "status": 200,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 400,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 404,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 409,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 422,
+          "codes": [],
+          "headers": []
+        },
+        {
+          "status": 503,
+          "codes": [
+            "signing.not_set_up"
+          ],
+          "headers": []
+        }
+      ]
+    }
+  ],
+  "schemas": [
+    {
+      "name": "ErrorItem",
+      "description": "One error: the component id it belongs to (left out when none), a stable code, and host-worded text for a person.",
+      "properties": [
+        {
+          "name": "field",
+          "type": "string",
+          "description": "The component id; the member is left out when the error names none.",
+          "nullable": false,
+          "example": null
+        },
+        {
+          "name": "code",
+          "type": "string",
+          "description": "Stable machine code, for example form.outdated.",
+          "nullable": false,
+          "example": null
+        },
+        {
+          "name": "message",
+          "type": "string",
+          "description": "Optional text for a person: the form's own wording for a finding or a hook's; never a guest's stderr.",
+          "nullable": false,
+          "example": null
+        }
+      ],
+      "required": [
+        "code"
+      ]
+    },
+    {
+      "name": "ErrorsBody",
+      "description": "An error answer: {errors:[{field?, code, message?}]}.",
+      "properties": [
+        {
+          "name": "errors",
+          "type": "array:ErrorItem",
+          "description": null,
+          "nullable": false,
+          "example": null
+        }
+      ],
+      "required": [
+        "errors"
+      ]
+    },
+    {
+      "name": "ProblemDetail",
+      "description": "RFC 9457 problem details with the same codes (datum.web.api.problem-details=true).",
+      "properties": [
+        {
+          "name": "type",
+          "type": "string",
+          "description": null,
+          "nullable": false,
+          "example": "about:blank"
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "description": null,
+          "nullable": false,
+          "example": null
+        },
+        {
+          "name": "status",
+          "type": "integer",
+          "description": null,
+          "nullable": false,
+          "example": null
+        },
+        {
+          "name": "detail",
+          "type": "string",
+          "description": null,
+          "nullable": false,
+          "example": null
+        },
+        {
+          "name": "code",
+          "type": "string",
+          "description": null,
+          "nullable": false,
+          "example": null
+        },
+        {
+          "name": "correlationId",
+          "type": "string",
+          "description": "Names the log entry of a 500.",
+          "nullable": false,
+          "example": null
+        },
+        {
+          "name": "errors",
+          "type": "array:ErrorItem",
+          "description": null,
+          "nullable": false,
+          "example": null
+        }
+      ],
+      "required": []
+    },
+    {
+      "name": "PdfTrustPolicySummary",
+      "description": "The trust policy a verify report placed its signers and timestamp authorities under (an addition of this host, which other hosts need not send).",
+      "properties": [
+        {
+          "name": "name",
+          "type": "string",
+          "description": "The policy's name; default for the configured anchors.",
+          "nullable": false,
+          "example": "default"
+        },
+        {
+          "name": "revocationChecking",
+          "type": "boolean",
+          "description": "Whether revocation was checked (the JDK's PKIX revocation checker).",
+          "nullable": false,
+          "example": null
+        },
+        {
+          "name": "validationTime",
+          "type": "string",
+          "description": "When chains were judged: now or signing-time.",
+          "nullable": false,
+          "example": "now"
+        }
+      ],
+      "required": [
+        "name",
+        "revocationChecking",
+        "validationTime"
+      ]
+    },
+    {
+      "name": "PdfSignatureVerdict",
+      "description": "One signature of a verify report, checked and placed; the members named here, among the others the report carries.",
+      "properties": [
+        {
+          "name": "field",
+          "type": "string",
+          "description": "The signature field, or empty when no field links it any more.",
+          "nullable": false,
+          "example": null
+        },
+        {
+          "name": "value",
+          "type": "string",
+          "description": "valid, invalid or unchecked: the signature value under the signer's key.",
+          "nullable": false,
+          "example": "valid"
+        },
+        {
+          "name": "digestMatches",
+          "type": "boolean",
+          "description": "The file still hashes to what was signed.",
+          "nullable": false,
+          "example": null
+        },
+        {
+          "name": "certificateMatches",
+          "type": "boolean",
+          "description": "The signed attributes name the signer's certificate.",
+          "nullable": false,
+          "example": null
+        },
+        {
+          "name": "coversDocument",
+          "type": "boolean",
+          "description": "Nothing was appended after it.",
+          "nullable": false,
+          "example": null
+        },
+        {
+          "name": "intact",
+          "type": "boolean",
+          "description": "Digest, binding and value all hold.",
+          "nullable": false,
+          "example": null
+        },
+        {
+          "name": "trust",
+          "type": "string",
+          "description": "site, site_retired, trusted, self_signed or unknown.",
+          "nullable": false,
+          "example": "site"
+        },
+        {
+          "name": "signingTime",
+          "type": "string",
+          "description": "The signed revision's /M, ISO 8601: the signer's claim.",
+          "nullable": true,
+          "example": null
+        },
+        {
+          "name": "trustedAt",
+          "type": "string",
+          "description": "The instant (ISO 8601) the chain to an anchor was judged at; only for a trusted chain, and optional (an addition of this host, which other hosts need not send).",
+          "nullable": true,
+          "example": null
+        }
+      ],
+      "required": [
+        "field",
+        "value",
+        "intact",
+        "trust"
+      ]
+    },
+    {
+      "name": "PdfVerifyReport",
+      "description": "A verify report (POST /pdf/verify): the file's hash and size, each signature, the document key, the program's warnings, the embedded files (attachments) and, optionally, the trust policy (an addition of this host, which other hosts need not send).",
+      "properties": [
+        {
+          "name": "sha256",
+          "type": "string",
+          "description": "The file's SHA-256, lowercase hex.",
+          "nullable": false,
+          "example": null
+        },
+        {
+          "name": "bytes",
+          "type": "integer",
+          "description": "The file's size.",
+          "nullable": false,
+          "example": null
+        },
+        {
+          "name": "signatures",
+          "type": "array:PdfSignatureVerdict",
+          "description": null,
+          "nullable": false,
+          "example": null
+        },
+        {
+          "name": "documentId",
+          "type": "string",
+          "description": "The document key an intact signature signed, else the file's current one.",
+          "nullable": true,
+          "example": null
+        },
+        {
+          "name": "documentIdSource",
+          "type": "string",
+          "description": "signed or current.",
+          "nullable": true,
+          "example": null
+        },
+        {
+          "name": "warnings",
+          "type": "array:string",
+          "description": "The program's warning messages.",
+          "nullable": false,
+          "example": null
+        },
+        {
+          "name": "trustPolicy",
+          "type": "ref:PdfTrustPolicySummary",
+          "description": null,
+          "nullable": false,
+          "example": null
+        }
+      ],
+      "required": [
+        "sha256",
+        "bytes",
+        "signatures"
+      ]
+    }
+  ],
+  "headers": [
+    {
+      "component": "RetryAfter",
+      "header": "Retry-After",
+      "description": "Seconds to wait before trying again. On a 503 only server.busy sends it.",
+      "type": "integer",
+      "minimum": 0
+    },
+    {
+      "component": "ETag",
+      "header": "ETag",
+      "description": "The sha256 of the definition or catalog the answer carries; send it back as If-Match on a write.",
+      "type": "string",
+      "minimum": null
+    },
+    {
+      "component": "XDatumRemovedLocales",
+      "header": "X-Datum-Removed-Locales",
+      "description": "The locales a save removed, comma separated.",
+      "type": "string",
+      "minimum": null
+    },
+    {
+      "component": "XPageCount",
+      "header": "X-Page-Count",
+      "description": "The number of pages of the PDF.",
+      "type": "integer",
+      "minimum": null
+    },
+    {
+      "component": "Location",
+      "header": "Location",
+      "description": "Where the created form's full definition is read.",
+      "type": "string",
+      "minimum": null
+    }
+  ],
+  "parameters": [
+    {
+      "component": "IfMatch",
+      "name": "If-Match",
+      "description": "The ETag of the version being replaced; a stale one answers 409.",
+      "type": "string"
+    }
+  ],
+  "responses": [
+    {
+      "component": "BadRequest",
+      "status": 400,
+      "description": "The body is not usable JSON (bad_document).",
+      "codes": [
+        "bad_document"
+      ],
+      "retryAfter": false
+    },
+    {
+      "component": "PayloadTooLarge",
+      "status": 413,
+      "description": "The body is larger than datum.web.api.max-body-size (bad_document).",
+      "codes": [
+        "bad_document"
+      ],
+      "retryAfter": false
+    },
+    {
+      "component": "UnsupportedMediaType",
+      "status": 415,
+      "description": "The Content-Type is not JSON (unsupported_media_type).",
+      "codes": [
+        "unsupported_media_type"
+      ],
+      "retryAfter": false
+    },
+    {
+      "component": "Unprocessable",
+      "status": 422,
+      "description": "Rejected: the errors name the codes and fields.",
+      "codes": [],
+      "retryAfter": false
+    },
+    {
+      "component": "TooManyRequests",
+      "status": 429,
+      "description": "Throttled (flood); wait Retry-After seconds.",
+      "codes": [
+        "flood"
+      ],
+      "retryAfter": true
+    },
+    {
+      "component": "Unavailable",
+      "status": 503,
+      "description": "The sandbox is busy or unavailable (server.busy with Retry-After, server.unavailable without); try again.",
+      "codes": [
+        "server.busy",
+        "server.unavailable"
+      ],
+      "retryAfter": true,
+      "retryAfterCodes": [
+        "server.busy"
+      ]
+    },
+    {
+      "component": "InternalError",
+      "status": 500,
+      "description": "An unexpected failure (internal); the correlation id is in the log.",
+      "codes": [
+        "internal"
+      ],
+      "retryAfter": false
+    }
+  ],
+  "defaultResponses": [
+    {
+      "status": 400,
+      "component": "BadRequest",
+      "when": "body"
+    },
+    {
+      "status": 413,
+      "component": "PayloadTooLarge",
+      "when": "body"
+    },
+    {
+      "status": 415,
+      "component": "UnsupportedMediaType",
+      "when": "body"
+    },
+    {
+      "status": 422,
+      "component": "Unprocessable",
+      "when": "body"
+    },
+    {
+      "status": 429,
+      "component": "TooManyRequests",
+      "when": "post"
+    },
+    {
+      "status": 500,
+      "component": "InternalError",
+      "when": "always"
+    },
+    {
+      "status": 503,
+      "component": "Unavailable",
+      "when": "always"
+    }
+  ]
+}

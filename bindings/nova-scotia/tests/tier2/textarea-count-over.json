@@ -1,0 +1,22 @@
+{
+  "note": "over the limit: the count in the library's error colour, the error under it",
+  "components": [
+    {
+      "id": "about",
+      "type": "textarea",
+      "configuration": {
+        "label": "About you",
+        "maxLength": 10,
+        "characterCount": true
+      }
+    }
+  ],
+  "steps": [
+    {
+      "op": "type",
+      "id": "about",
+      "text": "Hello there, friend"
+    }
+  ],
+  "width": 560
+}

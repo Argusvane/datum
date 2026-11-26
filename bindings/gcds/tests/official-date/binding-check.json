@@ -1,0 +1,13 @@
+{
+  "designSystem": "GC Design System",
+  "binding": "binding.ts",
+  "stylesheets": [
+    "/node_modules/gcds-components-1.7.0/dist/gcds/gcds.css"
+  ],
+  "scripts": [
+    "/node_modules/gcds-components-1.7.0/dist/gcds/gcds.esm.js"
+  ],
+  "roots": [
+    "../.."
+  ]
+}

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Datum web components — demos</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 20px; line-height: 1.5; }
+      code { background: #f3f5f7; padding: 1px 4px; border-radius: 3px; }
+    </style>
+  </head>
+  <body>
+    <h1>Datum web components</h1>
+    <p>
+      Pages that load the built bundles from <code>dist/</code> the way any host page would.
+      Run <code>npm run build</code> first, then <code>npm run demo</code>.
+    </p>
+    <ul>
+      <li><a href="/demo/form.html">Form renderer</a> — <code>&lt;datum-form&gt;</code> via <code>&lt;script type="module"&gt;</code></li>
+      <li><a href="/demo/form-iife.html">Form renderer, classic script</a> — the same through <code>datum-form.iife.js</code> and <code>window.DatumForm</code></li>
+      <li><a href="/demo/journey.html">A journey</a> — the form a page at a time: a branch, an exit page, and checks with the service on a page and before the answers are sent, answered by a stand-in you switch with <code>?check=ok|slow|invalid|down</code></li>
+      <li><a href="/demo/presentation.html">Presentations</a> — one form filled through a journey with fields of its own (an alias, a value worked out from three months) and a one-page journey that looks like the form, what is submitted beside what stays in the browser</li>
+      <li><a href="/demo/wasm.html">Validate in the sandbox</a> — <code>&lt;datum-form wasm="auto"&gt;</code> fetching <code>datum-wasm.js</code>, with rules of the page's own run at submit inside QuickJS</li>
+      <li><a href="/demo/builder.html">Form builder, contained</a> — <code>&lt;datum-form-builder layout="contained"&gt;</code> inside a page that has other content</li>
+      <li><a href="/demo/builder-page.html">Form builder, full page</a> — the default window-pinned layout under a host header</li>
+      <li><a href="/demo/pdf-designer.html">PDF layout designer</a> — <code>&lt;datum-form-builder workspaces="pdf" layout="contained" pdf="auto"&gt;</code> over the intake form, with a real PDF preview</li>
+    </ul>
+  </body>
+</html>

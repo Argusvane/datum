@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "declaration": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    // The repository root, not ".": tests/ and scripts/ import the engine's form-tests fixture by
+    // relative path, which makes those engine files (and all they import) sources of this program.
+    // tsconfig.build.json keeps "." because src/ reaches the engine through @argusvane/datum-engine only.
+    "rootDir": "../..",
+    "skipLibCheck": true,
+    "types": ["node", "vitest/globals"],
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts", "scripts/**/*.ts"]
+}

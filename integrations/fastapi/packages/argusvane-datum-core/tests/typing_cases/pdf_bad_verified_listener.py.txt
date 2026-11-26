@@ -1,0 +1,7 @@
+from datum_core.events import PdfVerifiedEvent, listener
+
+
+def takes_rendered(event: str) -> None: ...
+
+
+listener(PdfVerifiedEvent, takes_rendered)

@@ -1,0 +1,15 @@
+/*
+ * Optional companion sheet for <datum-form-builder> (and the <datum-form> the builder bundle
+ * also defines). The elements style themselves inside their shadow roots; this keeps the page
+ * tidy around them: a block box for the form, and nothing painted before datum-builder.js has
+ * defined the elements. A contained builder (layout="contained") sizes itself to 720px unless
+ * the page gives it a height of its own — set one on the element to change it.
+ */
+datum-form {
+  display: block;
+}
+
+datum-form-builder:not(:defined),
+datum-form:not(:defined) {
+  visibility: hidden;
+}

@@ -1,0 +1,82 @@
+{
+  "id": "travel-claim",
+  "version": "1.0.0",
+  "schemaVersion": "1",
+  "localization": {
+    "defaultLocale": "en",
+    "supportedLocales": [{ "code": "en", "label": "English" }]
+  },
+  "root": {
+    "id": "root",
+    "type": "form",
+    "configuration": { "label": "Travel claim", "agentTools": "allowed" },
+    "children": {
+      "content": [
+        {
+          "id": "fullName",
+          "type": "text",
+          "configuration": { "label": "Full name", "required": true }
+        },
+        {
+          "id": "email",
+          "type": "text",
+          "configuration": {
+            "label": "Email",
+            "required": true,
+            "inputMode": "email",
+            "pattern": "\\s*[^\\s@]+@[^\\s@]+\\.[^\\s@]+\\s*",
+            "patternMessage": "Enter an email address"
+          }
+        },
+        {
+          "id": "purpose",
+          "type": "select",
+          "configuration": {
+            "label": "Purpose of the trip",
+            "options": [
+              { "value": "client", "label": "Client work" },
+              { "value": "training", "label": "Training" },
+              { "value": "conference", "label": "Conference" }
+            ]
+          }
+        },
+        {
+          "id": "departure",
+          "type": "date",
+          "configuration": { "label": "Departure date" }
+        },
+        {
+          "id": "return",
+          "type": "date",
+          "configuration": {
+            "label": "Return date",
+            "messages": { "rule": "The return date cannot be before the departure date." }
+          },
+          "rules": { "validWhen": "empty(departure) or return >= departure" }
+        },
+        {
+          "id": "costs",
+          "type": "dataGrid",
+          "configuration": { "label": "Costs", "minRows": 0, "maxRows": 10, "initialRows": 0 },
+          "collection": { "collectionPath": "costs" },
+          "children": {
+            "content": [
+              { "id": "description", "type": "text", "configuration": { "label": "Description" } },
+              { "id": "amount", "type": "number", "configuration": { "label": "Amount" } }
+            ]
+          }
+        },
+        {
+          "id": "declaration",
+          "type": "checkbox",
+          "configuration": { "label": "I declare these costs are true", "required": true }
+        },
+        {
+          "id": "submit",
+          "type": "button",
+          "configuration": { "label": "Submit", "action": "submit" }
+        }
+      ]
+    }
+  }
+}

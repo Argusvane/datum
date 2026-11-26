@@ -1,0 +1,4 @@
+# The engine-selection refusal prints as a Description and an Action; the
+# configuration refusals (a memory floor, the bytecode refusal, a bad setting) go through datum-spring-web's general analyzer.
+org.springframework.boot.diagnostics.FailureAnalyzer=\
+com.argusvane.datum.sandbox.spring.EngineSelectionFailureAnalyzer

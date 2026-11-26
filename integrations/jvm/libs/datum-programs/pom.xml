@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-programs</artifactId>
+  <packaging>jar</packaging>
+  <name>datum-programs</name>
+  <description>Datum programs: the generated sandbox and PDF programs and fonts (resources only).</description>
+  <dependencies>
+    <dependency>
+      <groupId>tools.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <resources>
+      <resource><directory>${basedir}/src/main/resources</directory></resource>
+      <!-- The generated assets (target/datum-assets/<artifactId>) land under META-INF/datum/ (programs/, assets/, manifest.json); NOTICE (and LICENSE) reach META-INF/ through the parent pom's copy-legal execution. -->
+      <resource>
+        <directory>${datum.assets.dir}/${project.artifactId}</directory>
+        <targetPath>META-INF/datum</targetPath>
+        <excludes><exclude>NOTICE</exclude></excludes>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <!-- The generated assets are build output (target/datum-assets, written by the root build); a -pl build with none must say how to make them. Checked at process-resources, where they are used, so a build that stops earlier (the CI runtime compile, up to generate-sources) needs none. -->
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>require-assets</id>
+            <phase>process-resources</phase>
+            <goals><goal>enforce</goal></goals>
+            <configuration>
+              <rules>
+                <requireFilesExist>
+                  <files><file>${datum.assets.dir}/${project.artifactId}/manifest.json</file></files>
+                  <message>the generated assets are missing (${datum.assets.dir}/${project.artifactId}): run ./mvnw -N generate-resources in integrations/jvm (or npm run jvm:assets at the repository root), or build the whole reactor, which generates them first</message>
+                </requireFilesExist>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>datum-form — module script</title>
+    <!-- The optional companion sheet: a FOUC guard for the element. -->
+    <link rel="stylesheet" href="/dist/datum-form.css" />
+    <script type="module" src="/dist/datum-form.js"></script>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; background: #f6f7f9; color: #1d2b36; }
+      .page { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; }
+      header { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 16px; }
+      header h1 { font-size: 20px; margin: 0; }
+      header a { color: #2f6feb; }
+      .sheet { background: #fff; border: 1px solid #dfe5ec; border-radius: 10px; padding: 24px; }
+      .log { background: #fff; border: 1px solid #dfe5ec; border-radius: 10px; padding: 16px; font-size: 13px; }
+      .log h2 { font-size: 14px; margin: 0 0 8px; }
+      .log pre { margin: 0; white-space: pre-wrap; word-break: break-word; max-height: 60vh; overflow: auto; }
+      .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+      button, select { font: inherit; padding: 6px 10px; border-radius: 6px; border: 1px solid #c9d3dd; background: #fff; cursor: pointer; }
+      @media (max-width: 800px) { .page { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <h1>&lt;datum-form&gt; — module script</h1>
+        <a href="/demo/">All demos</a>
+      </header>
+
+      <main class="sheet">
+        <!-- Everything a page needs is on the tag: a language switcher over the
+             form's own supported locales, a draft key for autosave, and where the form is. -->
+        <datum-form
+          id="form"
+          language-switcher
+          draft="intake-demo"
+        ></datum-form>
+      </main>
+
+      <aside class="log">
+        <div class="controls">
+          <button id="validate" type="button">Validate</button>
+          <button id="print" type="button">Print</button>
+          <button id="restore" type="button">Restore draft</button>
+          <button id="clear" type="button">Clear draft</button>
+        </div>
+        <h2>Events</h2>
+        <pre id="events">(waiting for datum-ready)</pre>
+      </aside>
+    </div>
+
+    <script type="module">
+      import { DEFAULT_FORM_SRC, formSrcFromSearch } from "/demo/form-src.mjs";
+      const form = document.getElementById("form");
+      const events = document.getElementById("events");
+      const lines = [];
+      const log = (line) => {
+        lines.unshift(`${new Date().toLocaleTimeString()}  ${line}`);
+        events.textContent = lines.slice(0, 40).join("\n");
+      };
+
+      // Data sources are plain lists (or async loaders) keyed by the id a select names.
+      form.dataSources = {
+        countries: [
+          { value: "CA", label: "Canada" },
+          { value: "US", label: "United States" },
+          { value: "MX", label: "Mexico" }
+        ]
+      };
+      form.messages = {
+        required: { default: "This field is required.", locales: { "fr-CA": "Ce champ est requis." } }
+      };
+
+      // The definition is set last, after the data sources above, so a select that names a source
+      // never builds before the source exists. ?src=<relative path or http(s) URL> loads another
+      // definition (the browser's same-origin / CORS rules apply; a failure shows the error card).
+      form.setAttribute("src", formSrcFromSearch(location.search) ?? DEFAULT_FORM_SRC);
+
+      form.addEventListener("datum-ready", () => log("datum-ready"));
+      form.addEventListener("datum-change", (event) => log(`datum-change ${event.detail.path} = ${JSON.stringify(event.detail.value)}`));
+      form.addEventListener("datum-validated", (event) => log(`datum-validated ${event.detail.errors.length} error(s)`));
+      form.addEventListener("datum-locale-applied", (event) => log(`datum-locale-applied ${event.detail.locale}`));
+      form.addEventListener("datum-locale-rejected", (event) => log(`datum-locale-rejected ${event.detail.message}`));
+      form.addEventListener("datum-error", (event) => log(`datum-error ${event.detail.message}`));
+      form.addEventListener("datum-submit", (event) => {
+        const { accepted, submission, errors } = event.detail;
+        log(accepted ? `datum-submit accepted\n${JSON.stringify(submission, null, 2)}` : `datum-submit rejected: ${errors.map((e) => `${e.componentId}:${e.code}`).join(", ")}`);
+        // A real page delivers the envelope here, and hands back what the server says:
+        // const response = await fetch("/api/submissions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(submission) });
+        // if (!response.ok) form.setErrors((await response.json()).errors); // [{ componentId, code, message }], or [{ code, message }] for the form as a whole
+        // A fetch that throws (no network) is form.setErrors([{ code: "delivery.failed", message: "The form could not be sent." }]).
+      });
+      // A button with action "download" saves the accepted envelope as JSON; preventDefault() here would take the file over.
+      form.addEventListener("datum-download", (event) => log(`datum-download ${event.detail.fileName}`));
+
+      document.getElementById("validate").addEventListener("click", () => form.validate());
+      document.getElementById("print").addEventListener("click", () => form.print());
+      document.getElementById("restore").addEventListener("click", () => form.restoreDraft().then(() => log("draft restored"), (e) => log(`no draft: ${e.message}`)));
+      document.getElementById("clear").addEventListener("click", () => form.clearDraft().then(() => log("draft cleared")));
+    </script>
+  </body>
+</html>

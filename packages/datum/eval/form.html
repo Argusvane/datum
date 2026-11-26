@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Agent evaluation: the travel claim</title>
+    <link rel="stylesheet" href="/dist/datum-form.css" />
+    <script type="module">
+      await import("/dist/datum-form.js");
+    </script>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; background: #f6f7f9; color: #1d2b36; }
+      main { max-width: 760px; margin: 0 auto; padding: 24px 20px 60px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <!-- No host access attribute: the default (the definition decides) is what the evaluation
+           exercises, and the claim's own agentTools "allowed" is what lets the assistant in. -->
+      <datum-form id="claim" features="all agent" src="/eval/forms/travel-claim.json"></datum-form>
+    </main>
+    <script type="module">
+      const form = document.getElementById("claim");
+      window.__evalSubmits = 0;
+      form.addEventListener("datum-submit", () => {
+        window.__evalSubmits += 1;
+      });
+      // The page is ready once the definition has loaded and built, on every path: the registrar
+      // answers form-not-ready until then, and the first scripted call must not meet that.
+      try {
+        await form.ready;
+      } catch {
+        // A definition that failed to load is reported by the tools themselves (form-not-ready).
+      }
+      // ?prefill=half: a half-filled claim for the summarise task, written the way a person's
+      // own edit is (form.values is never an agent mark).
+      if (new URLSearchParams(location.search).get("prefill") === "half") {
+        form.values = {
+          fullName: "Ana Silva",
+          purpose: "training",
+          departure: "2026-03-05",
+          return: "2026-03-03",
+          costs: [{ description: "Train", amount: 412.5 }]
+        };
+      }
+      window.__evalReady = true;
+    </script>
+  </body>
+</html>

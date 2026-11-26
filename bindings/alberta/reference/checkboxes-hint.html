@@ -1,0 +1,30 @@
+<!-- datum-reference
+{
+  "note": "checkboxes with help text and an option description",
+  "components": [
+    {
+      "id": "topics",
+      "type": "checkboxes",
+      "configuration": {
+        "label": "Topics",
+        "description": "Choose any.",
+        "options": [
+          {
+            "value": "news",
+            "label": "News",
+            "description": "Weekly"
+          },
+          {
+            "value": "events",
+            "label": "Events"
+          }
+        ]
+      }
+    }
+  ],
+  "source": "https://design.alberta.ca/components/checkbox (Alberta Design System, component page), properties per @abgov/web-components 3.2.0 (the release's index.js element definitions)",
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate><goa-form-item label="Topics" helptext="Choose any." error="" requirement="" type="checkbox-list"><goa-checkbox-list name="topics" error="false" disabled="false" arialabel=""><goa-checkbox name="news" text="News" value="news" description="Weekly"></goa-checkbox><goa-checkbox name="events" text="Events" value="events"></goa-checkbox></goa-checkbox-list></goa-form-item></form>

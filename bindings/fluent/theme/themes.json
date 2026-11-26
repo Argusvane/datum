@@ -1,0 +1,33 @@
+{
+  "generatedFrom": {
+    "package": "@fluentui/tokens",
+    "version": "1.0.0-alpha.24"
+  },
+  "themes": [
+    {
+      "file": "theme/teams-light.css",
+      "theme": "teamsLightTheme",
+      "tokens": 459
+    },
+    {
+      "file": "theme/teams-dark.css",
+      "theme": "teamsDarkTheme",
+      "tokens": 459
+    },
+    {
+      "file": "theme/teams-high-contrast.css",
+      "theme": "teamsHighContrastTheme",
+      "tokens": 459
+    },
+    {
+      "file": "theme/web-light.css",
+      "theme": "webLightTheme",
+      "tokens": 459
+    },
+    {
+      "file": "theme/web-dark.css",
+      "theme": "webDarkTheme",
+      "tokens": 459
+    }
+  ]
+}

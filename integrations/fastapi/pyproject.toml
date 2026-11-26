@@ -1,0 +1,347 @@
+# Workspace root of Datum for FastAPI: unpublished. It holds the development tools and their configuration.
+# Members live under packages/ (one distribution each) and examples/.
+[project]
+name = "datum-fastapi-workspace"
+version = "0.0.0"
+description = "Workspace root for the Datum FastAPI distributions (not published)."
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/*", "examples/*"]
+
+[tool.uv.sources]
+argusvane-datum-core = { workspace = true }
+argusvane-datum-sandbox = { workspace = true }
+argusvane-datum-programs = { workspace = true }
+argusvane-datum-qjs-wasm = { workspace = true }
+argusvane-datum-assets-ui = { workspace = true }
+argusvane-datum-assets-pdf = { workspace = true }
+argusvane-datum-sandbox-wasmtime = { workspace = true }
+argusvane-datum-fastapi = { workspace = true }
+
+[dependency-groups]
+dev = [
+  "pytest>=9",
+  "anyio>=4",
+  "hypothesis>=6",
+  "mypy>=2.4",
+  "pyright>=1.1.414",
+  "ruff>=0.17",
+  "import-linter>=2.15",
+  "deptry>=0.25",
+  "coverage>=7",
+  "httpx2",
+  "time-machine>=2",
+  "pytest-timeout>=2.3",
+  "pytest-xdist>=3.6",
+  "pytest-randomly>=3.16",
+  "blockbuster>=1.5",
+  "rfc8785>=0.1.4",
+  "uvicorn>=0.30",
+  "opentelemetry-sdk>=1.30,<2",
+  "opentelemetry-instrumentation-asgi>=0.51b0",
+  "rfc3161-client>=1,<2",
+  "pyhanko>=0.25",
+]
+# The release tooling the workflow and release.mjs pin; bumped on purpose, never floated.
+release = [
+  "twine==7.0.0",
+]
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Lint and format
+# ---------------------------------------------------------------------------------------------------------------------
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+src = [
+  "packages/argusvane-datum-core/src",
+  "packages/argusvane-datum-sandbox/src",
+  "packages/argusvane-datum-programs/src",
+  "packages/argusvane-datum-qjs-wasm/src",
+  "packages/argusvane-datum-assets-ui/src",
+  "packages/argusvane-datum-assets-pdf/src",
+  "packages/argusvane-datum-sandbox-wasmtime/src",
+  "packages/argusvane-datum-fastapi/src",
+]
+extend-exclude = ["build", "dist", "**/resources", "**/assets"]
+
+[tool.ruff.lint]
+# A curated list (pydantic and FastAPI do the same); ALL would add rules with every ruff release.
+select = [
+  "E", "W", "F", "I", "N", "UP", "B", "A", "C4", "C90", "SIM", "RUF", "PL", "PERF", "PIE", "PT", "RET", "RSE", "T20",
+  "ASYNC", "S", "LOG", "G", "TRY", "TID", "TC", "ARG", "PTH", "PGH", "ISC", "ICN", "FA", "FURB", "SLOT", "FLY", "ERA",
+  "D", "ANN",
+]
+ignore = [
+  "TRY003",   # long messages inline are the norm for configuration errors that name the field
+  "PLR0913",  # the Datum constructor takes many keywords by design
+  "D203", "D213",  # pick one of each pydocstyle pair
+  "COM812", "ISC001",  # formatter conflicts
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101", "D", "ANN", "PLR2004", "ARG", "S105", "S106"]
+"**/hatch_build.py" = ["D"]
+"scripts/*.py" = ["T201"]  # command-line scripts print their result
+
+[tool.ruff.lint.pydocstyle]
+convention = "pep257"
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "parents"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+[tool.ruff.format]
+docstring-code-format = true
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Types
+# ---------------------------------------------------------------------------------------------------------------------
+[tool.mypy]
+strict = true
+python_version = "3.12"
+plugins = ["pydantic.mypy"]
+explicit_package_bases = true
+namespace_packages = true
+# Every member carries its own hatch_build.py; mypy would see one module name eight times.
+# Each member also has a tests/conftest.py; the root run excludes them (check one with `mypy packages/<member>`).
+exclude = ["(^|/)hatch_build\\.py$", "(^|/)tests/conftest\\.py$"]
+# Working command (from this directory): mypy $(for p in packages/*; do echo $p/src; done) -- or, per package,
+# mypy -p datum_core -p datum_sandbox -p datum_programs -p datum_qjs_wasm -p datum_assets_ui -p datum_assets_pdf -p datum_sandbox_wasmtime -p datum_fastapi
+# `mypy packages` also works with the exclude above; a per-member `mypy src tests` fails (found twice under different names).
+mypy_path = [
+  "packages/argusvane-datum-core/src",
+  "packages/argusvane-datum-sandbox/src",
+  "packages/argusvane-datum-programs/src",
+  "packages/argusvane-datum-qjs-wasm/src",
+  "packages/argusvane-datum-assets-ui/src",
+  "packages/argusvane-datum-assets-pdf/src",
+  "packages/argusvane-datum-sandbox-wasmtime/src",
+  "packages/argusvane-datum-fastapi/src",
+]
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+[tool.pyright]
+typeCheckingMode = "strict"
+pythonVersion = "3.12"
+include = ["packages/*/src", "packages/*/tests"]
+extraPaths = [
+  "packages/argusvane-datum-core/src",
+  "packages/argusvane-datum-sandbox/src",
+  "packages/argusvane-datum-programs/src",
+  "packages/argusvane-datum-qjs-wasm/src",
+  "packages/argusvane-datum-assets-ui/src",
+  "packages/argusvane-datum-assets-pdf/src",
+  "packages/argusvane-datum-sandbox-wasmtime/src",
+  "packages/argusvane-datum-fastapi/src",
+]
+exclude = ["**/resources", "**/assets", "**/.venv", "build", "dist"]
+venvPath = "."
+venv = ".venv"
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Architecture: import-linter (internal and external imports) and deptry (declared dependencies, per member)
+# ---------------------------------------------------------------------------------------------------------------------
+[tool.importlinter]
+root_packages = [
+  "datum_core",
+  "datum_sandbox",
+  "datum_programs",
+  "datum_qjs_wasm",
+  "datum_assets_ui",
+  "datum_assets_pdf",
+  "datum_sandbox_wasmtime",
+  "datum_fastapi",
+]
+include_external_packages = true
+exclude_type_checking_imports = false
+
+[[tool.importlinter.contracts]]
+name = "datum_core imports no web framework, settings loader, runtime or http client"
+type = "forbidden"
+source_modules = ["datum_core"]
+forbidden_modules = [
+  "fastapi", "starlette", "django", "flask", "litestar", "asgiref", "pydantic_settings", "wasmtime", "httpx", "httpx2",
+  "datum_sandbox_wasmtime",
+]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "datum_core uses anyio only in its aio subpackage"
+type = "forbidden"
+source_modules = ["datum_core"]
+forbidden_modules = ["anyio"]
+ignore_imports = ["datum_core.aio.** -> anyio"]
+unmatched_ignore_imports_alerting = "none"
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "datum_core uses limits only in its throttle subpackage"
+type = "forbidden"
+source_modules = ["datum_core"]
+forbidden_modules = ["limits"]
+ignore_imports = ["datum_core.throttle.** -> limits"]
+unmatched_ignore_imports_alerting = "none"
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "datum_core uses cryptography only in pdf and timestamp"
+type = "forbidden"
+source_modules = ["datum_core"]
+forbidden_modules = ["cryptography"]
+ignore_imports = [
+  "datum_core.pdf.** -> cryptography",
+  "datum_core.timestamp.** -> cryptography",
+  "datum_core.testing.tsa_pki -> cryptography",
+]
+unmatched_ignore_imports_alerting = "none"
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "datum_core uses asn1crypto only in its timestamp subpackage"
+type = "forbidden"
+source_modules = ["datum_core"]
+forbidden_modules = ["asn1crypto"]
+ignore_imports = ["datum_core.timestamp.** -> asn1crypto"]
+unmatched_ignore_imports_alerting = "none"
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "datum_core uses pyhanko_certvalidator only in the pdf revocation module"
+type = "forbidden"
+source_modules = ["datum_core"]
+forbidden_modules = ["pyhanko_certvalidator"]
+ignore_imports = ["datum_core.pdf.revocation -> pyhanko_certvalidator"]
+unmatched_ignore_imports_alerting = "none"
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "datum_core layers run downward"
+type = "layers"
+containers = ["datum_core"]
+# Every module is optional (parentheses) so the contract holds while the subpackages are still to be written.
+# Order follows the built dependencies: events call hooks, hooks and config raise checks. The run protocol,
+# the engine layer and the strict JSON reader are argusvane-datum-sandbox's. `loggers` is an ungoverned leaf (names only).
+layers = [
+  "(aio) | (testing)",
+  "(datum)",
+  "(http) | (observe)",
+  "(submissions) : (builder) : (pdf) : (timestamp)",
+  "(forms)",
+  "(events)",
+  "(hooks)",
+  "(throttle)",
+  "(config) | (health) | (stores)",
+  "(checks)",
+  "(canonical) : (jcs)",
+  "(semver)",
+]
+
+[[tool.importlinter.contracts]]
+name = "datum_sandbox.wasi imports nothing of Datum and no third-party package (the generic WASI layer)"
+type = "forbidden"
+source_modules = ["datum_sandbox.wasi"]
+forbidden_modules = [
+  "datum_sandbox.protocol", "datum_sandbox.runtime", "datum_sandbox.diagnostics", "datum_sandbox.json",
+  "datum_sandbox.checks", "datum_sandbox.loggers", "datum_sandbox.testing", "datum_sandbox.aio",
+  "datum_core", "datum_fastapi", "datum_sandbox_wasmtime", "datum_programs", "datum_qjs_wasm",
+  "wasmtime", "pydantic", "pydantic_settings", "anyio", "opentelemetry", "fastapi", "starlette", "httpx", "httpx2",
+]
+allow_indirect_imports = false
+
+[[tool.importlinter.contracts]]
+name = "datum_sandbox imports no other Datum distribution, no engine, no framework and no settings loader"
+type = "forbidden"
+source_modules = ["datum_sandbox"]
+forbidden_modules = [
+  "datum_core", "datum_fastapi", "datum_sandbox_wasmtime", "wasmtime", "pydantic", "pydantic_settings",
+  "opentelemetry", "fastapi", "starlette", "django", "flask", "litestar", "asgiref", "httpx", "httpx2",
+]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "datum_sandbox uses anyio only in its aio module and pytest only in its testing kit"
+type = "forbidden"
+source_modules = ["datum_sandbox"]
+forbidden_modules = ["anyio", "pytest"]
+ignore_imports = ["datum_sandbox.aio -> anyio", "datum_sandbox.testing.** -> pytest"]
+unmatched_ignore_imports_alerting = "none"
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "datum_sandbox layers run downward"
+type = "layers"
+containers = ["datum_sandbox"]
+layers = [
+  "(aio) | (testing)",
+  "(runtime)",
+  "(diagnostics)",
+  "(protocol)",
+  "(checks) | (json) | (loggers)",
+  "(wasi)",
+]
+
+[[tool.importlinter.contracts]]
+name = "datum_sandbox_wasmtime reaches only the WASI layer of datum_sandbox, and no anyio or web framework"
+type = "forbidden"
+source_modules = ["datum_sandbox_wasmtime"]
+forbidden_modules = [
+  "datum_core", "datum_fastapi", "datum_sandbox.protocol", "datum_sandbox.runtime", "datum_sandbox.diagnostics",
+  "datum_sandbox.testing", "datum_sandbox.aio", "datum_sandbox.checks", "datum_sandbox.json", "datum_sandbox.loggers",
+  "anyio", "fastapi", "starlette", "django", "flask", "litestar", "asgiref", "pydantic_settings",
+]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "datum_fastapi reaches the runtime through entry points only"
+type = "forbidden"
+source_modules = ["datum_fastapi"]
+forbidden_modules = ["wasmtime", "datum_sandbox_wasmtime"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "resource distributions import nothing from Datum"
+type = "forbidden"
+source_modules = ["datum_programs", "datum_qjs_wasm", "datum_assets_ui", "datum_assets_pdf"]
+forbidden_modules = ["datum_core", "datum_sandbox", "datum_sandbox_wasmtime", "datum_fastapi"]
+
+# deptry runs once per member from the member directory (`deptry .`); its tables live in each member pyproject.toml.
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Tests and coverage (the members carry the same tables for runs from their own directory)
+# ---------------------------------------------------------------------------------------------------------------------
+[tool.pytest.ini_options]
+addopts = ["--strict-markers", "--strict-config"]
+timeout = 120
+timeout_method = "thread"
+xfail_strict = true
+filterwarnings = ["error"]
+markers = [
+  "runtime: needs the wasm runtime",
+  "containers: needs Docker",
+  "browser: Playwright, own process",
+  "server: boots a server process (uvicorn, host-check); serial, never under xdist",
+  "openssl: needs the openssl binary (the timestamp cross-check); skipped with a reason when absent",
+]
+# anyio plugin mode is left unset: modules opt in with pytestmark = pytest.mark.anyio
+
+[tool.coverage.run]
+branch = true
+patch = ["subprocess"]
+
+[tool.coverage.report]
+fail_under = 0  # placeholder: per-member floors are set in each member's pyproject when it has code
+show_missing = true

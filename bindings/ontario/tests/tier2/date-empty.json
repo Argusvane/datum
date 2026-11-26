@@ -1,0 +1,15 @@
+{
+  "note": "tier 2: Datum's date in Ontario's HTML and tokens, empty, year first",
+  "components": [
+    {
+      "id": "start",
+      "type": "date",
+      "configuration": {
+        "label": "Start date",
+        "description": "For example, 2026 5 14.",
+        "required": true
+      }
+    }
+  ],
+  "width": 560
+}

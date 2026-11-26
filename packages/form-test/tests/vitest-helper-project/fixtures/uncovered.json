@@ -1,0 +1,25 @@
+{
+  "id": "helper-project-uncovered",
+  "version": "1.0.0",
+  "schemaVersion": "1.0.0",
+  "root": {
+    "id": "form",
+    "type": "form",
+    "configuration": { "label": "Helper project form with an untested rule" },
+    "children": {
+      "content": [
+        { "id": "wants_details", "type": "checkbox", "configuration": { "label": "Tell us more" } },
+        { "id": "nickname", "type": "text", "configuration": { "label": "Nickname" }, "rules": { "visibleWhen": "wants_details = true" } },
+        { "id": "phone", "type": "text", "configuration": { "label": "Phone" }, "rules": { "requiredWhen": "wants_details = true" } }
+      ]
+    }
+  },
+  "tests": {
+    "scenarios": [
+      {
+        "id": "t1",
+        "source": "test \"the nickname follows the box\"\n  expect nickname hidden\n  set wants_details = true\n  expect nickname visible"
+      }
+    ]
+  }
+}

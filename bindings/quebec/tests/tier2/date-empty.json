@@ -1,0 +1,15 @@
+{
+  "note": "an empty date: the toolkit's text fields in a fieldset, day, month and year",
+  "components": [
+    {
+      "id": "start",
+      "type": "date",
+      "configuration": {
+        "label": "Start date",
+        "description": "For example, 27 3 2027.",
+        "required": true
+      }
+    }
+  ],
+  "width": 560
+}

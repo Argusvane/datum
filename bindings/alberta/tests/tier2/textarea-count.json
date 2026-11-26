@@ -1,0 +1,22 @@
+{
+  "note": "the character count under a textarea, in goa-textarea's counter face",
+  "components": [
+    {
+      "id": "about",
+      "type": "textarea",
+      "configuration": {
+        "label": "About you",
+        "maxLength": 100,
+        "characterCount": true
+      }
+    }
+  ],
+  "steps": [
+    {
+      "op": "type",
+      "id": "about",
+      "text": "Hello"
+    }
+  ],
+  "width": 560
+}

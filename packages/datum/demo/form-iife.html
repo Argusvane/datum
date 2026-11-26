@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>datum-form — classic script</title>
+    <link rel="stylesheet" href="/dist/datum-form.css" />
+    <!-- No module support needed: the IIFE build defines the element on load and exposes the
+         package's API as window.DatumForm. -->
+    <script src="/dist/datum-form.iife.js"></script>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; background: #f6f7f9; color: #1d2b36; }
+      .page { max-width: 900px; margin: 0 auto; padding: 24px 20px 60px; }
+      header { display: flex; align-items: baseline; gap: 16px; margin-bottom: 16px; }
+      header h1 { font-size: 20px; margin: 0; }
+      .sheet { background: #fff; border: 1px solid #dfe5ec; border-radius: 10px; padding: 24px; }
+      pre { background: #fff; border: 1px solid #dfe5ec; border-radius: 10px; padding: 16px; font-size: 13px; white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <h1>&lt;datum-form&gt; — classic script</h1>
+        <a href="/demo/">All demos</a>
+      </header>
+      <main class="sheet">
+        <!-- The definition can be inlined as JSON on the tag; here it is fetched by the page
+             below to keep the markup readable. The default theme this time. -->
+        <datum-form id="form" language-switcher></datum-form>
+      </main>
+      <h2>Last event</h2>
+      <pre id="out">(nothing yet — window.DatumForm is <span id="api"></span>)</pre>
+    </div>
+
+    <script>
+      document.getElementById("api").textContent = typeof window.DatumForm;
+      var form = document.getElementById("form");
+      var out = document.getElementById("out");
+      form.dataSources = { countries: [{ value: "CA", label: "Canada" }, { value: "US", label: "United States" }] };
+      fetch("/demo/intake-form.json")
+        .then(function (response) { return response.json(); })
+        .then(function (definition) { form.definition = definition; });
+      form.addEventListener("datum-submit", function (event) {
+        out.textContent = JSON.stringify(event.detail, null, 2);
+      });
+      form.addEventListener("datum-change", function (event) {
+        out.textContent = "datum-change " + JSON.stringify(event.detail.values);
+      });
+    </script>
+  </body>
+</html>

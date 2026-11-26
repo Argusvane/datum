@@ -1,0 +1,24 @@
+{
+  "designSystem": "Alberta Design System",
+  "binding": "src/index.ts",
+  "stylesheets": [
+    "/node_modules/abgov-web-components-3.2.0/index.css"
+  ],
+  "scripts": [
+    "/node_modules/abgov-web-components-3.2.0/index.js"
+  ],
+  "network": [
+    {
+      "host": "fonts.googleapis.com",
+      "reason": "index.css @imports Roboto Mono from Google Fonts; no pinned package ships it"
+    },
+    {
+      "host": "fonts.gstatic.com",
+      "reason": "the font files of that Roboto Mono stylesheet"
+    },
+    {
+      "host": "use.typekit.net",
+      "reason": "index.css loads the acumin faces from Adobe Fonts, which serves them only from there"
+    }
+  ]
+}

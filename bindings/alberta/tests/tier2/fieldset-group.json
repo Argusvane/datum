@@ -1,0 +1,32 @@
+{
+  "note": "a named group: a fieldset with the legend and help text in Alberta's heading and help-text tokens",
+  "components": [
+    {
+      "id": "address",
+      "type": "fieldset",
+      "configuration": {
+        "label": "Address",
+        "description": "Where you live."
+      },
+      "children": {
+        "content": [
+          {
+            "id": "street",
+            "type": "text",
+            "configuration": {
+              "label": "Street"
+            }
+          },
+          {
+            "id": "city",
+            "type": "text",
+            "configuration": {
+              "label": "City"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "width": 560
+}

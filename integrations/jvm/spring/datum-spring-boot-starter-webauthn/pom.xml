@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.argusvane</groupId>
+    <artifactId>datum-parent</artifactId>
+    <version>${revision}</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>datum-spring-boot-starter-webauthn</artifactId>
+  <packaging>jar</packaging>
+  <name>datum-spring-boot-starter-webauthn</name>
+  <description>Starter: passkey registration and signed submissions.</description>
+  <properties>
+    <!-- No tests here and no JUnit on the class path: surefire refuses a groups filter without a JUnit engine, so the root
+         pom's default exclusion of the containers tag is switched off for a module that has none. -->
+    <datum.test.excludedGroups></datum.test.excludedGroups>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-webauthn-spring</artifactId>
+    </dependency>
+    <!-- Signed submissions are the receiver's: datum-submissions-spring (optional in datum-webauthn-spring) and its runtime come with this starter, so the
+         signature check is wired without the application adding anything. An application that only registers passkeys uses datum-webauthn-spring alone. -->
+    <dependency>
+      <groupId>com.argusvane</groupId>
+      <artifactId>datum-spring-boot-starter-submissions</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+  </dependencies>
+</project>

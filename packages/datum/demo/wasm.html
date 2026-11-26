@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>datum-form — validate in the sandbox</title>
+    <link rel="stylesheet" href="/dist/datum-form.css" />
+    <script type="module" src="/dist/datum-form.js"></script>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; background: #f6f7f9; color: #1d2b36; }
+      .page { max-width: 1100px; margin: 0 auto; padding: 24px 20px 60px; display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; }
+      header { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 16px; }
+      header h1 { font-size: 20px; margin: 0; }
+      header a { color: #2f6feb; }
+      .sheet { background: #fff; border: 1px solid #dfe5ec; border-radius: 10px; padding: 24px; }
+      .log { background: #fff; border: 1px solid #dfe5ec; border-radius: 10px; padding: 16px; font-size: 13px; }
+      .log h2 { font-size: 14px; margin: 0 0 8px; }
+      .log p { margin: 0 0 12px; }
+      .log pre { margin: 0; white-space: pre-wrap; word-break: break-word; max-height: 60vh; overflow: auto; }
+      .status { display: inline-block; margin-bottom: 12px; padding: 4px 8px; border-radius: 6px; background: #eef2f6; }
+      @media (max-width: 800px) { .page { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <h1>&lt;datum-form wasm="auto"&gt; — validate in the sandbox</h1>
+        <a href="/demo/">All demos</a>
+      </header>
+
+      <main class="sheet">
+        <!-- wasm="auto": once the form is ready, the element fetches /dist/datum-wasm.js (the QuickJS
+             sandbox, beside the bundle) and wires it with the rules below; every submit then runs in
+             it. A submit before it arrives waits for it. -->
+        <!-- wasm-log-level: what the run's log keeps; it comes back on datum-wasm-validated. -->
+        <datum-form id="form" wasm="auto" wasm-log-level="debug" src="/demo/intake-form.json"></datum-form>
+      </main>
+
+      <aside class="log">
+        <p>
+          Type a first name alone, or pick Mexico and Phone, then submit: the sandbox's verdict
+          shows on the form, worded by the page's messages.
+        </p>
+        <span id="sandbox" class="status">Sandbox: loading…</span>
+        <h2>Events</h2>
+        <pre id="events">(waiting for datum-ready)</pre>
+      </aside>
+    </div>
+
+    <script type="module">
+      const form = document.getElementById("form");
+      const events = document.getElementById("events");
+      const status = document.getElementById("sandbox");
+      const lines = [];
+      const log = (line) => {
+        lines.unshift(`${new Date().toLocaleTimeString()}  ${line}`);
+        events.textContent = lines.slice(0, 40).join("\n");
+      };
+
+      form.dataSources = {
+        countries: [
+          { value: "CA", label: "Canada" },
+          { value: "US", label: "United States" },
+          { value: "MX", label: "Mexico" }
+        ]
+      };
+
+      // Rules of the page's own, run at submit inside the sandbox after the field constraints,
+      // which run there too. An ES2020 program whose value is a module object with validators:
+      // each takes the submission (values, locale, formId, externalData) and returns the error
+      // contract, a code and the field it belongs to, never text. No closures, no Date, no
+      // Math.random, no fetch: the sandbox has none of them.
+      form.wasmPlugins = [
+        {
+          id: "intake-rules",
+          version: "1.0.0",
+          source: `
+            ({
+              validators: [
+                (context) => {
+                  const errors = [];
+                  // A full name has a first and a last name in it.
+                  const name = context.values.fullName;
+                  if (typeof name === "string" && name.trim() !== "" && !name.trim().includes(" ")) {
+                    errors.push({ code: "custom.fullNameIncomplete", componentId: "fullName", path: "fullName", stage: "intake-rules", source: "custom" });
+                  }
+                  // Phone contact is offered in some countries only: a rule over two fields, against
+                  // the list the page injected (the sandbox cannot fetch one; see wasmExternalData).
+                  const offered = (context.externalData || {}).phoneCountries || [];
+                  const country = context.values.country;
+                  context.log.debug("phone contact", { method: context.values.contactMethod, country, offered });
+                  if (context.values.contactMethod === "phone" && country && !offered.includes(country)) {
+                    errors.push({ code: "custom.phoneNotOffered", componentId: "contactMethod", path: "contactMethod", stage: "intake-rules", source: "custom" });
+                  }
+                  // What a rule says travels back with the outcome: the sandbox has no console.
+                  context.log.info("intake rules: " + errors.length + " error(s)");
+                  return { errors };
+                }
+              ]
+            })
+          `
+        }
+      ];
+
+      // What the rules read beside the values, gathered by the page for each submit: the sandbox
+      // never fetches. A real page would ask its server; a list stands in here.
+      form.wasmExternalData = () => ({ phoneCountries: ["CA", "US"] });
+
+      // The sandbox returns codes; the text is the page's, per locale, like any validation message.
+      form.messages = {
+        required: { default: "This field is required.", locales: { "fr-CA": "Ce champ est requis." } },
+        "custom.fullNameIncomplete": { default: "Enter your first and last name.", locales: { "fr-CA": "Entrez votre prénom et votre nom." } },
+        "custom.phoneNotOffered": { default: "Phone contact is not offered in that country yet.", locales: { "fr-CA": "Le contact par téléphone n'est pas encore offert dans ce pays." } },
+        // Should the sandbox fail to run at all, the submission is blocked under this code.
+        "wasm.execution_error": { default: "Validation could not run. Try again.", locales: { "fr-CA": "La validation n'a pas pu s'exécuter. Réessayez." } }
+      };
+
+      form.addEventListener("datum-ready", () => log("datum-ready"));
+      form.addEventListener("datum-wasm-ready", () => {
+        status.textContent = "Sandbox: in place";
+        log("datum-wasm-ready");
+      });
+      form.addEventListener("datum-error", (event) => {
+        status.textContent = `Sandbox: ${event.detail.message}`;
+        log(`datum-error ${event.detail.message}`);
+      });
+      form.addEventListener("datum-change", (event) => log(`datum-change ${event.detail.path} = ${JSON.stringify(event.detail.value)}`));
+      // The run log, back with the outcome: what the kernel did, step by step, and what the rules said.
+      form.addEventListener("datum-wasm-validated", (event) => {
+        const { blocked, durationMs, logs } = event.detail;
+        log(`datum-wasm-validated ${blocked ? "blocked" : "accepted"} in ${durationMs} ms\n${logs.map((entry) => `  ${entry.level}  ${entry.message}${entry.data !== undefined ? "  " + JSON.stringify(entry.data) : ""}`).join("\n")}`);
+      });
+      form.addEventListener("datum-submit", (event) => {
+        const { accepted, submission, errors } = event.detail;
+        // Accepted: the envelope holds the sanitized values, any key the form does not define stripped.
+        log(
+          accepted
+            ? `datum-submit accepted; the sanitized values:\n${JSON.stringify(submission.submission.values, null, 2)}`
+            : `datum-submit rejected: ${errors.map((e) => `${e.componentId ?? "form"}:${e.code}`).join(", ")}`
+        );
+      });
+    </script>
+  </body>
+</html>

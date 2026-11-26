@@ -1,0 +1,197 @@
+{
+  "abi": "4.1.0",
+  "goldenCase": {
+    "canonicalLength": 6369,
+    "canonicalSha256": "85fd7e58bcec11748bdae11c5020723e69e1b9b20c1ede2741018810f2f20830"
+  },
+  "documents": [
+    {
+      "name": "numbers",
+      "input": "{\"a\":1e21,\"b\":-0,\"c\":5e-7,\"d\":9007199254740993,\"e\":0.1,\"f\":123456789012345680000,\"g\":1.5e300,\"h\":[0.30000000000000004,1e-7,100,1.0,5.0]}",
+      "canonical": "{\"a\":1e+21,\"b\":0,\"c\":5e-7,\"d\":9007199254740992,\"e\":0.1,\"f\":123456789012345680000,\"g\":1.5e+300,\"h\":[0.30000000000000004,1e-7,100,1,5]}",
+      "digest": "a25f701d09072af9938d21efa1a4054859e4eb7d0e529a7b49ca2fe04cc8a70f"
+    },
+    {
+      "name": "integer-like keys",
+      "input": "{\"10\":\"ten\",\"2\":\"two\",\"4294967295\":\"max\",\"01\":\"zero-one\",\"1\":\"one\",\"b\":1,\"a\":2}",
+      "canonical": "{\"1\":\"one\",\"2\":\"two\",\"10\":\"ten\",\"01\":\"zero-one\",\"4294967295\":\"max\",\"a\":2,\"b\":1}",
+      "digest": "108bbaa686845fbe34e0560353b37979316f01b4743afe9592e36d09e9628bdc"
+    },
+    {
+      "name": "prototype keys",
+      "input": "{\"__proto__\":{\"x\":1},\"constructor\":2,\"toString\":3,\"a\":4}",
+      "canonical": "{\"__proto__\":{\"x\":1},\"a\":4,\"constructor\":2,\"toString\":3}",
+      "digest": "c7016b25e03d6c72486c541da38c8004be2571ed797941bcc162e5f9b3416b0d"
+    },
+    {
+      "name": "separators and surrogates",
+      "input": "{\"s\":\"a\\u2028b\\u2029c\",\"lone\":\"\\ud800\",\"pair\":\"\\ud83d\\ude00\"}",
+      "canonical": "{\"lone\":\"\\ud800\",\"pair\":\"😀\",\"s\":\"a b c\"}",
+      "digest": "db67dfb3691e3cc51be394c32f0c802d35587cc9888bfa3e7c7ccb955441c69d"
+    },
+    {
+      "name": "astral keys",
+      "input": "{\"\\ud83d\\ude00\":1,\"\\uffff\":2,\"z\":3,\"\\u00e9\":4}",
+      "canonical": "{\"z\":3,\"é\":4,\"😀\":1,\"￿\":2}",
+      "digest": "64a060c38275196176e156dab3b3c26ddeee5d437739cf73fa2a2517169c8b3d"
+    },
+    {
+      "name": "case",
+      "input": "{\"B\":1,\"a\":2,\"Ab\":3,\"aa\":4}",
+      "canonical": "{\"Ab\":3,\"B\":1,\"a\":2,\"aa\":4}",
+      "digest": "979300eae49b405b43296ba17658fd35a5cca94c30730d3ed8d7c8d54de50058"
+    },
+    {
+      "name": "punctuation",
+      "input": "{\"a-b\":1,\"a_b\":2,\"a.b\":3,\"ab\":4,\"a b\":5}",
+      "canonical": "{\"a b\":5,\"a-b\":1,\"a.b\":3,\"a_b\":2,\"ab\":4}",
+      "digest": "98908e9d20bcc36e7a95db51e102b12492136cbde65aa5fef5d0b9a47037b5c2"
+    },
+    {
+      "name": "empty containers",
+      "input": "{\"o\":{},\"l\":[],\"n\":null,\"s\":\"\"}",
+      "canonical": "{\"l\":[],\"n\":null,\"o\":{},\"s\":\"\"}",
+      "digest": "5e73aa0dc7091dc36a343a2332b6a94088786f043331f6387a9eab80e203562b"
+    },
+    {
+      "name": "strings",
+      "input": "{\"q\":\"say \\\"hi\\\"\",\"bs\":\"a\\\\b\",\"nl\":\"x\\ny\\tz\",\"ctl\":\"\\u0001\\u001f\",\"sol\":\"a/b\",\"uni\":\"café 你好 🙂\"}",
+      "canonical": "{\"bs\":\"a\\\\b\",\"ctl\":\"\\u0001\\u001f\",\"nl\":\"x\\ny\\tz\",\"q\":\"say \\\"hi\\\"\",\"sol\":\"a/b\",\"uni\":\"café 你好 🙂\"}",
+      "digest": "d875109aec02343a89cbfbfc86aa940d2ea4c2dafdce38ad9605c7fda2b7102a"
+    },
+    {
+      "name": "shared: plain",
+      "input": "{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"fullName\":\"Ada Lovelace\",\"email\":\"ada@example.com\"}}}",
+      "canonical": "{\"submission\":{\"locale\":\"en\",\"values\":{\"email\":\"ada@example.com\",\"fullName\":\"Ada Lovelace\"}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+      "digest": "3dd42e046b23809fb06b548fb14653b11524016a6b8626f8c33195986726bcd2"
+    },
+    {
+      "name": "shared: nested and lists",
+      "input": "{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"items[0].sku\":\"A-1\",\"items[1].sku\":\"B-2\",\"tags\":[\"b\",\"a\"],\"address\":{\"street\":\"1 Main\",\"city\":\"Ottawa\"}}}}",
+      "canonical": "{\"submission\":{\"locale\":\"en\",\"values\":{\"address\":{\"city\":\"Ottawa\",\"street\":\"1 Main\"},\"items[0].sku\":\"A-1\",\"items[1].sku\":\"B-2\",\"tags\":[\"b\",\"a\"]}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+      "digest": "bc1f018c8447a21cb6fe5c6f532987b3c37f1863a72a6f64bb5dcbfdf13ad238"
+    },
+    {
+      "name": "shared: empty object and array",
+      "input": "{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"empty\":{},\"list\":[],\"nothing\":null}}}",
+      "canonical": "{\"submission\":{\"locale\":\"en\",\"values\":{\"empty\":{},\"list\":[],\"nothing\":null}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+      "digest": "2c4574681d4d7ee6a5eaf7d0c93278691ac31d755f59fe662601f1a058a91731"
+    },
+    {
+      "name": "shared: integer-like keys first",
+      "input": "{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"1\":\"one\",\"2\":\"two\",\"10\":\"ten\",\"b\":1,\"a\":2,\"01\":\"zero-one\"}}}",
+      "canonical": "{\"submission\":{\"locale\":\"en\",\"values\":{\"1\":\"one\",\"2\":\"two\",\"10\":\"ten\",\"01\":\"zero-one\",\"a\":2,\"b\":1}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+      "digest": "a43c33777a45fb92316159952c9a662852d830b43dd0d8e8cfbb285469638a5c"
+    },
+    {
+      "name": "shared: numbers",
+      "input": "{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"int\":42,\"neg\":-7,\"frac\":0.1,\"third\":0.3333333333333333,\"big\":1e+21,\"bigger\":1.5e+300,\"small\":1e-7,\"smallish\":0.000001,\"e20\":123456789012345680000,\"zero\":0,\"negZero\":0,\"whole\":5}}}",
+      "canonical": "{\"submission\":{\"locale\":\"en\",\"values\":{\"big\":1e+21,\"bigger\":1.5e+300,\"e20\":123456789012345680000,\"frac\":0.1,\"int\":42,\"neg\":-7,\"negZero\":0,\"small\":1e-7,\"smallish\":0.000001,\"third\":0.3333333333333333,\"whole\":5,\"zero\":0}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+      "digest": "e87eb86a9fb34943f0f35e4dcca948a7b9d652a791dec2da512ebc13e837af09"
+    },
+    {
+      "name": "shared: strings",
+      "input": "{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"quote\":\"say \\\"hi\\\"\",\"slash\":\"a/b\\\\c\",\"nl\":\"line\\nbreak\\ttab\",\"ctl\":\"\\u0001\\u001f\",\"unicode\":\"café 你好 🙂\",\"sep\":\"a b c\",\"html\":\"<b>&amp;</b>\"}}}",
+      "canonical": "{\"submission\":{\"locale\":\"en\",\"values\":{\"ctl\":\"\\u0001\\u001f\",\"html\":\"<b>&amp;</b>\",\"nl\":\"line\\nbreak\\ttab\",\"quote\":\"say \\\"hi\\\"\",\"sep\":\"a b c\",\"slash\":\"a/b\\\\c\",\"unicode\":\"café 你好 🙂\"}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+      "digest": "7dd34efcba0e4f673db1a1c8a1501b686541c5c0e6df2ce3b84c5ed3bc412e7a"
+    },
+    {
+      "name": "shared: booleans",
+      "input": "{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"yes\":true,\"no\":false}}}",
+      "canonical": "{\"submission\":{\"locale\":\"en\",\"values\":{\"no\":false,\"yes\":true}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+      "digest": "9c7404056f7fe8121ee9c20601f2e3d59bc10b3fae2451f1e21471f000fca1a7"
+    },
+    {
+      "name": "shared: wrapper",
+      "input": "{\"format\":{\"scope\":\"envelope\",\"placement\":\"wrapper\"},\"payload\":{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"x\":1}}},\"signatures\":[{\"provider\":\"demo\",\"value\":\"abc\"}]}",
+      "canonical": "{\"format\":{\"placement\":\"wrapper\",\"scope\":\"envelope\"},\"payload\":{\"submission\":{\"locale\":\"en\",\"values\":{\"x\":1}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}},\"signatures\":[{\"provider\":\"demo\",\"value\":\"abc\"}]}",
+      "digest": "0bc468ca704201957840075368884220adc53c19d84efd882a6f7061891e4a22"
+    },
+    {
+      "name": "shared: case",
+      "input": "{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"B\":1,\"a\":2,\"Ab\":3,\"aa\":4}}}",
+      "canonical": "{\"submission\":{\"locale\":\"en\",\"values\":{\"Ab\":3,\"B\":1,\"a\":2,\"aa\":4}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+      "digest": "8c859432784eaf24327cb54f3a5f53b7c8608ec3eff1243d01c8e08e785cd44d"
+    },
+    {
+      "name": "shared: punctuation",
+      "input": "{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"a-b\":1,\"ab\":2,\"a_b\":3,\"a.b\":4,\"a b\":5}}}",
+      "canonical": "{\"submission\":{\"locale\":\"en\",\"values\":{\"a b\":5,\"a-b\":1,\"a.b\":4,\"a_b\":3,\"ab\":2}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+      "digest": "f9ede5370e42655bc0c1583ca8d258b291af580dc3964e5df78c987f9c25b581"
+    },
+    {
+      "name": "shared: astral",
+      "input": "{\"versionContext\":{\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"},\"client\":{\"runtimeVersion\":\"1.0.0\",\"rendererVersion\":\"1.0.0\",\"schemaVersion\":\"1\"}},\"submission\":{\"locale\":\"en\",\"values\":{\"😀\":\"emoji key\",\"�\":\"replacement\",\"z\":\"z\"}}}",
+      "canonical": "{\"submission\":{\"locale\":\"en\",\"values\":{\"z\":\"z\",\"😀\":\"emoji key\",\"�\":\"replacement\"}},\"versionContext\":{\"client\":{\"rendererVersion\":\"1.0.0\",\"runtimeVersion\":\"1.0.0\",\"schemaVersion\":\"1\"},\"form\":{\"id\":\"f\",\"version\":\"1.0.0\"}}}",
+      "digest": "fcbaf664c954ac7ebad90d99216ab9959aa61144872128da665b3cd688c6c5af"
+    }
+  ],
+  "controls": {
+    "CTL-01": {
+      "accepted": true,
+      "errors": [],
+      "values": {
+        "addr.city": "Ottawa",
+        "addr.pick": "ok",
+        "code": "AB1234",
+        "name": "Ada Lovelace",
+        "rows[0].n": 1,
+        "rows[0].sku": "s1",
+        "tags": {
+          "x": true,
+          "y": false
+        }
+      }
+    },
+    "CTL-02": {
+      "accepted": false,
+      "errors": [
+        "required@name"
+      ]
+    },
+    "CTL-03": {
+      "accepted": false,
+      "errors": [
+        "maxLength@name"
+      ]
+    },
+    "CTL-04": {
+      "accepted": false,
+      "errors": [
+        "pattern@code"
+      ]
+    },
+    "CTL-05": {
+      "accepted": true,
+      "errors": [],
+      "values": {
+        "addr.city": "Ottawa",
+        "addr.pick": "ok",
+        "code": "AB1234",
+        "name": "Ada Lovelace",
+        "rows[0].n": 1,
+        "rows[0].sku": "s1",
+        "tags": {
+          "x": true,
+          "y": false
+        }
+      }
+    },
+    "CTL-06": {
+      "accepted": true,
+      "errors": [],
+      "values": {
+        "addr.city": "Ottawa",
+        "addr.pick": "ok",
+        "code": "AB1234",
+        "name": "Ada Lovelace",
+        "rows[0].n": 1,
+        "rows[0].sku": "s1",
+        "tags": {
+          "x": true,
+          "y": false
+        }
+      }
+    }
+  }
+}

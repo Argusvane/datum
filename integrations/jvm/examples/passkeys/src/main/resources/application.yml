@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: Petition
+  datasource:
+    # In memory for the example; any JDBC database works the same (see the V400 scripts per dialect).
+    url: jdbc:h2:mem:passkeys;DB_CLOSE_DELAY=-1
+  flyway:
+    # Datum ships one migration per dialect under META-INF/datum/db/migration/<vendor>; Flyway fills {vendor}
+    # (h2, postgresql, mysql). The version is Datum's V400, so it sorts clear of your own and of the other Datum modules'.
+    locations: classpath:META-INF/datum/db/migration/{vendor}
+
+datum:
+  jdbc:
+    # Flyway makes the tables here, so Datum is told not to: never. (The default, embedded, would make them in this in-memory
+    # database too, but only when they are missing, so the two would not clash either; never states who owns the schema.)
+    initialize-schema: never
+  host:
+    time-zone: America/Toronto
+  # Every Datum route is off until switched on: the petition form is read, checked and delivered (the passkey routes
+  # are the datum.webauthn switch below).
+  web:
+    api:
+      endpoints:
+        definition: true
+        submissions: true
+        validate: true
+  webauthn:
+    enabled: true
+    # The relying party: the domain passkeys are bound to, and the origins a browser may write. localhost needs no https.
+    rp-id: localhost
+    rp-name: Petition
+    origins: http://localhost:8080
+    # Only people who are signed in sign here (Spring Security below); the challenge's HMAC key comes from the environment in production.
+    anonymous: false
+    secret: ${PASSKEY_SECRET:an-example-secret-that-is-at-least-32-bytes-long}
+    # The form that signs. A signature is required; the words are signed with the answers.
+    forms:
+      petition:
+        mode: required
+        statement: I confirm that these answers are mine.

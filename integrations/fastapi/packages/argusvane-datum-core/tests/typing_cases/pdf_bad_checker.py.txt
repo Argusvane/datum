@@ -1,0 +1,14 @@
+from collections.abc import Sequence
+from datetime import datetime
+
+from datum_core.pdf import RevocationChecker
+
+
+class Yes:
+    def status(
+        self, chain: Sequence[bytes], moment: datetime, *, crls: Sequence[bytes] = (), ocsps: Sequence[bytes] = ()
+    ) -> bool:
+        return True
+
+
+bad: RevocationChecker = Yes()

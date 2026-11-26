@@ -1,0 +1,30 @@
+<!-- datum-reference
+{
+  "source": "bootstrap 5.3.8: https://getbootstrap.com/docs/5.3/forms/form-control/ with Bootstrap's :focus ring (a real focus, given by the case)",
+  "note": "a text field with focus",
+  "components": [
+    {
+      "id": "field1",
+      "type": "text",
+      "configuration": {
+        "label": "City"
+      }
+    }
+  ],
+  "focus": "input",
+  "steps": [
+    {
+      "op": "focus",
+      "id": "field1"
+    }
+  ],
+  "root": "form",
+  "width": 560
+}
+-->
+<form novalidate>
+<div class="mb-3">
+<label class="form-label" for="field1">City</label>
+<input class="form-control" id="field1" name="field1" type="text">
+</div>
+</form>
