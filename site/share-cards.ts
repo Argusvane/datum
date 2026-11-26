@@ -1,6 +1,7 @@
 import { basename } from "node:path";
 import type { HtmlTagDescriptor, Plugin } from "vite";
 import site from "./site.json";
+import { ARGUSVANE_URL } from "./src/argusvane";
 
 /**
  * Link previews and the canonical address for every page: Open Graph and Twitter tags made from
@@ -9,7 +10,25 @@ import site from "./site.json";
  * The card image and the addresses must be absolute, so they are added only when the build
  * knows the site's full address: `SITE_URL` (base path included) when set, else the site's
  * origin in site.json under `SITE_BASE`. `shareCardTags` itself given no address returns the words alone.
+ * Every page names Argusvane, the company that builds Datum, as its author and in the site name; the home page
+ * also carries a JSON-LD record of the site with Argusvane as its publisher.
  */
+
+/** The site's name in a link preview, on the marketing pages and the docs alike. */
+export const SITE_NAME = "Datum by Argusvane";
+export const AUTHOR = "Argusvane";
+
+/** The home page's JSON-LD: the site, and Argusvane as its publisher. */
+export function siteRecord(address: string | undefined): string {
+  const record = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Datum",
+    ...(address ? { url: address } : {}),
+    publisher: { "@type": "Organization", name: AUTHOR, url: ARGUSVANE_URL }
+  };
+  return JSON.stringify(record);
+}
 
 /** The site's full address for a build: `SITE_URL` as given, else the origin in site.json under `SITE_BASE` ("/" by default). */
 export function resolveSiteUrl(env: Record<string, string | undefined> = process.env): string {
@@ -44,7 +63,11 @@ export function shareCardTags(html: string, page: string, siteUrl: string | unde
     attrs: { [key]: name, content },
     injectTo: "head"
   });
-  const tags: HtmlTagDescriptor[] = [meta("property", "og:type", "website"), meta("property", "og:site_name", "Datum")];
+  const tags: HtmlTagDescriptor[] = [
+    meta("property", "og:type", "website"),
+    meta("property", "og:site_name", SITE_NAME),
+    meta("name", "author", AUTHOR)
+  ];
   if (title) {
     tags.push(meta("property", "og:title", title));
   }
@@ -52,6 +75,9 @@ export function shareCardTags(html: string, page: string, siteUrl: string | unde
     tags.push(meta("property", "og:description", description));
   }
   const base = siteUrl?.trim().replace(/\/+$/, "");
+  if (page === "index.html") {
+    tags.push({ tag: "script", attrs: { type: "application/ld+json" }, children: siteRecord(base ? `${base}/` : undefined), injectTo: "head" });
+  }
   if (!base) {
     tags.push(meta("name", "twitter:card", "summary"));
     return tags;

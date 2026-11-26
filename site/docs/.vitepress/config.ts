@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { defineConfig } from "vitepress";
-import { DEFAULT_SHARE_CARD, SHARE_CARD_SIZE, resolveSiteUrl } from "../../share-cards";
+import { AUTHOR, DEFAULT_SHARE_CARD, SHARE_CARD_SIZE, SITE_NAME, resolveSiteUrl } from "../../share-cards";
 
 // The docs site is served under the marketing site at <SITE_BASE>docs/. SITE_BASE is the path the
 // marketing site is served from ("/" by default, "/<repo>/" for project pages); the Pages workflow
@@ -60,7 +60,8 @@ export default defineConfig({
     return [
       ["link", { rel: "canonical", href: address }],
       meta("property", "og:type", "website"),
-      meta("property", "og:site_name", "Datum"),
+      meta("property", "og:site_name", SITE_NAME),
+      meta("name", "author", AUTHOR),
       meta("property", "og:title", title),
       meta("property", "og:description", frontmatter.description || pageData.description || description),
       meta("property", "og:url", address),
@@ -82,7 +83,9 @@ export default defineConfig({
       { text: "Reference", link: "/form-element", activeMatch: `^/(${referencePages})$` },
       // Back to the marketing site. Relative (every page sits one level under /docs/, so keep the
       // tree flat) and with a target, so the docs router leaves it alone.
-      { text: "Site", link: "../", target: "_self" }
+      { text: "Site", link: "../", target: "_self" },
+      // The company that builds Datum; VitePress marks an external link with its arrow.
+      { text: "Argusvane", link: "https://argusvane.com" }
     ],
     sidebar: [
       {

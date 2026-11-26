@@ -289,6 +289,23 @@ describe("site build", () => {
     }
   });
 
+  it("credits Argusvane in every page's header and footer, drawn from the one sprite on the page", () => {
+    for (const file of [...pages, "404.html"]) {
+      const html = readFileSync(new URL(`../${outDir}/${file}`, import.meta.url), "utf8");
+      const header = html.slice(html.indexOf('<header class="nav">'), html.indexOf("</header>"));
+      const footer = html.slice(html.indexOf('<footer class="footer">'), html.indexOf("</footer>"));
+      for (const [part, text] of [["header", header], ["footer", footer]] as const) {
+        expect(text, `${file}: ${part}`).toContain('class="by-argusvane" href="https://argusvane.com"');
+        expect(text, `${file}: ${part}`).toContain('aria-label="Argusvane"');
+      }
+      // Each reference has its symbol on the page, once.
+      for (const id of ["av-mark", "av-wordmark"]) {
+        expect(html, `${file}: #${id}`).toContain(`href="#${id}"`);
+        expect(html.split(`id="${id}"`).length - 1, `${file}: ${id}`).toBe(1);
+      }
+    }
+  });
+
   it("serves its own fonts and asks no third party for anything", () => {
     for (const file of ["bebas-neue-latin-400", "archivo-latin-variable", "ibm-plex-mono-latin-400", "ibm-plex-mono-latin-500"]) {
       expect(existsSync(new URL(`../${outDir}/fonts/${file}.woff2`, import.meta.url)), file).toBe(true);
@@ -336,6 +353,10 @@ describe("site build", () => {
     expect(faces).toContain("archivo-latin-variable.woff2");
     expect(faces).toContain("bebas-neue-latin-400.woff2");
     expect(faces).toContain("ibm-plex-mono-latin-500.woff2");
+    // The sidebar ends with "Datum by Argusvane" and the nav links to Argusvane, both drawn without fetching anything.
+    expect(intro).toContain('class="argusvane-credit"');
+    expect(intro).toMatch(/<a[^>]+href="https:\/\/argusvane\.com"[^>]*>[\s\S]*?Argusvane/);
+    expect(intro).toContain('aria-label="Argusvane"');
     for (const file of faces) expect(existsSync(new URL(`../${outDir}/fonts/${file}`, import.meta.url)), file).toBe(true);
     const sheets = readdirSync(new URL("assets/", docsDir)).filter((name) => name.endsWith(".css"));
     expect(sheets.length).toBeGreaterThan(0);
