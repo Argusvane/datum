@@ -6,7 +6,7 @@
   "author": "Argusvane <maintainers@argusvane.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/argusvane/datum.git",
+    "url": "git+https://github.com/Argusvane/datum.git",
     "directory": "packages/datum"
   },
   "homepage": "https://datum.argusvane.com",
