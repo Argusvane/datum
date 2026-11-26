@@ -37,7 +37,7 @@ const MANIFEST = {
   name: "@argusvane/example",
   version: "1.0.0",
   license: "MIT",
-  repository: { type: "git", url: "git+https://github.com/argusvane/datum.git" },
+  repository: { type: "git", url: "git+https://github.com/Argusvane/datum.git" },
   main: "./dist/index.js",
   types: "./dist/index.d.ts",
   exports: { ".": { types: "./dist/index.d.ts", import: "./dist/index.js" }, "./package.json": "./package.json" },

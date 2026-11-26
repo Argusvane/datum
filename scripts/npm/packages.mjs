@@ -9,6 +9,13 @@ import { fileURLToPath } from "node:url";
 
 export const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
+/**
+ * The `repository.url` every published package carries. Publishing with provenance compares it with the repository the
+ * workflow ran in, case-sensitively, and GitHub names this one `Argusvane/datum`: a package with `argusvane/datum`
+ * is refused by the registry.
+ */
+export const REPOSITORY_URL = "git+https://github.com/Argusvane/datum.git";
+
 /** `{ folder (relative to the repository), scoped: true for @argusvane/..., forwards: the scoped package a forwarder runs }`. */
 export const PUBLISHED = [
   { folder: "packages/datum", name: "@argusvane/datum" },

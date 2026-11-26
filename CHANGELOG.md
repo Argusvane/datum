@@ -5,14 +5,12 @@ All notable changes to Datum are recorded in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Before 1.0.0 the definition format and the program
 contracts can change between 0.x releases, and every such change is listed here. One tag, such as `v0.1.0`, names a
-release across npm, Maven Central and PyPI. 0.1.0 is published to npm only. What is published today is in
+release across npm, Maven Central and PyPI. 0.1.0 will be published to npm only. What is published today is in
 [Release status](https://datum.argusvane.com/docs/introduction#release-status).
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-11-26
-
-The first release, 0.1.0, contains the following.
+The first release, 0.1.0, will contain the following.
 
 ### Added
 

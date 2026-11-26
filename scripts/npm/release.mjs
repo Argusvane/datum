@@ -21,7 +21,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { PUBLISHED, REPO } from "./packages.mjs";
+import { PUBLISHED, REPO, REPOSITORY_URL } from "./packages.mjs";
 import { filesOf, packProblems, sizeReport, unpackTarball } from "./pack-check.mjs";
 
 const npm = process.platform === "win32" ? "npm.cmd" : "npm";
@@ -30,7 +30,7 @@ const manifestOf = (folder) => JSON.parse(readFileSync(join(REPO, folder, "packa
 /** The packages that must stay private: the code the published bundles carry, never published on its own. */
 const STAY_PRIVATE = ["engine", "packages/pdf-kernel", "packages/quickjs-wasm-host", "packages/submissions"];
 
-/** What is wrong with the versions and the privacy of the packages, for a release of `version`. */
+/** What is wrong with the versions, the repository and the privacy of the packages, for a release of `version`. */
 export function checkVersions(version) {
   const problems = [];
   if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)) {
@@ -41,6 +41,9 @@ export function checkVersions(version) {
     if (manifest.name !== name) problems.push(`${folder}/package.json is named ${manifest.name}, not ${name}`);
     if (manifest.version !== version) problems.push(`${name} is at ${manifest.version}, the release is ${version}`);
     if (manifest.private !== false) problems.push(`${name} is not marked "private": false`);
+    if (manifest.repository?.url !== REPOSITORY_URL) {
+      problems.push(`${name}'s repository.url is ${JSON.stringify(manifest.repository?.url)}, not ${REPOSITORY_URL}: provenance compares it with the repository case-sensitively`);
+    }
     if (forwards !== undefined && JSON.stringify(manifest.dependencies) !== JSON.stringify({ [forwards]: version })) {
       problems.push(`${name} must depend on exactly ${forwards}@${version}, it has ${JSON.stringify(manifest.dependencies)}`);
     }
