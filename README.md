@@ -81,12 +81,11 @@ each other.
 
 ## A quick taste
 
-Put the built files next to your page, point the form at a definition, and listen for the
-submission:
+Load the form from a CDN, point it at a definition, and listen for the submission:
 
 ```html
-<link rel="stylesheet" href="datum-form.css">
-<script type="module" src="datum-form.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@argusvane/datum@0.1.0/dist/datum-form.css">
+<script type="module" src="https://cdn.jsdelivr.net/npm/@argusvane/datum@0.1.0/dist/datum-form.js"></script>
 
 <datum-form src="/forms/intake.json"></datum-form>
 
@@ -97,7 +96,14 @@ submission:
 </script>
 ```
 
-The builder embeds the same way with `<datum-form-builder>`.
+The builder embeds the same way with `<datum-form-builder>` (`datum-builder.css` and
+`datum-builder.js`).
+
+The CDN is the quickest way to try it. To host the files yourself, `npm install @argusvane/datum`
+puts them in `node_modules/@argusvane/datum/dist/`, and each
+[GitHub release](https://github.com/Argusvane/datum/releases) attaches them as an archive.
+[Files you host](https://datum.argusvane.com/docs/files) says what each file is and how to serve
+them, from your own server or from a CDN.
 [Getting started](https://datum.argusvane.com/docs/getting-started) takes this page, step by
 step, to a form you designed yourself and a server that receives it.
 [The form on your page](https://datum.argusvane.com/docs/form-on-your-page) covers data

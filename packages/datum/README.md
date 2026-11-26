@@ -19,6 +19,17 @@ The bundles are plain ES modules (and, for the form and the builder, classic scr
 
 `datum-builder.js` (with `datum-builder.css`) defines `<datum-form-builder>` and `<datum-form>` together. The same files are attached to each GitHub release as an archive, for a page that wants them without npm.
 
+### From a CDN
+
+Any npm CDN serves the same folder. Pin the exact version:
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@argusvane/datum@0.1.0/dist/datum-form.css">
+<script type="module" src="https://cdn.jsdelivr.net/npm/@argusvane/datum@0.1.0/dist/datum-form.js"></script>
+```
+
+The lazy chunks and `wasm="auto"` / `pdf="auto"` load from beside the bundle on the CDN, with no other setting. A `wasm`, `pdf`, `draft-store` or `validate-url` attribute that names a full URL on another origin needs that origin in `allow-origins`. [Files you host](https://datum.argusvane.com/docs/files#from-a-cdn) has the details.
+
 ## What is in `dist`
 
 | File | What it is |

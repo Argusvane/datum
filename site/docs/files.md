@@ -1,14 +1,22 @@
 # Files you host
 
-Everything the form and the builder need ships as files in one folder. This page says how to get the folder, what each file in it is for, and how to serve it. Serve the folder yourself; the element fetches its optional parts from beside the bundle it was loaded from, so keep the folder together. Datum's own code fetches nothing from a third party at runtime.
+Everything the form and the builder need ships as files in one folder. This page says how to get the folder, what each file in it is for, and how to serve it. Serve the folder yourself, or load it from a CDN; either way the element fetches its optional parts from beside the bundle it was loaded from, so keep the folder together. Datum's own code fetches nothing from a third party at runtime.
 
 ## Getting the files
 
-The folder is the output of a build of the repository. You need Node 22, npm and git. From a clone, `npm run setup` installs the packages you name, each in its own folder and in dependency order, and builds the PDF program; then the build runs:
+The folder is `dist/` in the npm package `@argusvane/datum`:
+
+```sh
+npm install @argusvane/datum
+```
+
+It lands in `node_modules/@argusvane/datum/dist/`. That folder is what this page describes: copy it to your static files and serve it. Each [GitHub release](https://github.com/Argusvane/datum/releases) attaches the same files as an archive, for a machine without npm, and a page can load them from a CDN instead: see [From a CDN](#from-a-cdn).
+
+To build the folder from the repository instead, you need Node 22, npm and git. From a clone, `npm run setup` installs the packages you name, each in its own folder and in dependency order, and builds the PDF program; then the build runs:
 
 <<< @/snippets/get-the-files.sh{sh}
 
-The build writes `packages/datum/dist/`. That folder is what this page describes: copy it to your static files and serve it. [Getting started](/getting-started) does that step by step, with a first page. A Datum host builds the same folder into its own distribution; see [Server hosts](/server-hosts).
+The build writes `packages/datum/dist/`, the same folder. [Getting started](/getting-started) does that step by step, with a first page. A Datum host builds the same folder into its own distribution; see [Server hosts](/server-hosts).
 
 A page that only shows a form asks for three of these files: `datum-form.css`, `datum-form.js` and the core chunk that loads with it. Everything else is fetched when a form first needs it, so copy the whole folder and let the element choose.
 
@@ -63,6 +71,25 @@ The form is static files. Serve the folder from any static host with correct MIM
 - **Caching.** Give the hashed chunks a long `Cache-Control` such as `public, max-age=31536000, immutable`. The entry files (`datum-form.js`, `datum-builder.js`, `datum-pdf.js`, `datum-wasm.js`, `datum-engine.js`) keep their names from release to release. Either serve each release from its own versioned folder and cache everything long, or let the entries revalidate. The Spring Boot and FastAPI hosts serve the bundle this way, under a versioned path.
 - **A definition on another origin** needs CORS. A definition longer than 2 MiB is refused unless `max-definition-bytes` says otherwise.
 - **The origin of the files.** `pdf`, `wasm`, `draft-store` and `validate-url` are held to the page's own origin unless [`allow-origins`](/security-headers#allow-origins) lists another. The headers a page needs for its own files are on [Security headers](/security-headers).
+
+## From a CDN
+
+Any CDN that serves npm packages serves the folder, at the package's version. With jsDelivr:
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@argusvane/datum@0.1.0/dist/datum-form.css">
+<script type="module" src="https://cdn.jsdelivr.net/npm/@argusvane/datum@0.1.0/dist/datum-form.js"></script>
+
+<datum-form src="/forms/contact.json"></datum-form>
+```
+
+`unpkg.com/@argusvane/datum@0.1.0/dist/` serves the same files.
+
+- **Pin the exact version** (`@0.1.0`), never a range or `latest`: the files under a version never change, and a page should not take a new release before you have tried it.
+- **The parts load from the CDN too.** The chunks, the fonts and `wasm="auto"` / `pdf="auto"` resolve beside the bundle, so they come from the same CDN folder with no other setting.
+- **A URL you write still follows the origin rule.** A `wasm`, `pdf`, `draft-store` or `validate-url` attribute that names a full URL on the CDN's origin needs that origin in [`allow-origins`](/security-headers#allow-origins). A definition in `src` on another origin needs CORS, as on any host.
+- **Security headers.** A page with a Content-Security-Policy lists the CDN's origin in `script-src`, `style-src`, `font-src` and `connect-src`: see [Security headers](/security-headers).
+- **A third party serves your code.** The CDN sees every visitor's address and decides what bytes arrive. For a form that collects records, host the folder yourself; for a network with no route to the Internet, see [Air-gapped deployments](/air-gapped).
 
 ## Classic scripts
 

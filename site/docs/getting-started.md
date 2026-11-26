@@ -2,25 +2,20 @@
 
 This page takes you from nothing to a form on a page of your own, then to a form you designed yourself, then to its answers in your hands. Follow it from top to bottom. No server of your own is needed until the last step.
 
-You need Node 22 or newer, npm, git and Python 3 (only to serve a folder; any static file server does the same).
+You need Node 22 or newer, npm and Python 3 (only to serve a folder; any static file server does the same).
 
 ## Get the files
 
-Datum is a folder of files you host. For now you build it from the repository:
-
-<<< @/snippets/get-the-files.sh{sh}
-
-The installs and the build take a few minutes. When the last command ends, the folder `packages/datum/dist/` holds everything the form and the builder load. [Files you host](/files) says what each file is.
-
-## Make a site folder
-
-Make a folder for your site beside the clone, with the built folder in it as `datum/`, and a place for forms:
+Datum is a folder of files you host. Make a folder for your site, install the package into it, and copy the files in as `datum/`, with a place for forms:
 
 ```sh
-mkdir -p ../my-site/forms
-cp -R packages/datum/dist ../my-site/datum
-cd ../my-site
+mkdir -p my-site/forms
+cd my-site
+npm install @argusvane/datum
+cp -R node_modules/@argusvane/datum/dist datum
 ```
+
+The folder `datum/` now holds everything the form and the builder load. [Files you host](/files) says what each file is, how to build the same folder from the repository, and how to load it from a CDN instead.
 
 Save the sample form as `forms/contact.json`: [contact.json](/forms/contact.json){target="_blank"}. A form is one JSON file, the definition. This one has four fields and a Send button.
 
