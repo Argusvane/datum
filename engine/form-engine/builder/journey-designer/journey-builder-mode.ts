@@ -758,7 +758,8 @@ class JourneyBuilderModeImpl implements JourneyBuilderMode {
   /**
    * Translations pruned with a journey, page or page-only node, by the prefix they lived under
    * (`translationsKey`), kept until the edit is taken back: an Undo in the designer brings the
-   * page back, and its entries with it. Another definition empties it.
+   * page back, and its entries with it. Another definition empties it, and a journey made afresh
+   * under a held journey's id lets go of that journey's ({@link forgetPruned}).
    */
   private readonly pruned = new Map<string, Array<{ locale: string; address: TextAddress; entry: TranslationEntry }>>();
   /** What the panels point at while the form has no journey: an empty journey, no palette. */
@@ -1508,6 +1509,7 @@ class JourneyBuilderModeImpl implements JourneyBuilderMode {
       if (select) {
         this.viewValue = "map";
       }
+      this.forgetPruned(journey.id);
       this.addJourney(journey, { select }, this.titleCarry(journey, titleOrigins));
     };
     if (options.around) {
@@ -1529,6 +1531,20 @@ class JourneyBuilderModeImpl implements JourneyBuilderMode {
       // A journey that comes back (an agent taking its removal back) has its translations back.
       this.followTranslations(undefined, journey, {}, { before: blockBefore, also });
     });
+  }
+
+  /**
+   * Lets go of what {@link pruned} holds under journey `id`. A journey made afresh (New journey, a
+   * copy) can take the id of one removed earlier, as ids are only unique among the journeys listed;
+   * it is not that journey back, so none of its wording may come back with it, rewritten as current.
+   */
+  private forgetPruned(id: string): void {
+    const whole: TranslationPrefix = { kind: "journeys", owner: id };
+    for (const [key, held] of this.pruned) {
+      if (held.some((item) => underPrefix(item.address, whole))) {
+        this.pruned.delete(key);
+      }
+    }
   }
 
   public replaceJourney(id: string, journey: Journey): void {
@@ -1572,6 +1588,7 @@ class JourneyBuilderModeImpl implements JourneyBuilderMode {
   public duplicateJourney(id: string, options: DuplicateJourneyOptions & { select?: boolean | undefined } = {}): Journey {
     const { select, ...rest } = options;
     const copied = duplicateJourney(this.model.configuration, id, rest);
+    this.forgetPruned(copied.journey.id);
     // The copy carries the original's translations under its own id; its name is
     // worded otherwise, so that entry reads as source-changed until the author confirms it. The
     // copy and its entries are one step of the form's history: one Undo takes both away.
