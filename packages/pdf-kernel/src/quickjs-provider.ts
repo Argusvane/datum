@@ -11,7 +11,7 @@
  * unwound through) reaches the next. `create` builds the first sandbox, to prove the program and
  * the modules load, and that one serves the first call. The price is paid on the calling thread
  * at every call: the WebAssembly instance is a few milliseconds, evaluating the 1.2 MB program is
- * the rest, about half a second under Node on a quiet machine.
+ * the rest, about 270 ms under Node on a quiet machine.
  */
 import { kernelStableStringify } from "@argusvane/datum-engine";
 import {
