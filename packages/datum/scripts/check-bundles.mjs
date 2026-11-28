@@ -142,12 +142,12 @@ for (const prefix of ["datum-binding"]) {
 const guards = await loadGuards(join(dist, "..", "scripts", "guards"));
 const BASE_BUDGETS_KB = {
   // The two entries (datum-form.js, datum-builder.js) are held to the gzip gates below, not to a size here.
-  // datum-wasm.js: measured 980.3 KB, plus 3 KB, rounded up. It carries the sandbox's security code
+  // datum-wasm.js: measured 984.4 KB, plus 3 KB, rounded up. It carries the sandbox's security code
   // (the regex reader, the structural `check` pass, the output limits), the grid normalizer mirror,
   // the row-count check, the formula bounds, the form-test parser, judge and kernel driver for the
   // `test` op, the bind-time ABI probe, the per-request size term, the prepared-definition cache,
-  // the host context read and the bounded journey walks.
-  "datum-wasm.js": 984
+  // the host context read, the bounded journey walks and the freeze's guard on the global object.
+  "datum-wasm.js": 988
 };
 const BUDGETS_KB = effectiveBudgets(BASE_BUDGETS_KB, guards, problems);
 // The validation kernel is the sandbox's: <datum-form> never runs it in-process,
