@@ -593,14 +593,14 @@ describe("import dialog behaviour", () => {
     click(q(root, "[data-languages-import]"));
     choosing(
       root,
-      file("t.csv", ["kind,key,path,lang:en", "components,kind,label,Kind", "texts,form,summaryHeading,Summary", "components,ghost,label,Ghost", ""].join("\r\n"))
+      file("t.csv", ["kind,key,path,lang:en", "components,kind,label,Kind", "texts,form,summaryHeading.other,Summary", "components,ghost,label,Ghost", ""].join("\r\n"))
     );
     await vi.waitFor(() => expect(root.querySelector("[data-exchange-table]")).not.toBeNull());
     const status = (key: string): string => q(root, `[data-exchange-row="${key}"]`).querySelector("td:last-child")!.textContent!;
     expect(q(root, '[data-exchange-row="components/kind/label"]').getAttribute("data-exchange-status")).toBe("pageWorded");
     expect(status("components/kind/label")).toBe("The page's catalog words this text, skipped");
-    expect(q(root, '[data-exchange-row="texts/form/summaryHeading"]').getAttribute("data-exchange-status")).toBe("noCell");
-    expect(status("texts/form/summaryHeading")).toBe("This language has no text of its own here, skipped");
+    expect(q(root, '[data-exchange-row="texts/form/summaryHeading.other"]').getAttribute("data-exchange-status")).toBe("noCell");
+    expect(status("texts/form/summaryHeading.other")).toBe("This language has no text of its own here, skipped");
     expect(status("components/ghost/label")).toBe("Unknown text, skipped");
     expect(q(root, '[data-exchange-count="skipped"] strong').textContent).toBe("2");
     expect(q(root, '[data-exchange-count="unknown"] strong').textContent).toBe("1");
@@ -609,11 +609,11 @@ describe("import dialog behaviour", () => {
   it("applies the default language's column for an engine word, in one undo step", async () => {
     const { root, controller } = mount(languagesController({ supportedLocales: [{ code: "fr" }, { code: "en" }], defaultLocale: "fr" }));
     click(q(root, "[data-languages-import]"));
-    choosing(root, file("t.csv", ["kind,key,path,lang:fr", "texts,form,summaryHeading,Sommaire des erreurs", ""].join("\r\n")));
+    choosing(root, file("t.csv", ["kind,key,path,lang:fr", "texts,form,summaryHeading.other,Sommaire des erreurs", ""].join("\r\n")));
     await vi.waitFor(() => expect(root.querySelector("[data-exchange-table]")).not.toBeNull());
     click(q(root, "[data-exchange-apply]"));
-    expect(readTranslation(controller.translations(), "fr", addressOf.formText("summaryHeading"))?.text).toBe("Sommaire des erreurs");
+    expect(readTranslation(controller.translations(), "fr", addressOf.formText("summaryHeading.other"))?.text).toBe("Sommaire des erreurs");
     controller.undo();
-    expect(readTranslation(controller.translations(), "fr", addressOf.formText("summaryHeading"))).toBeUndefined();
+    expect(readTranslation(controller.translations(), "fr", addressOf.formText("summaryHeading.other"))).toBeUndefined();
   });
 });

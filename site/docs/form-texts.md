@@ -38,9 +38,7 @@ The keys are the ones below.
 
 ## Counted texts
 
-A few texts depend on a number. Each has two keys, a general one and one for a count of one: `countLeft` and `countLeftOne`. They are listed as separate rows below.
-
-Beside the pair, you can word a count by plural category, with a key written `base.category`, the dot being part of the key. The categories are `zero`, `one`, `two`, `few`, `many` and `other`, picked by the language's plural rules:
+A few texts depend on a number. Each is worded by plural category, with a key written `base.category`, the dot being part of the key. The categories are `zero`, `one`, `two`, `few`, `many` and `other`, picked by the language's plural rules:
 
 ```json
 {
@@ -49,15 +47,13 @@ Beside the pair, you can word a count by plural category, with a key written `ba
 }
 ```
 
-A category with no key reads `base.other`, and then the pair. The counted bases are:
+A category with no key reads `base.other`, so a page that words only `summaryHeading.other` uses it for every count. The engine's English words `one` and `other`, listed as separate rows below. The counted bases are:
 
 - `summaryHeading`: its count is the number of errors.
 - `countLeft` and `countOver`: the count is the number of characters.
 - `tabHasErrors`.
-- `fileAnnounced`: its pair is `fileAnnounced` and `fileAnnouncedMany`.
+- `fileAnnounced`: the count is the number of files picked.
 - The assistant lines `agentStopped`, `agentFilled`, `agentRowsAdded` and `agentUndone`.
-
-A plain `summaryHeading` the page sets is used for a count of one too.
 
 ## The keys
 
@@ -87,8 +83,8 @@ A plain `summaryHeading` the page sets is used for a count of one too.
 | `optional` | (empty) | none | The marker after the label of an optional field. Empty by default. |
 | `requiredNote` | (empty) | none | A sentence above the fields that explains the required marker. Empty by default, so nothing is drawn. |
 | `errorPrefix` | (empty) | none | A visually hidden word read before an inline error. Empty by default. |
-| `summaryHeading` | `{{count}} errors` | `{{count}}` | The error summary's heading. |
-| `summaryHeadingOne` | `{{count}} error` | `{{count}}` | The same heading for one error. |
+| `summaryHeading.other` | `{{count}} errors` | `{{count}}` | The error summary's heading. |
+| `summaryHeading.one` | `{{count}} error` | `{{count}}` | The same heading for one error. |
 | `summaryEntry` | `{{label}}: {{message}}` | `{{label}}`, `{{message}}` | One line of the error summary. |
 
 ### Choices
@@ -107,8 +103,8 @@ A plain `summaryHeading` the page sets is used for a count of one too.
 | `fileRemove` | `Remove` | none | A file row's Remove control. |
 | `fileRemoveFile` | `Remove {{name}}` | `{{name}}` | The same control's accessible name. |
 | `fileRemoved` | `File removed: {{name}}` | `{{name}}` | What the field's status region says once a file is removed. |
-| `fileAnnounced` | `You have selected the file: {{names}}` | `{{names}}` | What it says once one file is picked. |
-| `fileAnnouncedMany` | `You have selected {{count}} files: {{names}}` | `{{count}}`, `{{names}}` | What it says once several are picked. |
+| `fileAnnounced.one` | `You have selected the file: {{names}}` | `{{names}}` | What it says once one file is picked. |
+| `fileAnnounced.other` | `You have selected {{count}} files: {{names}}` | `{{count}}`, `{{names}}` | What it says once several are picked. |
 | `fileDownload` | `Download {{name}}` | `{{name}}` | The title of the link that downloads an embedded file. |
 | `fileNone` | `No file` | none | What a read-only file field says when it holds nothing. |
 
@@ -127,10 +123,10 @@ A plain `summaryHeading` the page sets is used for a count of one too.
 |---|---|---|---|
 | `countUpTo` | `You can enter up to {{max}} characters` | `{{max}}`, `{{count}}`, `{{n}}` | The limit sentence a screen reader gets with the field's description. |
 | `countEmpty` | (empty) | `{{max}}`, `{{count}}`, `{{n}}` | What an empty field shows. Empty by default, so the count then reads as the whole limit left. |
-| `countLeft` | `{{n}} characters left` | `{{n}}`, `{{max}}`, `{{count}}` | The count while typing. |
-| `countLeftOne` | `{{n}} character left` | `{{n}}`, `{{max}}`, `{{count}}` | The count when one character is left. |
-| `countOver` | `{{n}} characters over limit` | `{{n}}`, `{{max}}`, `{{count}}` | The count past the limit. |
-| `countOverOne` | `{{n}} character over limit` | `{{n}}`, `{{max}}`, `{{count}}` | The count when one character over. |
+| `countLeft.other` | `{{n}} characters left` | `{{n}}`, `{{max}}`, `{{count}}` | The count while typing. |
+| `countLeft.one` | `{{n}} character left` | `{{n}}`, `{{max}}`, `{{count}}` | The count when one character is left. |
+| `countOver.other` | `{{n}} characters over limit` | `{{n}}`, `{{max}}`, `{{count}}` | The count past the limit. |
+| `countOver.one` | `{{n}} character over limit` | `{{n}}`, `{{max}}`, `{{count}}` | The count when one character over. |
 
 ### Steps, pages and journeys
 
@@ -157,8 +153,8 @@ A plain `summaryHeading` the page sets is used for a count of one too.
 | Key | Default English | Slots | Where it appears |
 |---|---|---|---|
 | `tabsContents` | `Contents` | none | The title over a tabs container's list of links where its panels stack. |
-| `tabHasErrors` | `{{count}} errors` | `{{count}}` | What a tab says of the blocking errors in its panel, for a look whose tabs say it. |
-| `tabHasErrorsOne` | `{{count}} error` | `{{count}}` | The same for one error. |
+| `tabHasErrors.other` | `{{count}} errors` | `{{count}}` | What a tab says of the blocking errors in its panel, for a look whose tabs say it. |
+| `tabHasErrors.one` | `{{count}} error` | `{{count}}` | The same for one error. |
 | `tabFallback` | `Tab {{n}}` | `{{n}}` | The name of a tab its author left untitled. |
 
 ### Data grid
@@ -236,18 +232,18 @@ A plain `summaryHeading` the page sets is used for a count of one too.
 | `agentSessionStarted` | `An assistant started working on this form: {{purpose}}. Press Stop to take over.` | `{{purpose}}` | What the live region says when an assistant starts. |
 | `agentSessionEnded` | `The assistant finished: {{summary}}` | `{{summary}}` | What it says when the assistant finishes. |
 | `agentSessionEndedAfterRestore` | `A saved draft replaced the answers; earlier changes cannot be undone.` | none | The ended banner's line when a restored draft replaced the answers, so earlier changes cannot be undone. |
-| `agentStopped` | `The assistant was stopped; {{count}} changes were undone` | `{{count}}` | What it says when the assistant is stopped and its changes were undone. |
-| `agentStoppedOne` | `The assistant was stopped; {{count}} change was undone` | `{{count}}` | The same for one change. |
+| `agentStopped.other` | `The assistant was stopped; {{count}} changes were undone` | `{{count}}` | What it says when the assistant is stopped and its changes were undone. |
+| `agentStopped.one` | `The assistant was stopped; {{count}} change was undone` | `{{count}}` | The same for one change. |
 | `agentPaused` | `The assistant paused` | none | What it says when the assistant pauses. |
-| `agentFilled` | `An assistant filled {{count}} fields` | `{{count}}` | What it says when the assistant filled fields. |
-| `agentFilledOne` | `An assistant filled {{count}} field` | `{{count}}` | The same for one field. |
-| `agentRowsAdded` | `An assistant added {{count}} rows to {{label}}` | `{{count}}`, `{{label}}` | What it says when the assistant added rows. |
-| `agentRowsAddedOne` | `An assistant added {{count}} row to {{label}}` | `{{count}}`, `{{label}}` | The same for one row. |
+| `agentFilled.other` | `An assistant filled {{count}} fields` | `{{count}}` | What it says when the assistant filled fields. |
+| `agentFilled.one` | `An assistant filled {{count}} field` | `{{count}}` | The same for one field. |
+| `agentRowsAdded.other` | `An assistant added {{count}} rows to {{label}}` | `{{count}}`, `{{label}}` | What it says when the assistant added rows. |
+| `agentRowsAdded.one` | `An assistant added {{count}} row to {{label}}` | `{{count}}`, `{{label}}` | The same for one row. |
 | `agentRowRemoved` | `An assistant removed a row from {{label}}` | `{{label}}` | What it says when the assistant removed a row. |
 | `agentMoved` | `An assistant moved to {{title}}` | `{{title}}` | What it says when the assistant moved to another page. |
 | `agentLanguage` | `An assistant switched the form to {{label}}` | `{{label}}` | What it says when the assistant switched the language. |
-| `agentUndone` | `{{count}} changes by the assistant were undone` | `{{count}}` | What it says when the person undid the assistant's changes. |
-| `agentUndoneOne` | `{{count}} change by the assistant was undone` | `{{count}}` | The same for one change. |
+| `agentUndone.other` | `{{count}} changes by the assistant were undone` | `{{count}}` | What it says when the person undid the assistant's changes. |
+| `agentUndone.one` | `{{count}} change by the assistant was undone` | `{{count}}` | The same for one change. |
 | `agentSubmitted` | `An assistant submitted the form` | none | What it says when the assistant submitted the form. |
 | `agentDraftSaved` | `An assistant saved your draft` | none | What it says when the assistant saved the draft. |
 | `agentDraftRestored` | `An assistant restored your saved draft` | none | What it says when the assistant restored the draft. |

@@ -195,7 +195,7 @@ describe("announcements and the highlight", () => {
 
   it("says what was filled in the polite live region, in English and then in French after set_locale", async () => {
     // The French is the form's `texts` translation (the engine words only English).
-    const mounted = await mount({}, undefined, withEngineWords(plainDefinition(), "fr", { texts: { agentFilled: "Un assistant a rempli {{count}} champs", agentFilledOne: "Un assistant a rempli {{count}} champ" } }));
+    const mounted = await mount({}, undefined, withEngineWords(plainDefinition(), "fr", { texts: { "agentFilled.other": "Un assistant a rempli {{count}} champs", "agentFilled.one": "Un assistant a rempli {{count}} champ" } }));
     await mounted.ok("set_answers", { answers: { fullName: "Ada" } });
     expect(live(mounted.element)?.getAttribute("role")).toBe("status");
     expect(live(mounted.element)?.getAttribute("aria-live")).toBe("polite");

@@ -1,4 +1,4 @@
-import type { LocalizedText, TranslationCatalog } from "../schema/contracts.js";
+import type { LocalizedText } from "../schema/contracts.js";
 import { resolveLocalizedText } from "./localized-text.js";
 import { addressOf, engineWord, lookupText, packText, type EngineWordSources } from "./translations.js";
 
@@ -21,7 +21,10 @@ export type { EngineWordSources, LanguagePack, LanguagePackTable } from "./trans
  * shows on the page rather than vanishing.
  *
  * `{{name}}` placeholders are filled from the params a caller passes: the summary's
- * `{{count}}`, an entry's `{{label}}` and `{{message}}`, a file row's `{{name}}`.
+ * `{{count}}`, an entry's `{{label}}` and `{{message}}`, a file row's `{{name}}`. A counted
+ * text is one key per CLDR plural category, `<base>.<category>` (`countLeft.one`,
+ * `countLeft.other`, `countLeft.few` for Polish); the engine words `one` and `other`, and a
+ * category nobody worded reads `<base>.other` ({@link resolveFormTextPlural}).
  */
 export interface FormTextCatalog {
   /** The line shown while a submission and its delivery are in flight. */
@@ -42,9 +45,9 @@ export interface FormTextCatalog {
   selectEmpty?: LocalizedText | undefined;
   /** A visually-hidden prefix read before an inline error ("Error:"); none unless worded. */
   errorPrefix?: LocalizedText | undefined;
-  /** The error summary's heading; `{{count}}` is the number of errors. */
-  summaryHeading?: LocalizedText | undefined;
-  summaryHeadingOne?: LocalizedText | undefined;
+  /** The error summary's heading, counted; `{{count}}` is the number of errors. */
+  "summaryHeading.one"?: LocalizedText | undefined;
+  "summaryHeading.other"?: LocalizedText | undefined;
   loading?: LocalizedText | undefined;
   validateLabel?: LocalizedText | undefined;
   printLabel?: LocalizedText | undefined;
@@ -77,11 +80,11 @@ export interface FormTextCatalog {
   fileRemoved?: LocalizedText | undefined;
   /**
    * What the status region says once a pick lands, where the field's face announces picks
-   * (the file adapter's `announceSelection`): one file (`{{names}}`), several
-   * (`{{count}}` and `{{names}}`, comma-separated).
+   * (the file adapter's `announceSelection`), counted by the files picked: `{{names}}`
+   * (comma-separated) and `{{count}}`.
    */
-  fileAnnounced?: LocalizedText | undefined;
-  fileAnnouncedMany?: LocalizedText | undefined;
+  "fileAnnounced.one"?: LocalizedText | undefined;
+  "fileAnnounced.other"?: LocalizedText | undefined;
   /** The title of an embedded attachment's download, with the file's `{{name}}`. */
   fileDownload?: LocalizedText | undefined;
   /** A read-only file field holding nothing. */
@@ -97,18 +100,18 @@ export interface FormTextCatalog {
   languageSelection?: LocalizedText | undefined;
   /**
    * A field's character count: the limit sentence a screen reader gets with the
-   * field's description, the count as a person types (`countLeft` and its singular), the count
-   * past the limit (`countOver` and its singular), and what an empty field shows (`countEmpty`;
-   * none unless worded, when the count reads as `countLeft` with the whole limit left). Each
+   * field's description, the count as a person types (`countLeft`, counted), the count past the
+   * limit (`countOver`, counted), and what an empty field shows (`countEmpty`; none unless
+   * worded, when the count reads as `countLeft` with the whole limit left). Each
    * takes `{{max}}` (the limit), `{{count}}` (characters typed) and `{{n}}` (characters left,
    * or over).
    */
   countUpTo?: LocalizedText | undefined;
   countEmpty?: LocalizedText | undefined;
-  countLeft?: LocalizedText | undefined;
-  countLeftOne?: LocalizedText | undefined;
-  countOver?: LocalizedText | undefined;
-  countOverOne?: LocalizedText | undefined;
+  "countLeft.one"?: LocalizedText | undefined;
+  "countLeft.other"?: LocalizedText | undefined;
+  "countOver.one"?: LocalizedText | undefined;
+  "countOver.other"?: LocalizedText | undefined;
   /**
    * A multi-step form's wording: the progress line (`{{n}}` of `{{total}}`), the
    * Back and Continue buttons, and what the indicator says of a step beside its name.
@@ -167,11 +170,11 @@ export interface FormTextCatalog {
    */
   tabsContents?: LocalizedText | undefined;
   /**
-   * What a tab says of the blocking errors in its panel (`{{count}}`), for a binding whose tab
-   * says it holds errors: `tabHasErrorsOne` for one, `tabHasErrors` otherwise (`plural`).
+   * What a tab says of the blocking errors in its panel (`{{count}}`), counted, for a binding
+   * whose tab says it holds errors (`plural("tabHasErrors", count)`).
    */
-  tabHasErrors?: LocalizedText | undefined;
-  tabHasErrorsOne?: LocalizedText | undefined;
+  "tabHasErrors.one"?: LocalizedText | undefined;
+  "tabHasErrors.other"?: LocalizedText | undefined;
   /** The note beside a field that prints while a rule hides it, when its author wrote none. */
   printOnlyIf?: LocalizedText | undefined;
   /**
@@ -200,10 +203,8 @@ export interface FormTextCatalog {
   /**
    * The agent tools' person-facing wording: the session banner (its region label,
    * its line with `{{purpose}}`, its Stop / Allow again / Undo all / Dismiss buttons) and the
-   * live-region announcements of what an assistant did. Every counted one comes in the
-   * `{base}One` / `{base}` pair the resolver's `plural(base, count)` reads on its own
-   * (`agentFilledOne` / `agentFilled`, `agentRowsAddedOne` / `agentRowsAdded`): no caller
-   * needs fallback keys. The rest are what an assistant did with the saved draft and the PDF,
+   * live-region announcements of what an assistant did, the counted ones (`agentFilled`,
+   * `agentRowsAdded`, `agentUndone`, `agentStopped`) one key per plural category. The rest are what an assistant did with the saved draft and the PDF,
    * and the ended banner's line when a restored draft cut the session's undo short.
    */
   agentBannerLabel?: LocalizedText | undefined;
@@ -214,18 +215,18 @@ export interface FormTextCatalog {
   agentDismiss?: LocalizedText | undefined;
   agentSessionStarted?: LocalizedText | undefined;
   agentSessionEnded?: LocalizedText | undefined;
-  agentStopped?: LocalizedText | undefined;
-  agentStoppedOne?: LocalizedText | undefined;
+  "agentStopped.one"?: LocalizedText | undefined;
+  "agentStopped.other"?: LocalizedText | undefined;
   agentPaused?: LocalizedText | undefined;
-  agentFilled?: LocalizedText | undefined;
-  agentFilledOne?: LocalizedText | undefined;
-  agentRowsAdded?: LocalizedText | undefined;
-  agentRowsAddedOne?: LocalizedText | undefined;
+  "agentFilled.one"?: LocalizedText | undefined;
+  "agentFilled.other"?: LocalizedText | undefined;
+  "agentRowsAdded.one"?: LocalizedText | undefined;
+  "agentRowsAdded.other"?: LocalizedText | undefined;
   agentRowRemoved?: LocalizedText | undefined;
   agentMoved?: LocalizedText | undefined;
   agentLanguage?: LocalizedText | undefined;
-  agentUndone?: LocalizedText | undefined;
-  agentUndoneOne?: LocalizedText | undefined;
+  "agentUndone.one"?: LocalizedText | undefined;
+  "agentUndone.other"?: LocalizedText | undefined;
   agentSubmitted?: LocalizedText | undefined;
   agentDraftSaved?: LocalizedText | undefined;
   agentDraftRestored?: LocalizedText | undefined;
@@ -244,8 +245,8 @@ export type EngineFormTextKey =
   | "requiredNote"
   | "selectEmpty"
   | "errorPrefix"
-  | "summaryHeading"
-  | "summaryHeadingOne"
+  | "summaryHeading.one"
+  | "summaryHeading.other"
   | "loading"
   | "validateLabel"
   | "printLabel"
@@ -264,8 +265,8 @@ export type EngineFormTextKey =
   | "fileRemove"
   | "fileRemoveFile"
   | "fileRemoved"
-  | "fileAnnounced"
-  | "fileAnnouncedMany"
+  | "fileAnnounced.one"
+  | "fileAnnounced.other"
   | "fileDownload"
   | "fileNone"
   | "languageSwitcher"
@@ -276,10 +277,10 @@ export type EngineFormTextKey =
   | "languageSelection"
   | "countUpTo"
   | "countEmpty"
-  | "countLeft"
-  | "countLeftOne"
-  | "countOver"
-  | "countOverOne"
+  | "countLeft.one"
+  | "countLeft.other"
+  | "countOver.one"
+  | "countOver.other"
   | "stepOf"
   | "stepTagSeparator"
   | "back"
@@ -305,8 +306,8 @@ export type EngineFormTextKey =
   | "noticeError"
   | "tooltipHelp"
   | "tabsContents"
-  | "tabHasErrors"
-  | "tabHasErrorsOne"
+  | "tabHasErrors.one"
+  | "tabHasErrors.other"
   | "tabFallback"
   | "stepFallback"
   | "printOnlyIf"
@@ -338,18 +339,18 @@ export type EngineFormTextKey =
   | "agentDismiss"
   | "agentSessionStarted"
   | "agentSessionEnded"
-  | "agentStopped"
-  | "agentStoppedOne"
+  | "agentStopped.one"
+  | "agentStopped.other"
   | "agentPaused"
-  | "agentFilled"
-  | "agentFilledOne"
-  | "agentRowsAdded"
-  | "agentRowsAddedOne"
+  | "agentFilled.one"
+  | "agentFilled.other"
+  | "agentRowsAdded.one"
+  | "agentRowsAdded.other"
   | "agentRowRemoved"
   | "agentMoved"
   | "agentLanguage"
-  | "agentUndone"
-  | "agentUndoneOne"
+  | "agentUndone.one"
+  | "agentUndone.other"
   | "agentSubmitted"
   | "agentDraftSaved"
   | "agentDraftRestored"
@@ -368,8 +369,8 @@ export const DEFAULT_FORM_TEXTS: Readonly<Record<EngineFormTextKey, string>> = {
   requiredNote: "",
   selectEmpty: "Select…",
   errorPrefix: "",
-  summaryHeading: "{{count}} errors",
-  summaryHeadingOne: "{{count}} error",
+  "summaryHeading.one": "{{count}} error",
+  "summaryHeading.other": "{{count}} errors",
   // The form host's toolbar (names for the buttons and the layout picker) and the placeholder
   // shown before the first paint; the locale select's title when the host gives no label.
   loading: "Loading form…",
@@ -398,15 +399,15 @@ export const DEFAULT_FORM_TEXTS: Readonly<Record<EngineFormTextKey, string>> = {
   dateYear: "Year",
   dateSelectMonth: "Select a month",
   fileRemoved: "File removed: {{name}}",
-  fileAnnounced: "You have selected the file: {{names}}",
-  fileAnnouncedMany: "You have selected {{count}} files: {{names}}",
+  "fileAnnounced.one": "You have selected the file: {{names}}",
+  "fileAnnounced.other": "You have selected {{count}} files: {{names}}",
   languageSelection: "Language selection",
   countUpTo: "You can enter up to {{max}} characters",
   countEmpty: "",
-  countLeft: "{{n}} characters left",
-  countLeftOne: "{{n}} character left",
-  countOver: "{{n}} characters over limit",
-  countOverOne: "{{n}} character over limit",
+  "countLeft.one": "{{n}} character left",
+  "countLeft.other": "{{n}} characters left",
+  "countOver.one": "{{n}} character over limit",
+  "countOver.other": "{{n}} characters over limit",
   stepOf: "Step {{n}} of {{total}}",
   stepTagSeparator: ": ",
   back: "Back",
@@ -439,8 +440,8 @@ export const DEFAULT_FORM_TEXTS: Readonly<Record<EngineFormTextKey, string>> = {
   // A tabs container's title over its links where the panels stack (DatumControls.tabsFrom).
   tabsContents: "Contents",
   // What a tab says of the blocking errors in its panel, where the binding's tab says it.
-  tabHasErrors: "{{count}} errors",
-  tabHasErrorsOne: "{{count}} error",
+  "tabHasErrors.one": "{{count}} error",
+  "tabHasErrors.other": "{{count}} errors",
   // The name of a tab its author left untitled, by its place among the tabs.
   tabFallback: "Tab {{n}}",
   // The name of a step its author left untitled, by its place among the steps.
@@ -477,7 +478,7 @@ export const DEFAULT_FORM_TEXTS: Readonly<Record<EngineFormTextKey, string>> = {
   optionsFailed: "The choices could not be loaded.",
   optionsTruncated: "Showing the first {{shown}} of {{total}} choices.",
   // The agent tools: the session banner and what the live region says of an
-  // assistant's work. Every counted text pairs `{base}One` with `{base}`, the way `.plural` reads them.
+  // assistant's work, the counted ones one key per plural category, as `.plural` reads them.
   agentBannerLabel: "Assistant",
   agentBanner: "An assistant is working on this form: {{purpose}}",
   agentStop: "Stop",
@@ -486,18 +487,18 @@ export const DEFAULT_FORM_TEXTS: Readonly<Record<EngineFormTextKey, string>> = {
   agentDismiss: "Dismiss",
   agentSessionStarted: "An assistant started working on this form: {{purpose}}. Press Stop to take over.",
   agentSessionEnded: "The assistant finished: {{summary}}",
-  agentStopped: "The assistant was stopped; {{count}} changes were undone",
-  agentStoppedOne: "The assistant was stopped; {{count}} change was undone",
+  "agentStopped.one": "The assistant was stopped; {{count}} change was undone",
+  "agentStopped.other": "The assistant was stopped; {{count}} changes were undone",
   agentPaused: "The assistant paused",
-  agentFilled: "An assistant filled {{count}} fields",
-  agentFilledOne: "An assistant filled {{count}} field",
-  agentRowsAdded: "An assistant added {{count}} rows to {{label}}",
-  agentRowsAddedOne: "An assistant added {{count}} row to {{label}}",
+  "agentFilled.one": "An assistant filled {{count}} field",
+  "agentFilled.other": "An assistant filled {{count}} fields",
+  "agentRowsAdded.one": "An assistant added {{count}} row to {{label}}",
+  "agentRowsAdded.other": "An assistant added {{count}} rows to {{label}}",
   agentRowRemoved: "An assistant removed a row from {{label}}",
   agentMoved: "An assistant moved to {{title}}",
   agentLanguage: "An assistant switched the form to {{label}}",
-  agentUndone: "{{count}} changes by the assistant were undone",
-  agentUndoneOne: "{{count}} change by the assistant was undone",
+  "agentUndone.one": "{{count}} change by the assistant was undone",
+  "agentUndone.other": "{{count}} changes by the assistant were undone",
   agentSubmitted: "An assistant submitted the form",
   // The saved draft and the PDF, and the ended banner's line when a draft restored
   // during the session left nothing before it to undo.
@@ -533,18 +534,6 @@ export function fillFormText(template: string, params?: FormTextParams): string 
   );
 }
 
-/**
- * The sources of the engine's words beside the page's and the binding's: `words`, with `catalog`
- * (the host's translations, a resolver's older third argument) standing in when `words` names
- * none. `undefined` when there are none.
- */
-function wordSourcesOf(catalog: TranslationCatalog | undefined, words: EngineWordSources | undefined): EngineWordSources | undefined {
-  if (catalog === undefined || words?.catalog !== undefined) {
-    return words;
-  }
-  return { ...words, catalog };
-}
-
 /** One layer of a text's wording: what it says for `key` in the resolver's locale, or `undefined`. */
 type TextLayer = (key: string) => string | undefined;
 
@@ -577,7 +566,7 @@ function firstWording(layers: readonly TextLayer[], key: string): string | undef
 
 /**
  * The text for `key` in `locale`: the page's entry resolved from its own words, else the form's
- * `texts` translation (`words.translations`, and the host's `catalog` over it), else the
+ * `texts` translation (`words.translations`, and the host's `words.catalog` over it), else the
  * drawing's, else the language pack's (`words.pack`), else the engine's English — the key itself
  * for a drawing key nobody worded — with its placeholders filled.
  */
@@ -585,22 +574,12 @@ export function resolveFormText(
   texts: FormTextCatalog | undefined,
   key: FormTextKey,
   locale: string,
-  catalog?: TranslationCatalog,
   bindingTexts?: FormTextCatalog,
   params?: FormTextParams,
   words?: EngineWordSources
 ): string {
-  const { page, rest } = textLayers(texts, locale, bindingTexts, wordSourcesOf(catalog, words));
-  const layers = [page, ...rest];
-  const worded = firstWording(layers, key);
-  // A layer that words the heading but not its singular keeps its one wording for the count of
-  // one too ("There is a problem" has no plural to split).
-  if (key === "summaryHeadingOne" && worded === undefined) {
-    const heading = firstWording(layers, "summaryHeading");
-    if (heading !== undefined) {
-      return fillFormText(heading, params);
-    }
-  }
+  const { page, rest } = textLayers(texts, locale, bindingTexts, words);
+  const worded = firstWording([page, ...rest], key);
   return fillFormText(worded ?? (Object.prototype.hasOwnProperty.call(DEFAULT_FORM_TEXTS, key) ? DEFAULT_FORM_TEXTS[key as EngineFormTextKey] : key), params);
 }
 
@@ -613,54 +592,41 @@ function pluralCategory(locale: string, count: number): string {
   }
 }
 
-/** The keys a counted text falls back to when no `base.category` key is worded: the singular's and the general one. */
-export interface PluralFallbackKeys {
-  one?: FormTextKey;
-  other?: FormTextKey;
-}
-
 /**
  * A counted text for `count`: `base.<category>` (the locale's `Intl.PluralRules` category, so
- * `countLeft.few` for Polish) in the page's texts, then the form's `texts` translations, the
- * drawing's and the pack's; a category nobody worded reads `base.other`. Without those it is the
- * two-key pair (`{base}One` for the category `one`, `base` otherwise, or the keys `fallback`
- * names), the shape the engine's English is kept in, which stands behind them.
+ * `countLeft.few` for Polish), else `base.other`, in each layer in turn — the page's texts, the
+ * form's `texts` translations, the drawing's, the pack's — then the engine's English, which words
+ * `base.one` and `base.other`.
  */
 export function resolveFormTextPlural(
   texts: FormTextCatalog | undefined,
   base: string,
   count: number,
   locale: string,
-  catalog?: TranslationCatalog,
   bindingTexts?: FormTextCatalog,
   params?: FormTextParams,
-  fallback?: PluralFallbackKeys,
   words?: EngineWordSources
 ): string {
   const category = pluralCategory(locale, count);
-  // The two-key pair the engine's English is kept in: `{base}One` (or `fallback.one`) for one, `base` (or `fallback.other`) otherwise.
-  const pairKey = category === "one" ? (fallback?.one ?? `${base}One`) : (fallback?.other ?? base);
   const keys = category === "other" ? [`${base}.other`] : [`${base}.${category}`, `${base}.other`];
-  // The page's plain base also reads for the count of one (a page that words `summaryHeading`
-  // means it for every count), and it does so before any other layer's key, a singular included.
-  const pageKeys = category === "one" ? [...keys, pairKey, base] : [...keys, pairKey];
-  const { page, rest } = textLayers(texts, locale, bindingTexts, wordSourcesOf(catalog, words));
+  const { page, rest } = textLayers(texts, locale, bindingTexts, words);
   for (const layer of [page, ...rest]) {
-    for (const key of layer === page ? pageKeys : [...keys, pairKey]) {
+    for (const key of keys) {
       const hit = layer(key);
       if (hit !== undefined) {
         return fillFormText(hit, params);
       }
     }
   }
-  return resolveFormText(texts, pairKey, locale, catalog, bindingTexts, params, words);
+  const english = keys.find((key) => Object.prototype.hasOwnProperty.call(DEFAULT_FORM_TEXTS, key));
+  return fillFormText(english !== undefined ? DEFAULT_FORM_TEXTS[english as EngineFormTextKey] : `${base}.other`, params);
 }
 
 /** `resolveFormText` with the page's, the binding's, the engine's word sources and the locale already bound. */
 export type FormTextResolver = {
   (key: FormTextKey, params?: FormTextParams): string;
   /** A counted text: see {@link resolveFormTextPlural}. */
-  plural(base: string, count: number, params?: FormTextParams, fallback?: PluralFallbackKeys): string;
+  plural(base: string, count: number, params?: FormTextParams): string;
   /**
    * Where the engine's own words come from before its English (the form's `texts`
    * translations, the host's catalog, a language pack), for wording what the resolver does not:
@@ -669,18 +635,12 @@ export type FormTextResolver = {
   readonly words: EngineWordSources;
 };
 
-export function createFormTextResolver(
-  locale: string,
-  texts?: FormTextCatalog,
-  catalog?: TranslationCatalog,
-  bindingTexts?: FormTextCatalog,
-  words?: EngineWordSources
-): FormTextResolver {
-  const sources = wordSourcesOf(catalog, words) ?? {};
-  const resolver = ((key: FormTextKey, params?: FormTextParams) => resolveFormText(texts, key, locale, undefined, bindingTexts, params, sources)) as FormTextResolver & {
+export function createFormTextResolver(locale: string, texts?: FormTextCatalog, bindingTexts?: FormTextCatalog, words?: EngineWordSources): FormTextResolver {
+  const sources = words ?? {};
+  const resolver = ((key: FormTextKey, params?: FormTextParams) => resolveFormText(texts, key, locale, bindingTexts, params, sources)) as FormTextResolver & {
     words: EngineWordSources;
   };
-  resolver.plural = (base, count, params, fallback) => resolveFormTextPlural(texts, base, count, locale, undefined, bindingTexts, params, fallback, sources);
+  resolver.plural = (base, count, params) => resolveFormTextPlural(texts, base, count, locale, bindingTexts, params, sources);
   resolver.words = sources;
   return resolver;
 }

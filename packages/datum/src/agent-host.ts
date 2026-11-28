@@ -82,7 +82,7 @@ function languagePackOf(form: DatumFormElement): LanguagePack | undefined {
 function textsOf(form: DatumFormElement): FormTextResolver {
   const runtime = form.runtime;
   const locale = runtime?.state().locale ?? form.locale ?? "en";
-  return createFormTextResolver(locale, form.texts, runtime?.translationCatalog(), undefined, { translations: runtime?.translations(), pack: languagePackOf(form) });
+  return createFormTextResolver(locale, form.texts, undefined, { translations: runtime?.translations(), catalog: runtime?.translationCatalog(), pack: languagePackOf(form) });
 }
 
 /**

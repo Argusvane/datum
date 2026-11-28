@@ -968,7 +968,7 @@ export function localesOf(runtime: FormRuntime): LocaleOption[] {
 }
 
 export function textResolver(host: FormAgentHost, runtime: FormRuntime, locale: string): FormTextResolver {
-  return createFormTextResolver(locale, host.texts?.(), runtime.translationCatalog(), undefined, { translations: runtime.translations(), pack: host.languagePack?.() });
+  return createFormTextResolver(locale, host.texts?.(), undefined, { translations: runtime.translations(), catalog: runtime.translationCatalog(), pack: host.languagePack?.() });
 }
 
 /** The form's title: the root's label, else `metadata.name`, else the definition id. */

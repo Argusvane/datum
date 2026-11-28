@@ -195,8 +195,8 @@ It also writes the summary's `href` and calls `focus()`.
 
 **File fields.** Picking and removing a file are announced by the renderer. The adapter draws an
 empty live region (`role="status"`, `aria-live="polite"`) marked `data-file-status` (`FILE_STATUS_ATTRIBUTE`,
-`render/live/contract.ts`), and the renderer fills it with the form text `fileAnnounced` for a pick
-(`fileAnnouncedMany` for several files) and `fileRemoved` for a removal, then clears it after five
+`render/live/contract.ts`), and the renderer fills it with the counted form text `fileAnnounced` for a pick
+(`fileAnnounced.one` for one file, `fileAnnounced.other` for several) and `fileRemoved` for a removal, then clears it after five
 seconds so a stale line is not read again. A pick is read out only where the region also carries
 `data-file-announce`; a removal always is. Focus stays in the field: the pressed Remove button
 leaves with its row, so once the draw lands the field's focus target (the picker, or its first

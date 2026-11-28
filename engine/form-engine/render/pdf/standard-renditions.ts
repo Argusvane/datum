@@ -114,7 +114,7 @@ export function pdfFieldNamePart(value: string): string {
 
 /** The words of the form a rendition draws that no field supplies (a row's heading, an untitled tab's caption). */
 function formTextOf(context: PdfRenditionContext): FormTextResolver {
-  return createFormTextResolver(context.locale, undefined, context.translationCatalog, undefined, { translations: context.translations });
+  return createFormTextResolver(context.locale, undefined, undefined, { translations: context.translations, catalog: context.translationCatalog });
 }
 
 function blockStyle(context: PdfRenditionContext) {

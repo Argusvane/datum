@@ -63,7 +63,7 @@ export function createComponentMessageResolver(
   // there is a locale to word them in (see `withWordedErrors`).
   const text =
     options.locale !== undefined
-      ? createFormTextResolver(options.locale, options.texts, options.translationCatalog, options.bindingTexts, { translations: options.translations, pack: options.pack })
+      ? createFormTextResolver(options.locale, options.texts, options.bindingTexts, { translations: options.translations, catalog: options.translationCatalog, pack: options.pack })
       : undefined;
   const modelsById = new Map(output.components.map((model) => [model.id, model]));
   const authored = new Map<string, ValidationMessageCatalog | undefined>();
@@ -150,7 +150,7 @@ function withWordedErrors(
  */
 export function createDefaultMessageWording(options: ComponentMessageOptions): (model: RenderComponentModel, error: FormError) => string {
   const locale = options.locale ?? "en";
-  const text = createFormTextResolver(locale, undefined, undefined, options.bindingTexts, { pack: options.pack });
+  const text = createFormTextResolver(locale, undefined, options.bindingTexts, { pack: options.pack });
   const words: EngineWordSources = { translations: options.translations, catalog: options.translationCatalog, pack: options.pack };
   return (model, error) => {
     // The error as the engine raised it, without the words a raiser or an author put on it.

@@ -285,7 +285,7 @@ export function createFilesFeature(options: FilesOptions = {}): LiveFeature {
         }
         runtime.setValue(at, configuration.multiple ? [...current(at), ...stored] : stored[0]);
         const names = stored.map((attachment) => attachment.name);
-        announce(live, key, state.words, (text) => text.plural("fileAnnounced", names.length, { names: names.join(", "), count: names.length }, { one: "fileAnnounced", other: "fileAnnouncedMany" }), true);
+        announce(live, key, state.words, (text) => text.plural("fileAnnounced", names.length, { names: names.join(", "), count: names.length }), true);
         // A pick is final as made: the leave-field check runs on it.
         on.commit();
       };

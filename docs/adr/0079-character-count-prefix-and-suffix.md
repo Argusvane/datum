@@ -65,8 +65,8 @@ status is recomputed from the value with no listener of its own.
   the renderer (`behaviour.countsCharacters: "renderer"`, the default).
 
 **5. Wording through `texts`**, page over binding over engine: `countUpTo` (the described limit; "You can enter up to {{max}} characters"),
-`countLeft` / `countLeftOne` ("{{n}} characters left", "{{n}} character left"), `countOver` /
-`countOverOne` ("{{n}} characters over limit", "{{n}} character over limit") and `countEmpty` (what
+`countLeft.other` / `countLeft.one` ("{{n}} characters left", "{{n}} character left"), `countOver.other` /
+`countOver.one` ("{{n}} characters over limit", "{{n}} character over limit"), each counted by plural category, and `countEmpty` (what
 an empty field shows; none in the engine, where the whole limit reads as left). Every text takes `{{max}}`,
 `{{count}}` (characters typed) and `{{n}}` (left, or over), so a system may count up as well as
 down: USWDS opens with "{{max}} characters allowed", Québec draws "{{count}} / {{max}}". A binding

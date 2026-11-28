@@ -516,9 +516,8 @@ export function foldPresentation(
   const text = createFormTextResolver(
     locale,
     journey ? kit.pageTexts(options.texts, journey.texts) : options.texts,
-    options.translationCatalog,
     options.bindingTexts,
-    { translations: options.translations, pack: options.bindingPack }
+    { translations: options.translations, catalog: options.translationCatalog, pack: options.bindingPack }
   );
   const sources: TextSources = { translations: options.translations, catalog: options.translationCatalog };
   const live = output.mode === "interactive";
