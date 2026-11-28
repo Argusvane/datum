@@ -358,6 +358,18 @@ function pruneDefaults(value: unknown): Record_ | undefined {
   return out;
 }
 
+/**
+ * The signature block with its defaults left out, but its `appearance: false` kept: that asks
+ * for an invisible signature, where leaving it out draws the default visible one.
+ */
+function pruneSignature(value: unknown): Record_ | undefined {
+  const out = pruneDefaults(value);
+  if (out && isRecord(value) && value.appearance === false) {
+    out.appearance = false;
+  }
+  return out;
+}
+
 function readRect(value: unknown): PdfTemplateArea["rect"] {
   const rect = isRecord(value) ? value : {};
   const num = (entry: unknown, fallback: number): number => (typeof entry === "number" && Number.isFinite(entry) ? entry : fallback);
@@ -716,11 +728,12 @@ export function createPdfTemplateDesigner(options: PdfTemplateDesignerOptions): 
     }
     // The settings blocks with their defaults left out: an option switched off, a level set
     // back to none, an empty name are the same as never set, and the layout says nothing.
+    // A signature's `appearance: false` is the exception: it is a choice, not a default.
     for (const [key, value] of [
       ["options", pruneDefaults(fill)],
       ["accessibility", isRecord(accessibility) ? accessibility : undefined],
       ["conformance", pruneDefaults(conformance)],
-      ["signature", pruneDefaults(signature)],
+      ["signature", pruneSignature(signature)],
       ["attachments", pruneDefaults(attachments)]
     ] as const) {
       if (isRecord(value) && Object.keys(value).length > 0) {
