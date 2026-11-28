@@ -684,7 +684,7 @@ async function modeOnPage(options: Partial<PdfBuilderModeOptions> & { pdf: PdfCo
   document.body.append(host);
   const root = host.attachShadow({ mode: "open" });
   root.append(...(mode.overlays ?? []));
-  const context = { host, root, showCanvasSurface: () => undefined };
+  const context = { host, root, showCanvasSurface: () => undefined, holdForInspector: (run: () => void) => (run(), true) };
   const activated = mode.activate!(context);
   if (activate === "await") {
     await activated;

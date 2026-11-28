@@ -66,7 +66,7 @@ async function setup(): Promise<Setup> {
       return true;
     }
   } as unknown as ShadowRoot;
-  const context: BuilderModeContext = { host: {} as HTMLElement, root, showCanvasSurface: () => undefined };
+  const context: BuilderModeContext = { host: {} as HTMLElement, root, showCanvasSurface: () => undefined, holdForInspector: (run: () => void) => (run(), true) };
   const host = logicJourneyHostOf(form)!;
   expect(await host.prepare()).toBe(true);
   await mode.activate?.(context);

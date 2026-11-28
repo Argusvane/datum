@@ -368,9 +368,9 @@ export interface BuilderModeContext {
    * the author answers the unsaved-edits prompt the inspector puts up for it (Apply or Discard
    * runs it, Keep editing drops it). A mode calls it before a move of its own that takes that
    * component out of sight (another step shown, a field moved to another step). Answers whether
-   * `run` ran now. Absent on a shell older than the seam: the mode runs `run` itself.
+   * `run` ran now.
    */
-  holdForInspector?(run: () => void): boolean;
+  holdForInspector(run: () => void): boolean;
 }
 
 /**

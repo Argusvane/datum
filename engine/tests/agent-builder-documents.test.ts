@@ -912,7 +912,7 @@ async function realPdfMode(pdf: PdfConfiguration): Promise<PdfBuilderMode> {
   document.body.append(host);
   const root = host.attachShadow({ mode: "open" });
   root.append(...(made.overlays ?? []));
-  await made.activate!({ host, root, showCanvasSurface: () => undefined });
+  await made.activate!({ host, root, showCanvasSurface: () => undefined, holdForInspector: (run: () => void) => (run(), true) });
   await until(() => made.ready);
   return made;
 }

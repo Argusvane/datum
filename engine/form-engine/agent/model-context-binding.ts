@@ -1,7 +1,6 @@
 /**
  * The ModelContext binding: the one file in the repository that names
- * `document.modelContext` (and its older `navigator.modelContext` spelling), so spec churn
- * costs this file alone. It is a thin adapter: the registrar owns the AbortControllers and the
+ * `document.modelContext` (WebMCP's registration point), so spec churn costs this file alone. It is a thin adapter: the registrar owns the AbortControllers and the
  * execute pipeline; the binding detects the API and registers the registrar's routing wrappers
  * with it, turning every rejection Chrome 155 produces into a `BindingState`
  * instead of a throw.
@@ -26,7 +25,7 @@ export interface BindingState {
   names: string[];
 }
 
-/** An object that may carry a `modelContext`: `document`, `navigator`, or a test's plain object. */
+/** An object that may carry a `modelContext`: `document`, or a test's plain object. */
 interface ModelContextCarrier {
   modelContext?: unknown;
 }
@@ -47,18 +46,13 @@ function readModelContext(carrier: unknown): ModelContextLike | undefined {
 }
 
 /**
- * Finds the browser's ModelContext: `document.modelContext` first (Chrome 155), then
- * `navigator.modelContext` (older previews; absent on 155). A candidate counts only when it has
+ * Finds the browser's ModelContext, `document.modelContext`. A candidate counts only when it has
  * a `registerTool` function. `doc` defaults to the global `document` when one exists; under
- * plain node both are absent and the answer is `undefined`, never a throw.
+ * plain node it is absent and the answer is `undefined`, never a throw.
  */
 export function detectModelContext(doc?: object): ModelContextLike | undefined {
-  const globals = globalThis as { document?: unknown; navigator?: unknown };
-  const fromDocument = readModelContext(doc ?? globals.document);
-  if (fromDocument !== undefined) {
-    return fromDocument;
-  }
-  return readModelContext(globals.navigator);
+  const globals = globalThis as { document?: unknown };
+  return readModelContext(doc ?? globals.document);
 }
 
 /** The pipeline the binding hands every browser call to: the registrar's `run`. */

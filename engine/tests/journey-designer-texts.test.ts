@@ -61,7 +61,7 @@ describe("the journey's outline in the builder's catalog", () => {
     const catalog: BuilderTextCatalog = { fr: { "journey.designer.page.ref": "Étape {number} · {name}" } };
     const journey = { journeys: [{ id: "a", name: "A", pages: [{ id: "about", title: "About you", components: ["fullName"], routes: [{ to: "more" }] }, { id: "more", title: "More", components: ["notes"] }] }] };
     const mode = createJourneyBuilderMode({ form, journey, textCatalog: () => catalog });
-    await mode.activate?.({ host: {} as HTMLElement, root: {} as ShadowRoot, showCanvasSurface: () => undefined });
+    await mode.activate?.({ host: {} as HTMLElement, root: {} as ShadowRoot, showCanvasSurface: () => undefined, holdForInspector: (run: () => void) => (run(), true) });
     const steps = mode.controller.treeView().slots[0]?.children ?? [];
     expect(steps.map((step) => step.label)).toEqual(["Étape 1 · About you", "Étape 2 · More"]);
     expect(steps[0]?.slots.flatMap((slot) => slot.children.map((child) => child.label))).toContain("Route → Étape 2 · More");

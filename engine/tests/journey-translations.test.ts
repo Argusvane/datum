@@ -72,7 +72,7 @@ function translations(): FormTranslations {
 }
 
 function context(): BuilderModeContext {
-  return { host: {} as HTMLElement, root: {} as ShadowRoot, showCanvasSurface: () => undefined };
+  return { host: {} as HTMLElement, root: {} as ShadowRoot, showCanvasSurface: () => undefined, holdForInspector: (run: () => void) => (run(), true) };
 }
 
 async function activated(): Promise<{ form: BuilderController; mode: JourneyBuilderMode }> {

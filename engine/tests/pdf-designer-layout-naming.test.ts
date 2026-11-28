@@ -65,7 +65,7 @@ async function open(inspection: PdfTemplateInfo, fields: PdfTemplateLayout["fiel
   let surface: HTMLElement | undefined;
   const host = document.createElement("div");
   document.body.append(host);
-  const context = { host, root: host.attachShadow({ mode: "open" }), showCanvasSurface: (next: HTMLElement | undefined) => (surface = next) };
+  const context = { host, root: host.attachShadow({ mode: "open" }), showCanvasSurface: (next: HTMLElement | undefined) => (surface = next), holdForInspector: (run: () => void) => (run(), true) };
   await mode.activate!(context);
   await until(() => mode.templateDesigner?.inspection !== undefined && surface !== undefined);
   const bar = (selector: string): HTMLButtonElement => (mode.barActions ?? []).find((button) => button.matches(selector)) as HTMLButtonElement;

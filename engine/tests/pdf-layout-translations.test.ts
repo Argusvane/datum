@@ -106,7 +106,7 @@ const until = async (check: () => unknown): Promise<void> => {
 async function open(m: ReturnType<typeof mode>): Promise<void> {
   const host = document.createElement("div");
   document.body.append(host);
-  await m.activate!({ host, root: host.attachShadow({ mode: "open" }), showCanvasSurface: () => undefined } as never);
+  await m.activate!({ host, root: host.attachShadow({ mode: "open" }), showCanvasSurface: () => undefined, holdForInspector: (run: () => void) => (run(), true) } as never);
 }
 
 describe("the PDF mode and the definition's translations", () => {

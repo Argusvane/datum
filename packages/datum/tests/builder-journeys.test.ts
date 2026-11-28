@@ -2312,15 +2312,15 @@ describe("the Step view's inspector (forms and steps)", () => {
     await tick(50);
     expect(canvasEl(rig.element).shadowRoot!.querySelector("[data-move-prompt]")).toBeNull();
     // The mode's own: what the step picker calls before it shows another step.
-    const context = (rig.element.journeyMode as unknown as { context: { holdForInspector?(run: () => void): boolean } }).context;
+    const context = (rig.element.journeyMode as unknown as { context: { holdForInspector(run: () => void): boolean } }).context;
     let shown = 0;
-    expect(context.holdForInspector!(() => (shown += 1))).toBe(false);
+    expect(context.holdForInspector(() => (shown += 1))).toBe(false);
     expect(prompt(rig.element)).toBeTruthy();
     expect(shown).toBe(0);
     answer(rig.element, "save");
     expect(shown).toBe(1);
     // Nothing held: at once.
-    expect(context.holdForInspector!(() => (shown += 1))).toBe(true);
+    expect(context.holdForInspector(() => (shown += 1))).toBe(true);
     expect(shown).toBe(2);
   }, 30_000);
 

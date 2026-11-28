@@ -102,7 +102,7 @@ async function layouts(pdf: PdfConfiguration = LAYOUTS): Promise<{ set: Document
   document.body.append(host);
   const root = host.attachShadow({ mode: "open" });
   root.append(...(made.overlays ?? []));
-  await made.activate!({ host, root, showCanvasSurface: () => undefined });
+  await made.activate!({ host, root, showCanvasSurface: () => undefined, holdForInspector: (run: () => void) => (run(), true) });
   await until(() => made.ready);
   set.ui.pdfLayouts = () => pdfSide(made);
   set.ui.selectDocument = () => Promise.resolve({ status: "opened" });

@@ -16,8 +16,7 @@ Chrome's WebMCP lets a page register tools (a name, a title, a description, a JS
 `execute` function) on `document.modelContext`, and the browser's assistant lists and calls them.
 The flag-gated WebMCP behaves in ways a binding has to cope with:
 
-- `document.modelContext` is the registration point and `navigator.modelContext` is absent (the
-  binding looks at `document` first and falls back to `navigator` for older previews); the
+- `document.modelContext` is the registration point, and the binding reads it alone; the
   registry is page-wide across same-origin frames and a duplicate name in one document is
   refused.
 - No input validation: `execute` receives a parsed object that may break its own schema; the
@@ -47,8 +46,8 @@ models answer `featureOn(undefined, "agent") === false` (builder) and `formFeatu
 difference is `agent` does not rebuild anything (the runtime on `<datum-form>`, the sides on
 `<datum-form-builder>`) and only registers or withdraws the agent tools. A page
 registrar registers each kind's tools once, unprefixed; a `form` argument is needed only when two
-or more forms are registered. The imperative WebMCP API only (`document.modelContext`, falling
-back to `navigator.modelContext`); no declarative forms. The engine code lives under
+or more forms are registered. The imperative WebMCP API only (`document.modelContext`); no
+declarative forms. The engine code lives under
 `engine/form-engine/agent/` and is exported only through the `@argusvane/datum-engine/agent`
 subpath, never from the engine root.
 

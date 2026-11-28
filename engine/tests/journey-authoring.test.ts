@@ -364,7 +364,7 @@ describe("the inspector of a presentation's own nodes", () => {
 // --- the mode -------------------------------------------------------------------------------
 
 function modeContext(root: EventTarget = new EventTarget()): BuilderModeContext {
-  return { host: {} as HTMLElement, root: root as unknown as ShadowRoot, showCanvasSurface: () => undefined };
+  return { host: {} as HTMLElement, root: root as unknown as ShadowRoot, showCanvasSurface: () => undefined, holdForInspector: (run: () => void) => (run(), true) };
 }
 
 async function activatedMode(configuration: JourneyConfiguration, root = formRoot()): Promise<{ mode: JourneyBuilderMode; form: BuilderController; target: EventTarget; errors: string[] }> {

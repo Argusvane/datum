@@ -3482,11 +3482,10 @@ class JourneyBuilderModeImpl implements JourneyBuilderMode {
     }
   }
 
-  /** Runs `run` once the form field the inspector edits has no unsaved edit (the shell's guard), at once when the shell has none. */
+  /** Runs `run` once the form field the inspector edits has no unsaved edit (the shell's guard); at once while the mode is not attached. */
   private holdForInspector(run: () => void): void {
-    const hold = this.context?.holdForInspector;
-    if (hold) {
-      hold.call(this.context, run);
+    if (this.context) {
+      this.context.holdForInspector(run);
     } else {
       run();
     }

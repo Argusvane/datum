@@ -107,6 +107,7 @@ function context(): BuilderModeContext & { surfaces: Array<HTMLElement | undefin
     showCanvasSurface: (surface) => {
       surfaces.push(surface);
     },
+    holdForInspector: (run) => (run(), true),
     surfaces
   };
 }
