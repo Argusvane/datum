@@ -6,7 +6,7 @@ import { cffGlyphCount, cidSetBitmap, iccComponents, isLanguageTag, pdfDateToXmp
 import { builtinProfile, builtinProfileSizes, grayGamma22Profile } from "../src/kernel/profiles.js";
 import { renderDocument, layoutOnly } from "../src/kernel/render.js";
 import { fillClaim, fillTemplate, inspectTemplate } from "../src/kernel/template.js";
-import { ENV, extractText, fonts, paragraph, reload } from "./helpers.js";
+import { ENV, extractText, fonts, paragraph, PLAN_THEME, reload } from "./helpers.js";
 import {
   EXTENDED_SYLLABICS,
   FILL_OPTIONS,
@@ -303,7 +303,9 @@ describe("PDF/A", () => {
           { id: "a1", page: 1, rect: { x: 20, y: 150, width: 200, height: 20 }, value: "Drawn answer", draw: { ...DEFAULT_PDF_AREA_DRAW, color: "#112233" } },
           { id: "a2", page: 1, rect: { x: 20, y: 180, width: 200, height: 20 }, value: "Field answer", draw: { ...DEFAULT_PDF_AREA_DRAW, bold: true }, field: { name: "area2", required: false, readOnly: false } }
         ],
-        { pdfa: "2b", outputIntent: { profile: { data: bytesToBase64(getDefaultSRGBProfile()) }, identifier: "ignored", info: "ignored" } }
+        { pdfa: "2b", outputIntent: { profile: { data: bytesToBase64(getDefaultSRGBProfile()) }, identifier: "ignored", info: "ignored" } },
+        undefined,
+        PLAN_THEME
       );
       expect(filled.pdfa).toBe("2b");
       expect(filled.warnings.map((warning) => warning.code)).toEqual(["pdfa.outputIntent"]);
@@ -413,7 +415,9 @@ describe("PDF/A", () => {
           { id: "a2", page: 1, rect: { x: 20, y: 630, width: 20, height: 20 }, value: true, draw: { ...DEFAULT_PDF_AREA_DRAW, kind: "check" } },
           { id: "a3", page: 1, rect: { x: 20, y: 660, width: 200, height: 20 }, value: "Field answer", draw: DEFAULT_PDF_AREA_DRAW, field: { name: "area3", required: false, readOnly: false } }
         ],
-        { pdfa: "3a", attachments: [SUBMISSION] }
+        { pdfa: "3a", attachments: [SUBMISSION] },
+        undefined,
+        PLAN_THEME
       );
       expect(filled.pdfa).toBe("3a");
       expect(filled.warnings).toEqual([]);

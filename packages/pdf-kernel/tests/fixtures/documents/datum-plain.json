@@ -10,7 +10,7 @@
       "left": 54
     },
     "footer": {
-      "height": 24
+      "height": 21
     }
   },
   "metadata": {
@@ -58,33 +58,211 @@
     "muted": "#555555",
     "border": "#999999",
     "accent": "#1a4480",
-    "surface": "#f2f2f2"
+    "surface": "#f2f2f2",
+    "controlBorder": "#999999",
+    "controlFill": "#ffffff",
+    "choiceMark": "#111111",
+    "link": "#1a4480",
+    "onAccent": "#ffffff"
+  },
+  "controls": {
+    "borderWidth": 0.5,
+    "radius": 0,
+    "padding": 0,
+    "minHeight": 20,
+    "valueFrame": "none",
+    "selectMark": "none"
+  },
+  "choice": {
+    "size": 9,
+    "widgetSize": 12,
+    "borderWidth": 0.75,
+    "radius": 0,
+    "markStroke": 1.2,
+    "labelGap": 5,
+    "optionGap": 2,
+    "legendGap": 2,
+    "columns": 1
+  },
+  "fields": {
+    "labelToValue": 1.5,
+    "labelToControl": 2,
+    "labelToHint": 1.5,
+    "hintToControl": 3,
+    "hints": "hidden",
+    "hintPosition": "afterLabel"
+  },
+  "headings": {
+    "numbered": false,
+    "band": "none",
+    "bandPadding": 3,
+    "titleRule": false,
+    "titleRuleWidth": 1
+  },
+  "table": {
+    "cellPadding": 4,
+    "borderWidth": 0.5,
+    "rowMinHeight": 12,
+    "headerWeight": 700
+  },
+  "box": {
+    "borderWidth": 0.75,
+    "padding": 6,
+    "radius": 0
+  },
+  "panel": {
+    "borderWidth": 0.75,
+    "radius": 0,
+    "padding": 6,
+    "headerPadding": 6
+  },
+  "list": {
+    "indent": 12,
+    "gap": 2,
+    "bullet": "•"
+  },
+  "spacing": {
+    "heading": [
+      10,
+      4
+    ],
+    "paragraph": [
+      0,
+      4
+    ],
+    "labelValue": [
+      0,
+      6
+    ],
+    "widget": [
+      0,
+      6
+    ],
+    "checkmark": [
+      0,
+      3
+    ],
+    "checklist": [
+      0,
+      6
+    ],
+    "list": [
+      0,
+      4
+    ],
+    "table": [
+      2,
+      8
+    ],
+    "image": [
+      2,
+      6
+    ],
+    "rule": [
+      4,
+      4
+    ],
+    "spacer": [
+      0,
+      0
+    ],
+    "box": [
+      2,
+      6
+    ],
+    "group": [
+      0,
+      0
+    ],
+    "pageBreak": [
+      0,
+      0
+    ]
   },
   "footer": [
     {
-      "id": "text-50",
-      "kind": "paragraph",
-      "runs": [
+      "id": "table-54",
+      "kind": "table",
+      "role": "Div",
+      "columns": [
         {
-          "text": "Page "
+          "width": {
+            "fraction": 0.5
+          }
         },
         {
-          "text": "#",
-          "token": "pageNumber"
-        },
-        {
-          "text": " of "
-        },
-        {
-          "text": "#",
-          "token": "pageCount"
+          "width": {
+            "fraction": 0.5
+          }
         }
       ],
-      "role": "P",
+      "rows": [
+        {
+          "id": "row-53",
+          "cells": [
+            {
+              "id": "cell-49",
+              "blocks": [
+                {
+                  "id": "text-50",
+                  "kind": "paragraph",
+                  "runs": [
+                    {
+                      "text": "Accessibility audit"
+                    }
+                  ],
+                  "role": "P",
+                  "style": {
+                    "spacingBefore": 0,
+                    "spacingAfter": 0,
+                    "color": "#555555",
+                    "size": 8
+                  }
+                }
+              ]
+            },
+            {
+              "id": "cell-51",
+              "blocks": [
+                {
+                  "id": "text-52",
+                  "kind": "paragraph",
+                  "runs": [
+                    {
+                      "text": "Page "
+                    },
+                    {
+                      "text": "#",
+                      "token": "pageNumber"
+                    },
+                    {
+                      "text": " of "
+                    },
+                    {
+                      "text": "#",
+                      "token": "pageCount"
+                    }
+                  ],
+                  "role": "P",
+                  "style": {
+                    "align": "end",
+                    "spacingBefore": 0,
+                    "spacingAfter": 0,
+                    "color": "#555555",
+                    "size": 8
+                  }
+                }
+              ]
+            }
+          ],
+          "keepTogether": true
+        }
+      ],
+      "repeatHeader": false,
+      "borders": "none",
       "style": {
-        "align": "center",
-        "color": "#555555",
-        "size": 8
+        "spacingBefore": 0,
+        "spacingAfter": 0
       }
     }
   ],
@@ -121,7 +299,9 @@
           "text": "1250"
         }
       ],
-      "arrangement": "stacked"
+      "arrangement": "stacked",
+      "prefix": "$",
+      "suffix": "CAD"
     },
     {
       "id": "stacked-4",
@@ -197,7 +377,8 @@
           "label": "Events",
           "checked": false
         }
-      ]
+      ],
+      "marker": "check"
     },
     {
       "id": "checkmark-10",
@@ -259,45 +440,52 @@
       "componentId": "intro",
       "runs": [
         {
-          "text": "Read the terms before you continue."
-        }
-      ],
-      "role": "P"
-    },
-    {
-      "id": "p-16",
-      "kind": "paragraph",
-      "componentId": "intro",
-      "runs": [
+          "text": "Read the "
+        },
         {
-          "text": "One"
-        }
-      ],
-      "role": "P"
-    },
-    {
-      "id": "p-17",
-      "kind": "paragraph",
-      "componentId": "intro",
-      "runs": [
+          "text": "terms",
+          "link": "#terms"
+        },
         {
-          "text": "Two"
+          "text": " before you continue."
         }
       ],
       "role": "P"
     },
     {
-      "id": "image-19",
+      "id": "list-16",
+      "kind": "list",
+      "componentId": "intro",
+      "ordered": false,
+      "items": [
+        {
+          "runs": [
+            {
+              "text": "One"
+            }
+          ]
+        },
+        {
+          "runs": [
+            {
+              "text": "Two"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "image-18",
       "kind": "image",
       "componentId": "logo",
-      "resourceId": "img-18",
+      "resourceId": "img-17",
       "alt": "Datum",
       "role": "Figure",
       "width": 90,
       "height": 30
     },
     {
-      "id": "section-heading-20",
+      "id": "section-heading-19",
       "kind": "heading",
       "level": 2,
       "runs": [
@@ -308,12 +496,12 @@
       "keepWithNext": true
     },
     {
-      "id": "section-21",
+      "id": "section-20",
       "kind": "group",
       "role": "Sect",
       "blocks": [
         {
-          "id": "stacked-22",
+          "id": "stacked-21",
           "kind": "labelValue",
           "componentId": "street",
           "label": "Street",
@@ -325,7 +513,7 @@
           "arrangement": "stacked"
         },
         {
-          "id": "stacked-23",
+          "id": "stacked-22",
           "kind": "labelValue",
           "componentId": "city",
           "label": "City",
@@ -340,7 +528,7 @@
       "keepTogether": false
     },
     {
-      "id": "section-heading-24",
+      "id": "section-heading-23",
       "kind": "heading",
       "level": 2,
       "runs": [
@@ -351,12 +539,12 @@
       "keepWithNext": true
     },
     {
-      "id": "section-25",
+      "id": "section-24",
       "kind": "group",
       "role": "Sect",
       "blocks": [
         {
-          "id": "table-31",
+          "id": "table-30",
           "kind": "table",
           "role": "Div",
           "columns": [
@@ -373,13 +561,13 @@
           ],
           "rows": [
             {
-              "id": "row-30",
+              "id": "row-29",
               "cells": [
                 {
-                  "id": "cell-26",
+                  "id": "cell-25",
                   "blocks": [
                     {
-                      "id": "stacked-27",
+                      "id": "stacked-26",
                       "kind": "labelValue",
                       "componentId": "email",
                       "label": "Email",
@@ -393,10 +581,10 @@
                   ]
                 },
                 {
-                  "id": "cell-28",
+                  "id": "cell-27",
                   "blocks": [
                     {
-                      "id": "stacked-29",
+                      "id": "stacked-28",
                       "kind": "labelValue",
                       "componentId": "phone",
                       "label": "Phone",
@@ -420,8 +608,9 @@
       "keepTogether": false
     },
     {
-      "id": "section-heading-32",
+      "id": "heading-32",
       "kind": "heading",
+      "componentId": "panel",
       "level": 2,
       "runs": [
         {
@@ -431,12 +620,13 @@
       "keepWithNext": true
     },
     {
-      "id": "section-33",
+      "id": "group-33",
       "kind": "group",
+      "componentId": "panel",
       "role": "Sect",
       "blocks": [
         {
-          "id": "stacked-34",
+          "id": "stacked-31",
           "kind": "labelValue",
           "componentId": "employer",
           "label": "Employer",
@@ -451,7 +641,7 @@
       "keepTogether": false
     },
     {
-      "id": "section-heading-35",
+      "id": "section-heading-34",
       "kind": "heading",
       "level": 2,
       "runs": [
@@ -462,12 +652,12 @@
       "keepWithNext": true
     },
     {
-      "id": "section-36",
+      "id": "section-35",
       "kind": "group",
       "role": "Sect",
       "blocks": [
         {
-          "id": "stacked-37",
+          "id": "stacked-36",
           "kind": "labelValue",
           "componentId": "nickname",
           "label": "Nickname",
@@ -482,7 +672,7 @@
       "keepTogether": false
     },
     {
-      "id": "section-heading-38",
+      "id": "section-heading-37",
       "kind": "heading",
       "level": 2,
       "runs": [
@@ -493,12 +683,12 @@
       "keepWithNext": true
     },
     {
-      "id": "section-39",
+      "id": "section-38",
       "kind": "group",
       "role": "Sect",
       "blocks": [
         {
-          "id": "stacked-40",
+          "id": "stacked-39",
           "kind": "labelValue",
           "componentId": "jobTitle",
           "label": "Job title",
@@ -513,7 +703,7 @@
       "keepTogether": false
     },
     {
-      "id": "section-heading-41",
+      "id": "section-heading-40",
       "kind": "heading",
       "level": 2,
       "runs": [
@@ -524,12 +714,12 @@
       "keepWithNext": true
     },
     {
-      "id": "section-42",
+      "id": "section-41",
       "kind": "group",
       "role": "Sect",
       "blocks": [
         {
-          "id": "checkmark-43",
+          "id": "checkmark-42",
           "kind": "checkmark",
           "componentId": "resident",
           "label": "I am a resident",
@@ -539,7 +729,7 @@
       "keepTogether": false
     },
     {
-      "id": "section-heading-44",
+      "id": "section-heading-43",
       "kind": "heading",
       "level": 2,
       "runs": [
@@ -550,12 +740,12 @@
       "keepWithNext": true
     },
     {
-      "id": "section-45",
+      "id": "section-44",
       "kind": "group",
       "role": "Sect",
       "blocks": [
         {
-          "id": "stacked-46",
+          "id": "stacked-45",
           "kind": "labelValue",
           "componentId": "notes",
           "label": "Notes",
@@ -570,7 +760,7 @@
       "keepTogether": false
     },
     {
-      "id": "section-heading-47",
+      "id": "section-heading-46",
       "kind": "heading",
       "level": 2,
       "runs": [
@@ -581,12 +771,12 @@
       "keepWithNext": true
     },
     {
-      "id": "section-48",
+      "id": "section-47",
       "kind": "group",
       "role": "Sect",
       "blocks": [
         {
-          "id": "checkmark-49",
+          "id": "checkmark-48",
           "kind": "checkmark",
           "componentId": "consent",
           "label": "Contact me about my application",
@@ -599,7 +789,7 @@
   "anchored": [],
   "resources": {
     "images": {
-      "img-18": {
+      "img-17": {
         "url": "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='40'%3E%3Crect width='120' height='40' fill='%23345'/%3E%3C/svg%3E"
       }
     }

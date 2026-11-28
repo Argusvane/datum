@@ -300,7 +300,7 @@ const properties = [
 // integrations/shared/scripts/canonical-fixtures.ts (npm run shared:canonical-fixtures) beside the hand-written RFC 8785 vectors.
 const sharedFixtures = join(repo, "integrations", "shared", "fixtures");
 const engineJcsVectors = join(repo, "engine", "tests", "fixtures", "jcs-vectors.json");
-const documents = join(repo, "packages", "pdf-kernel", "tests", "fixtures", "documents-3.8");
+const documents = join(repo, "packages", "pdf-kernel", "tests", "fixtures", "documents");
 const fixturePlan = {
   "datum-core": [
     [join(repo, "packages", "conformance-suite", "golden", "abi-1.0.json"), "abi-1.0.json"],
@@ -325,7 +325,7 @@ const fixturePlan = {
 // datum-sandbox-endive has no rows: its golden, PDF and hardening ITs implement datum-sandbox-tck's contracts,
 // which read the fixtures from the engine kit's own jar (below).
 for (const name of readdirSync(documents).filter((entry) => entry.endsWith(".json"))) {
-  fixturePlan["datum-pdf"].push([join(documents, name), join("documents-3.8", name)]);
+  fixturePlan["datum-pdf"].push([join(documents, name), join("documents", name)]);
 }
 // datum-pdf also reads the kernel's signing fixtures (keys and chains), beside the parity documents.
 const signing = join(repo, "packages", "pdf-kernel", "tests", "fixtures", "signing");
@@ -379,12 +379,12 @@ fixtureCount += 1;
 // contracts judge an engine outside this checkout by the very bytes the TypeScript side checks. Cleared first, so a document
 // the kernel drops cannot linger in the kit.
 const engineKitAssets = moduleOut("datum-sandbox-tck");
-rmSync(join(engineKitAssets, "documents-3.8"), { recursive: true, force: true });
-mkdirSync(join(engineKitAssets, "documents-3.8"), { recursive: true });
+rmSync(join(engineKitAssets, "documents"), { recursive: true, force: true });
+mkdirSync(join(engineKitAssets, "documents"), { recursive: true });
 for (const [from, name] of [
   [join(repo, "packages", "conformance-suite", "golden", "abi-1.0.json"), "golden.json"],
   [join(repo, "packages", "conformance-suite", "fixtures", "endpoint-fixture.definition.json"), "fixture-form.json"],
-  ...readdirSync(documents).filter((entry) => entry.endsWith(".json")).map((name) => [join(documents, name), join("documents-3.8", name)])
+  ...readdirSync(documents).filter((entry) => entry.endsWith(".json")).map((name) => [join(documents, name), join("documents", name)])
 ]) {
   if (!existsSync(from)) {
     fail(`${LABEL}: the engine kit's fixture ${relative(repo, from)} is missing.`);

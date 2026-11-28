@@ -181,7 +181,7 @@ An id nothing supplies is skipped with `theme.notFound`, and a theme that is not
 Two themes ship:
 
 - **`datum-pdf`.** The form look at print size: numbered section headings on bands, boxed answers, captions in capitals. On an element `default` is accepted as another name for it.
-- **`datum-plain`.** The plainer record the kernel draws with no theme at all.
+- **`datum-plain`.** A plain record of the answers: no frames, bands, numbering or captions in capitals.
 
 On a server, the program knows only the two shipped ids; send other themes as an object.
 

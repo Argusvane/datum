@@ -10,14 +10,15 @@ import {
   buildPdfLayoutRequest,
   buildPdfRenderRequest,
   bytesToBase64,
+  DEFAULT_TEMPLATE_FILL_OPTIONS,
   type PdfDocumentRequest,
   type PdfFillArea,
   type PdfFillPlan
 } from "@argusvane/datum-engine/render";
-import { MAX_PDF_TEMPLATE_BYTES } from "@argusvane/datum-engine/core";
+import { DEFAULT_PDF_AREA_DRAW, MAX_PDF_TEMPLATE_BYTES } from "@argusvane/datum-engine/core";
 import { createInProcessPdfProvider } from "../src/in-process-provider.js";
 import { PDF_PROGRAM_VERSION, handlePdfRequest, handlePdfRequestJson } from "../src/program/entry.js";
-import { ENV, PDF_MAGIC, detachedTemplateBytes, document, extractText, fonts, head, paragraph, reload, widgetsShown } from "./helpers.js";
+import { detachedTemplateBytes, document, ENV, extractText, fonts, head, paragraph, PDF_MAGIC, PLAN_THEME, reload, widgetsShown } from "./helpers.js";
 
 function form(): ComponentNode {
   return {
@@ -286,6 +287,19 @@ describe("in-process provider", () => {
     await expect(provider.render({ abi: "2.0.0", op: "render", document: document([]), fonts: [], env: ENV })).rejects.toThrow(PdfKernelError);
     const bad = await handlePdfRequest({ abi: PDF_ABI_VERSION, op: "render", fonts: [], env: ENV });
     expect(bad).toEqual({ ok: false, error: { code: "invalid_request", message: "The request carries no document" } });
+    // A document without the theme's geometry is not filled in: it is refused, for render and layout alike.
+    const { controls: _controls, spacing: _spacing, ...partial } = document([paragraph("p", "Hello")]);
+    for (const op of ["render", "layout"] as const) {
+      const refused = await handlePdfRequest({ abi: PDF_ABI_VERSION, op, document: partial as never, fonts: [], env: ENV });
+      expect(refused, op).toEqual({ ok: false, error: { code: "invalid_request", message: "The document carries no controls, spacing: send the document as the engine builds it, with the theme's geometry" } });
+    }
+    // A fill with areas needs the type and colours its plan was built under.
+    const area = { id: "a1", page: 1, rect: { x: 10, y: 10, width: 100, height: 14 }, value: "drawn", draw: DEFAULT_PDF_AREA_DRAW };
+    const blank = await PDFDocument.create();
+    blank.addPage();
+    const template = bytesToBase64(await blank.save());
+    const unthemed = await handlePdfRequest({ abi: PDF_ABI_VERSION, op: "fill", template: { data: template }, values: {}, areas: [area], fonts: [], env: ENV, options: DEFAULT_TEMPLATE_FILL_OPTIONS });
+    expect(unthemed).toMatchObject({ ok: false, error: { code: "invalid_request" } });
     const json = await handlePdfRequestJson("not json");
     expect(JSON.parse(json)).toMatchObject({ ok: false, error: { code: "invalid_request" } });
     const unknown = await handlePdfRequest({ abi: PDF_ABI_VERSION, op: "teleport" });
@@ -314,6 +328,7 @@ describe("in-process provider", () => {
 
     const plan = {
       layoutId: "gov",
+      ...PLAN_THEME,
       template: { storage: "base64", name: "gov.pdf", type: "application/pdf", size: template.length, data: bytesToBase64(template) },
       values: { Name: "Ada Lovelace", Agree: true, Colour: "Green", Country: "Canada", Toppings: ["Olives", "Onions"], Missing: "x", Nobody: null },
       areas: [],
@@ -407,6 +422,7 @@ describe("in-process provider", () => {
 
     const plan = {
       layoutId: "paper",
+      ...PLAN_THEME,
       template: { storage: "base64", name: "paper.pdf", type: "application/pdf", size: template.length, data: bytesToBase64(template) },
       values: { Name: "Ada Lovelace", Colour: "Green", Other: "Elsewhere", Agree: true, Lost: "Nowhere" },
       areas: [],
@@ -468,6 +484,7 @@ describe("in-process provider", () => {
     expect(info.warnings?.[2]?.message).toContain("(2)");
     const plan = {
       layoutId: "js",
+      ...PLAN_THEME,
       template: { storage: "base64" as const, name: "js.pdf", type: "application/pdf", size: template.length, data: bytesToBase64(template) },
       values: { Name: "Ada" },
       areas: [],
@@ -491,6 +508,7 @@ describe("in-process provider", () => {
       buildPdfFillRequest(
         {
           layoutId: "xfa",
+          ...PLAN_THEME,
           template: { storage: "base64", name: "xfa.pdf", type: "application/pdf", size: template.length, data: bytesToBase64(template) },
           values: { Name: "Ada" },
           areas: [],
@@ -549,6 +567,7 @@ describe("in-process provider", () => {
     function plan(paper: Uint8Array, areas: PdfFillArea[]): PdfFillPlan {
       return {
         layoutId: "paper",
+        ...PLAN_THEME,
         template: { storage: "base64", name: "paper.pdf", type: "application/pdf", size: paper.length, data: bytesToBase64(paper) },
         values: {},
         areas,
@@ -775,6 +794,7 @@ describe("template limits and reports", () => {
   const provider = createInProcessPdfProvider();
   const planFor = (bytes: Uint8Array, values: PdfFillPlan["values"]): PdfFillPlan => ({
     layoutId: "t",
+    ...PLAN_THEME,
     template: { storage: "base64", name: "t.pdf", type: "application/pdf", size: bytes.length, data: bytesToBase64(bytes) },
     values,
     areas: [],

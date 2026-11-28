@@ -36,7 +36,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * The service over the real PDF program: the documents-3.8 parity hashes for the fixed env, and the
+ * The service over the real PDF program: the parity documents' hashes for the fixed env, and the
  * seal end to end: render, sign with the server's key, timestamp with datum-timestamp's Java authority, complete,
  * verify, with the kernel's own answers ({@code timestamped}, {@code coversSignature}, {@code certificateMatches}) and
  * the host's verdicts. A subclass names the runtime.
@@ -98,7 +98,7 @@ abstract class KernelScenarios {
 
     @Test
     void theParityDocumentsRenderToTheirPinnedHashesThroughTheService() {
-        // The fixed env of kernel-compat.test.ts; the producer through a customizer (the service's env carries none).
+        // The fixed env of kernel-parity-documents.test.ts; the producer through a customizer (the service's env carries none).
         PdfRequestCustomizer producer = draft -> {
             ObjectNode env = (ObjectNode) draft.env().deepCopy();
             env.put("producer", "Datum pdf-theme-sheet");
@@ -107,10 +107,10 @@ abstract class KernelScenarios {
         PdfService pdf = PdfService.builder().runtime(runtime).customizers(List.of(producer)).build();
         PdfOptions options = PdfOptions.defaults().withFonts(PdfFonts.Pack.ALL)
             .withDocument("pdf-theme-sheet", Instant.parse("2026-09-05T10:11:12Z"));
-        JsonNode hashes = TestAssets.kernelJson("documents-3.8/hashes.json");
+        JsonNode hashes = TestAssets.kernelJson("documents/hashes.json");
         for (Map.Entry<String, JsonNode> entry : hashes.properties()) {
             long started = System.nanoTime();
-            PdfResult result = pdf.render(TestAssets.kernelJson("documents-3.8/" + entry.getKey() + ".json"), options);
+            PdfResult result = pdf.render(TestAssets.kernelJson("documents/" + entry.getKey() + ".json"), options);
             times.add(String.format("%s %.0f ms", entry.getKey(), (System.nanoTime() - started) / 1e6));
             assertThat(PdfService.sha256(result.bytes())).as(entry.getKey()).isEqualTo(entry.getValue().asString());
         }

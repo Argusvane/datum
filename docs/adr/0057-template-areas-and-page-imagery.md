@@ -268,7 +268,7 @@ designer reports such entries and never deletes them unasked.
   draws.
 - Government forms of this kind fill, in the browser, Node and the sandbox alike, and name
   encryption when they cannot. An unencrypted template renders with no new warnings (the
-  `kernel-compat` hashes hold).
+  parity documents' hashes hold).
 - **The output is unencrypted.** The template's owner restrictions are not reproduced, and the
   file loses the owner's statement that it must not be edited. The warning says so on every fill.
   Re-encrypting needs the fork's `encrypt()`, which needs Web Crypto randomness (key salts, IVs,

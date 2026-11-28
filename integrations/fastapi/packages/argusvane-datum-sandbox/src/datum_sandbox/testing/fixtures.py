@@ -22,7 +22,7 @@ GOLDEN: Final = "abi-1.0.json"
 FORM: Final = "endpoint-fixture.definition.json"
 HARDENING_RULES: Final = "host-check/hardening-rules.js"
 STALE_PROGRAM: Final = "host-check/stale-program.js"
-DOCUMENTS: Final = "documents-3.8"
+DOCUMENTS: Final = "documents"
 
 PDF_FONTS: Final[tuple[tuple[str, str, int, str, str], ...]] = (
     ("dejavu-sans", "sans-serif", 400, "normal", "DejaVuSans.ttf"),
@@ -65,7 +65,7 @@ def fixtures_dir() -> Path:
 
 
 def fixture_bytes(name: str) -> bytes:
-    """Return one fixture file by its path under the fixtures directory (`documents-3.8/hashes.json`)."""
+    """Return one fixture file by its path under the fixtures directory (`documents/hashes.json`)."""
     path = fixtures_dir() / name
     try:
         return path.read_bytes()

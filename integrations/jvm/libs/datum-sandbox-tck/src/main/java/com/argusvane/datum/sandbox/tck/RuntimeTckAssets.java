@@ -80,14 +80,14 @@ public final class RuntimeTckAssets {
         return RunScript.fromClasspath(RuntimeTckAssets.class.getClassLoader());
     }
 
-    /** A fixture's bytes: {@code golden.json}, {@code fixture-form.json} or {@code documents-3.8/<name>.json}. */
+    /** A fixture's bytes: {@code golden.json}, {@code fixture-form.json} or {@code documents/<name>.json}. */
     public static byte[] fixtureBytes(String name) {
         byte[] bytes = resource(FIXTURES + name);
         if (bytes != null) {
             return bytes;
         }
         String relative = REPO_FIXTURES.getOrDefault(name,
-            name.startsWith("documents-3.8/") ? "packages/pdf-kernel/tests/fixtures/" + name : null);
+            name.startsWith("documents/") ? "packages/pdf-kernel/tests/fixtures/" + name : null);
         if (relative == null) {
             throw new IllegalStateException("The engine kit has no fixture " + name);
         }

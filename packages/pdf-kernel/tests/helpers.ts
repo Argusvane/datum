@@ -1,7 +1,7 @@
 import { PDFDict, PDFDocument, PDFHexString, PDFName, PDFString, StandardFonts } from "@cantoo/pdf-lib";
 import { DEFAULT_PDF_PAGE_SETUP } from "@argusvane/datum-engine/core";
 import type { PdfBlock, PdfDocument, PdfFontResource, PdfKernelEnv } from "@argusvane/datum-engine/render";
-import { PDF_KERNEL_FALLBACKS } from "@argusvane/datum-engine/render";
+import { PDF_KERNEL_FALLBACKS, PLAIN_PDF_THEME, resolvePdfTheme } from "@argusvane/datum-engine/render";
 import { loadFontPack } from "../src/fonts.js";
 
 export const ENV: PdfKernelEnv = { createdAt: "2026-09-05T10:11:12.000Z", documentId: "fixture-doc", producer: "Datum tests" };
@@ -16,15 +16,34 @@ export function fonts(): Promise<PdfFontResource[]> {
   return fontsPromise;
 }
 
+const PLAIN = resolvePdfTheme(PLAIN_PDF_THEME);
+
+/** The plain theme's geometry, as the engine writes it on a document built under `datum-plain`. */
+export const PLAIN_GEOMETRY = {
+  controls: PLAIN.controls,
+  choice: PLAIN.choice,
+  fields: PLAIN.fields,
+  headings: PLAIN.headings,
+  table: PLAIN.table,
+  box: PLAIN.box,
+  panel: PLAIN.panel,
+  list: PLAIN.list,
+  spacing: PLAIN.spacing
+} satisfies Partial<PdfDocument>;
+
+/** The type and colours a fill plan carries for its content areas: the kernel's own. */
+export const PLAN_THEME = { typography: PDF_KERNEL_FALLBACKS.typography, colors: PDF_KERNEL_FALLBACKS.colors };
+
 export function document(blocks: PdfBlock[], overrides: Partial<PdfDocument> = {}): PdfDocument {
   return {
     version: "1",
     page: DEFAULT_PDF_PAGE_SETUP,
     metadata: { title: "Fixture", lang: "en", textDirection: "ltr" },
     accessibility: { tagged: true, displayDocTitle: true },
-    // The kernel's own fallbacks: a document that says nothing about its geometry, as an older engine sends one.
+    // The kernel's own type and colours, with the plain theme's geometry as the engine resolves it.
     typography: PDF_KERNEL_FALLBACKS.typography,
     colors: PDF_KERNEL_FALLBACKS.colors,
+    ...PLAIN_GEOMETRY,
     blocks,
     anchored: [],
     resources: { images: {} },

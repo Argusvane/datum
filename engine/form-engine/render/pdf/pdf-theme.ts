@@ -11,14 +11,15 @@
  * that ranks.
  *
  * Two layers of defaults, kept apart on purpose:
- * - what the kernel draws when a document carries no setting at all ({@link PDF_KERNEL_FALLBACKS}):
- *   the constants it always had, so a document from an older engine renders as it did;
+ * - the kernel's own constants ({@link PDF_KERNEL_FALLBACKS}): the plain geometry a fill
+ *   plan's content areas lay out with, the pair for a block kind a theme's spacing table
+ *   leaves out, and the settings {@link PLAIN_PDF_THEME} states;
  * - what {@link resolvePdfTheme} fills in when a theme says nothing (the `DEFAULT_PDF_*`
  *   values): the engine's form look — a label above a boxed answer, numbered sections on
  *   bands, a title block, uppercase captions — which every registered theme takes unless it
  *   says otherwise.
- * {@link PLAIN_PDF_THEME} spells the fallbacks out as a theme, for a host that wants the
- * earlier, plainer document.
+ * {@link PLAIN_PDF_THEME} is the plain record: answers under their labels, no frames, bands,
+ * numbering or captions in capitals.
  *
  * The defaults and shipped themes are in pdf-theme-defaults.ts and the
  * PDF theme registry and the id lookup in pdf-theme-registry.ts, both re-exported below; what is

@@ -116,7 +116,7 @@ Because the answers can choose the layout, the program refuses template bytes se
 
 `build` takes the same inputs as `document` (keys from `form` to `riskyPatterns`, but not `fonts`, `env`, `options`, `template` or `signature`). It replies with `layoutId`, `layoutKind`, `layoutChoice`, `warnings` and either `document`, the model of a generated layout, or `fill`, the plan of a template (the values and areas already worked out). Use it to learn which layout the answers choose, to cache a document, or to inspect one.
 
-`render` takes the `document` from a `build`, plus `fonts`, `env`, and optional `options` and `signature`. The reply is the same as `document`'s without the layout keys.
+`render` takes the `document` from a `build`, plus `fonts`, `env`, and optional `options` and `signature`. Send the document whole: one without its theme geometry (`controls`, `choice`, `fields`, `headings`, `table`, `box`, `panel`, `list`, `spacing`) is refused as `invalid_request`. The reply is the same as `document`'s without the layout keys.
 
 ### layout
 
@@ -136,7 +136,7 @@ Fills a PDF with values you resolved yourself.
 | `conformance` | Optional. The archival level to keep through the fill |
 | `attachments` | Optional. Uploaded files to embed |
 | `signature` | Optional. Prepares a signature over the filled PDF |
-| `typography`, `colors` | Optional. What a content area draws with when its own `draw` says nothing |
+| `typography`, `colors` | Required with `areas`: what a content area draws with when its own `draw` says nothing. A `build` reply's `fill` carries both |
 
 Reply: `bytes`, `pageCount`, `fields` (one per value: `pdfField`, `status` of `filled`, `cleared`, `missing` or `unsupported`, `kind`, `message`), `areas`, `warnings`, and `pdfa`, `attachments` and `signing` when they apply.
 

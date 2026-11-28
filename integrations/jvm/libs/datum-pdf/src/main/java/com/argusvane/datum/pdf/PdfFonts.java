@@ -25,7 +25,7 @@ import tools.jackson.databind.node.ObjectNode;
  * taken with ({@code PdfRenderIT}). The default sends two (the bytes of every request), so italic and
  * monospace text in the default pack falls back to the standard fonts (Western European text only) unless the caller
  * asks for {@code STANDARD} or {@code ALL}. Each entry carries its script coverage (the font entry's
- * {@code coverage}; it does not change the bytes of a Latin document: the documents-3.8 hashes are the same with and
+ * {@code coverage}; it does not change the bytes of a Latin document: the parity documents' hashes are the same with and
  * without it, checked against the program).
  *
  * <p>A face the jar lacks is left out with a WARN, never a failed request: the program then falls back to the

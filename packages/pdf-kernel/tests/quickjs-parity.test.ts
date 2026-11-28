@@ -20,7 +20,7 @@ import {
 import { createInProcessPdfProvider } from "../src/in-process-provider.js";
 import { createQuickJsPdfProvider, type QuickJsPdfProvider } from "../src/quickjs-provider.js";
 import { formTemplate } from "./encryption-fixtures.js";
-import { ENV, PDF_MAGIC, RED_PNG_BASE64, detachedTemplateBytes, document, extractText, fonts, head, paragraph } from "./helpers.js";
+import { detachedTemplateBytes, document, ENV, extractText, fonts, head, paragraph, PDF_MAGIC, PLAN_THEME, RED_PNG_BASE64 } from "./helpers.js";
 import { SUBMISSION, WIDGETS, archivalDocument, cffFont, cmykProfile, syllabicsDocument } from "./pdfa-fixtures.js";
 import { hostSign, hostVerify, identity } from "./signing-fixtures.js";
 
@@ -178,6 +178,7 @@ describe("in-process vs QuickJS parity", () => {
     const template = await formTemplate({ userPassword: "", ownerPassword: "owner", algorithm: "AES-128", permissions: { printing: "lowResolution", fillingForms: true } });
     const plan = {
       layoutId: "t",
+      ...PLAN_THEME,
       template: { storage: "base64", name: "locked.pdf", type: "application/pdf", size: template.length, data: bytesToBase64(template) },
       values: { Name: "Ada Lovelace", Agree: true },
       areas: [],
@@ -227,6 +228,7 @@ describe("in-process vs QuickJS parity", () => {
     const draw = { kind: "text" as const, fontSize: 10, align: "start" as const, valign: "top" as const, padding: 2, wrap: true, bold: false };
     const plan = {
       layoutId: "t",
+      ...PLAN_THEME,
       template: { storage: "base64", name: "t.pdf", type: "application/pdf", size: template.length, data: bytesToBase64(template) },
       values: { Name: "Ada مرحبا", Agree: true },
       // Areas draw through the layout measurer and the writer inside the sandbox too.
@@ -294,6 +296,7 @@ describe("in-process vs QuickJS parity", () => {
 
     const plan = {
       layoutId: "archive",
+      ...PLAN_THEME,
       template: { storage: "base64", name: "own.pdf", type: "application/pdf", size: native.bytes.length, data: bytesToBase64(native.bytes) },
       values: { first: "Grace", agree: false },
       areas: [],
@@ -325,6 +328,7 @@ describe("in-process vs QuickJS parity", () => {
 
     const plan = {
       layoutId: "claims",
+      ...PLAN_THEME,
       template: { storage: "base64", name: "own.pdf", type: "application/pdf", size: native.bytes.length, data: bytesToBase64(native.bytes) },
       values: { first: "Grace" },
       areas: [],
@@ -387,6 +391,7 @@ describe("in-process vs QuickJS parity", () => {
 
     const plan = {
       layoutId: "archive",
+      ...PLAN_THEME,
       template: { storage: "base64", name: "own.pdf", type: "application/pdf", size: native.bytes.length, data: bytesToBase64(native.bytes) },
       values: { first: "Grace" },
       areas: [
@@ -414,6 +419,7 @@ describe("in-process vs QuickJS parity", () => {
 
     const plan = {
       layoutId: "paper",
+      ...PLAN_THEME,
       template: { storage: "base64", name: "paper.pdf", type: "application/pdf", size: template.length, data: bytesToBase64(template) },
       values: { Name: "Ada", Colour: "Green", Other: "Elsewhere", Agree: true },
       areas: [],

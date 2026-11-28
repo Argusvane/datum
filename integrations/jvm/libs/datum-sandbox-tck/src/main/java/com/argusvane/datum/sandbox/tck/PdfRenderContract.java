@@ -20,7 +20,7 @@ import tools.jackson.databind.node.ObjectNode;
 
 /**
  * The PDF program on the engine renders the parity documents byte for byte as the Node kernel does: the requests of
- * {@code packages/pdf-kernel/tests/kernel-compat.test.ts} (the fixed env, the whole DejaVu pack) through
+ * {@code packages/pdf-kernel/tests/kernel-parity-documents.test.ts} (the fixed env, the whole DejaVu pack) through
  * {@link PdfProgram}, each output's sha256 equal to {@code hashes.json}. Prints the render times with the engine's mode.
  *
  * <p>Implement it only for a runtime that is not on bytecode ({@code engineInfo().isBytecode()} false: the lifecycle runs no
@@ -49,7 +49,7 @@ public interface PdfRenderContract extends RuntimeUnderTest {
         // proved by the sandbox budget tests; the printed times stay as information.
         PdfProgram pdf = new PdfProgram(ProgramRunner.on(runtime()), RuntimeTckAssets.pdfProgram(), ProgramLimits.builder().pdfSeconds(60).build(), new AbiProbe());
         assertThat(pdf.capabilities().kernelVersion()).as("the capabilities answer names the kernel's version").isNotEmpty();
-        JsonNode hashes = RuntimeTckAssets.fixture("documents-3.8/hashes.json");
+        JsonNode hashes = RuntimeTckAssets.fixture("documents/hashes.json");
         ArrayNode fonts = fonts();
         List<String> times = new ArrayList<>();
         for (Map.Entry<String, JsonNode> entry : hashes.properties()) {
@@ -57,7 +57,7 @@ public interface PdfRenderContract extends RuntimeUnderTest {
             ObjectNode request = JsonNodeFactory.instance.objectNode();
             request.put("abi", PdfAbi.MIN);
             request.put("op", "render");
-            request.set("document", RuntimeTckAssets.fixture("documents-3.8/" + theme + ".json"));
+            request.set("document", RuntimeTckAssets.fixture("documents/" + theme + ".json"));
             request.set("fonts", fonts);
             ObjectNode env = request.putObject("env");
             env.put("createdAt", "2026-09-05T10:11:12.000Z");
@@ -69,7 +69,7 @@ public interface PdfRenderContract extends RuntimeUnderTest {
             byte[] bytes = Base64.getDecoder().decode(answer.path("bytes").asString());
             assertThat(RuntimeTckAssets.sha256(bytes)).as(theme).isEqualTo(entry.getValue().asString());
         }
-        System.out.printf("[datum-sandbox-tck] PDF render (documents-3.8), engine %s (%s) on Java %d: %s%n", runtime().engineInfo().id(),
+        System.out.printf("[datum-sandbox-tck] PDF render (parity documents), engine %s (%s) on Java %d: %s%n", runtime().engineInfo().id(),
             runtime().engineInfo().mode(), Runtime.version().feature(), String.join(", ", times));
     }
 

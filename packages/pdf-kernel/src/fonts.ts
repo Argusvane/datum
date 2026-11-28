@@ -142,8 +142,7 @@ function reasonOf(error: unknown): string {
  * A provider over the faces a theme ships (`assets.fonts`), as the engine forwards
  * them in the need: a face whose family the document names is loaded — once, cached by where it
  * was read from — and returned as a resource; families the need brings no face for are left to
- * the next provider. A need without faces (an older engine's, or a theme that ships none) loads
- * nothing.
+ * the next provider. A need without faces (a theme that ships none) loads nothing.
  *
  * Design systems ship their faces as WOFF 1.0; the kernel embeds TTF and OTF only, so each file
  * is converted on load (`woffToSfnt`, lossless, in the browser and in Node alike). One face that

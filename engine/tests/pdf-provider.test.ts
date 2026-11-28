@@ -7,7 +7,7 @@ import {
   unwrapPdfResponse
 } from "../form-engine/render/pdf/pdf-abi.js";
 import type { PdfDocument } from "../form-engine/render/pdf/pdf-document.js";
-import { DEFAULT_PDF_COLORS, DEFAULT_PDF_TYPOGRAPHY } from "../form-engine/render/pdf/pdf-theme.js";
+import { DEFAULT_PDF_COLORS, DEFAULT_PDF_THEME, DEFAULT_PDF_TYPOGRAPHY, resolvePdfTheme } from "../form-engine/render/pdf/pdf-theme.js";
 import {
   BASE64_TEMPLATE_RESOLVER,
   base64ToBytes,
@@ -22,7 +22,10 @@ import {
 } from "../form-engine/render/pdf/pdf-provider.js";
 import { DEFAULT_PDF_AREA_DRAW, DEFAULT_PDF_PAGE_SETUP } from "../form-engine/core/schema/pdf-layout.js";
 
+const THEME = resolvePdfTheme(DEFAULT_PDF_THEME);
+
 function document(overrides: Partial<PdfDocument> = {}): PdfDocument {
+  const { controls, choice, fields, headings, table, box, panel, list, spacing } = THEME;
   return {
     version: "1",
     page: DEFAULT_PDF_PAGE_SETUP,
@@ -30,6 +33,15 @@ function document(overrides: Partial<PdfDocument> = {}): PdfDocument {
     accessibility: { tagged: true, displayDocTitle: true },
     typography: DEFAULT_PDF_TYPOGRAPHY,
     colors: DEFAULT_PDF_COLORS,
+    controls,
+    choice,
+    fields,
+    headings,
+    table,
+    box,
+    panel,
+    list,
+    spacing,
     blocks: [],
     anchored: [],
     resources: { images: {} },
@@ -91,11 +103,23 @@ describe("requests and environment", () => {
       template: { storage: "base64", name: "t.pdf", type: "application/pdf", size: 3, data: "AQID" },
       values: { A: "x" },
       areas: [],
-      options: { flatten: true, readOnly: false, appearances: "viewer" as const }
+      options: { flatten: true, readOnly: false, appearances: "viewer" as const },
+      typography: DEFAULT_PDF_TYPOGRAPHY,
+      colors: DEFAULT_PDF_COLORS
     };
     const fill = buildPdfFillRequest(plan, new Uint8Array([1, 2, 3]), [], env);
     // A fields-only plan sends no `areas` key: the request carries none.
-    expect(fill).toEqual({ abi: PDF_ABI_VERSION, op: "fill", template: { data: "AQID" }, values: { A: "x" }, fonts: [], env, options: { flatten: true, readOnly: false, appearances: "viewer" } });
+    expect(fill).toEqual({
+      abi: PDF_ABI_VERSION,
+      op: "fill",
+      template: { data: "AQID" },
+      values: { A: "x" },
+      fonts: [],
+      env,
+      options: { flatten: true, readOnly: false, appearances: "viewer" },
+      typography: DEFAULT_PDF_TYPOGRAPHY,
+      colors: DEFAULT_PDF_COLORS
+    });
     const area = { id: "a1", page: 1, rect: { x: 10, y: 20, width: 100, height: 14 }, value: "drawn", draw: DEFAULT_PDF_AREA_DRAW };
     expect(buildPdfFillRequest({ ...plan, areas: [area] }, new Uint8Array([1, 2, 3]), [], env).areas).toEqual([area]);
     // A claim travels only when the plan carries one.
@@ -109,10 +133,12 @@ describe("requests and environment", () => {
       template: { storage: "base64", name: "t.pdf", type: "application/pdf", size: 3, data: "AQID" },
       values: { A: "plain", B: ["Привет"], C: true, D: null },
       areas: [{ id: "a1", page: 1, rect: { x: 0, y: 0, width: 10, height: 10 }, value: "مرحبا", draw: DEFAULT_PDF_AREA_DRAW }],
-      options: { flatten: false, readOnly: false, appearances: "regenerate" as const }
+      options: { flatten: false, readOnly: false, appearances: "regenerate" as const },
+      typography: DEFAULT_PDF_TYPOGRAPHY,
+      colors: DEFAULT_PDF_COLORS
     };
-    expect(pdfFillFontNeed(plan)).toEqual({ families: [], scripts: ["Latn", "Cyrl", "Arab"] });
-    expect(pdfFillFontNeed({ ...plan, values: {}, areas: [] })).toEqual({ families: [], scripts: ["Latn"] });
+    expect(pdfFillFontNeed(plan)).toEqual({ families: ["sans-serif", "monospace"], scripts: ["Latn", "Cyrl", "Arab"] });
+    expect(pdfFillFontNeed({ ...plan, values: {}, areas: [] })).toEqual({ families: ["sans-serif", "monospace"], scripts: ["Latn"] });
   });
 
   it("accepts one ABI major only, refuses another or a malformed version, and unwraps failures as typed errors", () => {
