@@ -1502,7 +1502,8 @@ export function createTryIt(options: TryItOptions & TryItWordsOptions): TryItCon
    * The server's checks, when the WebAssembly validator is on and loaded: its problems kept for
    * the panel and returned; `undefined` when it is off, or did not run (the panel says why). A run
    * whose state was replaced while it ran (the checks turned off or taken away, the answers
-   * cleared, another run started) keeps nothing and returns `undefined`.
+   * cleared, another run started) keeps nothing for the panel; it still returns its own problems
+   * while the checks are on, and `undefined` once they are off.
    */
   async function runServerChecks(root: ComponentNode, tried: Record<string, unknown>, locale: string): Promise<ReturnType<typeof checkAnswerErrors> | undefined> {
     if (!server.on) {
@@ -1521,7 +1522,9 @@ export function createTryIt(options: TryItOptions & TryItWordsOptions): TryItCon
       const hostContext = options.trySettings()?.tryHostContext();
       const outcome = await checks.run({ root, answers: tried, locale, ...(kinds !== undefined ? { kinds } : {}), ...(hostContext !== undefined ? { hostContext } : {}) });
       if (server !== running) {
-        return undefined;
+        // Another run, or the checks turned off, took the panel's state: this run keeps none of it,
+        // but a run the checks are still on for still answers its own caller.
+        return server.on ? outcome.errors : undefined;
       }
       server = { on: true, busy: false, problems: describeProblems(root, outcome.errors, locale, words(), textSourcesOf(options.controller())) };
       return outcome.errors;
