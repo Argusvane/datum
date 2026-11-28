@@ -40,9 +40,7 @@ export interface RenderedTemplateText {
 
 const PAGE_TOKENS: Record<string, TemplateSegment> = {
   page: { kind: "token", token: "pageNumber" },
-  pages: { kind: "token", token: "pageCount" },
-  pageNumber: { kind: "token", token: "pageNumber" },
-  pageCount: { kind: "token", token: "pageCount" }
+  pages: { kind: "token", token: "pageCount" }
 };
 
 /**
