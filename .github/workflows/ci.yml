@@ -553,6 +553,11 @@ jobs:
         run: npm run typecheck
         working-directory: packages/conformance-suite
 
+      # The server hosts' engine, qjs-wasi.wasm, fetched from the quickjs-ng release and held to runtime.json: the tests of
+      # the program runner on it (tests/qjs-wasi-runner.test.ts) fail on CI without it.
+      - name: Fetch the server hosts' engine module
+        run: node integrations/fastapi/scripts/fetch-runtime.mjs
+
       # vitest.config.ts limits the workers to two when CI is set: the tests start QuickJS
       # sandboxes and spawn the bundled command, and a runner with every core busy starves
       # vitest's own heartbeat.

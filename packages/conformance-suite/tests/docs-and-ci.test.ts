@@ -217,6 +217,43 @@ describe("the release workflows", () => {
     expect(fastapi.needs).toBe("pypi");
   });
 
+  it("restore no dependency cache: no cache action, setup-node without a cache, setup-uv with enable-cache false", () => {
+    for (const [file] of publishing) {
+      for (const [name, job] of Object.entries(workflowFile(file).jobs)) {
+        for (const step of job.steps ?? []) {
+          const uses = String(step["uses"] ?? "");
+          const inputs = (step["with"] ?? {}) as Record<string, unknown>;
+          const where = `${file}: ${name}: ${String(step["name"] ?? uses)}`;
+          expect(uses, where).not.toMatch(/^actions\/cache/);
+          if (uses.startsWith("actions/setup-node@") || uses.startsWith("actions/setup-python@") || uses.startsWith("actions/setup-java@")) {
+            expect(inputs["cache"], where).toBeUndefined();
+          }
+          if (uses.startsWith("actions/setup-node@")) {
+            expect(inputs["package-manager-cache"], where).toBe(false);
+          }
+          if (uses.startsWith("astral-sh/setup-uv@")) {
+            expect(inputs["enable-cache"], where).toBe(false);
+          }
+        }
+      }
+    }
+  });
+
+  it("publish to npm with trusted publishing: the OIDC token, no npm secret, and an npm that can use it", () => {
+    const workflow = workflowFile("release-npm.yml");
+    const publish = workflow.jobs["publish"]!;
+    expect(publish.permissions?.["id-token"]).toBe("write");
+    expect(read(".github/workflows/release-npm.yml")).not.toMatch(/secrets\.|NODE_AUTH_TOKEN/);
+    const steps = publish.steps ?? [];
+    const install = steps.findIndex((step) => /npm install --global npm@(\d+)\.(\d+)\.(\d+)\b/.test(String(step["run"] ?? "")));
+    const publishing = steps.findIndex((step) => String(step["run"] ?? "").includes("npm publish "));
+    expect(install, "a step installs a pinned npm").toBeGreaterThan(-1);
+    expect(install).toBeLessThan(publishing);
+    const [, major, minor, patch] = /npm@(\d+)\.(\d+)\.(\d+)/.exec(String(steps[install]!["run"]))!.map(Number) as [number, number, number, number];
+    // Trusted publishing needs npm 11.5.1 or later.
+    expect(major * 1e6 + minor * 1e3 + patch).toBeGreaterThanOrEqual(11_005_001);
+  });
+
   it("run the two release-assets jobs of a tag one after the other, in one group that is never cancelled", () => {
     const npm = workflowFile("release-npm.yml").jobs["release-assets"]!;
     const fastapi = workflowFile("release-fastapi.yml").jobs["release-assets"]!;

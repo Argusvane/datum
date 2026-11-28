@@ -10,7 +10,7 @@
 # Trusted publishing cannot run in a reusable workflow, so the publish jobs live in this file.
 #
 # A tag v<version> (the one tag of a release, shared with the other hosts) runs: build (the tag's commit must be on main and have a green ci.yml run, assets, version and pin assertion, member suites,
-# the security suite's program mode with --gate release, uv build, twine check --strict, post-checks) -> testpypi (one publish step per distribution, dependency order) -> smoke (install from TestPyPI on three
+# the security suite's program mode with --gate release on the page's engine and on the server's qjs-wasi.wasm, uv build, twine check --strict, post-checks) -> testpypi (one publish step per distribution, dependency order) -> smoke (install from TestPyPI on three
 # Pythons) -> pypi (the same eight steps behind the reviewer) -> release-assets (the checksums of the distributions are attached to the
 # draft GitHub Release of the tag, which is created when it does not exist). A duplicate upload fails loudly. After a partial failure rerun
 # with skip-existing set to true by hand on the steps that already went out, for that run only.
@@ -36,7 +36,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 120
     permissions:
       contents: read
       # Reads the ci.yml runs of the tagged commit (the check below); the token can write nothing.
@@ -78,15 +78,19 @@ jobs:
           echo "::error::No ci.yml run on $GITHUB_SHA concluded success with ci-ok passing; push the commit to main, wait for CI, then tag it."
           exit 1
 
+      # No dependency cache in a release job: a cache is written by runs on main, which run npm ci and uv sync with
+      # their lifecycle scripts before it is saved, so one compromised dependency there could plant files that this
+      # build would then package and publish. Every dependency is fetched fresh and checked against the lockfiles.
       - name: Setup Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
+          package-manager-cache: false
 
       - name: Setup uv
         uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
-          enable-cache: true
+          enable-cache: false
 
       # The tag names the version: every member and every sibling pin must already carry it.
       - name: Assert the tag version equals every member version and sibling pin
@@ -125,10 +129,20 @@ jobs:
       - name: Member suites
         run: npm run fastapi:test
 
-      # The security suite's program mode over the sandbox program this release ships. The gate names are release and full;
-      # a failing vector fails the run and nothing is built or uploaded.
-      - name: Security suite, program mode
+      # The security suite's program mode over the sandbox program this release ships, once per engine. The gate names are
+      # release and full; a failing vector fails the run and nothing is built or uploaded. First on quickjs-emscripten
+      # (Bellard QuickJS), the engine of the page that argusvane-datum-assets-ui serves.
+      - name: Security suite, program mode, page engine
         run: node packages/conformance-suite/dist/cli.mjs --program packages/datum/dist/datum-sandbox-program.js --all --gate release
+
+      # Then on the engine the server runs: the qjs-wasi.wasm (quickjs-ng) argusvane-datum-qjs-wasm packages, which the suite
+      # refuses unless it has runtime.json's sha256, run as the server runs it (a fresh instance per call, the same run script).
+      - name: Security suite, program mode, server engine
+        run: |
+          pin=integrations/fastapi/packages/argusvane-datum-qjs-wasm/src/datum_qjs_wasm/runtime.json
+          sha256=$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).sha256)' "$pin")
+          node packages/conformance-suite/dist/cli.mjs --program packages/datum/dist/datum-sandbox-program.js --all --gate release \
+            --qjs-wasm "$(dirname "$pin")/qjs-wasi.wasm" --qjs-sha256 "$sha256"
 
       - name: Build every distribution
         run: uv build --all-packages --out-dir dist/release
@@ -283,10 +297,12 @@ jobs:
         with:
           persist-credentials: false
 
+      # No cache here either (see the build job): the install below is from the indexes alone.
       - name: Setup uv
         uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           python-version: ${{ matrix.python }}
+          enable-cache: false
 
       # A throwaway project: the eight argusvane-datum-* names come from TestPyPI (explicit index), everything else from PyPI.
       - name: Install argusvane-datum-fastapi[all] from TestPyPI

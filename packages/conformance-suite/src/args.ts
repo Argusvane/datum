@@ -9,6 +9,9 @@ export interface CliOptions {
   json: boolean;
   fixtureFormat: "json" | "submissions";
   program?: string;
+  /** `--qjs-wasm <file>`: run the program on the server hosts' engine, this `qjs-wasi.wasm`, held to `--qjs-sha256`. */
+  qjsWasm?: string;
+  qjsSha256?: string;
   manifest?: string;
   abiFloor: string;
   budgetProfile: "node" | "browser";
@@ -65,6 +68,8 @@ export class UsageError extends Error {
 const VALUE_FLAGS = new Set([
   "--program",
   "--pdf-program",
+  "--qjs-wasm",
+  "--qjs-sha256",
   "--manifest",
   "--abi-floor",
   "--budget-profile",
@@ -113,6 +118,10 @@ export const USAGE = `datum-security-check: a conformance suite for Datum's vali
 
 Usage
   datum-security-check --program <file> [--manifest <manifest.json>] [--abi-floor ${DEFAULT_ABI_FLOOR}] [--budget-profile node|browser]
+                       [--qjs-wasm <qjs-wasi.wasm> --qjs-sha256 <hex>]
+                                                 the program runs on quickjs-emscripten (the browser and Node hosts' engine), or with
+                                                 --qjs-wasm on quickjs-ng's qjs-wasi.wasm as the server hosts run it, once it
+                                                 matches the pinned sha256
   datum-security-check --endpoint <url> --form <id> [--form-version 1] [--auth-header "Name: value"]
                        [--allow-writes] [--heavy] [--body-limit N] [--max-requests N] [--delay-ms N] [--timeout-ms N]
                        [--public-definition-url <url>] [--i-installed-the-suite-fixture]
@@ -230,6 +239,15 @@ export function parseArgs(argv: readonly string[]): CliOptions {
     switch (flag) {
       case "--program":
         options.program = value as string;
+        break;
+      case "--qjs-wasm":
+        options.qjsWasm = value as string;
+        break;
+      case "--qjs-sha256":
+        if (!/^[0-9a-f]{64}$/.test(value as string)) {
+          throw new UsageError(`--qjs-sha256 is 64 lower-case hex characters, not "${value}"`);
+        }
+        options.qjsSha256 = value as string;
         break;
       case "--pdf-program":
         options.pdfProgram = value as string;
