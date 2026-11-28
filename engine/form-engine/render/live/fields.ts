@@ -11,6 +11,7 @@
  * `typed: "number"`, is read with the form's locale). A base type with no builder here keeps the common
  * state, so other groups (dates, files, buttons) add their builders through `createFieldsFeature`.
  */
+import { kernelAnswerBounds } from "../../core/schema/answer-kinds.js";
 import { countCharacters } from "../../core/schema/length-limits.js";
 import { isValidPattern } from "../../core/schema/pattern-validity.js";
 import type { PresentationField } from "../core/presentation-tree.js";
@@ -144,8 +145,10 @@ export function typedNumberStandsFor(text: string, stored: string, locale: strin
 
 function numberState(state: FieldState, node: PresentationField): NumberFieldState {
   const configuration = configurationOf(node);
-  const min = numberOf(configuration.min);
-  const max = numberOf(configuration.max);
+  // The bounds validation enforces, read as it reads them: an unreadable or inverted pair is no bound.
+  const bounds = kernelAnswerBounds("number", configuration);
+  const min = typeof bounds.min === "number" ? bounds.min : undefined;
+  const max = typeof bounds.max === "number" ? bounds.max : undefined;
   const step = numberOf(configuration.step);
   const { value, locale } = state;
   return {
@@ -153,7 +156,7 @@ function numberState(state: FieldState, node: PresentationField): NumberFieldSta
     ...boxState(state),
     ...(min !== undefined ? { min } : {}),
     ...(max !== undefined ? { max } : {}),
-    ...(step !== undefined ? { step } : {}),
+    ...(step !== undefined && step > 0 ? { step } : {}),
     standsFor: (text: string) => typedNumberStandsFor(text, value, locale)
   };
 }
@@ -187,8 +190,12 @@ function selectState(state: FieldState, node: PresentationField): SelectFieldSta
   };
 }
 
+/** The options a checkboxes answer picks: Datum's object of one boolean per option, or a list of chosen values. */
 function pickedOf(answer: unknown): Record<string, unknown> {
-  return answer !== null && typeof answer === "object" && !Array.isArray(answer) ? (answer as Record<string, unknown>) : {};
+  if (Array.isArray(answer)) {
+    return Object.fromEntries(answer.map((value) => [String(value), true]));
+  }
+  return answer !== null && typeof answer === "object" ? (answer as Record<string, unknown>) : {};
 }
 
 function checkboxesState(state: FieldState, node: PresentationField): CheckboxesFieldState {
@@ -198,7 +205,8 @@ function checkboxesState(state: FieldState, node: PresentationField): Checkboxes
 }
 
 function checkboxState(state: FieldState): CheckboxFieldState {
-  return { ...state, checked: Boolean(state.answer) };
+  // Only `true` is ticked: a stored "false", "no" or 1 is not the box's answer.
+  return { ...state, checked: state.answer === true };
 }
 
 /** The builders for the engine types of the text-like and choice groups, by base type. */

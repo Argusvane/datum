@@ -82,7 +82,7 @@ component may set them; when `role` is absent the kernel picks a default from th
 | a field (any widget) | `widget` | `Form`; the label text and the widget annotation live in the same element | kernel default |
 | a bulleted or numbered list in rich text | `list` | `L`, with an `LI` per item holding an `Lbl` (the bullet) and an `LBody` (`collectList`) | `standard-renditions.ts` + kernel |
 | a `pdf-table`, a collection table | `table` | `Table`, with `TR` rows and `TH` / `TD` cells synthesised by the kernel (`collectTable`); a borderless table without a header is `Div` | render model + kernel |
-| the grid rendition's layout table | `table` | artifact — the cells' fields are content, the grid itself is not | `standard-renditions.ts` |
+| the grid rendition's layout table | `table` | artifact — the table, its rows and cells tag nothing, and the fields in its cells are content under the grid's parent, with their MCIDs (a widget's `Form` element keeps its `OBJR`) (`collectLayoutTable`) | `standard-renditions.ts` + kernel |
 | an image | `image` | `Figure`, `/Alt` from the component's localized `alt` | `renderImage` |
 | a rule, a spacer | `rule`, `spacer` | artifact | render model |
 | anything in the header or footer slot | any | artifact, whatever it says about itself (`structureOf`) | kernel |
@@ -90,7 +90,9 @@ component may set them; when `role` is absent the kernel picks a default from th
 | borders, fills, table rules | drawables `rect`, `line` | artifact | `writer.ts` |
 
 Two consequences worth knowing. Artifact-ness inherits downward: a `P` inside an artifact
-container is an artifact. And a block with no role and no kernel default (a `pageBreak`, a
+container is an artifact — except inside a table marked an artifact in content, which is layout
+only: the table drops out of the tree and its cells' blocks are content in its place. Inside the
+header or footer (or any artifact container) such a table is an artifact whole, as before. And a block with no role and no kernel default (a `pageBreak`, a
 kind the kernel does not know) is treated as an artifact rather than given a made-up role.
 
 `PdfStructureRole` also allows `Span`, which no rendition sets (a checklist is a `P`, not a

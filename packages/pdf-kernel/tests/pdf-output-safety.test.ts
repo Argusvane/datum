@@ -153,33 +153,34 @@ describe("attachment names", () => {
   it("control, bidi and zero-width characters, overlong names and dot runs are cleaned; the type claim is kept only when well formed", async () => {
     const files = [
       upload("../../etc/passwd"),
-      upload("C:\\Users\\a\\evil.exe", "application/octet-stream"),
-      upload("invoice\u202Etxt.exe", "application/octet-stream"),
+      upload("C:\\Users\\a\\evil.bin", "application/octet-stream"),
+      upload("invoice\u202Etxt.bin", "application/octet-stream"),
       upload("a\u0000b\nc\u0007.txt"),
       upload("n".repeat(4000) + ".txt"),
       upload(".."),
-      upload("dup.html", "text/plain"),
-      upload("dup.html", "text/plain", "plain "),
-      upload("h.html", "a/b#c%2F")
+      // A program's or a page's extension is refused whatever the claim (attachment-type-refusal.test.ts).
+      upload("dup.md", "text/plain"),
+      upload("dup.md", "text/plain", "plain "),
+      upload("h.dat", "a/b#c%2F")
     ];
     const r = await provider.document!(await docRequest(fileForm, { doc: files }));
     const pdf = await PDFDocument.load(r.bytes, { updateMetadata: false });
     const embedded = readEmbeddedFiles(pdf, [], { data: false });
     const names = embedded.map((file) => file.name);
     expect(names).toContain("passwd");
-    expect(names).toContain("evil.exe");
-    expect(names).toContain("invoicetxt.exe");
+    expect(names).toContain("evil.bin");
+    expect(names).toContain("invoicetxt.bin");
     expect(names).toContain("abc.txt");
     expect(names).toContain("file");
-    expect(names).toContain("dup.html");
-    expect(names).toContain("dup-2.html");
+    expect(names).toContain("dup.md");
+    expect(names).toContain("dup-2.md");
     for (const name of names) {
       expect(name.length, name).toBeLessThanOrEqual(255);
       expect(name, name).not.toMatch(/[\u0000-\u001F\u007F-\u009F\u202A-\u202E]/);
     }
     expect(names.find((n) => n.endsWith(".txt") && n.length > 100)).toMatch(/^n+\.txt$/);
     const types = new Map(embedded.map((file) => [file.name, file.mimeType]));
-    expect(types.get("h.html")).toBe("application/octet-stream");
+    expect(types.get("h.dat")).toBe("application/octet-stream");
     expect(activeContent((await dump(r.bytes)).text)).toEqual([]);
   }, 60_000);
 });

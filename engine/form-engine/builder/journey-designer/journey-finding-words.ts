@@ -37,6 +37,19 @@ function quoted(name: string): string {
   return `“${name}”`;
 }
 
+/**
+ * `text` with each match of the global `pattern` replaced by `say(found, ...groups)`, but only outside its quotes:
+ * a quoted id is a name, looked up as it is written (`"About page 2"`), so a match inside one is left as it is.
+ */
+function replaceOutsideQuotes(text: string, pattern: RegExp, say: (found: string, ...groups: string[]) => string): string {
+  const quotes = [...text.matchAll(/"[^"\n]+"/g)].map((quote) => [quote.index, quote.index + quote[0].length] as const);
+  return text.replace(pattern, (found: string, ...rest: unknown[]) => {
+    const at = rest.findIndex((part) => typeof part === "number");
+    const offset = rest[at] as number;
+    return quotes.some(([start, end]) => offset > start && offset < end) ? found : say(found, ...(rest.slice(0, at) as string[]));
+  });
+}
+
 /** "Page" and "page", "pages", as words: not a hyphened or dotted part of an id, and not a quoted value (`"page"`). */
 const PAGE_WORD = /(?<![\w\-.“"])(Page|page)(s?)(?![\w\-]|\.\w|["”])/g;
 
@@ -49,13 +62,15 @@ export function wordDiagnostic(diagnostic: JourneyDiagnostic, names: FindingName
   if (diagnostic.journeyId !== "") {
     text = text.replace(new RegExp(`([Jj])ourney "${escapeRegExp(diagnostic.journeyId)}"`, "g"), (_found, initial: string) => `${initial === "J" ? "This" : "this"} journey`);
   }
-  text = text.replace(PAGE_WORD, (_found, word: string, plural: string) => `${word === "Page" ? "Step" : "step"}${plural}`);
-  // The fields the finding is about, said bare in most messages ("fullName is on no page"): wherever they stand, but
-  // not as a call (`age()`) and not an id that is also a word of the messages themselves.
+  // Outside the quotes: a quoted id is looked up below as it is written, and may hold the word itself.
+  text = replaceOutsideQuotes(text, PAGE_WORD, (_found, word, plural) => `${word === "Page" ? "Step" : "step"}${plural}`);
+  // The fields the finding is about, said bare in most messages ("fullName is on no page"): wherever they stand outside
+  // the quotes, but not as a call (`age()`) and not an id that is also a word of the messages themselves.
   for (const id of new Set([diagnostic.componentId, diagnostic.requiredField])) {
     const label = id !== undefined ? names.field(id) : undefined;
     if (id !== undefined && label !== undefined && label !== id && !MESSAGE_WORDS.has(id)) {
-      text = text.replace(new RegExp(`(?<![\\w\\-.\u201c"])${escapeRegExp(id)}(?![\\w\\-\u201d"(]|\\.\\w)`, "g"), () => label);
+      const bare = new RegExp(`(?<![\\w\\-.\u201c"])${escapeRegExp(id)}(?![\\w\\-\u201d"(]|\\.\\w)`, "g");
+      text = replaceOutsideQuotes(text, bare, () => label);
     }
   }
   // Every quoted id: a step's after the word step or steps (a list of them too), else a step's when the form has no

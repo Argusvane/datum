@@ -378,6 +378,16 @@ async function finishSignature<T extends PdfRenderResult>(
   return { ...(rest as T), bytes: completed.bytes, signature: signed };
 }
 
+/** A runtime that carries its form definition (`FormRuntime.definition`), whose `kinds` map the PDF reads. */
+interface PdfDefinitionRuntime {
+  definition?(): { kinds?: Readonly<Record<string, string>> | undefined } | undefined;
+}
+
+/** The definition's `kinds` map, when the runtime has a definition behind it (the builder's preview has none). */
+function definitionKinds(runtime: RenderableRuntime): Readonly<Record<string, string>> | undefined {
+  return (runtime as RenderableRuntime & PdfDefinitionRuntime).definition?.()?.kinds;
+}
+
 export async function renderFormPdf(
   runtime: RenderableRuntime,
   deps: PdfServiceDependencies,
@@ -416,7 +426,10 @@ export async function renderFormPdf(
       attachments: options.attachments,
       today: pdfToday(runtime, options),
       formulaErrors: options.formulaErrors,
-      riskyPatterns: options.riskyPatterns
+      riskyPatterns: options.riskyPatterns,
+      // The definition's `kinds` map: a plugin's or a binding's type prints as its base engine
+      // type, as the program's PDF of the same submission prints it.
+      kinds: definitionKinds(runtime)
     }
   });
   if (output.mode !== "pdf") {

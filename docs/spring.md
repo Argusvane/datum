@@ -1272,7 +1272,7 @@ traced; every one is held by a test in the library that applies it and by the co
 | ES256 and RS256 only, P-256 on the curve, RSA at least 2048 bits; never `crossOrigin` or a `topOrigin`; attestation `none` | `RegistrationOptions`, `CoseKey`, `WebAuthnVerifier`, `RegistrationCeremony` | the passkey contract (`PasskeysContract`); a choice of this host to verify only what it can prove |
 | a challenge lives 10 s to 1 h | `PasskeyChallenges` | the ceremony's replay guard (the nonce claim is kept as long) |
 | a passkey request body of at most 64 KiB; CBOR nested at most 16 deep, definite lengths only, no floats or simple values but false, true, null and undefined, integers within 64 bits, map keys integer or text and never repeated (keys compared as webauthn4j names them, so the integer -2 and the text "-2" are one key), no text key that spells an integer; a credential id of 1 to 1023 bytes; stored public keys of at most 16 KiB | `PasskeysApi`, `CborGate`, `WebAuthnVerifier`, `JdbcPasskeyRepository` | the registration refusals of `PasskeysContract`, `CborGateTest` and `WebAuthnVerifierTest` (phase 11: the pre-gate in front of webauthn4j) |
-| a stop grace of 5 s and `max(2, CPUs)` stray runs; one `SecureRandom` for guest entropy; a read-only `/app` | `EndiveGuestRuntime`, `ReadOnlyFileSystem` | the engine kit (`datum-sandbox-tck`'s hardening and runtime contracts) |
+| a stop grace of 5 s and `max(2, CPUs)` stray runs; a guest realtime clock and file times fixed at the Unix epoch and a `random_get` stream the same for every run; a read-only `/app` | `EndiveGuestRuntime`, `GuestIo`, `ReadOnlyFileSystem` | the engine kit (`datum-sandbox-tck`'s hardening and runtime contracts) |
 
 The development stores (`InMemoryTsaLog` 1000 rows, `InMemoryTsaFlood` 50,000 keys), the self-signed development
 certificate, the correlation header and its 12-hex id, and the English wire messages (an `ErrorTranslator` rewrites them)
@@ -1493,16 +1493,22 @@ capture directory, a program override's location or the engine's notes (a read n
 ## Heap and pool guidance
 
 Each validation or PDF run is one QuickJS instance in a fresh in-memory file system. Under a native runner its
-WebAssembly memory is off the Java heap; each instance also churns about 150 MiB of transient heap and costs about
-0.4 s (figures measured on a developer laptop) to set up. A container's memory should therefore cover roughly: slots times the per-run memory limit (off-heap),
-plus slots times 150 MiB (heap churn), plus the application's own heap. The defaults are 5 s and 32 MiB for
-validation (slots: one per CPU) and 15 s and 256 MiB for PDFs (slots: the smaller of 2 and the CPUs).
+WebAssembly memory is off the Java heap; each instance also takes a few MiB of heap (a warm run allocates under 8 MiB
+on the Panama runner and under 2 MiB on JFFI, the program's copy included) and about 0.4 s (figures measured on a
+developer laptop) to set up. A run's output is held on the heap too, up to its cap. A container's memory should
+therefore cover roughly: slots times the per-run memory limit (off-heap), plus the heap, which holds the
+application's own heap and slots times 16 MiB (`MemoryBudget.SETUP_HEAP`, twice the larger measured figure). The
+defaults are 5 s and 32 MiB for validation (slots: one per CPU) and 15 s and 256 MiB for PDFs (slots: the smaller of
+2 and the CPUs).
 
-At start the runtime (`MemoryBudget`) compares the slots times the memory budgets with the memory the JDK reports as available to the
-JVM (`OperatingSystemMXBean#getTotalMemorySize`) minus the heap's maximum and logs one WARN when every slot full at
-once would not fit (the kernel would stop the process with no Java error). That figure is the container's memory limit
-when the JVM runs under one, and **the host's physical RAM when no container limit applies**, so on a bare host the
-check only says whether the slots outgrow the machine; a runtime without `jdk.management` skips it. Lower `datum.runtime.validation.concurrency`, `datum.runtime.pdf.concurrency` or the memory budgets, lower
+At start the runtime (`MemoryBudget`) makes two checks and logs one WARN for each that fails. The first compares the
+slots times the memory budgets with the memory the JDK reports as available to the JVM
+(`OperatingSystemMXBean#getTotalMemorySize`) minus the heap's maximum: when every slot full at once would not fit, the
+kernel stops the process with no Java error. That figure is the container's memory limit when the JVM runs under one,
+and **the host's physical RAM when no container limit applies**, so on a bare host the check only says whether the
+slots outgrow the machine; a runtime without `jdk.management` skips it. The second compares the slots times 16 MiB
+(plus the linear memory, which a bytecode engine keeps on the heap) with the heap's maximum: a heap that runs out
+mid-run fails every run in flight (503), not only one. Lower `datum.runtime.validation.concurrency`, `datum.runtime.pdf.concurrency` or the memory budgets, lower
 `-Xmx`, or give the container more memory. Warm validation takes about 0.45 s and a PDF about 3.3 s, so a slot count
 above the number of CPUs buys nothing. A request that cannot get a slot within `wait` answers 503 `server.busy` with
 `Retry-After`. A runtime with no native provider for the platform does not start unless `datum.runtime.allow-bytecode=true`

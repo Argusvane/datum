@@ -368,7 +368,8 @@ export interface PresentationFoldOptions {
   dataGridRowBounds?: Readonly<Record<string, { minRows: number; maxRows: number | undefined }>> | undefined;
   /**
    * A printed journey's path: the whole form folded into one page per entry, in order, each holding
-   * the components it lists (with their subtrees), each component once. Wins over `meta.journey`.
+   * the components it lists (with their subtrees), each component once: on the earliest page that
+   * lists it or a container holding it. Wins over `meta.journey`.
    */
   pages?: ReadonlyArray<{ pageId: string; title: string; description?: string | undefined; members: readonly string[] }> | undefined;
   /**
@@ -650,8 +651,20 @@ export function foldPresentation(
 
   const foldSteps = (model: RenderComponentModel, scope: Scope): PresentationSteps | undefined => {
     const stepNodes = stepNodesOf(model.node);
-    const active = activeStepId(model.node, navigation);
     const review = !live;
+    // A step its rules hide is listed but never the one shown, nor where Back or Continue go:
+    // the next step shown takes its place, else the one before it.
+    const open = (id: string): boolean => {
+      const step = byId.get(id);
+      return review || includeHidden || step === undefined || shown(step);
+    };
+    const asked = activeStepId(model.node, navigation);
+    const askedIndex = stepNodes.findIndex((step) => step.id === asked);
+    const active =
+      asked === undefined || open(asked)
+        ? asked
+        : (stepNodes.slice(askedIndex + 1).find((step) => open(step.id)) ?? stepNodes.slice(0, askedIndex).reverse().find((step) => open(step.id)))?.id ??
+          asked;
     const total = stepNodes.length;
     const steps: PresentationStep[] = [];
     const others: PresentationNode[] = [];
@@ -687,8 +700,8 @@ export function foldPresentation(
       return undefined;
     }
     const activeIndex = Math.max(0, stepNodes.findIndex((step) => step.id === active));
-    const previous = review ? undefined : stepNodes[activeIndex - 1];
-    const following = review ? undefined : stepNodes[activeIndex + 1];
+    const previous = review ? undefined : stepNodes.slice(0, activeIndex).reverse().find((step) => open(step.id));
+    const following = review ? undefined : stepNodes.slice(activeIndex + 1).find((step) => open(step.id));
     return {
       kind: "steps",
       ...common(model, scope),
@@ -917,16 +930,18 @@ export function foldPresentation(
   let nodes: PresentationNode[];
   let page: PresentationPage | undefined;
   if (options.pages !== undefined) {
-    // One page per entry, each component once, in the order the pages list them.
+    // One page per entry, each component once, in the order the pages list them: a component
+    // belongs to the earliest page that draws it, whether it lists it or a container it lists
+    // holds it, so a later page leaves it out (as Check answers does).
     const placed = new Set<string>();
     nodes = options.pages.map((entry) => {
-      const members = entry.members.filter((id) => {
-        if (placed.has(id)) {
-          return false;
+      const members = entry.members.filter((id) => !placed.has(id));
+      const drawn = kit.pageComponents(output.components, { members }).filter((model) => model.parentId === undefined || !placed.has(model.id));
+      for (const model of drawn) {
+        if (model.parentId !== undefined) {
+          placed.add(model.id);
         }
-        placed.add(id);
-        return true;
-      });
+      }
       return {
         kind: "page" as const,
         id: entry.pageId,
@@ -936,7 +951,7 @@ export function foldPresentation(
         title: entry.title,
         ...(entry.description !== undefined ? { description: entry.description } : {}),
         heading: "shown" as const,
-        children: foldRoot(kit.pageComponents(output.components, { members }), formLevel + 1)
+        children: foldRoot(drawn, formLevel + 1)
       };
     });
   } else if (journey) {

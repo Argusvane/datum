@@ -9,6 +9,7 @@
 import { resolveLocalizedText } from "../../core/localization/localized-text.js";
 import type { LocalizedText } from "../../core/schema/contracts.js";
 import { formatFileSize, readFileAttachments } from "../../core/schema/file-upload.js";
+import { buildRowKeys, collectionPathOf } from "../../core/tree/data-scope.js";
 import type { RenderComponentModel } from "../core/component-model.js";
 import { scalarText } from "../core/scalar-text.js";
 
@@ -36,6 +37,15 @@ export interface PdfFormattedValue {
 export interface PdfValueTexts {
   yes: string;
   no: string;
+}
+
+/**
+ * Whether a component's answer is never printed back in clear (a `password`): read by its type,
+ * which is its base engine type once the definition's `kinds` map was applied. A rendition and a
+ * placeholder alike print the mask in its place.
+ */
+export function isMaskedPdfAnswer(model: Pick<RenderComponentModel, "type">): boolean {
+  return model.type === "password";
 }
 
 /** Component types whose value is a yes or a no: the checkbox, and the `boolean` field a host registers. */
@@ -112,16 +122,19 @@ export function stripAnswerBidi(text: string): string {
 }
 
 /**
- * Formats one component's value for paper. `value` defaults to the model's own; a repeating
- * region passes the row's value for the same component instead. The text never carries the
- * direction controls of {@link stripAnswerBidi}; `bidiStripped` says some were removed.
+ * Formats one component's value for paper. `value` left out is the model's own; a repeating
+ * region passes the row's value for the same component instead, and a row with no answer at
+ * the field's key passes `undefined`, which is no answer — never the model's own value, which
+ * for a row's field is whatever sits at the same bare key outside the collection. The text never
+ * carries the direction controls of {@link stripAnswerBidi}; `bidiStripped` says some were removed.
  */
 export function formatPdfValue(
   model: RenderComponentModel,
   texts: PdfValueTexts = DEFAULT_TEXTS,
-  value: unknown = model.value,
-  locale?: string
+  ...given: [value?: unknown, locale?: string]
 ): PdfFormattedValue {
+  const value = given.length > 0 ? given[0] : model.value;
+  const locale = given[1];
   const formatted = formatPdfValueRaw(model, texts, value, locale);
   if (YES_NO_TYPES.has(model.type)) {
     return formatted;
@@ -130,12 +143,7 @@ export function formatPdfValue(
   return text === formatted.text ? formatted : { ...formatted, text, bidiStripped: true };
 }
 
-function formatPdfValueRaw(
-  model: RenderComponentModel,
-  texts: PdfValueTexts = DEFAULT_TEXTS,
-  value: unknown = model.value,
-  locale?: string
-): PdfFormattedValue {
+function formatPdfValueRaw(model: RenderComponentModel, texts: PdfValueTexts, value: unknown, locale: string | undefined): PdfFormattedValue {
   if (YES_NO_TYPES.has(model.type)) {
     const checked = value === true || value === "true";
     return { text: checked ? texts.yes : texts.no, checked, empty: false };
@@ -202,8 +210,16 @@ function formatPlain(value: unknown): string {
   return JSON.stringify(value);
 }
 
-/** A value that is not attached to any component (a template path, an expression result), as text. */
+/**
+ * A value that is not attached to any component (a template path, an expression result), as text.
+ * Uploaded files read as their names and sizes, as a file field's answer does: never the
+ * envelope, whose bytes would print.
+ */
 export function formatPdfPlainValue(value: unknown): string {
+  const files = readFileAttachments(value);
+  if (files.length > 0 && (!Array.isArray(value) || files.length === value.length)) {
+    return stripAnswerBidi(files.map((file) => `${file.name} (${formatFileSize(file.size)})`).join(", "));
+  }
   if (Array.isArray(value)) {
     return stripAnswerBidi(value.map((entry) => formatPlain(entry)).join(", "));
   }
@@ -242,4 +258,67 @@ export function readCollectionRows(
     byIndex.set(index, row);
   }
   return [...byIndex.entries()].sort((a, b) => a[0] - b[0]).map(([, row]) => row);
+}
+
+/**
+ * The components a placeholder or a mapping names by path. A path is a component's id, its value
+ * path outside any collection (`applicant.email`), or an entry's field at
+ * `<collection path>[<index>].<key within the entry>` (`items[0].note`): the field of the
+ * collection's entries the key names, whose answer the caller reads at that path. The first
+ * component at a path keeps it, so a keyed field cannot shadow another by accident.
+ */
+export class PdfModelIndex {
+  private readonly byId = new Map<string, RenderComponentModel>();
+  private readonly byPath = new Map<string, RenderComponentModel>();
+  /** Collection path -> the fields of its entries by key within an entry, built on first use. */
+  private readonly byCollection = new Map<string, Map<string, RenderComponentModel>>();
+
+  public constructor(models: Iterable<RenderComponentModel>) {
+    for (const model of models) {
+      if (!this.byId.has(model.id)) {
+        this.byId.set(model.id, model);
+      }
+      // A field inside a repeating section is not stored at its value path (its entries are).
+      if (model.rowKey === undefined && !this.byPath.has(model.valuePath)) {
+        this.byPath.set(model.valuePath, model);
+      }
+    }
+  }
+
+  /** The component an id or a value path outside any collection names. */
+  public named(path: string): RenderComponentModel | undefined {
+    return this.byId.get(path) ?? this.byPath.get(path);
+  }
+
+  /** The component a path names: by id, by value path, or an entry's field by its indexed path. */
+  public at(path: string): RenderComponentModel | undefined {
+    const direct = this.named(path);
+    if (direct) {
+      return direct;
+    }
+    const entry = /^(.+?)\[(\d+)\]\.(.+)$/.exec(path);
+    return entry ? this.rowField(entry[1]!, entry[3]!) : undefined;
+  }
+
+  /** The field of a repeating section's entries that `key` (its key within an entry) names, by the section's collection path. */
+  public rowField(collectionPath: string, key: string): RenderComponentModel | undefined {
+    let byKey = this.byCollection.get(collectionPath);
+    if (!byKey) {
+      byKey = new Map();
+      for (const model of this.byId.values()) {
+        if (collectionPathOf(model.node) !== collectionPath) {
+          continue;
+        }
+        const rowKeys = buildRowKeys({ id: "__row", type: "form", configuration: {}, children: { content: [model.node] } });
+        for (const [id, rowKey] of rowKeys) {
+          const field = this.byId.get(id);
+          if (field && !byKey.has(rowKey)) {
+            byKey.set(rowKey, field);
+          }
+        }
+      }
+      this.byCollection.set(collectionPath, byKey);
+    }
+    return byKey.get(key);
+  }
 }

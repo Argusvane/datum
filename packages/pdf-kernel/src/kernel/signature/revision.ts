@@ -4,7 +4,8 @@
  * signed, ending at its own `%%EOF`. Loaded on its own, it shows the file as the signer saw it:
  * the signature dictionary, the fields and the pages before any later update defined them again.
  */
-import { PDFDocument } from "@cantoo/pdf-lib";
+import type { PDFDocument } from "@cantoo/pdf-lib";
+import { loadPdfDocument } from "../util/parse-depth.js";
 
 /**
  * The file's first `end` bytes as a document of their own, or `undefined` when they do not
@@ -15,7 +16,7 @@ export async function loadRevision(bytes: Uint8Array, end: number): Promise<PDFD
     return undefined;
   }
   try {
-    return await PDFDocument.load(bytes.subarray(0, end), { updateMetadata: false, ignoreEncryption: true });
+    return await loadPdfDocument(bytes.subarray(0, end), { updateMetadata: false, ignoreEncryption: true });
   } catch {
     return undefined;
   }

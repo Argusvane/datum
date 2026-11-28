@@ -245,6 +245,7 @@ user-info replaced, and a too-short secret is reported by its length.
 | `datum.runtime.verify_max_bytes` | `20MiB` | the largest PDF the verify route reads (413 over it) |
 | `datum.runtime.programs.sandbox` / `pdf` | the packaged programs | a file used instead; still proved by the ABI probe |
 | `datum.runtime.qjs_path` / `qjs_sha256` | the packaged guest | an own copy of `qjs-wasi.wasm`, and the SHA-256 the engine holds it to (the digest needs the path) |
+| `datum.runtime.allow_unguarded_stack` | `false` | run an own copy the shadow stack guard cannot read, without the guard (logged at WARNING); off, such a copy stops the start |
 | `datum.host.formula_errors` | `fail` | what a formula that cannot be evaluated does: `fail` or `warn` |
 | `datum.host.risky_patterns` | `refuse` | a regular expression that repeats a repeat: `refuse` or `allow` |
 | `datum.host.time_zone` | the process zone | the IANA zone `today()` and date rules read in; the process zone is read once through `tzlocal` (UTC with `datum.W010` when it cannot be) |
@@ -777,8 +778,8 @@ retired certificates, all PEM.
 ### Web: every route
 
 Request bodies are read as a counted stream, so a chunked body cannot pass the cap; the strict JSON reader refuses
-non-finite numbers, a lone surrogate, nesting past 256 and numbers of more than 1000 characters (a duplicate key: the last
-wins, as `JSON.parse` does), and every parse refusal is 400 `bad_document`. Refusals never echo the body. Every refusal is
+non-finite numbers, a lone surrogate, nesting past 256, numbers of more than 1000 characters and an object that repeats a
+key (another reader of the same bytes could keep another of its values), and every parse refusal is 400 `bad_document`. Refusals never echo the body. Every refusal is
 `{"errors": [{"field"?, "code", "message"?}]}` or, with `datum.web.api.problem_details`, RFC 9457 `application/problem+json`
 with `type`, `title`, `status`, `detail`, `code`, `correlationId` and `errors`. A 500 carries no field or message.
 
@@ -1176,19 +1177,30 @@ The runtime under test is built with at least 16 validation slots; tests marked 
 
 - **At start, once per process.** It imports wasmtime (an unsupported platform is refused by name), re-hashes the guest
   against the pin (or `datum.runtime.qjs_path` against `qjs_sha256`), builds one `Engine` (epoch interruption on, fuel off),
-  compiles one `Module`, links WASI once and instantiates one throwaway store, so an address-space refusal stops the start
-  rather than the first run. Compiling takes about half a second to 1.4 s on a laptop and 4 to 7 s on a 1-vCPU Linux VM:
+  rewrites the module for the stack guard and compiles one `Module`, links WASI once and instantiates one throwaway
+  store, so an address-space refusal stops the start rather than the first run. The pin is built into
+  `argusvane-datum-sandbox-wasmtime`, and the `runtime.json` beside the packaged module must name the same digest. Compiling takes about half a second to 1.4 s on a laptop and 4 to 7 s on a 1-vCPU Linux VM:
   raise `datum.runtime.startup_budget` on a small host. The `Datum` start runs it off the event loop and reports the
   runtime as down until it returns.
 - **One store per run**, created, run and closed on the run's worker thread: a memory limit of the run's budget, one
-  instance, memory and table, an epoch deadline derived from the wall budget, the private run directory preopened
-  read-only as `/app`, stdin from a sibling file, no environment.
+  instance, memory and table of at most 4,096 elements, an epoch deadline derived from the wall budget, the private run
+  directory preopened read-only as `/app`, stdin from a sibling file, no environment.
+- **The C stack is guarded.** QuickJS-ng checks no stack under WASI, and its 64 KiB C stack sits just above the
+  module's static data. The runtime rewrites the module's code, after the digest check, so that every write of its
+  stack pointer is checked first: a value below the stack's floor or above its top traps at once. A canary over the
+  stack's lowest 4 KiB and the module's constant data are compared after each run as a second line. A run that reached
+  the floor ends as a trap (503 `wasm.execution_error`). An own copy the guard cannot read stops the start unless
+  `datum.runtime.allow_unguarded_stack` is set.
 - **One epoch clock thread** (`datum-epoch-clock`) advances the engine's epoch every `datum.runtime.tick`. A looping guest
   ends within two ticks of its wall budget; there is no timer per run.
 - **Sleeps end at the budget.** The epoch cannot interrupt a guest waiting inside a host call, and a rule module can reach
   `os.sleep` and `os.setTimeout`. The runtime therefore replaces the one WASI import that waits, `poll_oneoff`: a clock wait
   is cut to the run's remaining wall budget and woken by its stop, so a sleeping run ends at its budget with no stuck run
   and no stray thread.
+- **The clock and randomness are the run's.** The runtime also replaces `clock_time_get` and `random_get`. Every run's
+  clock starts at the epoch and moves only by the waits the guest completed, and `random_get` is a fixed stream, so a
+  rule module that imports `qjs:os` reads the same time and the same random bytes on every run (`Math.random` is
+  seeded from that clock). A sleep still takes its real time; the deadline is the engine's epoch, not the guest's clock.
 - **How a run ended.** A plain return (or exit 0) is clean; an exit has its code; a trap is read by its code (the interrupt
   is the wall budget). The engine reports `memory` only when the guest's memory ended at the store's limit; QuickJS's own
   `InternalError: out of memory` below the limit, like the same words thrown by a rule, is an exit the sandbox reads as a

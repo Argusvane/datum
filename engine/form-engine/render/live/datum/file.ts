@@ -7,7 +7,8 @@
  *   heard); where they are stored, and what is announced, is the renderer's files module.
  * - Each stored attachment is a row: its name (a button that hands the bytes back as a download
  *   when they are embedded, `FileItem.downloadable`; plain text otherwise), its size, and a Remove
- *   button that names the file for assistive technology. A read-only field shows the list alone
+ *   button that names the file for assistive technology. The rows are keyed by the file's id, so
+ *   a removed file's row, its Remove button with it, leaves the list. A read-only field shows the list alone
  *   (a review is not the place to pick a file), or the "none" line; a disabled one takes no pick
  *   and offers no removal.
  * - The polite status region (`data-file-status`) is where a pick and a removal are announced.
@@ -20,7 +21,7 @@
  */
 import { formatFileSize } from "../../../core/schema/file-upload.js";
 import type { FieldAdapter, FileFieldState, FileItem } from "../contract.js";
-import { html, ifDefined, nothing, type TemplateResult } from "../lit.js";
+import { html, ifDefined, nothing, repeat, type TemplateResult } from "../lit.js";
 import {
   ariaStates,
   assembleParts,
@@ -70,7 +71,7 @@ export function createDatumFileAdapter(input?: DatumFieldOptionsInput): FieldAda
     template(state, on) {
       const { files, multiple, accept } = figuresOf(state);
       const locked = state.disabled || state.readOnly;
-      const rows = files.map((item) => {
+      const row = (item: FileItem): TemplateResult => {
         const name = item.downloadable
           ? html`<button type="button" class="datum-form__file-name" title=${state.words("fileDownload", { name: item.name })} @click=${() => on.download?.(item.id)}>${item.name}</button>`
           : html`<span class="datum-form__file-name">${item.name}</span>`;
@@ -79,10 +80,12 @@ export function createDatumFileAdapter(input?: DatumFieldOptionsInput): FieldAda
           ? nothing
           : html` <button type="button" class="datum-form__file-remove" aria-label=${state.words("fileRemoveFile", { name: item.name })} @click=${() => on.remove?.(item.id)}>${state.words("fileRemove")}</button>`;
         return html`<li class="datum-form__file-item">${name}${size}${remove}</li>`;
-      });
+      };
+      // Keyed by the file's id: a removed file's row leaves with its Remove button, and no other
+      // row takes over its elements.
       const list =
-        rows.length > 0
-          ? html`<ul class="datum-form__file-list">${rows}</ul>`
+        files.length > 0
+          ? html`<ul class="datum-form__file-list">${repeat(files, (item) => item.id, row)}</ul>`
           : state.readOnly
             ? html`<span class="datum-form__file-empty">${state.words("fileNone")}</span>`
             : nothing;

@@ -205,6 +205,19 @@ def test_a_body_cut_off_is_400_bad_document(client: TestClient) -> None:
     assert (reply.status_code, code(reply)) == (400, "bad_document")
 
 
+@pytest.mark.parametrize("route", ["/api/submissions", "/api/submissions/validate"])
+def test_a_body_whose_object_repeats_a_key_is_400_bad_document_before_any_run(
+    client: TestClient, parts: Parts, route: str
+) -> None:
+    sent = json.loads(body_of() if route == "/api/submissions" else check_body_of())
+    document = json.dumps(sent["document"])
+    twice = json.dumps(sent)[:-1] + ', "document": ' + document + "}"
+    reply = client.post(route, content=twice.encode(), headers=JSON)
+    assert (reply.status_code, code(reply)) == (400, "bad_document")
+    assert parts.sandbox.contexts == [], "nothing ran"
+    assert parts.handler.calls == []
+
+
 @pytest.mark.parametrize(
     "raw",
     [b"[1, 2]", b'"text"', b"null", b"{}", b'{"document": []}', b'{"a": NaN}', b'{"a": 1e999}', b"\xff\xfe"],
@@ -426,6 +439,31 @@ def test_a_failed_run_is_a_503_with_the_runs_code_and_no_retry_after_on_submit_v
         document = reply.json()
         assert (document["code"] if problem else document["errors"][0]["code"]) == wire, route
         assert "program threw" not in reply.text
+
+
+@pytest.mark.parametrize("reason", [SandboxFailure.THREW, SandboxFailure.TRAP, SandboxFailure.BUDGET])
+def test_a_failed_runs_stderr_reaches_no_log_record_at_any_level(
+    reason: SandboxFailure, caplog: pytest.LogCaptureFixture
+) -> None:
+    # The guest's stderr can quote submitted values and carry line breaks and terminal escapes: the host logs the
+    # failure's reason and code, never the text, so no forged line and no submitted value reaches a log.
+    stderr = "Error: name=Jane Doe\r\nINFO datum.web forged line\x1b[2K\x1b[1A\u0085\x9b31m"
+    parts = Parts()
+    parts.sandbox.error = SandboxError(reason, "The sandbox program threw.", stderr=stderr)
+    datum, _ = make_datum(parts=parts)
+    with caplog.at_level(logging.DEBUG), TestClient(build_app(datum, authoring=[])) as running:
+        replies = [
+            running.post("/api/submissions/validate", content=check_body_of(), headers=JSON),
+            running.post("/api/submissions", content=body_of(), headers=JSON),
+            running.post("/api/submissions/test", content=body_of(), headers=JSON),
+        ]
+    assert [reply.status_code for reply in replies] == [503, 503, 503]
+    formatter = logging.Formatter()
+    for record in caplog.records:
+        text = formatter.format(record)
+        assert "Jane Doe" not in text, record.name
+        assert "forged line" not in text, record.name
+        assert not any(char in text for char in "\r\x1b\x85\x9b"), record.name
 
 
 @pytest.mark.parametrize(

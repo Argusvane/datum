@@ -140,13 +140,17 @@ For each WebAuthn signature on the document:
    `gowebpki/jcs`), or a few lines per language tested against the shared vectors.
 5. Hash the UTF-8 text with SHA-256 and compare the base64url of the hash to
    `clientDataJSON.challenge`.
-6. Check `clientDataJSON.type` is `webauthn.get` and `origin` is an allowed one. Check
-   `authenticatorData[0..32]` equals the SHA-256 of the relying-party id, the user-presence flag
-   (the user-verified flag too when your policy requires it), and the counter.
+6. Check `clientDataJSON.type` is `webauthn.get`, `origin` is an allowed one, and `crossOrigin` is
+   not `true` and there is no `topOrigin`. Check `authenticatorData[0..32]` equals the SHA-256 of
+   the relying-party id, the user-presence flag (the user-verified flag too when your policy
+   requires it), that the backed-up flag (BS) is not set without the backup-eligible flag (BE), and
+   the counter.
 7. Verify `signature` over `authenticatorData || SHA-256(clientDataJSON)` with the registered
    public key (SPKI) and algorithm: for a signature made with a discoverable passkey the page did
    not know, the archived `algorithm` is an ES256 assumption and the archived assertion has no
-   `publicKey`, so take both from what you registered for that `credentialId`. ES256 as a DER-encoded ECDSA signature over P-256 and SHA-256
+   `publicKey`, so take both from what you registered for that `credentialId`. A `credentialId` you
+   did not register is invalid, whatever key the assertion carries. Accept ES256 on P-256 and RS256
+   with a modulus of at least 2048 bits only. ES256 as a DER-encoded ECDSA signature over P-256 and SHA-256
    (Python `cryptography`: `ec.ECDSA(SHA256())`; `node:crypto`: `verify("sha256", data, key, sig)` with
    `dsaEncoding: "der"`; Java `SHA256withECDSA`; .NET `ECDsa.VerifyData(...,
    DSASignatureFormat.Rfc3279DerSequence)`) or RS256 as PKCS#1 v1.5.

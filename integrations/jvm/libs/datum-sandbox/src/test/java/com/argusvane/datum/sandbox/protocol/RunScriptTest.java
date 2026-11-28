@@ -46,9 +46,10 @@ class RunScriptTest {
             assertThat(freeze).isLessThan(startedMark);
             assertThat(startedMark).isLessThan(register);
             assertThat(script.split("std\\.in\\.readAsString\\(\\)", -1)).hasSize(2);
-            for (String name : RunScript.REMOVED_GLOBALS) {
-                assertThat(script.substring(delete - 200, delete)).as(name).contains("\"" + name + "\"");
-            }
+            assertThat(script).contains("  [\"std\", \"os\", \"print\", \"console\", \"performance\", \"scriptArgs\", \"bjson\", \"queueMicrotask\", "
+                + "\"gc\", \"navigator\", \"argv0\", \"execArgv\", \"atob\", \"btoa\", \"DOMException\"].forEach(function (name) {\n    delete globalThis[name];");
+            assertThat(RunScript.REMOVED_GLOBALS).as("the standard intrinsics stay, frozen")
+                .doesNotContain("DisposableStack", "AsyncDisposableStack", "SuppressedError");
             assertThat(script.split("register\\(evaluate\\(", -1)).hasSize(3);
             assertThat(script).doesNotContain("__datum_register(");
             // Nothing but the run's markers is printed, and only after the run.

@@ -2,9 +2,11 @@
 
 Steps: strict UTF-8 decode; a linear pre-scan outside strings (three regex passes) for nesting, number length and
 integers that are not finite doubles; `json.loads` with `NaN`/`Infinity` and non-finite floats refused; one walk over
-the decoded strings for a lone surrogate, run only when a surrogate escape is present. Duplicate keys: the last wins,
-as `JSON.parse` does; a non-finite number shadowed by a later duplicate is still refused (a documented strict
-superset of `JSON.parse`). The reader holds the GIL: call it on the worker thread, never on the event loop.
+the decoded strings for a lone surrogate, run only when a surrogate escape is present. Duplicate keys: with
+`unique_keys` (request bodies) an object that repeats a key is refused, since another reader of the same bytes may keep
+another of its values; without it the last wins, as `JSON.parse` does, and a non-finite number shadowed by a later
+duplicate is still refused (a documented strict superset of `JSON.parse`). The reader holds the GIL: call it on the
+worker thread, never on the event loop.
 """
 
 import json
@@ -133,10 +135,18 @@ def _scan_surrogates(value: object) -> None:
             stack.extend(cast("list[object]", item))
 
 
-def read(body: bytes | bytearray, *, max_depth: int) -> JsonValue:
+def _unique_object(pairs: list[tuple[str, JsonValue]]) -> dict[str, JsonValue]:
+    made = dict(pairs)
+    if len(made) != len(pairs):
+        raise BadDocumentError(RefusalReason.DUPLICATE_KEY, "an object repeats a key")
+    return made
+
+
+def read(body: bytes | bytearray, *, max_depth: int, unique_keys: bool = False) -> JsonValue:
     """Read one untrusted JSON document; every refusal is a `BadDocumentError`.
 
-    `max_depth` is 256 for request bodies, 512 for answer JSON and 8 for passkey client data. The body is `bytes` or
+    `max_depth` is 256 for request bodies, 512 for answer JSON and 8 for passkey client data. `unique_keys` refuses an
+    object that repeats a key (`RefusalReason.DUPLICATE_KEY`); request bodies are read with it. The body is `bytes` or
     `bytearray` only: anything else (a `memoryview`, a `str`) is a caller error and raises `TypeError`.
     """
     if not isinstance(cast("object", body), bytes | bytearray):
@@ -152,7 +162,12 @@ def read(body: bytes | bytearray, *, max_depth: int) -> JsonValue:
     if has_raw_nul:
         text = _escape_raw_nul(text)
     try:
-        value: JsonValue = json.loads(text, parse_constant=_refuse_constant, parse_float=_parse_float)
+        value: JsonValue = json.loads(
+            text,
+            parse_constant=_refuse_constant,
+            parse_float=_parse_float,
+            object_pairs_hook=_unique_object if unique_keys else None,
+        )
     except BadDocumentError:
         raise
     except json.JSONDecodeError as error:

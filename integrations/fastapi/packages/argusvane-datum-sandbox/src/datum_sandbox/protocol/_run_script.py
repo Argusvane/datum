@@ -2,7 +2,10 @@
 
 One function, so what it holds is out of the rule modules' reach. It reads stdin (the run's nonce, a line feed, then the
 input) and keeps `std`, `print`, `eval`, the entry point and the registration function in locals; removes `std`, `os`,
-`print`, `console`, `performance`, `scriptArgs` and `bjson` from the global scope, failing the run if one stays;
+`print`, `console`, `performance`, `scriptArgs` and `bjson` from the global scope, and the extras quickjs-ng adds that
+the page's engine does not have (`queueMicrotask`, `gc`, `navigator`, `argv0`, `execArgv`, `atob`, `btoa`,
+`DOMException`), failing the run if one stays (the ES-standard `DisposableStack`, `AsyncDisposableStack` and
+`SuppressedError` stay, under the freeze);
 evaluates the freeze snippet (the engine's `FREEZE_INTRINSICS_SNIPPET`, shipped as `freeze-intrinsics.js` by
 argusvane-datum-programs and never copied here), so the kernel and the intrinsics are read-only to what follows; prints
 the started marker; evaluates each rule module as a global expression and registers it, in order; calls the entry point;
@@ -31,8 +34,25 @@ APP_PROGRAM: Final = "program.js"
 APP_RUN_SCRIPT: Final = "run.js"
 """The run script's name inside the run's read-only `/app`."""
 
-REMOVED_GLOBALS: Final = ("std", "os", "print", "console", "performance", "scriptArgs", "bjson")
-"""The globals the script removes before any module is evaluated, in the script's order."""
+REMOVED_GLOBALS: Final = (
+    "std",
+    "os",
+    "print",
+    "console",
+    "performance",
+    "scriptArgs",
+    "bjson",
+    "queueMicrotask",
+    "gc",
+    "navigator",
+    "argv0",
+    "execArgv",
+    "atob",
+    "btoa",
+    "DOMException",
+)
+"""The globals the script removes before any module is evaluated, in the script's order: the host's, then the extras
+quickjs-ng has and the page's engine does not."""
 
 PDF_RUN_SCRIPT: Final = "__datum_pdf(std.in.readAsString()).then((json) => print(json));\n"
 """The PDF program's script: qjs runs the pending jobs after the script, so the promise settles before it exits."""

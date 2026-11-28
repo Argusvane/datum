@@ -7,7 +7,7 @@ import subprocess
 from collections.abc import Callable
 from importlib import resources
 from pathlib import Path
-from typing import cast
+from typing import Final, cast
 
 import pytest
 
@@ -150,10 +150,29 @@ def test_a_mutated_run_js_fails_the_order_check(mutant: str) -> None:
         check_order(mutated, snippet)
 
 
-def test_removed_globals_are_the_seven_in_order() -> None:
-    assert REMOVED_GLOBALS == ("std", "os", "print", "console", "performance", "scriptArgs", "bjson")
+REMOVED: Final = (
+    "std",
+    "os",
+    "print",
+    "console",
+    "performance",
+    "scriptArgs",
+    "bjson",
+    "queueMicrotask",
+    "gc",
+    "navigator",
+    "argv0",
+    "execArgv",
+    "atob",
+    "btoa",
+    "DOMException",
+)
+
+
+def test_removed_globals_are_the_host_ones_then_the_engine_extras_in_order() -> None:
+    assert REMOVED_GLOBALS == REMOVED
     script = run_script(freeze_snippet())
-    expected = '["std", "os", "print", "console", "performance", "scriptArgs", "bjson"].forEach(function (name) {'
+    expected = "[" + ", ".join(f'"{name}"' for name in REMOVED) + "].forEach(function (name) {"
     assert f"  {expected}\n" in script
     assert '    if (name in globalThis) { throw new Error("cannot remove " + name); }\n' in script
 

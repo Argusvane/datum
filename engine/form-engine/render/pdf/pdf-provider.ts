@@ -269,8 +269,8 @@ function scriptCollector(): { scan(text: string): void; scripts(): string[] } {
 }
 
 /** The families and scripts a document needs fonts for, from its typography and every run of text. */
-export function pdfFontNeed(document: PdfDocument): PdfFontNeed {
-  const typography = document.typography;
+/** Every family a typography names: its roles' and its per-script fallbacks. */
+function typographyFamilies(typography: PdfDocument["typography"]): Set<string> {
   const families = new Set<string>([typography.body.family, typography.label.family, typography.heading.family]);
   for (const role of ["mono", "hint", "option", "legend", "required", "small", "affix", "stepTag"] as const) {
     const spec = typography[role];
@@ -278,9 +278,14 @@ export function pdfFontNeed(document: PdfDocument): PdfFontNeed {
       families.add(spec.family);
     }
   }
-  for (const family of Object.values(document.typography.fallbacks ?? {})) {
+  for (const family of Object.values(typography.fallbacks ?? {})) {
     families.add(family);
   }
+  return families;
+}
+
+export function pdfFontNeed(document: PdfDocument): PdfFontNeed {
+  const families = typographyFamilies(document.typography);
   const collector = scriptCollector();
   const scan = collector.scan;
   const visit = (blocks: readonly PdfDocument["blocks"][number][]): void =>
@@ -339,8 +344,10 @@ export function pdfFontNeed(document: PdfDocument): PdfFontNeed {
 }
 
 /**
- * The scripts a fill plan's values use — what the font the kernel draws areas (and regenerated
- * field appearances) with must cover. Templates name no families of their own.
+ * The families and scripts a fill plan needs: the theme's typography the plan carries (what a
+ * content area draws in) and the scripts its values use,
+ * which the font the kernel draws areas (and regenerated field appearances) with must cover.
+ * A plan from an older engine carries no typography and names no families.
  */
 export function pdfFillFontNeed(plan: PdfFillPlan): PdfFontNeed {
   const collector = scriptCollector();
@@ -353,7 +360,8 @@ export function pdfFillFontNeed(plan: PdfFillPlan): PdfFontNeed {
   };
   Object.values(plan.values).forEach(scanValue);
   plan.areas.forEach((area) => scanValue(area.value));
-  return { families: [], scripts: collector.scripts() };
+  const families = plan.typography ? typographyFamilies(plan.typography) : new Set<string>();
+  return { families: [...families], scripts: collector.scripts() };
 }
 
 export function buildPdfRenderRequest(

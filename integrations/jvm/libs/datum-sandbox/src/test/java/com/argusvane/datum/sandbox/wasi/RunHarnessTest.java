@@ -110,6 +110,32 @@ class RunHarnessTest {
         assertThat(engine.instancesClosed).hasValue(1);
     }
 
+    /**
+     * Every run reads the same realtime clock, the same file times and the same random_get bytes, a fresh stream each: a
+     * guest learns neither the date nor real entropy, and one run's draws do not move the next run's.
+     */
+    @Test
+    void everyRunReadsTheSameClockFileTimesAndRandomBytes() {
+        engine.start = io -> {
+            byte[] drawn = new byte[32];
+            io.random().nextBytes(drawn);
+            java.nio.file.attribute.BasicFileAttributes times = Files.readAttributes(io.app().resolve("run.js"),
+                java.nio.file.attribute.BasicFileAttributes.class);
+            write(io, io.clock().instant() + "|" + io.clock().millis() + "|" + times.lastModifiedTime() + "|" + times.creationTime()
+                + "|" + times.lastAccessTime() + "|" + Files.getLastModifiedTime(io.app()) + "|" + java.util.HexFormat.of().formatHex(drawn));
+        };
+        RunHarness harness = harness();
+        String first = out(run(harness, budget(30)));
+        assertThat(first).startsWith("1970-01-01T00:00:00Z|0|1970-01-01T00:00:00Z|1970-01-01T00:00:00Z|1970-01-01T00:00:00Z|1970-01-01T00:00:00Z|");
+        byte[] expected = new byte[32];
+        new java.util.Random(GuestIo.GUEST_SEED).nextBytes(expected);
+        assertThat(first).endsWith("|" + java.util.HexFormat.of().formatHex(expected));
+        for (int i = 0; i < 3; i++) {
+            assertThat(out(run(harness, budget(30)))).as("run %d", i + 2).isEqualTo(first);
+        }
+        assertThat(out(run(harness(), budget(30)))).as("another harness").isEqualTo(first);
+    }
+
     @Test
     void theWorkspaceHoldsTheTwoFilesAndLittleMore() throws IOException {
         try (FileSystem fs = RunHarness.workspace(guestRun(budget(30)))) {

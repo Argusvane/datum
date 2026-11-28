@@ -1356,14 +1356,25 @@ public final class SubmissionService {
     }
 
     private static void logRunFailure(String formKey, SandboxException e, boolean real) {
-        if (!real) {
+        if (real) {
+            logRunFailure(LOG, formKey, e);
+        }
+    }
+
+    /**
+     * A failed run, logged: a busy refusal at INFO (the limit working, not a fault), any other failure at ERROR with the
+     * start of the run's stderr, and its whole kept stderr at DEBUG. The stderr is the guest's words, and a thrown message
+     * can quote a submitted value: escaped onto one line always, and only its start at ERROR, so a run can neither forge
+     * log lines nor pour its input into the error log.
+     */
+    static void logRunFailure(Logger log, String formKey, SandboxException e) {
+        if (e.reason() == SandboxException.Reason.BUSY) {
+            log.info("Sandbox run for {} failed ({}): {}", formKey, e.reason(), e.getMessage());
             return;
         }
-        // A refusal for a busy site is the limit working, not a fault.
-        if (e.reason() == SandboxException.Reason.BUSY) {
-            LOG.info("Sandbox run for {} failed ({}): {}", formKey, e.reason(), e.getMessage());
-        } else {
-            LOG.error("Sandbox run for {} failed ({}): {} {}", formKey, e.reason(), e.getMessage(), e.stderr());
+        log.error("Sandbox run for {} failed ({}): {} {}", formKey, e.reason(), e.getMessage(), e.stderrSummary());
+        if (log.isDebugEnabled() && !e.stderr().isEmpty()) {
+            log.debug("Sandbox run for {} failed ({}): its stderr: {}", formKey, e.reason(), e.stderrLine());
         }
     }
 

@@ -512,6 +512,11 @@ export interface BuilderMode {
   readonly controller: BuilderController;
   /** Runs before the panels are re-pointed at the mode; the tab shows busy meanwhile. */
   activate?(context: BuilderModeContext): void | Promise<void>;
+  /**
+   * Runs when the mode leaves the page, and also when a switch to it gives way to another
+   * choice, or fails, after `activate` was called: once as soon as it does (its `activate` may
+   * still be pending) and again once `activate` settles. So it may run more than once in a row.
+   */
   deactivate?(): void;
   /** The mode's documents, one tab each (see {@link BuilderDocuments}). Absent: one tab, `label`. */
   documents?: BuilderDocuments | undefined;

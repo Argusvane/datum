@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from datum_sandbox.protocol import (
+    REMOVED_GLOBALS,
     SANDBOX_ABI_MIN,
     AbiProbe,
     DefinitionTooCostlyError,
@@ -113,11 +114,15 @@ class SandboxHardeningContract(ContractBase):
     # -- a rule module cannot forge, rebind or write outside the frame -------------------------------------------------
 
     def test_a_rule_module_cannot_forge_an_outcome(self, runtime: GuestRuntime) -> None:
-        """No global is left for a rule; replacing `__datum_run` changes nothing; print, console and std are absent."""
+        """No global is left for a rule; replacing `__datum_run` changes nothing; print, console and std are absent.
+
+        Every name of `REMOVED_GLOBALS` is probed: the host's and the engine's extras (`atob`, `queueMicrotask`, ...).
+        """
         sandbox = service(runtime)
+        names = ",".join(f"'{name}'" for name in REMOVED_GLOBALS)
         probe = (
             "(function () { var seen = []; "
-            "['std','os','print','console','performance','scriptArgs','bjson'].forEach(function (n) { "
+            f"[{names}].forEach(function (n) {{ "
             "if (typeof globalThis[n] !== 'undefined') { seen.push(n); } }); "
             "globalThis.__datum_run = function () { return JSON.stringify({ errors: [], forged: true }); }; "
             "return { validators: [function () { return { errors: seen.map(function (n) { "

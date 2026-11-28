@@ -48,7 +48,7 @@ import { declaredDefaultLocale, supportedLocaleCodes } from "../../core/localiza
 import { readDraft } from "./draft-read.js";
 import type { EffectiveNodeState } from "../../core/state/effective-state.js";
 import { applyHiddenValuePolicy } from "../../core/state/hidden-value-policy.js";
-import { SCALAR_ANSWER_TYPES, isScalarAnswer, sameAnswer } from "../../core/state/answer-shape.js";
+import { SCALAR_ANSWER_TYPES, checkboxAnswer, checkboxesAnswer, isScalarAnswer, sameAnswer } from "../../core/state/answer-shape.js";
 import { mintSubmissionKey } from "./submission-key.js";
 import { parseComponentPath, stringifyComponentPath } from "../../core/tree/component-path.js";
 import { ComponentTree, assertAcyclicComponentTree } from "../../core/tree/component-tree.js";
@@ -123,7 +123,7 @@ import {
   type WasmLogLevel,
   type WasmUnknownFieldsMode
 } from "../../validation/wasm/wasm-validation-host.js";
-import { kernelOptionQuestions, type KernelOptionSnapshot } from "../../validation/wasm/portable-options.js";
+import { kernelOptionChoiceOf, kernelOptionQuestions, type KernelOptionSnapshot } from "../../validation/wasm/portable-options.js";
 import { ServerValidationRunner } from "../../validation/server/server-validation.js";
 import type { PluginRegistry } from "../../registry/plugins/plugin-registry.js";
 import type { FormulaErrorPolicy } from "../../core/expressions/expression.js";
@@ -587,6 +587,8 @@ export interface DataSourceResolutionRequest {
   componentId: string;
   sourcePropertyPath?: string;
   query?: Record<string, unknown>;
+  /** The locale the source loads in, for a render in another language than the runtime's (`buildRuntimeRenderOutput`'s `locale`); else the runtime's own. */
+  locale?: string | undefined;
 }
 
 export interface SubmitOptions {
@@ -2035,7 +2037,7 @@ export class FormRuntime {
     this.assertRowRoom(collectionPath, 1);
     this.assertScalarCells(collectionPath, [row], this.collectionRuntime.count(collectionPath));
     // Every field of the new row present, unanswered where the caller gave nothing.
-    this.collectionRuntime.addRow(collectionPath, this.emptyRow(collectionPath, row));
+    this.collectionRuntime.addRow(collectionPath, this.emptyRow(collectionPath, this.storedCells(collectionPath, row)));
     const index = this.collectionRuntime.count(collectionPath) - 1;
     this.syncCollectionValuesToState(collectionPath);
     this.journeyChecks.callOff("stale");
@@ -2063,7 +2065,7 @@ export class FormRuntime {
     this.assertScalarCells(collectionPath, rows, this.collectionRuntime.count(collectionPath));
     const indices: number[] = [];
     for (const row of rows) {
-      this.collectionRuntime.addRow(collectionPath, this.emptyRow(collectionPath, row));
+      this.collectionRuntime.addRow(collectionPath, this.emptyRow(collectionPath, this.storedCells(collectionPath, row)));
       indices.push(this.collectionRuntime.count(collectionPath) - 1);
     }
     this.syncCollectionValuesToState(collectionPath);
@@ -2140,12 +2142,13 @@ export class FormRuntime {
     }
 
     const state = this.stateStore.snapshot();
-    // Option loading always uses current runtime locale/value snapshot so
-    // providers can evaluate contextual filters deterministically.
+    // Option loading uses the current value snapshot so providers can evaluate contextual
+    // filters deterministically, in the locale the render asks for (the runtime's, unless a
+    // render for another language names its own).
     try {
       // Form values only: a provider may send its context on.
       const pending = this.dataSources.load(sourceId, request.query, {
-        locale: state.locale,
+        locale: request.locale ?? state.locale,
         values: this.orchestrator.formValues(state.values)
       });
       const answer = await this.withinDataSourceTimeout(pending, sourceId);
@@ -2263,7 +2266,9 @@ export class FormRuntime {
    * recomputes nothing: a listener that writes back a normalised value (trimmed, upper-cased)
    * hears its own write once and stops there, where an event for every write would call it
    * again for ever. Throws a {@link NonScalarAnswerError} for a value that is not a scalar in a
-   * field that holds one value, before anything is written.
+   * field that holds one value, before anything is written. A checkbox's `"true"` / `"false"`
+   * is stored as the boolean and a checkbox group's list of picked values as its record of one
+   * boolean per option, the shapes every surface reads.
    */
   public setValue(path: string, value: unknown, options?: SetValueOptions): void {
     // A value change can flip visibility / enablement / calculations downstream.
@@ -2306,13 +2311,15 @@ export class FormRuntime {
     // reports the rows as they now stand.
     if (this.collections.has(key) && isRowList(value)) {
       this.assertScalarCells(key, value, 0);
-      if (this.rowsStored(key, value)) {
+      const rows = this.storedRows(key, value);
+      if (this.rowsStored(key, rows)) {
         return false;
       }
-      this.replaceRows(key, value);
+      this.replaceRows(key, rows);
       value = this.rowsFromState(key);
     } else {
       this.assertScalarAnswer(key, value);
+      value = this.storedAnswer(key, value);
       if (this.answerStored(key, value)) {
         return false;
       }
@@ -2383,6 +2390,40 @@ export class FormRuntime {
     });
   }
 
+  /**
+   * `value` as it is stored at `key`: a lone checkbox's `"true"` / `"false"` as the booleans, a
+   * checkbox group's list of the values picked as its record of one boolean per option
+   * (`checkboxAnswer`, `checkboxesAnswer`), so every surface reads the one shape. Anything
+   * else as written.
+   */
+  private storedAnswer(key: string, value: unknown): unknown {
+    if (value !== "true" && value !== "false" && !Array.isArray(value)) {
+      return value;
+    }
+    const node = this.answerFieldAt(key);
+    if (node?.type === "checkbox") {
+      return checkboxAnswer(value);
+    }
+    if (node?.type === "checkboxes") {
+      return checkboxesAnswer(value, kernelOptionChoiceOf(node)?.options ?? []);
+    }
+    return value;
+  }
+
+  /** Rows written whole, each read as the runtime keys an entry ({@link flattenRow}) and its cells as {@link storedCells} stores them. */
+  private storedRows(collectionPath: string, rows: ReadonlyArray<Record<string, unknown>>): Record<string, unknown>[] {
+    return rows.map((row) => this.storedCells(collectionPath, this.flattenRow(collectionPath, row)));
+  }
+
+  /** A row's cells, each as {@link storedAnswer} stores the answer of that field of the collection's entries. */
+  private storedCells(collectionPath: string, row: Record<string, unknown>): Record<string, unknown> {
+    const out: Record<string, unknown> = { ...row };
+    for (const field of Object.keys(out)) {
+      out[field] = this.storedAnswer(`${collectionPath}[0].${field}`, out[field]);
+    }
+    return out;
+  }
+
   /** Each collection path -> its row fields (`sku`, `address.city`) -> the field's component. */
   private rowFieldNodes: Map<string, Map<string, ComponentNode>> | undefined;
 
@@ -2392,6 +2433,12 @@ export class FormRuntime {
    * key (a checkbox group, a file field, a plugin's type, a host's extra).
    */
   private singleValueFieldAt(key: string): ComponentNode | undefined {
+    const node = this.answerFieldAt(key);
+    return node !== undefined && SCALAR_ANSWER_TYPES.has(node.type) ? node : undefined;
+  }
+
+  /** The component whose answer is stored at `key`, a field of the form or of a collection's entry; `undefined` for a host's extra. */
+  private answerFieldAt(key: string): ComponentNode | undefined {
     const id = this.orchestrator.componentIdForPath(key);
     let node = id !== undefined ? this.tree.find(id) : undefined;
     if (node === undefined && key.includes("[")) {
@@ -2417,7 +2464,7 @@ export class FormRuntime {
         }
       }
     }
-    return node !== undefined && SCALAR_ANSWER_TYPES.has(node.type) ? node : undefined;
+    return node;
   }
 
   /** The failure a non-scalar answer for a single-valued field is, or `undefined` when `value` may be stored at `key`. */
@@ -2662,6 +2709,8 @@ export class FormRuntime {
       if (refused !== undefined) {
         dropped.push({ path: key, error: refused });
         delete values[key];
+      } else {
+        values[key] = this.storedAnswer(key, values[key]);
       }
     }
     this.journeyChecks.callOff("cancelled");
@@ -2900,7 +2949,12 @@ export class FormRuntime {
 
     const current = this.stateStore.snapshot().navigation.currentStepId;
     const currentIndex = current === undefined ? -1 : steps.indexOf(current);
-    const targetIndex = currentIndex === -1 && delta === 1 ? 0 : currentIndex + delta;
+    // A step a rule hides holds nothing to answer: the move passes over it.
+    const states = this.effectiveStatesMap();
+    let targetIndex = currentIndex === -1 && delta === 1 ? 0 : currentIndex + delta;
+    while (targetIndex >= 0 && targetIndex < steps.length && states.get(steps[targetIndex] as string)?.visible === false) {
+      targetIndex += delta;
+    }
 
     const target = steps[targetIndex];
     if (target === undefined) {

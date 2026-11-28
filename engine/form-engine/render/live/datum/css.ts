@@ -144,16 +144,22 @@ export const DATUM_STYLES = `
   .datum-form__control-group > .datum-form__control:focus-visible { position: relative; z-index: 1; }
   /*
    * An invalid box says so in its line, not in its message alone (WCAG 1.4.1: the error colour
-   * is the second cue beside the text). The state is already on the control (aria-invalid) and the
-   * field (--invalid); written at one class of specificity, after the kind rules and before a
-   * binding's css, so a design system's own invalid border outranks it by order and one that draws
-   * none gets this. Boxed kinds only: a choice keeps its mark.
+   * is the second cue beside the text). The state is on the control (aria-invalid, which
+   * ariaStates "required" and "none" never write) and always on the renderer's wrapper
+   * (data-invalid), so either draws it; written at one class of specificity, after the kind rules
+   * and before a binding's css, so a design system's own invalid border outranks it by order and
+   * one that draws none gets this. Boxed kinds only: a choice keeps its mark.
    */
   .datum-form__control--text:where([aria-invalid="true"]),
   .datum-form__control--number:where([aria-invalid="true"]),
   .datum-form__control--date:where([aria-invalid="true"]),
   .datum-form__control--select:where([aria-invalid="true"]),
   .datum-form__control--textarea:where([aria-invalid="true"]),
+  :where([data-invalid]) .datum-form__control--text,
+  :where([data-invalid]) .datum-form__control--number,
+  :where([data-invalid]) .datum-form__control--date,
+  :where([data-invalid]) .datum-form__control--select,
+  :where([data-invalid]) .datum-form__control--textarea,
   :where([data-invalid]) .datum-form__affix { border-color: var(--color-error, #c53a3a); }
   /*
    * A disabled box does not look like a live one: the sunken fill (--color-disabled-bg, the
@@ -689,6 +695,8 @@ export const DATUM_STYLES = `
   }
   .datum-form__panel-title { margin: 0; font-family: var(--font-family-heading, inherit); font-weight: var(--font-weight-heading, 600); font-size: var(--font-size-panel-title, 14px); line-height: inherit; }
   .datum-form__panel-body { display: grid; gap: var(--spacing-field-gap, 12px); padding: var(--padding-panel-body, 12px); }
+  /* A hidden heading leaves the description in sight above the body, inset as the body is. */
+  .datum-form__panel > .datum-form__group-description { padding: var(--padding-panel-body, 12px); padding-bottom: 0; }
   /*
    * The panel's looks (the classes the binding declares, look-classes.ts). With none the panel is
    * the card above. Each look changes only the box, never the heading: it stays a real heading
@@ -699,6 +707,7 @@ export const DATUM_STYLES = `
   .datum-form__panel.panel-plain { gap: var(--spacing-field-gap, 12px); border: 0; border-radius: 0; background: none; overflow: visible; }
   .datum-form__panel.panel-plain > .datum-form__panel-header { padding: 0; background: none; border-bottom: 0; }
   .datum-form__panel.panel-plain > .datum-form__panel-body { padding: 0; }
+  .datum-form__panel.panel-plain > .datum-form__group-description { padding: 0; }
   .datum-form__panel.panel-outlined { background: none; }
   .datum-form__panel.panel-outlined > .datum-form__panel-header { background: none; border-bottom: 0; padding-bottom: 0; }
   .datum-form__panel.panel-shaded { border: 0; background: var(--color-panel-header, #eef3f8); }

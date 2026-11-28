@@ -58,6 +58,12 @@ class JsonBodiesTest {
         assertBad("{\"a\":1} trailing");
         assertBad("{\"a\":1}{\"b\":2}");
         assertBad("{not json");
+        // A repeated key, at any depth and however it is spelled, is malformed JSON like the rest: the same 400.
+        assertBad("{\"a\":1,\"a\":2}");
+        assertBad("{\"a\":{\"b\":[{\"c\":1,\"c\":1}]}}");
+        assertBad("{\"a\":1,\"\\u0061\":2}");
+        assertThat(JsonBodies.parse(json, "{\"a\":{\"a\":1},\"b\":[{\"a\":2},{\"a\":3}]}".getBytes(StandardCharsets.UTF_8)).get("b"))
+            .as("the same key in different objects is no repeat").hasSize(2);
         assertThatThrownBy(() -> JsonBodies.parse(json, new byte[] {'{', '"', (byte) 0xC3, (byte) 0x28, '"', ':', '1', '}'}))
             .isInstanceOf(BadRequestException.class);
     }

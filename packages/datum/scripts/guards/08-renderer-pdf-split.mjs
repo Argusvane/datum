@@ -29,9 +29,9 @@ const EAGER = ["datum-pdf", "datum-plain"];
 
 // datum-form.js (with its core chunk) is held to the gzip gate in check-bundles.mjs.
 
-// The renderer's PDF service chunk carries the theme and layout logic: measured 81.3 KB, plus 2 KB,
+// The renderer's PDF service chunk carries the theme and layout logic: measured 88.1 KB, plus 2 KB,
 // rounded up. It equals FORM_PDF_CHUNK_BUDGET_KB in check-bundles.mjs, which must be raised to match.
-const PDF_SERVICE_CHUNK_BUDGET_KB = 84;
+const PDF_SERVICE_CHUNK_BUDGET_KB = 91;
 
 export default function guard({ entryText, read, chunksOf, expect, sizeKb, sourcesOf, coreOf }) {
   const entry = entryText("datum-form.js");

@@ -115,7 +115,7 @@ What the renderer owns stays outside a part: the field's wrapper and its state a
 | `tabsFrom` | `always`, a number or a width such as `"640px"` or `"40em"` | The form width under which a tabs container takes its narrow view, a contents list over the stacked panels. `em` is read at 16px. |
 | `number` | `text`, `number` | The box a `number` field draws: a text box with a number keyboard, or the browser's number box. |
 | `textareaRows` | a number (4) | How many rows a text area opens with. |
-| `selectPlaceholder` | `hidden`, `listed` | Whether a select's empty option stays in its list or is only its caption. |
+| `selectPlaceholder` | `hidden`, `listed` | Whether a required select's empty option stays in its list or is only its caption. An optional select always lists it, and choosing it clears the answer. The caption shows whenever the answer is none of the options. |
 | `selectChevron` | `native`, `drawn` | A select face that carries a drawn chevron. |
 | `choiceState` | `group`, `each` | A choice group's state on the group, or on each option as well. |
 | `ariaStates` | `marked`, `required`, `none` | Which of the required and invalid states controls and groups carry as ARIA states. |
@@ -129,7 +129,7 @@ What the renderer owns stays outside a part: the field's wrapper and its state a
 | `stepProgress` | `afterList`, `beforeList` | Where the progress line stands among the indicator's list. |
 | `actionOrder` | `backFirst`, `nextFirst` | The order of Back and Continue. |
 | `buttonGroup` | `div`, `list` | A button group drawn as a box, or a list. |
-| `date` | an object | The date's controls: `control` (`parts` or `native`), `month` (`text` or `select`), `monthLabel` (`long` or `numbered`), `sizes`, `partClass`, `autocomplete`, `partHints`. |
+| `date` | an object | The date's controls: `control` (`parts` or `native`), `month` (`text` or `select`), `monthLabel` (`long` or `numbered`), `sizes`, `partClass`, `autocomplete`, `partHints`. The parts complete with the `autocomplete` token and their own suffix (`bday` and `bday-day` both give `bday-day`, `bday-month` and `bday-year`), `off` and `on` stay as they are, and the `native` box takes the token without a suffix (`bday`). The month select names the Gregorian months in every locale. |
 | `languageLinks` | an object | Draws the language switcher as links. `current` (`omit`, `text`, `link`), `heading`, `abbreviation`, `separator`, `names`, `className`, `linkClass`. |
 
 ## Chrome

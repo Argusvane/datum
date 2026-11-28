@@ -1543,7 +1543,7 @@ describe("buildPdfRenderModel — a data grid", () => {
     expect(model.warnings).toEqual([]);
   });
 
-  it("words a grid's caption in the render's language at components > grid > label; its on-screen texts (emptyText, addLabel, rowLabel) never print", async () => {
+  it("words a grid's caption in the render's language at components > grid > label; its on-screen texts (emptyText, addLabel) never print", async () => {
     const translations: FormTranslations = {
       "fr-CA": {
         components: {
@@ -1562,9 +1562,13 @@ describe("buildPdfRenderModel — a data grid", () => {
     // Another language keeps the string.
     const english = await buildPdfRenderModel(form, state(), resolver, { locale: "en-CA", translations });
     expect(byKind(english.document, "table")[0]).toMatchObject({ caption: "Line items" });
-    // The sections rendition numbers its rows from the caption, in French too.
-    const sections = await buildPdfRenderModel(gridForm({ pdf: { rendition: "sections" } }), { ...state(), locale: "fr-CA" }, resolver, { locale: "fr-CA", translations });
-    expect(byKind(sections.document, "heading").map(textOf)).toEqual(expect.arrayContaining(["Lignes de commande 1", "Lignes de commande 2"]));
+    // The sections rendition heads its rows as the screen does: the grid's rowLabel, worded for
+    // the language, else the engine's "Row n".
+    const rowTranslations: FormTranslations = { "fr-CA": { components: { lines: { rowLabel: entry("Ligne {{n}}", "Line {{n}}") } } } };
+    const sections = await buildPdfRenderModel(gridForm({ rowLabel: "Line {{n}}", pdf: { rendition: "sections" } }), { ...state(), locale: "fr-CA" }, resolver, { locale: "fr-CA", translations: rowTranslations });
+    expect(byKind(sections.document, "heading").map(textOf)).toEqual(expect.arrayContaining(["Ligne 1", "Ligne 2"]));
+    const unlabelled = await buildPdfRenderModel(gridForm({ pdf: { rendition: "sections" } }), state(), resolver);
+    expect(byKind(unlabelled.document, "heading").map(textOf)).toEqual(expect.arrayContaining(["Row 1", "Row 2"]));
     // A grid with no rows prints its header only: the empty-state and button words are the screen's.
     const noRows = state();
     for (const key of ["items[0].sku", "items[0].qty", "items[1].sku", "items[1].qty"]) {
@@ -1644,7 +1648,7 @@ describe("buildPdfRenderModel — a data grid", () => {
     expect(byKind(stacked.document, "table")).toHaveLength(0);
     const groups = byKind(stacked.document, "group").filter((block) => block.role === "Sect");
     expect(groups).toHaveLength(2);
-    expect(groups.map((group) => textOf(group.blocks[0]))).toEqual(["Line items 1", "Line items 2"]);
+    expect(groups.map((group) => textOf(group.blocks[0]))).toEqual(["Row 1", "Row 2"]);
     expect(groups[1]!.blocks.filter((block) => block.kind === "labelValue").map((block) => [block.label, runsText(block.value)])).toEqual([
       ["SKU", "B-2"],
       ["Qty", "5"]

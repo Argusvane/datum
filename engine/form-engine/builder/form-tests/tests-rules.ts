@@ -11,7 +11,7 @@
  * `builder-tests-open-rule` event's `kind`.
  */
 import type { ComponentNode } from "../../core/schema/types.js";
-import { buildValuePaths } from "../../core/tree/data-scope.js";
+import { buildDataPaths, buildValuePaths } from "../../core/tree/data-scope.js";
 import type { FormTestStepResult } from "../../core/form-tests/form-test-types.js";
 
 export type TestsRuleKind = "visibleWhen" | "requiredWhen" | "enabledWhen" | "readonlyWhen" | "validWhen" | "calculate";
@@ -87,13 +87,21 @@ export function decidingRule(root: ComponentNode, componentId: string, kind: Tes
 }
 
 /**
- * The component a value path names, with any row index dropped (`items[1].qty` is the `qty`
- * field of the section), or a component id given as it is. A path wins over an id, as in a test.
+ * The component a value path names, with any row index dropped, or a component id given as it
+ * is. A path wins over an id, as in a test. A row's field is found by where its entries live
+ * (`items[1].qty` is `items[].qty`, the `qty` field of the section): the value path of a field
+ * in a repeating section carries no row, so it would match nothing else.
  */
 export function componentIdOfPath(root: ComponentNode, path: string): string | undefined {
   const bare = path.replace(/\[\d+\]/g, "");
   for (const [id, valuePath] of buildValuePaths(root)) {
     if (id !== root.id && valuePath === bare) {
+      return id;
+    }
+  }
+  const entries = path.replace(/\[\d+\]/g, "[]");
+  for (const [id, dataPath] of buildDataPaths(root)) {
+    if (id !== root.id && dataPath === entries) {
       return id;
     }
   }

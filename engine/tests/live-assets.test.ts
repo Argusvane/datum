@@ -230,7 +230,7 @@ describe("live assets: imports and urls", () => {
       "@import 'late.css';"
     ].join("\n");
     const found = leadingImports(text);
-    expect(found.layers).toEqual(["@layer reset, base;"]);
+    expect(found.prelude[0]).toEqual({ layer: "@layer reset, base;" });
     expect(found.imports).toEqual([
       { target: "https://fonts.example/css2?family=Lato:wght@400;700&display=swap", conditions: "" },
       { target: "a.css", conditions: "layer(base) screen" },

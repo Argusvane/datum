@@ -115,19 +115,28 @@ export async function inspectEnvelopeSignatures(document: DeliveredDocument, dep
   const scopedDigest = bytesToHex(sha256(new TextEncoder().encode(covered ?? canonicalizeJcs(unsigned))));
 
   let verdicts: WebAuthnSubmissionVerdict[] = [];
+  let archivedVerdicts: WebAuthnSubmissionVerdict[] = [];
   let verifierError: string | undefined;
   if (signatures.some((signature) => signature.webauthn)) {
+    const common = {
+      expectedOrigins: deps.expectedOrigins,
+      rpId: deps.rpId,
+      requireUserVerification: deps.requireUserVerification,
+      ...(deps.subtle ? { subtle: deps.subtle } : {})
+    };
     try {
       verdicts = await verifyWebAuthnSubmission(document, {
-        expectedOrigins: deps.expectedOrigins,
-        rpId: deps.rpId,
+        ...common,
         publicKeyFor: (id) => {
           const known = deps.credentials(id);
           return known ? { publicKey: known.publicKey, ...(known.algorithm !== undefined ? { algorithm: known.algorithm } : {}) } : undefined;
-        },
-        requireUserVerification: deps.requireUserVerification,
-        ...(deps.subtle ? { subtle: deps.subtle } : {})
+        }
       });
+      // A credential not registered here is checked against the key its assertion carries, to
+      // itemise the checks; the result is reported unverifiable, never valid.
+      if (signatures.some((signature) => signature.webauthn && deps.credentials(signature.webauthn.credentialId) === undefined)) {
+        archivedVerdicts = await verifyWebAuthnSubmission(document, common);
+      }
     } catch (error) {
       verifierError = error instanceof Error ? error.message : String(error);
     }
@@ -160,9 +169,12 @@ export async function inspectEnvelopeSignatures(document: DeliveredDocument, dep
     if (verifierError !== undefined) {
       return { ...base, status: "unverifiable", reason: `could not verify: ${verifierError}`, credential };
     }
-    const verdict = verdicts.find((entry) => entry.credentialId === credentialId && entry.participantId === signature.participantId);
+    const verdict = (known ? verdicts : archivedVerdicts).find((entry) => entry.credentialId === credentialId && entry.participantId === signature.participantId);
     if (!verdict) {
       return { ...base, status: "unverifiable", reason: "the verifier returned no verdict for this signature", credential };
+    }
+    if (!known && verdict.key === undefined) {
+      return { ...base, status: "unverifiable", reason: "the credential is not registered here, and the assertion carries no key to check it with", credential };
     }
     const detail = { checks: verdict.checks, flags: verdict.flags, signCount: verdict.signCount, credential };
     if (!verdict.valid) {

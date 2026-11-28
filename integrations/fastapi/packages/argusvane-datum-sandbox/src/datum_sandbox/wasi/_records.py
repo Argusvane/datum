@@ -63,7 +63,9 @@ class EngineLimits:
     most runs are given and `max_memory_bytes` the largest any run is given: an engine sizes itself for them at start
     (wasmtime reserves address space from them); a run's own budget is still its limit. `module_path` and
     `module_sha256` name an own copy of the engine's guest module and its digest; both unset means the engine's own
-    packaged module, and a digest names a copy, so it needs the path.
+    packaged module, and a digest names a copy, so it needs the path. `allow_unguarded_stack` lets an engine run a
+    module it cannot guard against a C stack overrun (an own copy without the layout the guard reads); an engine refuses
+    such a module otherwise.
     """
 
     pools: Mapping[str, int]
@@ -73,6 +75,7 @@ class EngineLimits:
     max_memory_bytes: int = 256 * 1024 * 1024
     module_path: Path | None = None
     module_sha256: str | None = None
+    allow_unguarded_stack: bool = False
 
     def __post_init__(self) -> None:
         """Hold the pools to names and positive slots, the memories to positive bytes, a digest to a path."""

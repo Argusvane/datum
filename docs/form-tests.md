@@ -122,7 +122,7 @@ test "rows are added, answered and removed"
 
 An action that the form refuses is not a failure: a `continue` off a page with errors leaves the scenario where the form keeps it, and the next `expect` says what was meant (the example above under "A first test" does exactly that). The exception is a row action the form turns down (more rows than the section's most, a section whose add or remove operation is off, a row that is not there, a name that is no collection): the scenario ends as the error `action.refused`, with `params.reason` one of `rows.max`, `operations.add`, `operations.remove`, `rowOutOfRange`, `unknownCollection`, `value.notScalar`. The last is a list (or any non-scalar) set on a field that takes one answer, and it covers `add row … with` too: `params.path` is the cell of the row the add would make (for example `items[2].sku`). The error names the path, and no row is added.
 
-A list set on a checkbox group ticks those options: `set topics = ("news", "events")`. A cell of `add row … with` is stored as `set` would store it, so a list on a checkbox group's cell becomes the group's record, ticked per option, on the browser and the kernel drivers alike.
+A list set on a checkbox group ticks those options: `set topics = ("news", "events")`. The text `"true"` or `"false"` set on a lone checkbox is stored as the boolean, as the runtime stores it; any other value is stored as written and does not tick the box. A cell of `add row … with` is stored as `set` would store it, so a list on a checkbox group's cell becomes the group's record, ticked per option, on the browser and the kernel drivers alike.
 
 ### Expectations
 

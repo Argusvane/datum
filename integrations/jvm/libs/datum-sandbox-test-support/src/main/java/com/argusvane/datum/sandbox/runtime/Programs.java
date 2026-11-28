@@ -17,7 +17,7 @@ final class Programs {
 
     final Map<String, byte[]> files = new HashMap<>();
 
-    /** The three files and a programs.json that describes them. */
+    /** The three files, a programs.json that describes them and datum-sandbox's pins of the same three. */
     static Programs packaged() {
         Programs programs = new Programs();
         programs.put("datum-sandbox-program.js", SANDBOX);
@@ -35,12 +35,29 @@ final class Programs {
         manifest("2.14.0", sandbox, pdf, freeze);
     }
 
-    /** A programs.json naming this sandbox ABI. */
+    /** A programs.json naming this sandbox ABI, and the same text as datum-sandbox's pins (one build made both). */
     void manifest(String sandboxAbi, String sandbox, String pdf, String freeze) {
-        put("programs.json", "{\"sandboxAbi\":\"" + sandboxAbi + "\",\"pdfAbi\":\"4.0.0\",\"files\":{"
+        String text = describe(sandboxAbi, sandbox, pdf, freeze);
+        put("programs.json", text);
+        pins(text);
+    }
+
+    /** datum-sandbox's pins ({@link ProgramStore#PINS}), as given. */
+    void pins(String text) {
+        files.put(ProgramStore.PINS, text.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /** A programs.json text over these three files. */
+    static String describe(String sandboxAbi, String sandbox, String pdf, String freeze) {
+        return "{\"sandboxAbi\":\"" + sandboxAbi + "\",\"pdfAbi\":\"4.0.0\",\"files\":{"
             + "\"datum-sandbox-program.js\":\"" + CanonicalJson.sha256Hex(sandbox) + "\","
             + "\"datum-pdf-program.js\":\"" + CanonicalJson.sha256Hex(pdf) + "\","
-            + "\"freeze-intrinsics.js\":\"" + CanonicalJson.sha256Hex(freeze) + "\"}}");
+            + "\"freeze-intrinsics.js\":\"" + CanonicalJson.sha256Hex(freeze) + "\"}}";
+    }
+
+    /** A file's text, by its classpath name. */
+    String text(String name) {
+        return new String(files.get(name), StandardCharsets.UTF_8);
     }
 
     Function<String, InputStream> lookup() {

@@ -286,7 +286,9 @@ export function buildRuntimeRenderOutput(
             find: (id: string) =>
               presentation.ownIds.has(id) && !presentation.workedOutComponents.has(id) ? undefined : presentation.tree.find(id)
           })
-        : () => runtime.componentTree()
+        : () => runtime.componentTree(),
+      // A render in another language asks its sources in that language too.
+      options.locale
       ),
       state.locale
     ),

@@ -211,6 +211,27 @@ def test_pinned_acceptances() -> None:
     assert read(b'"\\\\ud800"', max_depth=256) == "\\ud800"  # an escaped backslash, not an escape
 
 
+@pytest.mark.parametrize(
+    "body",
+    [
+        b'{"a":1,"a":1}',
+        b'{"a":1,"b":2,"a":3}',
+        b'[{"ok":true},{"x":{"y":1,"y":2}}]',
+        b'{"\\u0061":1,"a":2}',  # a key spelled once with an escape: the same key once decoded
+    ],
+)
+def test_unique_keys_refuses_an_object_that_repeats_a_key(body: bytes) -> None:
+    with pytest.raises(BadDocumentError) as caught:
+        read(body, max_depth=256, unique_keys=True)
+    assert caught.value.reason is RefusalReason.DUPLICATE_KEY
+    assert read(body, max_depth=256) is not None, "without unique_keys the last value wins, as JSON.parse"
+
+
+def test_unique_keys_keeps_objects_whose_keys_differ() -> None:
+    body = b'{"a":1,"A":2,"b":{"a":3},"c":[{"a":4},{"a":5}]}'
+    assert read(body, max_depth=256, unique_keys=True) == {"a": 1, "A": 2, "b": {"a": 3}, "c": [{"a": 4}, {"a": 5}]}
+
+
 def test_mixed_nesting_at_the_bound() -> None:
     def mixed(depth: int) -> bytes:
         opens = b"".join(b"[" if level % 2 else b'{"k":' for level in range(depth))

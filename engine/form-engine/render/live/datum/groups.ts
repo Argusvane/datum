@@ -112,12 +112,16 @@ export function createDatumPanelAdapter(options: DatumGroupOptions = {}): GroupA
       const hasLegend = s.legend !== undefined;
       // Labelled by its heading the section is a region, unless the design system draws a panel as a plain card.
       const named = hasLegend && controls.panelRegion !== "none";
-      const header = hasLegend
-        ? html`<div class=${classes("datum-form__panel-header", s.hideLegend && "datum-form__visually-hidden")}>${heading(s.level + 1, { id: groupLabelId(s), className: "datum-form__panel-title" }, html`${s.legend}${legendMarkView(s, options.parts)}`)}${
-            s.hint !== undefined ? html`<p id=${ifDefined(s.hintId)} class="datum-form__group-description">${s.hint}</p>` : nothing
-          }</div>`
-        : nothing;
-      return html`<section class=${classes("datum-form__panel", ...lastLookOnly(s.classNames))} aria-labelledby=${named ? groupLabelId(s) : nothing}>${header}<div class="datum-form__panel-body">${children}</div></section>`;
+      // The description stays in sight when the heading is hidden: hiding the label hides the label only.
+      const description = s.hint !== undefined ? html`<p id=${ifDefined(s.hintId)} class="datum-form__group-description">${s.hint}</p>` : nothing;
+      const visibleHeader = hasLegend && !s.hideLegend;
+      const title = hasLegend ? heading(s.level + 1, { id: groupLabelId(s), className: "datum-form__panel-title" }, html`${s.legend}${legendMarkView(s, options.parts)}`) : nothing;
+      const header = visibleHeader
+        ? html`<div class="datum-form__panel-header">${title}${description}</div>`
+        : html`${hasLegend ? html`<div class="datum-form__panel-header datum-form__visually-hidden">${title}</div>` : nothing}${description}`;
+      // The panel is described by its description, as a named group is.
+      const described = s.hint !== undefined && s.hintId !== undefined && controls.groupDescription !== "none";
+      return html`<section class=${classes("datum-form__panel", ...lastLookOnly(s.classNames))} aria-labelledby=${named ? groupLabelId(s) : nothing} aria-describedby=${described ? s.hintId : nothing}>${header}<div class="datum-form__panel-body">${children}</div></section>`;
     }
   };
 }

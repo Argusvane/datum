@@ -72,10 +72,29 @@ function collect(blocks: readonly PdfBlock[], parent: string, artifact: boolean,
       collect(block.blocks, block.id, isArtifact, into);
     } else if (block.kind === "list") {
       collectList(block, isArtifact, into);
+    } else if (block.kind === "table" && block.artifact === true && !artifact) {
+      collectLayoutTable(block, parent, into);
     } else if (block.kind === "table") {
       collectTable(block, isArtifact, into);
     }
   }
+}
+
+/**
+ * A table marked an artifact in content (the grid rendition's columns): the table is layout,
+ * so it and its rows and cells tag nothing, and what its cells hold is content under the
+ * table's own parent, in reading order.
+ */
+function collectLayoutTable(table: PdfTableBlock, parent: string, into: Map<string, StructInfo>): void {
+  const rows = table.header ? [table.header, ...table.rows] : table.rows;
+  rows.forEach((row, rowIndex) => {
+    const rowId = `${table.id}\u0000r${rowIndex}`;
+    into.set(rowId, { role: "Artifact", parent, alt: undefined, artifact: true });
+    row.cells.forEach((cell, cellIndex) => {
+      into.set(`${rowId}c${cellIndex}`, { role: "Artifact", parent, alt: undefined, artifact: true });
+      collect(cell.blocks, parent, false, into);
+    });
+  });
 }
 
 /** The element ids the layout marks a list's parts with: the item, its label (the bullet) and its body. */

@@ -151,12 +151,12 @@ def admit_body(
 def parse_json_body(
     body: bytes, *, max_depth: int = MAX_BODY_DEPTH, problem_details: bool = False
 ) -> JsonValue | Refused:
-    """Read an untrusted JSON body with the bounded JSON reader.
+    """Read an untrusted JSON body with the bounded JSON reader, refusing an object that repeats a key.
 
     Any refusal is 400 `bad_document` and echoes nothing.
     """
     try:
-        return read(body, max_depth=max_depth)
+        return read(body, max_depth=max_depth, unique_keys=True)
     except BadDocumentError:
         return _refuse(400, "bad_document", "The body is not usable JSON.", problem_details=problem_details)
 

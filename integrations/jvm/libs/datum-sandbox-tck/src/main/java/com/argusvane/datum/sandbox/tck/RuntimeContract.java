@@ -229,8 +229,9 @@ public interface RuntimeContract extends RuntimeUnderTest {
             "r.push(typeof os.utimes !== 'function' || os.utimes('/app/run.js', 0, 0) < 0);",
             "var w = std.open('/app/run.js', 'r'); w.puts('overwritten'); w.flush(); w.close();",
             "print(JSON.stringify(r));",
-            "var tried = 0, made = 0, until = Date.now() + 1500, long = 'a'.repeat(200000);",
-            "while (Date.now() < until) { if (os.mkdir('/app/' + long + tried) === 0) { made++; } tried++; }",
+            // The monotonic clock (os.now, microseconds): the wall clock the guest reads stands still.
+            "var tried = 0, made = 0, until = os.now() + 1500000, long = 'a'.repeat(200000);",
+            "while (os.now() < until) { if (os.mkdir('/app/' + long + tried) === 0) { made++; } tried++; }",
             "print(JSON.stringify([tried > 0, made]));",
             "print(std.loadFile('/app/run.js').indexOf('var r = [];') === 0);"), budget(30, 128));
         assertThat(output.termination()).isEqualTo(Termination.EXITED);

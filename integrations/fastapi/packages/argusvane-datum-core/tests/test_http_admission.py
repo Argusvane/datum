@@ -93,6 +93,13 @@ def test_a_nul_character_in_a_key_is_a_400_bad_document(body: bytes) -> None:
     assert code_of(refused) == "bad_document"
 
 
+@pytest.mark.parametrize("body", [b'{"a":1,"a":2}', b'{"answers":{"name":"x","name":"y"}}'])
+def test_a_body_whose_object_repeats_a_key_is_a_400_bad_document(body: bytes) -> None:
+    refused = refusal(admit_json(JSON_HEADERS, Chunks(body), max_bytes=MIB))
+    assert refused.answer.status == 400
+    assert code_of(refused) == "bad_document"
+
+
 def test_a_nul_character_in_a_string_value_is_admitted() -> None:
     assert admit_json(JSON_HEADERS, Chunks(b'{"a":"x\\u0000"}'), max_bytes=MIB) == {"a": "x\x00"}
 

@@ -5,9 +5,10 @@ import { createPdfBuilderMode, type PdfBuilderMode, type PdfBuilderModeOptions }
 import type { PdfConfiguration, PdfTemplateLayout } from "../form-engine/core/schema/pdf-layout.js";
 import type { FormState } from "../form-engine/core/state/form-state.js";
 import { ComponentTree } from "../form-engine/core/tree/component-tree.js";
+import type { DataSourceResolver } from "../form-engine/render/core/component-options.js";
 import type { RenderableRuntime } from "../form-engine/render/core/runtime-render-bridge.js";
 import type { PdfTemplateInfo } from "../form-engine/render/pdf/pdf-abi.js";
-import type { PdfRenderProvider } from "../form-engine/render/pdf/pdf-provider.js";
+import { BASE64_TEMPLATE_RESOLVER, type PdfRenderProvider } from "../form-engine/render/pdf/pdf-provider.js";
 
 import { BuilderController } from "../form-engine/builder/controller/builder-controller.js";
 import { bindableCollections, bindableComponents, createPdfDesigner, pdfSheetWidth } from "../form-engine/builder/pdf-designer/pdf-designer.js";
@@ -185,6 +186,39 @@ describe("createPdfDesigner", () => {
     await designer.refresh({ firstName: "Grace" });
     expect(designer.fieldPreview("firstName")?.querySelector("input")?.value).toBe("Grace");
     expect(designer.fieldPreview("firstName")).not.toBe(preview);
+  });
+
+  it("keeps the newer refresh's previews when an older one finishes after it", async () => {
+    const withCountry: ComponentNode = {
+      ...form(),
+      children: { content: [...form().children!["content"]!, { id: "country", type: "select", configuration: { label: "Country", data: { sourceId: "countries" } } }] }
+    };
+    // The data source answers when the test says so: the first refresh's call is held back.
+    const held: Array<() => void> = [];
+    let holding = false;
+    const dataSourceResolver: DataSourceResolver = {
+      resolveDataSource: () =>
+        new Promise((resolve) => {
+          const answer = (): void => resolve({ items: [{ value: "CA", label: "Canada" }] });
+          if (holding) {
+            held.push(answer);
+          } else {
+            answer();
+          }
+        })
+    };
+    const designer = await createPdfDesigner({ formRoot: withCountry, values: { firstName: "Ada" }, dataSourceResolver });
+    holding = true;
+    const older = designer.refresh({ firstName: "Older" });
+    await vi.waitFor(() => expect(held.length).toBeGreaterThan(0));
+    holding = false;
+    await designer.refresh({ firstName: "Newer" });
+    expect(designer.fieldPreview("firstName")?.querySelector("input")?.value).toBe("Newer");
+    for (const answer of held) {
+      answer();
+    }
+    await older;
+    expect(designer.fieldPreview("firstName")?.querySelector("input")?.value).toBe("Newer");
   });
 
   it("refreshes over the host's values with the answers tried laid over them", async () => {
@@ -976,6 +1010,28 @@ describe("suggestMappings and createFormFields for the assistant", () => {
     expect(stepsOf(mode.controller)).toBe(2);
   });
 
+  it("keeps a checkbox's mapping and its checked value one step: one Undo takes the guess back whole", async () => {
+    const withAgree: ComponentNode = {
+      ...MODE_FORM,
+      children: { content: [...MODE_FORM.children!["content"]!, { id: "agree", type: "checkbox", configuration: { label: "I agree" } }] }
+    };
+    const form = new BuilderController({ initialRoot: structuredClone(withAgree) });
+    const inspection: PdfTemplateInfo = {
+      ...MODE_INSPECTION,
+      fields: [
+        ...MODE_INSPECTION.fields.slice(0, 2),
+        { name: "agree", kind: "checkbox", page: 1, rect: { x: 10, y: 620, width: 14, height: 14 }, exportValues: ["Yes"], readOnly: false, required: false }
+      ]
+    };
+    const { mode, paper } = await templateOnPage(form, async () => inspection);
+    expect(mode.suggestMappings()).toBe(3);
+    expect(paper().fields.find((field) => field.pdfField === "agree")).toMatchObject({ source: { kind: "component", componentId: "agree" }, checkedValue: "Yes" });
+    mode.controller.undo();
+    // The last guess, the checkbox's, is gone whole: no mapping left without its checked value.
+    expect(paper().fields.find((field) => field.pdfField === "agree")).toBeUndefined();
+    expect(stepsOf(mode.controller)).toBe(2);
+  });
+
   it("runs the form's insert and the layout's write through around, each whole, and nothing across the waits", async () => {
     const form = new BuilderController({ initialRoot: structuredClone(MODE_FORM) });
     const { mode, paper } = await templateOnPage(form);
@@ -1216,6 +1272,34 @@ describe("applyCatalogForAgent, openState and whenOpenReady", () => {
     expect(await waiting).toBe("failed");
     expect(Date.now() - started).toBeLessThan(1000);
     expect(await refused).toBeInstanceOf(Error);
+  });
+
+  it("hands a populated form's own PDF over as read, and a hosted file it attaches from the host's resolver", async () => {
+    const provider = modeProvider();
+    const { mode } = await modeOnPage({
+      pdf: { layouts: [templateLayout()] },
+      provider,
+      templates: () => ({
+        resolve: async (source) => (source.storage === "s3" ? new Uint8Array([9, 9, 9]) : BASE64_TEMPLATE_RESOLVER.resolve(source))
+      })
+    });
+    await untilTrue(() => mode.ready);
+    const withUpload: ComponentNode = {
+      ...MODE_FORM,
+      children: { content: [...MODE_FORM.children!["content"]!, { id: "doc", type: "file", configuration: { label: "Document", pdf: { attach: true } } }] }
+    };
+    const base = modeRuntime(() => undefined);
+    const hosted = { storage: "s3", name: "big.zip", type: "application/zip", size: 3, ref: { key: "uploads/big.zip" } };
+    const runtime: RenderableRuntime = {
+      ...base,
+      formRoot: () => withUpload,
+      componentTree: () => new ComponentTree(withUpload),
+      state: () => ({ ...base.state(), values: { firstName: "Ada", doc: hosted } })
+    };
+    await mode.renderPdf({ layoutId: "paper", runtime });
+    const fill = provider.requests.at(-1) as { template: { data: string }; attachments?: Array<{ name: string; data: string }> };
+    expect(fill.template).toEqual({ data: "AAA=" });
+    expect(fill.attachments?.map((attachment) => [attachment.name, attachment.data])).toEqual([["big.zip", "CQkJ"]]);
   });
 
   it("answers failed at once for a populated form when no PDF executor is assigned, and reads it once one is", async () => {

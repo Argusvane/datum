@@ -2977,7 +2977,7 @@ interface RenameComponentResult extends AgentOk, WritePayload {
 }
 ```
 
-Failure modes: `bad-input`, `unknown-component`, `root-component`, `fixed-component`, `invalid-id`, `duplicate-id`, `stale`, `stopped`, `busy`, `unsaved-draft`, `wrong-mode`, `try-it-on`, `refused`, `builder-required`, `builder-unknown`, `builder-not-ready`, `cancelled`, `internal`.
+Failure modes: `bad-input`, `unknown-component`, `root-component`, `fixed-component`, `invalid-id`, `duplicate-id`, `data-path-conflict`, `stale`, `stopped`, `busy`, `unsaved-draft`, `wrong-mode`, `try-it-on`, `refused`, `builder-required`, `builder-unknown`, `builder-not-ready`, `cancelled`, `internal`.
 
 Example, the generated id of the section added above:
 

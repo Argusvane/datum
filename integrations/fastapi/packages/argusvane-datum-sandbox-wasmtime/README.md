@@ -10,14 +10,19 @@ Part of the Datum for FastAPI workspace; see `integrations/fastapi/` in the repo
 
 - **At start, once per process.** Imports wasmtime (an unsupported platform is refused by name, see below), reads the
   guest and re-hashes it against the pin (or `datum.runtime.qjs_path` against `datum.runtime.qjs_sha256`), builds one
-  `Engine` (epoch interruption on, fuel off, the memory settings below), compiles one `Module`, links WASI once and
-  instantiates one throwaway store, so an address-space refusal stops the start rather than the first run. Compiling
-  takes about half a second to 1.4 s on a laptop and 4 to 7 s on a 1-vCPU Linux VM: build the runtime off the event
-  loop and report the runtime as down until it returns. Leftover run directories older than six minutes are swept.
+  `Engine` (epoch interruption on, fuel off, the memory settings below), rewrites the module for the stack guard (below)
+  and compiles it into one `Module`, links WASI once and instantiates one throwaway store, so an address-space refusal
+  stops the start rather than the first run. Compiling takes about half a second to 1.4 s on a laptop and 4 to 7 s on a
+  1-vCPU Linux VM (the rewrite adds about a tenth of a second): build the runtime off the event loop and report the
+  runtime as down until it returns. Leftover run directories older than six minutes are swept.
+- **The pin is built in.** The SHA-256 the packaged guest is held to is a constant of this distribution, and the
+  `runtime.json` that `argusvane-datum-qjs-wasm` ships beside the module must name the same digest. A substituted
+  `argusvane-datum-qjs-wasm`, from a mirror or an air-gapped index, cannot bring a pin of its own.
 - **One store per run**, created, run and closed on the run's worker thread (never shared): `set_limits(memory_size=
-  <the run's budget>, instances=1, memories=1, tables=1)`, an epoch deadline of `ceil(budget / tick) + 1` ticks, the
-  run's private `app/` preopened read-only as `/app`, stdin from a sibling file, no environment. The store and its
-  `WasiConfig` are closed by the run's context stack, never by a finalizer, before the directory is removed.
+  <the run's budget>, table_elements=4096, instances=1, memories=1, tables=1)` (the pinned guest's one table holds 593
+  elements and cannot grow), an epoch deadline of `ceil(budget / tick) + 1` ticks, the run's private `app/` preopened
+  read-only as `/app`, stdin from a sibling file, no environment. The store and its `WasiConfig` are closed by the
+  run's context stack, never by a finalizer, before the directory is removed.
 - **One epoch clock thread** (`datum-epoch-clock`) advances the engine's epoch every `datum.runtime.tick` (50 ms). A
   looping guest ends within two ticks of its wall budget; there is no timer per run.
 - **Output caps.** The stdout and stderr callbacks are the harness's bounded sinks: they keep bytes up to the cap
@@ -31,11 +36,15 @@ Part of the Datum for FastAPI workspace; see `integrations/fastapi/` in the repo
   than the room left), like the same words thrown by a rule, is an exit the sandbox reads as a throw.
 - **Recursion ends at the shadow stack.** QuickJS-ng checks no stack under WASI, and its C stack (64 KiB, between the
   module's static data and its heap) runs out at about 190 plain JavaScript frames, well before wasmtime's 512 KiB
-  wasm stack. Nothing traps there: the guest goes on over its own overwritten statics. So each run writes a canary over
-  the stack's lowest 4 KiB before `_start`, and after the guest ends, however it ended, a changed canary or a changed
-  `.rodata` segment makes the run a trap (`the guest's shadow stack reached its floor`). A runaway recursion can
-  therefore take its whole wall budget before it is read as a trap. The layout is read from the module's name section;
-  `engine_info().notes` says whether the guard is on.
+  wasm stack. Nothing traps there: the guest goes on over its own overwritten statics. So the runtime rewrites the
+  module's code, after the digest check on the original bytes, so that every write of its `__stack_pointer` global is
+  checked first: a value below the stack's floor (with 512 bytes kept for the frames that use room under the pointer
+  without moving it) or above its top traps at once. As a second line, each run writes a canary over the stack's
+  lowest 4 KiB before `_start`, and after the guest ends, however it ended, a changed canary or a changed `.rodata`
+  segment makes the run a trap. Either way the run ends as a trap (`the guest's shadow stack reached its floor`). The
+  layout is read from the module's name section, and `engine_info().notes` says whether the guard is on. A module the
+  guard cannot read (an own copy without the name section or the expected layout) refuses the start, unless
+  `datum.runtime.allow_unguarded_stack` is set, which runs it unguarded and logs a WARNING.
 - **One harness per pool, one `run()`.** A run's `RunBudget.pool` (`validation` or `pdf`, set by
   `ProgramLimits.validation_budget()` and `pdf_budget()`) picks its slots among `EngineLimits.pools`, over the same
   engine; the runtime's `pools` names them, and a run naming another pool is refused.
@@ -46,6 +55,11 @@ Part of the Datum for FastAPI workspace; see `integrations/fastapi/` in the repo
   `budget` within its wall (or `interrupted` at shutdown), with no stuck run and no stray thread. Descriptor
   subscriptions are ready at once (every descriptor the guest has is a regular file or a bounded sink). No other
   import waits: stdin and `/app` are regular files, the outputs are the harness's sinks, `proc_exit` ends the guest.
+- **The clock and randomness are the run's own.** QuickJS reads `clock_time_get` at start (its time origin and the
+  seed of `Math.random`) and for `Date.now`, `performance.now` and `os.now`. The runtime shadows it and `random_get`:
+  each run's clock starts at the epoch (realtime) or zero (monotonic) and moves only by the waits its `poll_oneoff`
+  completed, and `random_get` is a fixed stream restarted for every run. A run reads the same clock values and the
+  same random bytes every time; a sleep still takes its real time, and the deadline is the epoch, not the guest's clock.
 - **Shutdown.** `close()` refuses new runs, marks every run in flight as interrupted, advances the epoch past every
   armed deadline (the one global bump), waits the stop grace and stops the clock. Interrupted runs end as
   `interrupted` (the sandbox answers 503 `server.unavailable`). The application's own drain (`datum.runtime.

@@ -60,4 +60,10 @@ describe("wordDiagnostic", () => {
       "form is on no step of the form."
     );
   });
+
+  it("looks a quoted page id up as it is written, though it holds the word page or a field's id", () => {
+    const names: FindingNames = { step: (pageId) => ({ "About page 2": "Your home", "the fullName check": "Check" })[pageId], field: (componentId) => ({ fullName: "Full name" })[componentId] };
+    expect(wordDiagnostic({ severity: "warning", code: "page.no-title", journeyId: "j", message: 'Page "About page 2" has no title.', pageId: "About page 2" }, names)).toBe("Step “Your home” has no title.");
+    expect(wordDiagnostic({ severity: "warning", code: "page.unreachable", journeyId: "j", message: 'fullName is on page "the fullName check".', componentId: "fullName" }, names)).toBe("Full name is on step “Check”.");
+  });
 });

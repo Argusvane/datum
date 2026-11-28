@@ -15,7 +15,6 @@ import {
   QuickJsProgramHost,
   VALIDATION_PROFILE,
   assertRequestWithinLimits,
-  toExecutionError,
   type QuickJsExecutionErrorCode
 } from "./program-host.js";
 import { HEAP_RECYCLE_BYTES, SandboxRecycler } from "./heap-recycle.js";
@@ -250,17 +249,19 @@ export class QuickJsWasmHostAdapter implements WasmHostAdapter {
     }
     const registerHandle = host.capturedEntry("__datum_register") ?? vm.getProp(vm.global, "__datum_register");
     try {
-      const callResult = vm.callFunction(registerHandle, vm.undefined, moduleHandle);
-      if ("error" in callResult && callResult.error) {
-        const detail = vm.dump(callResult.error);
-        callResult.error.dispose();
-        const mapped = toExecutionError(detail, "not_a_module");
-        throw mapped.code === "runtime_error"
-          ? new QuickJsExecutionError("not_a_module", `Plugin "${plugin.id}": ${mapped.message}`)
-          : new QuickJsExecutionError(mapped.code, `Plugin "${plugin.id}": ${mapped.message}`);
+      // Registration reads the module's properties (a getter is guest code), and reading an error
+      // it throws can run guest code too: both run under the startup deadline.
+      let countHandle;
+      try {
+        countHandle = host.callHandle(registerHandle, [moduleHandle], "not_a_module");
+      } catch (error) {
+        if (error instanceof QuickJsExecutionError) {
+          throw new QuickJsExecutionError(error.code, `Plugin "${plugin.id}": ${error.message}`);
+        }
+        throw error;
       }
-      const count = vm.getNumber(callResult.value);
-      callResult.value.dispose();
+      const count = vm.getNumber(countHandle);
+      countHandle.dispose();
       return count;
     } finally {
       if (registerHandle !== host.capturedEntry("__datum_register")) {

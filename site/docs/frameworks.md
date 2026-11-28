@@ -20,7 +20,9 @@ Copy the bundle folder into the application's static files and load the module f
 
 Loading it from the page, not through the application's bundler, keeps the folder together: the element fetches its optional parts from beside the file it was loaded from. See [Files you host](/files).
 
-The order does not matter. A property a component sets before the module has defined the element is kept and applied once it has.
+The package can also be imported through the bundler, as `import "@argusvane/datum/form"` (the other entry points are in [JavaScript exports](/exports#importing-the-package)). Vite, for one, emits `datum-wasm.js` and `datum-pdf.js` for `wasm="auto"` and `pdf="auto"`, but not the folders those modules fetch by name: `fonts/`, `pdfjs/` and `builder-fonts/`. A bundled application still copies the folder into its static files and points `pdf` at the copy, `pdf="/datum/datum-pdf.js"`, so the fonts are found beside it.
+
+The order does not matter. A property a component sets before the module has defined the element is kept and applied once it has. The engine's `<datum-form-renderer>` and `<datum-form-host>` keep such a property the same way.
 
 ## A form component
 
@@ -287,22 +289,22 @@ The stylesheet and module are `datum-builder.css` and `datum-builder.js`. That o
 
 ## TypeScript
 
-The bundle folder has a `types/` directory of declaration files:
+The npm package carries declaration files for every entry point, so a project that has `@argusvane/datum` installed imports its types by the package's name, whether or not it loads the module through its bundler:
 
-- `types/form.d.ts` describes everything `datum-form.js` exports.
-- `types/builder.d.ts` describes everything `datum-builder.js` exports, which includes the form's.
-- The element classes are in `form-element.d.ts` and `builder-element.d.ts`, with the detail type of each event beside them.
-
-Nothing installs them: copy the folder with the bundle, or leave it where it is, and import from it by relative path. A TypeScript project needs nothing else in `tsconfig.json` than the usual `"skipLibCheck": true`.
+- `@argusvane/datum/form` describes everything `datum-form.js` exports.
+- `@argusvane/datum/builder` describes everything `datum-builder.js` exports, which includes the form's.
+- `@argusvane/datum/engine` describes `datum-engine.js`, with `FormDefinition` and the engine's other types.
 
 ```ts
 import type {
   DatumFormElement,
   DatumFormSubmitDetail,
   DatumFormChangeDetail
-} from "../public/datum/types/form";
-import type { DatumFormBuilderElement } from "../public/datum/types/builder";
+} from "@argusvane/datum/form";
+import type { DatumFormBuilderElement } from "@argusvane/datum/builder";
 ```
+
+An `import type` is erased from the build, so it never pulls the bundle into the application.
 
 Type a ref with the element class:
 
@@ -330,17 +332,17 @@ Detail types:
 - **Form.** `DatumFormSubmitDetail`, `DatumFormChangeDetail`, `DatumFormValidatedDetail`, `DatumFormReadyDetail`, `DatumFormPageChangeDetail`, `DatumFormWasmValidatedDetail` and `DatumFormWasmReadyDetail`.
 - **Builder.** `DatumFormBuilderChangeDetail`, `DatumFormBuilderSaveDetail`, `DatumFormBuilderWorkspaceChangeDetail` and their siblings.
 
-The declarations take some of their types, such as `FormDefinition`, `FormError` and `HostError`, from a package named `@argusvane/datum-engine`. That package is not in the folder.
+The declarations are self-contained: the engine's types, such as `FormDefinition`, `FormError` and `HostError`, are in the package. A few declarations name types from the package's optional peer dependencies: `lit-html`, `@codemirror/autocomplete`, `@cantoo/pdf-lib` and the sandbox runtime's core package, all listed under `peerDependencies` in its `package.json`.
 
-- With `skipLibCheck` the compiler stays quiet, and a type that comes from it reads as `any`: the element, its methods and the event details above are typed, but a `FormDefinition` is not checked.
-- Without `skipLibCheck` each reference is reported as a missing module.
+- With `"skipLibCheck": true`, the usual setting, nothing else is needed.
+- Without it, the compiler reports each of those as a missing module until the peer is installed.
 
 React 19 looks up JSX elements on its own namespace. Declare the tags once so that a ref and the element's properties type-check in JSX:
 
 ```ts
 // datum-elements.d.ts
-import type { DatumFormElement } from "../public/datum/types/form";
-import type { DatumFormBuilderElement } from "../public/datum/types/builder";
+import type { DatumFormElement } from "@argusvane/datum/form";
+import type { DatumFormBuilderElement } from "@argusvane/datum/builder";
 
 declare module "react" {
   namespace JSX {

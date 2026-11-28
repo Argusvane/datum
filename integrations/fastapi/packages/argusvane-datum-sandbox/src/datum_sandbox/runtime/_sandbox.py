@@ -564,7 +564,11 @@ class DatumSandbox:
         engine = settings.engine
         work_dir = Path(engine.work_dir or tempfile.gettempdir())
         limits = settings.limits.engine_limits(
-            work_dir, engine.tick, qjs_path=engine.qjs_path, qjs_sha256=engine.qjs_sha256
+            work_dir,
+            engine.tick,
+            qjs_path=engine.qjs_path,
+            qjs_sha256=engine.qjs_sha256,
+            allow_unguarded_stack=engine.allow_unguarded_stack,
         )
         try:
             provider = self._discover().select(engine.id)

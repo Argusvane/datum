@@ -136,20 +136,32 @@ export function readComponentPrintNote(componentId: string, configuration: unkno
 /** What a live print does with one component: draw it whatever the rules say, leave it off, or follow the screen. */
 export type LivePrintDecision = "keep" | "drop" | undefined;
 
+/**
+ * No answer given, as the printed field reads one (`render/print/field-answer.ts`) and validation
+ * does (`isEmptyValue`): text of spaces alone and a number that is not finite are none, as is an
+ * unticked lone checkbox.
+ */
 function isEmptyAnswer(value: unknown): boolean {
-  if (value === undefined || value === null || value === "" || value === false) {
+  if (value === undefined || value === null || value === false) {
     return true;
+  }
+  if (typeof value === "string") {
+    return value.trim() === "";
+  }
+  if (typeof value === "number") {
+    return !Number.isFinite(value);
   }
   if (Array.isArray(value)) {
     return value.length === 0;
   }
   if (typeof value === "object") {
-    return Object.values(value as Record<string, unknown>).every((entry) => entry === false || entry === undefined || entry === null || entry === "");
+    // A checkboxes group: nothing ticked.
+    return Object.values(value as Record<string, unknown>).every((entry) => entry !== true);
   }
   return false;
 }
 
-/** Whether `value` holds an answer: not blank, not an empty list, not a checkboxes group with nothing ticked. */
+/** Whether `value` holds an answer: not blank (spaces alone are blank), not an empty list, not a checkboxes group with nothing ticked. */
 export function holdsPrintAnswer(value: unknown): boolean {
   return !isEmptyAnswer(value);
 }

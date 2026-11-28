@@ -45,7 +45,7 @@ Change Server reply in the example and submit again to see each one. Every text 
 
 ## From script
 
-Everything an attribute sets, a property sets too, and objects and functions are properties only. An application built with a bundler, or with plain ES modules, can make the element and wire it from code. Importing the module defines `<datum-form>` and exports the API behind it, which `types/form.d.ts` lists (see [TypeScript](/frameworks#typescript)).
+Everything an attribute sets, a property sets too, and objects and functions are properties only. An application built with a bundler, or with plain ES modules, can make the element and wire it from code. Importing the module defines `<datum-form>` and exports the API behind it, whose types `@argusvane/datum/form` declares (see [TypeScript](/frameworks#typescript)).
 
 ```html
 <div id="intake-slot"></div>

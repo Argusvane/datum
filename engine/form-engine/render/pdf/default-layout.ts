@@ -33,6 +33,8 @@ import { STEP_COMPONENT_TYPE, STEPS_COMPONENT_TYPE } from "../../core/schema/ste
 import { LAYOUT_CONTAINER_TYPES } from "../core/component-model.js";
 import { readLegendMark } from "../../core/schema/legend-mark.js";
 import { TABS_COMPONENT_TYPE, configuredSlotIds, readTabDescriptors } from "../core/tab-slots.js";
+import { createFormTextResolver } from "../../core/localization/form-texts.js";
+import { hasPlaceholders } from "../../core/text/placeholders.js";
 import { DEFAULT_PDF_TEXTS } from "./pdf-theme.js";
 
 export const DEFAULT_PDF_LAYOUT_ID = "default";
@@ -83,8 +85,19 @@ function readConfig(node: ComponentNode): Record<string, unknown> {
 /** A text the form authors, in the language asked for: the string in the default language, worded through the translations at `address`. */
 type FormWords = (authored: unknown, address: TextAddress) => string | undefined;
 
+/** A container's heading: its label, unless the author hid it (`hideLabel`), as the form hides it on screen. */
 function readLabel(node: ComponentNode, words: FormWords): string | undefined {
-  return words(readConfig(node).label, { kind: "components", owner: node.id, path: ["label"] });
+  const config = readConfig(node);
+  return config.hideLabel === true ? undefined : words(config.label, { kind: "components", owner: node.id, path: ["label"] });
+}
+
+/**
+ * The form's title as a text block prints it: literally. A title is the form's words, never a
+ * template, so one that reads like a placeholder (`Form {{ref}}`) is carried as a literal
+ * expression, which prints as written rather than reading an answer; any other is plain text.
+ */
+function titleText(title: string): { text: string } | { expression: { kind: "literal"; value: string } } {
+  return hasPlaceholders(title) ? { expression: { kind: "literal", value: title } } : { text: title };
 }
 
 function slotsOf(node: ComponentNode): Array<[string, ComponentNode[]]> {
@@ -108,6 +121,8 @@ export function deriveDefaultPdfLayout(authored: ComponentNode, options: Default
     }
     return locale === undefined ? authored : resolveText(authored, address, locale, sources);
   };
+  // The engine's own wording (an untitled tab's "Tab 2"), in the language asked for.
+  const engineText = createFormTextResolver(locale ?? "en", undefined, options.translationCatalog, undefined, { translations: options.translations });
   // A tree handed over raw (a builder's, before its controller read it) may hold a grid with no
   // collection binding; it is bound at its id, so the grid binds below as any
   // collection does. The same tree when it holds none.
@@ -163,11 +178,15 @@ export function deriveDefaultPdfLayout(authored: ComponentNode, options: Default
     }
     if (node.type === TABS_COMPONENT_TYPE) {
       const descriptors = readTabDescriptors(node);
-      const tabs = slotsOf(node).map(([slotId, children]) => {
+      const tabs = slotsOf(node).map(([slotId, children], index) => {
         const descriptor = descriptors.find((tab) => tab.id === slotId);
         // A tab is worded under its container, by the tab's id (the slot), never its place.
         const caption = words(descriptor?.label, { kind: "components", owner: node.id, path: ["tabs", slotId, "label"] });
-        return section({ ...node, id: `${node.id}-${slotId}` }, caption ?? slotId, convertChildren(children));
+        // An untitled tab is named by the label of the `tab` component that is its whole content,
+        // when the author gave it one, else by its place ("Tab 2"): never its slot id, as on screen.
+        const lone = children.length === 1 && children[0]?.type === "tab" ? children[0] : undefined;
+        const own = lone ? words(readConfig(lone).label, { kind: "components", owner: lone.id, path: ["label"] }) : undefined;
+        return section({ ...node, id: `${node.id}-${slotId}` }, caption ?? own ?? engineText("tabFallback", { n: index + 1 }), convertChildren(children));
       });
       const label = readLabel(node, words);
       return label !== undefined ? [section(node, label, tabs)] : tabs;
@@ -223,7 +242,7 @@ export function deriveDefaultPdfLayout(authored: ComponentNode, options: Default
     body.push({
       id: unique("title"),
       type: PDF_TEXT_COMPONENT_TYPE,
-      configuration: { text: title, variant: "h1" }
+      configuration: { ...titleText(title), variant: "h1" }
     });
   }
   body.push(...convertChildren(slotsOf(root).flatMap(([, children]) => children)));
@@ -248,7 +267,7 @@ export function deriveDefaultPdfLayout(authored: ComponentNode, options: Default
             configuration: { rows: 1, columns: 2, header: false, borders: "none", style: { spacingBefore: 0, spacingAfter: 0 } },
             children: {
               [pdfTableSlotId(1, 1)]: [
-                { id: unique("footer-title"), type: PDF_TEXT_COMPONENT_TYPE, configuration: { text: title, variant: "muted", style: noSpacing } }
+                { id: unique("footer-title"), type: PDF_TEXT_COMPONENT_TYPE, configuration: { ...titleText(title), variant: "muted", style: noSpacing } }
               ],
               [pdfTableSlotId(1, 2)]: [pages]
             }

@@ -54,23 +54,27 @@ export function resolveThroughDataSourceSet(
  * component naming no source at all is answered with `undefined` (and its inline options,
  * if any, take over). With no set, this is the runtime's resolver and nothing more. `tree`
  * finds the component a request is for; the values handed on are the runtime's form values
- * when it has them, else its state's.
+ * when it has them, else its state's. `locale` is the one a render for another language than
+ * the runtime's draws in (a printed copy in French): both the host's sources and the runtime's
+ * are asked in it, so their answers are worded as the rest of the render is.
  */
 export function createHostDataSourceResolver(
   runtime: RenderableRuntime,
   dataSources: DataSourceSet | undefined,
-  tree: () => Pick<ComponentTree, "find"> = () => runtime.componentTree()
+  tree: () => Pick<ComponentTree, "find"> = () => runtime.componentTree(),
+  locale?: string
 ): DataSourceResolver {
   return {
     resolveDataSource: (request) => {
       const state = runtime.state();
+      const asked = request.locale ?? locale;
       return (
         resolveThroughDataSourceSet(dataSources, {
           node: tree().find(request.componentId),
           request,
-          locale: state.locale,
+          locale: asked ?? state.locale,
           values: dataSources ? (runtime.formValues?.() ?? state.values) : state.values
-        }) ?? runtime.resolveDataSource(request)
+        }) ?? runtime.resolveDataSource(asked !== undefined ? { ...request, locale: asked } : request)
       );
     }
   };

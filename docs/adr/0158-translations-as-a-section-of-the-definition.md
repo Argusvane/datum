@@ -120,10 +120,11 @@ resolves a layout's texts the same way.
   journey page or a PDF layout prunes its addresses from every locale in the same undo step.
 - **Duplicate and paste copy.** A duplicated or pasted component (and its subtree) carries its
   translations under the new ids. Pasting from another form carries what the clipboard holds.
-- **Renames move.** Renaming a component id, an option value, a part id or a page id moves the
-  entries. Renaming a locale code renames the map's key. Removing a locale deletes its
-  entries from the map in every kind, after a confirmation that says how many go, in one undo step; Undo puts
-  back what that step took (`docs/translation-support.md`, "Where to manage it").
+- **Renames move.** Renaming a component id, an option value, a part id, a page id, or a PDF
+  layout's node or area id moves the entries. Renaming a locale code renames the map's key.
+  Removing a locale deletes its entries from the map in every kind, after a confirmation that
+  says how many go, in one undo step; Undo puts back what that step took
+  (`docs/translation-support.md`, "Where to manage it").
 - **Make default swaps** through `makeDefaultLocale`: one undo step that rewrites the
   configuration strings and the map together. Typed cells in the grid are applied first, so a
   Make default or Remove after typing is two history steps (the cells, then the swap or removal),

@@ -5,6 +5,7 @@ import type { LocalizedText } from "../../core/schema/contracts.js";
 import { dataGridSettingsOf } from "../../core/schema/data-grid.js";
 import { PRESENTATION_REFERENCE_TYPE, PRESENTATION_VALUE_TYPE } from "../../core/schema/journey.js";
 import { isPrintRendition, readPrintConfiguration, type PrintRendition } from "../../core/schema/print.js";
+import { sanitizeStaticHtml } from "../../core/schema/static-html.js";
 import type { ComponentNode } from "../../core/schema/types.js";
 import type { FormNotice } from "../../core/submission/form-notice.js";
 import type { RenderComponentModel } from "../core/component-model.js";
@@ -535,6 +536,8 @@ export function printModelOf(source: PrintSource, bindingTexts?: FormTextCatalog
     surface: "paper",
     // The printed form's outline is its own: the title is its h1.
     headingLevel: 1,
+    // A blank form draws every collection from its template, padded to the rows it gives room for.
+    ...(blank ? { dataGridRows: "template" as const } : {}),
     ...(source.pages ? { pages: source.pages } : {})
   });
   const text = tree.text;
@@ -548,14 +551,32 @@ export function printModelOf(source: PrintSource, bindingTexts?: FormTextCatalog
       Object.values(node.children ?? {}).some((list) => list.some((child) => holdsPrintAnswer(models.get(child.id)?.value) || inside(child)));
     return holdsPrintAnswer(model.value) || inside(model.node);
   };
+  /** Whether a folded node holds an answer: its own value, or one of the nodes folded inside it. */
+  const holdsAnswer = (node: PresentationNode): boolean => {
+    if (holdsPrintAnswer(node.model?.value)) {
+      return true;
+    }
+    switch (node.kind) {
+      case "field":
+        return false;
+      case "grid":
+        return node.rows.some((row) => row.cells.some((cell) => cell.children.some(holdsAnswer)));
+      case "tabs":
+        return node.tabs.some((tab) => tab.children.some(holdsAnswer));
+      case "steps":
+        return node.steps.some((step) => step.children.some(holdsAnswer)) || node.others.some(holdsAnswer);
+      default:
+        return node.children.some(holdsAnswer);
+    }
+  };
 
   /** `visible`: the component shows, and nothing around it is printed hidden. */
-  const decide = (model: RenderComponentModel | undefined, visible: boolean): PrintDecision => {
+  const decide = (model: RenderComponentModel | undefined, visible: boolean, isAnswered: (model: RenderComponentModel) => boolean = answered): PrintDecision => {
     if (!model) {
       return visible ? { prints: true, hidden: false } : { prints: false };
     }
     const show = readComponentPrintShow(model.node.configuration);
-    let decision = plan.decide(model.id, !blank && show === "answered" && answered(model));
+    let decision = plan.decide(model.id, !blank && show === "answered" && isAnswered(model));
     // An `answered` field on a blank form prints as on screen, unless it is left off for good
     // (screen-only, or inside a screen-only component): that drop holds whatever it answers.
     if (blank && decision === "drop" && show === "answered" && plan.decide(model.id, true) !== "drop") {
@@ -613,14 +634,20 @@ export function printModelOf(source: PrintSource, bindingTexts?: FormTextCatalog
     const { breakBefore } = breaksOf(node.model);
     const marks = breakBefore ? { breakBefore } : {};
     if (node.base === "html") {
-      return node.model.staticHtml ? [{ kind: "content", id: node.id, html: trustedPrintHtml(node.model.staticHtml), ...marks }] : [];
+      // Read through the sanitizer once more, which leaves its own output as it is: every block is
+      // balanced on its own, so nothing one opens can wrap the labels and answers printed after it.
+      const html = node.model.staticHtml ? sanitizeStaticHtml(node.model.staticHtml) : "";
+      return html !== "" ? [{ kind: "content", id: node.id, html: trustedPrintHtml(html), ...marks }] : [];
     }
     const field = fieldOf(node.model, node.base, context, note);
     return field ? [{ ...field, ...marks }] : [];
   };
 
   const grid = (node: PresentationGrid, decision: { hidden: boolean; note?: string }): PrintNode[] => {
-    const columns = node.columns.filter((column) => decide(column.model, column.model.visible && !decision.hidden).prints);
+    // A column is answered when any row answers it: the column's own model is the template, which holds no value.
+    const columnAnswered = (column: PresentationGrid["columns"][number]) => (): boolean =>
+      node.rows.some((row) => row.cells.some((cell) => cell.columnId === column.id && cell.children.some(holdsAnswer)));
+    const columns = node.columns.filter((column) => decide(column.model, column.model.visible && !decision.hidden, columnAnswered(column)).prints);
     if (columns.length === 0) {
       return [];
     }
@@ -647,15 +674,19 @@ export function printModelOf(source: PrintSource, bindingTexts?: FormTextCatalog
       ...(decision.note !== undefined ? { note: decision.note } : {})
     };
     const breaks = breaksOf(node.model);
+    /**
+     * A blank form's room to write: the rows the form opens with, at least three (eight at most,
+     * unless the form asks for more), never fewer than it needs and never past its limit.
+     */
+    const blankRows = (): number => {
+      const settings = node.base === "dataGrid" ? dataGridSettingsOf(node.model.node) : undefined;
+      const room = Math.min(8, Math.max(3, settings?.initialRows ?? 0));
+      return Math.max(1, Math.min(node.maxRows ?? Number.POSITIVE_INFINITY, Math.max(room, node.minRows)));
+    };
     if (leafColumns) {
       let rows: PrintGridRow[];
       if (blank) {
-        // Room to write: the rows the form opens with, at least three (eight at most, unless the
-        // form asks for more), never fewer than it needs and never past its limit.
-        const settings = node.base === "dataGrid" ? dataGridSettingsOf(node.model.node) : undefined;
-        const room = Math.min(8, Math.max(3, settings?.initialRows ?? 0));
-        const count = Math.max(1, Math.min(node.maxRows ?? Number.POSITIVE_INFINITY, Math.max(room, node.minRows)));
-        rows = Array.from({ length: count }, (_, index) => ({
+        rows = Array.from({ length: blankRows() }, (_, index) => ({
           label: rowHeadingOf(node.model.node, index + 1, locale, source.sources, text),
           cells: columns.map((column) => emptyCell(column))
         }));
@@ -680,10 +711,22 @@ export function printModelOf(source: PrintSource, bindingTexts?: FormTextCatalog
       ];
     }
     // A repeating section whose rows hold groups: each row a group of its own, headed by its name.
-    const rowGroups: PrintNode[] = node.rows.flatMap((row) => {
+    // No rows given: the heading and the words a table without rows draws (a grid of no rows).
+    if (!blank && node.rows.length === 0) {
+      return [{ kind: "grid", id: node.id, ...header, level: node.level, columns: columns.map((column) => ({ id: column.id, label: column.label, required: column.required })), showRowNumbers: node.showRowNumbers, rows: [], ...breaks }];
+    }
+    const rowGroup = (row: PresentationGrid["rows"][number], index: number, label: string): PrintNode[] => {
       const children = row.cells.flatMap((cell) => cell.children.flatMap((child) => convert(child, decision.hidden)));
-      return children.length > 0 ? [hoistBreak<PrintGroup>({ kind: "group", id: `${node.id}#${row.index}`, legend: row.label, level: node.level + 1, children })] : [];
-    });
+      return children.length > 0 ? [hoistBreak<PrintGroup>({ kind: "group", id: `${node.id}#${index}`, legend: label, level: node.level + 1, children })] : [];
+    };
+    let rowGroups: PrintNode[];
+    const template = node.rows[0];
+    if (blank && template) {
+      // Room to write, as many rows as a table's blank form gives: each row the template's groups, empty.
+      rowGroups = Array.from({ length: blankRows() }, (_, index) => rowGroup(template, index, rowHeadingOf(node.model.node, index + 1, locale, source.sources, text))).flat();
+    } else {
+      rowGroups = node.rows.flatMap((row) => rowGroup(row, row.index, row.label));
+    }
     return [hoistBreak<PrintGroup>({ kind: "group", id: node.id, ...header, level: node.level, ...breaks, children: rowGroups })];
   };
 

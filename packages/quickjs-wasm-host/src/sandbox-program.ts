@@ -102,8 +102,8 @@ export function buildSandboxProgram(options: SandboxProgramOptions = {}): string
     // Everything below lives in one closure: the kernel's
     // functions, the prepared-definition cache, the plugin registries and the language's
     // intrinsics the kernel reads are locals no plugin can name, so no change to the global
-    // object (QuickJS lets `Object.defineProperty` redefine a global whatever its attributes)
-    // can change what a run does. The three entry points are the only globals.
+    // object (Bellard's QuickJS lets `Object.defineProperty` redefine a global whatever its
+    // attributes unless the freeze guards it) can change what a run does. The three entry points are the only globals.
     "(function () {",
     `  var ${INTRINSIC_ALIASES.map((name) => `${name} = globalThis.${name}`).join(", ")};`,
     "",
@@ -220,8 +220,8 @@ export interface SandboxProgramOptions {
 
 /**
  * The language's own globals the kernel reads by bare name. The program binds each to a local
- * at its start, so a later redefinition of the global (QuickJS allows `defineProperty` on a
- * global whatever its attributes) is not seen by the kernel. A test compares this list with a
+ * at its start, so a later redefinition of the global (Bellard's QuickJS allows `defineProperty`
+ * on a global whatever its attributes, unless the freeze guards it) is not seen by the kernel. A test compares this list with a
  * fresh context's globals.
  */
 export const INTRINSIC_ALIASES: readonly string[] = [
@@ -253,6 +253,26 @@ export const INTRINSIC_ALIASES: readonly string[] = [
  * gives the original value, assigning to an instance defines an own property on it, and
  * assigning to the prototype itself throws.
  *
+ * Non-writable and non-configurable must hold on both engines a host runs. On Bellard's QuickJS
+ * (the quickjs-emscripten build) `Object.defineProperty`, `Object.defineProperties` and
+ * `Reflect.defineProperty` still replace the value of such a property of the global object
+ * (`undefined` and `NaN` among them), though `getOwnPropertyDescriptor` reports it
+ * non-configurable; quickjs-ng refuses. Before anything is frozen the snippet therefore puts
+ * guarded versions of the three functions in place: on the global object they read the key and
+ * the descriptor once, refuse what the language's own rules for a non-configurable property refuse
+ * (the `Object` ones throw a `TypeError`, `Reflect.defineProperty` returns false), and hand what
+ * they read to the original; on any other object they are the originals. A proxy whose target is
+ * the global object would reach the engine's define by its own route, so `new Proxy` and
+ * `Proxy.revocable` refuse that one target.
+ *
+ * The global object's prototype is where a bare name that is not one of its own properties is
+ * looked up (`hasOwnProperty`, `toString`, a name the host removed, a name no module defined), so
+ * it stays the one it starts with, on both engines. `Object.setPrototypeOf`, `Reflect.setPrototypeOf`
+ * and the `__proto__` setter on `Object.prototype` get the same kind of guard: given the global
+ * object and a prototype other than its own, the first two throw a `TypeError` and return false
+ * as the language does for an object whose prototype cannot change, and the setter throws; given
+ * anything else, they are the originals.
+ *
  * The global object itself stays extensible, so a plugin can still define globals of its own. Every
  * object reached from a global is frozen, `__datum_` globals included: the program keeps its mutable
  * state in closure locals. A host that embeds the sandbox program elsewhere (a server host's own
@@ -268,6 +288,104 @@ export const FREEZE_INTRINSICS_SNIPPET = [
   "  var getProto = Object.getPrototypeOf;",
   "  var define = Object.defineProperty;",
   "  var freeze = Object.freeze;",
+  // The guard on the global object's non-configurable properties (see the comment above the snippet).
+  "  var toObject = Object;",
+  "  var create = Object.create;",
+  "  var ownKeys = Reflect.ownKeys;",
+  "  var construct = Reflect.construct;",
+  "  var same = Object.is;",
+  "  var defineAll = Object.defineProperties;",
+  "  var reflectDefine = Reflect.defineProperty;",
+  '  var fields = ["enumerable", "configurable", "value", "writable", "get", "set"];',
+  "  function toKey(p) { var o = create(null); define(o, p, { value: 0, enumerable: true }); return ownKeys(o)[0]; }",
+  "  function toDescriptor(d) {",
+  '    if (d === null || (typeof d !== "object" && typeof d !== "function")) { throw new TypeError("Property description must be an object"); }',
+  "    var out = create(null);",
+  "    for (var i = 0; i < fields.length; i += 1) { if (fields[i] in d) { out[fields[i]] = d[fields[i]]; } }",
+  "    return out;",
+  "  }",
+  "  function refused(key, d) {",
+  "    var current = getDescriptor(root, key);",
+  "    if (current === undefined || current.configurable) { return false; }",
+  '    if ("configurable" in d && d.configurable) { return true; }',
+  '    if ("enumerable" in d && !d.enumerable !== !current.enumerable) { return true; }',
+  '    var accessor = "get" in d || "set" in d;',
+  '    var data = "value" in d || "writable" in d;',
+  "    if (!accessor && !data) { return false; }",
+  '    if (accessor === ("value" in current) || (accessor && data)) { return true; }',
+  '    if (accessor) { return ("get" in d && d.get !== current.get) || ("set" in d && d.set !== current.set); }',
+  '    return !current.writable && (("writable" in d && !!d.writable) || ("value" in d && !same(d.value, current.value)));',
+  "  }",
+  '  function refuse(key) { throw new TypeError("Cannot redefine property: " + String(key)); }',
+  "  var guarded = {",
+  "    defineProperty(o, p, attributes) {",
+  "      if (o !== root) { return define(o, p, attributes); }",
+  "      var key = toKey(p);",
+  "      var d = toDescriptor(attributes);",
+  "      if (refused(key, d)) { refuse(key); }",
+  "      return define(o, key, d);",
+  "    },",
+  "    defineProperties(o, properties) {",
+  "      if (o !== root) { return defineAll(o, properties); }",
+  '      if (properties === null || properties === undefined) { throw new TypeError("Cannot convert " + properties + " to object"); }',
+  "      var source = toObject(properties);",
+  "      var keys = ownKeys(source);",
+  "      var all = create(null);",
+  "      for (var i = 0; i < keys.length; i += 1) {",
+  "        var own = getDescriptor(source, keys[i]);",
+  "        if (own === undefined || !own.enumerable) { continue; }",
+  "        var d = toDescriptor(source[keys[i]]);",
+  "        if (refused(keys[i], d)) { refuse(keys[i]); }",
+  "        define(all, keys[i], { value: d, writable: true, enumerable: true, configurable: true });",
+  "      }",
+  "      return defineAll(o, all);",
+  "    }",
+  "  };",
+  "  var guardedReflect = {",
+  "    defineProperty(o, p, attributes) {",
+  "      if (o !== root) { return reflectDefine(o, p, attributes); }",
+  "      var key = toKey(p);",
+  "      var d = toDescriptor(attributes);",
+  "      return refused(key, d) ? false : reflectDefine(o, key, d);",
+  "    }",
+  "  };",
+  "  function method(value) { return { value: value, writable: true, enumerable: false, configurable: true }; }",
+  '  define(Object, "defineProperty", method(guarded.defineProperty));',
+  '  define(Object, "defineProperties", method(guarded.defineProperties));',
+  '  define(Reflect, "defineProperty", method(guardedReflect.defineProperty));',
+  // The global object's prototype stays the one it starts with (see the comment above the snippet).
+  "  var apply = Reflect.apply;",
+  "  var setProto = Object.setPrototypeOf;",
+  "  var reflectSetProto = Reflect.setPrototypeOf;",
+  "  var startProto = getProto(root);",
+  '  function isProto(v) { return v === null || typeof v === "object" || typeof v === "function"; }',
+  "  function swaps(o, proto) { return o === root && isProto(proto) && proto !== startProto; }",
+  "  function refuseSwap() { throw new TypeError(\"The global object's prototype cannot be changed in the sandbox\"); }",
+  "  var guardedSetProto = {",
+  "    setPrototypeOf(o, proto) { if (swaps(o, proto)) { refuseSwap(); } return setProto(o, proto); }",
+  "  };",
+  "  var guardedReflectSetProto = {",
+  "    setPrototypeOf(o, proto) { return swaps(o, proto) ? false : reflectSetProto(o, proto); }",
+  "  };",
+  '  define(Object, "setPrototypeOf", method(guardedSetProto.setPrototypeOf));',
+  '  define(Reflect, "setPrototypeOf", method(guardedReflectSetProto.setPrototypeOf));',
+  '  var protoAccessor = getDescriptor(Object.prototype, "__proto__");',
+  "  if (protoAccessor !== undefined && typeof protoAccessor.set === \"function\") {",
+  "    var protoSetter = protoAccessor.set;",
+  // Method shorthand, so the setter has no `prototype` object of its own to leave unfrozen.
+  "    var guardedProtoSetter = { set(proto) { if (swaps(this, proto)) { refuseSwap(); } return apply(protoSetter, this, [proto]); } };",
+  '    define(Object.prototype, "__proto__", { get: protoAccessor.get, set: guardedProtoSetter.set, enumerable: protoAccessor.enumerable, configurable: protoAccessor.configurable });',
+  "  }",
+  // A proxy without a defineProperty trap hands the define to its target by the engine's own
+  // route, past the guarded functions, so the global object cannot be a proxy's target.
+  '  if (typeof Proxy === "function") {',
+  "    var NativeProxy = Proxy;",
+  "    var revocable = Proxy.revocable;",
+  '    function refuseRoot(target) { if (target === root) { throw new TypeError("The global object cannot be the target of a proxy in the sandbox"); } }',
+  "    var guardedRevocable = { revocable(target, handler) { refuseRoot(target); return revocable(target, handler); } };",
+  '    define(NativeProxy, "revocable", method(guardedRevocable.revocable));',
+  '    define(root, "Proxy", method(new NativeProxy(NativeProxy, { construct(target, args, newTarget) { refuseRoot(args[0]); return construct(target, args, newTarget); } })));',
+  "  }",
   "  var seen = new Set();",
   "  var queue = [];",
   "  function visit(o) {",

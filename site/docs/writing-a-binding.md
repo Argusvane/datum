@@ -169,10 +169,11 @@ The capabilities, and the kinds they are asked of:
   - `formLabelled: true` on an adapter that draws the form root as no group lets the renderer name the `<form>` itself.
 - **`tabs`.** Receives `tabs` (each with `label`, `selected`, `tabId`, `panelId`, `errorCount`, `select()` and `content`), `narrow` (below `tabsNarrowBelow`) and `flat` (every panel drawn headed, for a review or print).
   - Every panel is drawn; hide all but the selected one.
-  - Write the `tabId` and `panelId` the state names.
+  - Write the `tabId` and `panelId` the state names. They are made from the container's instance `key`, so the tabs in each row of a data grid have their own; make any id of your own from `key` too.
+  - Name the tab list by the `legend` (keep it, visually hidden, under `hideLegend`) and describe it by the `hint` (`hintId`).
 - **`grid`.** Receives `columns`, `rows` (with `cells`, `remove`, `moveUp`, `moveDown`), `layout` (`table` or `stacked`), `responsive`, `offers`, `add`, `addId`, `captions` and the grid's own `errors`.
   - `layouts` on the adapter says which it draws; one that draws no table is always handed `stacked`.
-- **`steps`.** Receives `steps` (each with `label`, `status`, `statusText`, `tag`, `shown`, `headingId`, `content`, `select`), `back`, `next`, `progress`, `others`, `flat` and `busy`.
+- **`steps`.** Receives `steps` (each with `label`, `status`, `statusText`, `tag`, `shown`, `headingId`, `content`, `select`), `back`, `next`, `progress`, `others`, `flat` and `busy`. `back` and `next` pass over a step a rule hides; it is still listed, with no `select`.
   - Keep `headingId` and `tabindex="-1"` on a step's heading: focus goes there when it opens.
 
 ## What the binding object holds

@@ -320,12 +320,23 @@ function labelOf(node: { configuration?: unknown } | undefined): unknown {
  * Whether a value is an empty answer for a component of `type`: the reading of `isEmptyValue`
  * (`validation/core/field-constraints.ts`) and the kernel's `kernelIsEmptyValue` (which lives
  * in `schema/answer-kinds.ts` and the kernel re-exports), which decide
- * `required` on both sides — `false` on a checkbox, blank text and an empty list are empty, a
- * `0` is not. Mirrored here rather than imported: the validation layer imports the core, and
+ * `required` on both sides — anything but `true` on a checkbox, blank text and an empty list are
+ * empty, a `0` is not. Mirrored here rather than imported: the validation layer imports the core, and
  * the diagnostics are a chunk of their own. `journey-diagnostics.test.ts` pins that the three
  * agree.
  */
 export function journeyEmptyAnswer(value: unknown, type: string): boolean {
+  if (type === "checkbox") {
+    return value !== true;
+  }
+  if (type === "checkboxes") {
+    return (
+      value === null ||
+      typeof value !== "object" ||
+      Array.isArray(value) ||
+      !Object.values(value as Record<string, unknown>).some((entry) => entry === true)
+    );
+  }
   if (value === undefined || value === null) {
     return true;
   }
@@ -338,10 +349,7 @@ export function journeyEmptyAnswer(value: unknown, type: string): boolean {
   if (Array.isArray(value)) {
     return value.length === 0;
   }
-  if (type === "checkboxes" && typeof value === "object") {
-    return !Object.values(value as Record<string, unknown>).some((entry) => entry === true);
-  }
-  return type === "checkbox" && value === false;
+  return false;
 }
 
 const emptyAnswer = journeyEmptyAnswer;

@@ -125,7 +125,9 @@ component, a value path, a template text, an expression, or a literal. XFA is st
 warning.
 
 A form may declare no layout; every host then prints from a layout derived from the form
-(`deriveDefaultPdfLayout`). Several layouts per form, and the choice among them, are ADR 0044.
+(`deriveDefaultPdfLayout`). It heads no section with a label the author hid, captions an untitled
+tab by its lone `tab` component's label or its place, never its slot id, and carries the form's
+title as a literal, never a template. Several layouts per form, and the choice among them, are ADR 0044.
 
 Layout nodes carry no rules of their own: what prints follows the bound components' effective
 state. `pdf-section`, `pdf-box` and `pdf-table` take `skipWhenEmpty` so a container can follow its
@@ -163,7 +165,13 @@ Which theme a document renders under is chosen by id; ADR 0098 decision 7 holds 
 returning `{ mode: "pdf", document | fill, components, warnings }`. It resolves renditions,
 evaluates templates and expressions through the rules evaluator (whose context already scopes
 `row.`, `ancestor.` and `host.`), expands repeats engine-side, lifts anchored boxes out of the
-flow and collects widget specifications. The kernel therefore never evaluates an expression.
+flow and collects widget specifications, warning when two owners take one AcroForm field name.
+Inside an entry, a field of the entries reads the entry's answer at its key and nothing else: a
+collection adds no path level, so the template model's own value is another field's answer. A
+placeholder reads its path through the component it names (by id, value path, or an entry's
+indexed path), so it is formatted and cut as that component's answer. The document's page is the
+layout's over the theme's, field by field, and a page break's own setup changes only what it names.
+The kernel therefore never evaluates an expression.
 `buildRenderOutput({ mode: "pdf" })` returns this model; a genuinely unknown mode still throws.
 
 ### 7. Tagging
@@ -305,9 +313,11 @@ slim renderer bundle (ADR 0045).
 - A Java or .NET host produces PDFs by embedding QuickJS once and calling one global; the package
   README documents the recipe and the byte hashes the parity suite records.
 - Output size and speed are bounded by an interpreter: the document profile, per-script font
-  subsets, a reused runtime and the byte-free `layout` operation are the mitigations.
+  subsets and the byte-free `layout` operation are the mitigations; a server gives every call a
+  fresh runtime (ADR 0181) and pays the program's evaluation each time.
 - Two files for a server sit beside the bundles: `datum-sandbox-program.js` (validation, ADR 0046)
-  and `datum-pdf-program.js` (rendering), each evaluated once and called by a global.
+  and `datum-pdf-program.js` (rendering), each evaluated in a sandbox and called by a global; a
+  server evaluates them afresh for every call (ADR 0181).
   `packages/pdf-kernel` must be built before `packages/datum` (CI does so), as the copy is of a
   built artifact.
 - The parity guarantee reaches an engine three years older than the one in the tests: the base64

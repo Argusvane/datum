@@ -169,7 +169,21 @@ describe("reading a JSON Schema", () => {
     expect(patternForForm("^(?:[a-z]+)$")).toEqual({ pattern: "[a-z]+" });
     expect(patternForForm("abc")).toEqual({ pattern: "[\\s\\S]*(?:abc)[\\s\\S]*" });
     expect(patternForForm("^abc")).toEqual({ pattern: "(?:abc)[\\s\\S]*" });
-    expect(patternForForm("^a|b$")).toEqual({ pattern: "(?:a|b)" });
+    // Anchors bind to the first and last branch only: starts with a, or ends with b.
+    expect(patternForForm("^a|b$")).toEqual({ pattern: "(?:a)[\\s\\S]*|[\\s\\S]*(?:b)" });
+    expect(patternForForm("^a$|^b$")).toEqual({ pattern: "a|b" });
+    expect(patternForForm("a|(b|c)")).toEqual({ pattern: "[\\s\\S]*(?:a)[\\s\\S]*|[\\s\\S]*(?:(b|c))[\\s\\S]*" });
+    // The form's reading accepts and refuses what the schema's does.
+    for (const [schemaPattern, answers] of [
+      ["^a|b$", ["axyz", "xyzb", "xbx", "ab"]],
+      ["^a|b", ["axyz", "xbz", "xyz"]],
+      ["x|^y$|z$", ["axb", "y", "ya", "az", "za"]]
+    ] as const) {
+      const form = new RegExp(`^(?:${patternForForm(schemaPattern).pattern})$`, "u");
+      for (const answer of answers) {
+        expect(form.test(answer), `${schemaPattern} on ${answer}`).toBe(new RegExp(schemaPattern, "u").test(answer));
+      }
+    }
     // Valid for a schema, but not under the Unicode mode the form compiles patterns in.
     expect(patternForForm("^\\a+$").note?.code).toBe("pattern-unusable");
     expect(patternForForm("^\\a+$").pattern).toBeUndefined();

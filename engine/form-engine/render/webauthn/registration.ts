@@ -15,6 +15,7 @@ import { bytesToBase64Url, base64UrlToBytes, COSE_ALGORITHM } from "../../core/s
 import { credentialsContainerFrom } from "./assertion.js";
 import { parseAuthenticatorData, type AuthenticatorFlags } from "./authenticator-data.js";
 import { WebAuthnError, toWebAuthnError } from "./errors.js";
+import { coseAlgorithmOfSpki } from "./spki.js";
 
 /** What a relying party keeps about a registered credential. */
 export interface WebAuthnCredentialRecord {
@@ -167,7 +168,7 @@ export async function registerCredential(options: RegisterCredentialOptions): Pr
     id: bytesToBase64Url(new Uint8Array(created.rawId)),
     name: options.name,
     publicKey: bytesToBase64(new Uint8Array(spki)),
-    algorithm: response.getPublicKeyAlgorithm?.() ?? COSE_ALGORITHM.ES256,
+    algorithm: response.getPublicKeyAlgorithm?.() ?? coseAlgorithmOfSpki(new Uint8Array(spki)) ?? COSE_ALGORITHM.ES256,
     transports,
     ...(attachment ? { attachment } : {}),
     signCount: parsed?.signCount ?? 0,

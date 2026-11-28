@@ -50,7 +50,7 @@ export interface WebAuthnSigningProviderOptions {
    * none: `allowCredentials` is empty and the browser offers the choice. A listed
    * credential still narrows the prompt to the list. An assertion from a credential the list
    * does not name is archived with ES256 assumed and no public key: the verifier uses the key
-   * it registered for that credential id.
+   * it registered for that credential id, and that key's type says its algorithm.
    */
   discoverable?: boolean;
   userVerification?: UserVerificationRequirement;
@@ -103,7 +103,13 @@ export interface VerifyWebAuthnSubmissionOptions {
   /** The origins the client may have written into the assertion; the page's own for a page verifying itself. */
   expectedOrigins: readonly string[];
   rpId: string;
-  /** The registered public key (SPKI DER base64) for a credential id; the assertion's archived key when it returns nothing. */
+  /**
+   * The registered public key (SPKI DER base64) for a credential id, and its COSE algorithm
+   * (absent: the key's type says, RSA RS256 and EC ES256). A credential it returns nothing for
+   * is not registered: its signature is invalid, whatever key the assertion carries. Left out,
+   * each signature is checked with the key archived in it, which proves only that the signer
+   * holds that key.
+   */
   publicKeyFor?: (credentialId: string) => { publicKey: string; algorithm?: number } | undefined;
   requireUserVerification?: boolean;
   subtle?: SubtleCrypto;
@@ -114,10 +120,30 @@ export interface WebAuthnSubmissionVerdict extends AssertionVerdict {
   participantId: string;
   credentialId: string;
   algorithm: string;
+  /**
+   * The key the signature was checked with: `"registered"`, what `publicKeyFor` returned, or
+   * `"archived"`, the one the assertion carries (only when `publicKeyFor` is left out). Absent
+   * when no key was at hand. A host that trusts only its own keys requires `"registered"`.
+   */
+  key?: "registered" | "archived";
   /** The format the signature was checked under: its own, else the wrapper's; absent when neither is readable (the verdict is then invalid). */
   format?: SubmissionSigningFormat;
   /** The signing statement the signature covers, when it has one. */
   statement?: string;
+}
+
+/** The reason on a signature with no key at hand: no lookup, and none archived in it. */
+const NO_KEY = "no public key is known for this credential";
+
+/** The verdict on a signature no check could run on: every check failed, no flags read. */
+function unreadVerdict(reason: string): AssertionVerdict {
+  return {
+    valid: false,
+    checks: { type: false, challenge: false, origin: false, crossOrigin: false, rpId: false, userPresent: false, userVerified: false, backupState: false, publicKey: false, signature: false },
+    flags: { userPresent: false, userVerified: false, backupEligible: false, backedUp: false, attestedCredentialData: false, extensionData: false },
+    signCount: 0,
+    reason
+  };
 }
 
 /** The reason on a signature whose format is unreadable ({@link signatureFormatOf}). */
@@ -130,8 +156,10 @@ export const UNREADABLE_FORMAT = 'the signature names no signing format this eng
  * rpId, presence, verification and the signature itself. Each signature is rebuilt under its
  * own format (its scope, in RFC 8785) and with its own statement. A signature whose format is
  * unreadable — none, another canonicalization than `"jcs"`, an unknown scope — is invalid: its
- * challenge check fails, since no text can be rebuilt to compare it with. Signatures from other
- * providers are left out of the list.
+ * challenge check fails, since no text can be rebuilt to compare it with. A signature that
+ * cannot be read (its client data or authenticator data), or that has no key at hand, is an
+ * invalid verdict with the reason, and the others are still checked. Signatures from other
+ * providers are left out of the list. Throws only when there is no WebCrypto.
  */
 export async function verifyWebAuthnSubmission(
   document: CanonicalSubmission | SignedSubmissionDocument,
@@ -143,17 +171,32 @@ export async function verifyWebAuthnSubmission(
     if (!signature.webauthn) {
       continue;
     }
+    const subtle = options.subtle ?? (globalThis as { crypto?: { subtle?: SubtleCrypto } }).crypto?.subtle;
+    if (!subtle) {
+      throw new WebAuthnError("unsupported", "WebCrypto is not available here; give the verifier a SubtleCrypto.");
+    }
     const format = signatureFormatOf(document, signature);
     const canonical = signedCanonicalForSignature(document, signature);
     const known = options.publicKeyFor?.(signature.webauthn.credentialId);
-    const checked = await verifyAssertion(signature.webauthn, {
-      expectedChallenge: canonical === undefined ? new Uint8Array(0) : sha256(new TextEncoder().encode(canonical)),
-      expectedOrigins: options.expectedOrigins,
-      rpId: options.rpId,
-      ...(known ? { publicKey: known.publicKey, ...(known.algorithm !== undefined ? { algorithm: known.algorithm } : {}) } : {}),
-      ...(options.requireUserVerification !== undefined ? { requireUserVerification: options.requireUserVerification } : {}),
-      ...(options.subtle ? { subtle: options.subtle } : {})
-    });
+    const key = known ? "registered" : options.publicKeyFor === undefined && signature.webauthn.publicKey ? "archived" : undefined;
+    let checked: AssertionVerdict;
+    try {
+      checked = await verifyAssertion(signature.webauthn, {
+        expectedChallenge: canonical === undefined ? new Uint8Array(0) : sha256(new TextEncoder().encode(canonical)),
+        expectedOrigins: options.expectedOrigins,
+        rpId: options.rpId,
+        // A lookup that knows no key for the credential leaves it unregistered; the archived key never stands in.
+        ...(known ? { publicKey: known.publicKey } : options.publicKeyFor ? { publicKey: null } : {}),
+        ...(known?.algorithm !== undefined ? { algorithm: known.algorithm } : {}),
+        ...(options.requireUserVerification !== undefined ? { requireUserVerification: options.requireUserVerification } : {}),
+        subtle
+      });
+    } catch (error) {
+      if (!(error instanceof WebAuthnError) || (error.code !== "protocol" && error.code !== "no_credentials")) {
+        throw error;
+      }
+      checked = unreadVerdict(error.code === "no_credentials" ? NO_KEY : `the signature could not be read: ${error.message}`);
+    }
     const verdict: AssertionVerdict =
       canonical === undefined ? { ...checked, valid: false, checks: { ...checked.checks, challenge: false }, reason: UNREADABLE_FORMAT } : checked;
     const statement = signingStatementOf(signature.statement);
@@ -162,6 +205,7 @@ export async function verifyWebAuthnSubmission(
       participantId: signature.participantId,
       credentialId: signature.webauthn.credentialId,
       algorithm: signature.algorithm,
+      ...(key !== undefined ? { key } : {}),
       ...(format !== undefined ? { format } : {}),
       ...(statement !== undefined ? { statement } : {})
     });
