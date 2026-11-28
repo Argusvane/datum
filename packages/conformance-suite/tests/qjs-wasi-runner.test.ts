@@ -32,9 +32,15 @@ describe("the run script and the answer frame of the server hosts", () => {
   it("removes the globals the FastAPI and JVM run scripts remove, in their order", () => {
     const python = readFileSync(join(REPO_ROOT, "integrations/fastapi/packages/argusvane-datum-sandbox/src/datum_sandbox/protocol/_run_script.py"), "utf8");
     const java = readFileSync(join(REPO_ROOT, "integrations/jvm/libs/datum-sandbox/src/main/java/com/argusvane/datum/sandbox/protocol/RunScript.java"), "utf8");
-    const listed = REMOVED_GLOBALS.map((name) => `"${name}"`).join(", ");
-    expect(python).toContain(`REMOVED_GLOBALS: Final = (${listed})`);
-    expect(java).toContain(`REMOVED_GLOBALS = List.of(${listed})`);
+    // The quoted names of each host's list, however it is wrapped over lines.
+    const names = (text: string, opening: RegExp): string[] => {
+      const start = opening.exec(text);
+      expect(start, String(opening)).not.toBeNull();
+      const body = text.slice(start!.index + start![0].length, text.indexOf(")", start!.index + start![0].length));
+      return [...body.matchAll(/"([^"]+)"/g)].map((match) => match[1]!);
+    };
+    expect(names(python, /REMOVED_GLOBALS: Final = \(/)).toEqual([...REMOVED_GLOBALS]);
+    expect(names(java, /REMOVED_GLOBALS = List\.of\(/)).toEqual([...REMOVED_GLOBALS]);
   });
 
   it("captures the entry point, removes the globals, freezes, marks the start, then registers each module as an ASCII literal and answers in the frame", () => {
