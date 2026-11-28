@@ -120,8 +120,8 @@ describe("QuickJS sandbox isolation (the determinism guarantee: no ambient autho
       expect(await codesAfterArming("globalThis.kernelIsEmptyValue = function () { return false; };")).toEqual({ armed: [], after: ["required"] });
     });
 
-    // QuickJS lets Object.defineProperty redefine a global whatever its
-    // attributes, so the guarantee is that nothing the run reads is a global.
+    // The kernel reads no global, so its answer holds whether or not a redefinition goes through
+    // (with the freeze, none does; host-freeze-global-descriptors covers the plugin modules).
     it("keeps required after a plugin redefines a global with defineProperty", async () => {
       const redefine = (name: string, value: string) => `Object.defineProperty(globalThis, ${JSON.stringify(name)}, { value: ${value}, configurable: true, writable: true });`;
       for (const [name, value] of [

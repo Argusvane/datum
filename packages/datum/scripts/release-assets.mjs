@@ -6,6 +6,8 @@
 //   <out>/datum-bundles-<version>.tar.gz      dist without maps and declarations: the files a page
 //                                             copies to a static server, for a user who has no npm, with
 //                                             the repository LICENSE and a NOTICE at its root
+//   <out>/datum-integrity-<version>.json      the sha384 Subresource Integrity of every file a page loads
+//                                             (the package's integrity.json, scripts/integrity-manifest.mjs)
 //   <out>/SHA256SUMS                          the checksum of each archive
 //
 // The maps stay out of the tarball because they are most of its weight (about 77 MB of 105 MB
@@ -28,6 +30,7 @@ import { fileURLToPath } from "node:url";
 
 import { noticeText } from "../../../scripts/npm/prepack.mjs";
 import { stripSourceMaps } from "./strip-source-maps.mjs";
+import { MANIFEST, writeIntegrityManifest } from "./integrity-manifest.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const repo = join(root, "..", "..");
@@ -100,6 +103,10 @@ function main() {
   const stripped = stripSourceMaps(dist);
   console.log(`release-assets: ${stripped.maps} source maps archived, then removed, and ${stripped.scripts} mapping comments removed from dist`);
   execFileSync(process.execPath, [join(root, "scripts", "feature-files.mjs")], { stdio: "inherit" });
+  // The hashes of the files as they ship, without the mapping comments: beside dist in the package, and
+  // beside the archives.
+  console.log(`release-assets: ${writeIntegrityManifest(dist)} files of dist hashed in ${MANIFEST}`);
+  copyFileSync(join(root, MANIFEST), join(out, `datum-integrity-${version}.json`));
 
   archiveBundles({ packageRoot: root, repoRoot: repo, out, version });
 

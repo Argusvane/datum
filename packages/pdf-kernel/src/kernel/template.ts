@@ -59,6 +59,7 @@ import { findSignatureFields } from "./signature/field.js";
 import { ExistingTagging } from "./tagging.js";
 import { asText, truthy } from "./util/fill-value.js";
 import { pdfDateString } from "./writer.js";
+import { loadPdfDocument } from "./util/parse-depth.js";
 
 export interface FilledTemplate {
   bytes: Uint8Array;
@@ -655,7 +656,7 @@ async function loadTemplate(template: Uint8Array): Promise<LoadedTemplate> {
   }
   let asSupplied: PDFDocument;
   try {
-    asSupplied = await PDFDocument.load(template, { updateMetadata: false, ignoreEncryption: true });
+    asSupplied = await loadPdfDocument(template, { updateMetadata: false, ignoreEncryption: true });
   } catch (error) {
     throw new PdfKernelError("template", `The template is not a readable PDF: ${error instanceof Error ? error.message : String(error)}`);
   }
@@ -669,7 +670,7 @@ async function loadTemplate(template: Uint8Array): Promise<LoadedTemplate> {
   }
   let pdf: PDFDocument;
   try {
-    pdf = await PDFDocument.load(template, { updateMetadata: false, password: "" });
+    pdf = await loadPdfDocument(template, { updateMetadata: false, password: "" });
   } catch (error) {
     const cause = error instanceof Error ? error.message : String(error);
     // Only the reader's own wrong-password failures say the template needs a password; a

@@ -54,6 +54,14 @@ calling thread the whole process waits.
    `worker: false` the submissions package binds `QuickJsFreshSandboxHost`: a fresh sandbox per
    call on the calling thread, with no kill and no ceiling on the instance's WebAssembly memory.
 
+   The QuickJS PDF provider (`createQuickJsPdfProvider`, `@argusvane/datum-pdf-kernel/quickjs`)
+   works the same way: every call (a render, a fill, an inspect, a verify) runs in a WebAssembly
+   instance of the engine made for it, with the PDF program and its modules evaluated afresh, and
+   the instance is dropped when the call ends. `create` builds the first one, which serves the
+   first call. Evaluating the program is the price, paid on the calling thread at every call.
+   Before pdf-lib reads a PDF the kernel bounds how deep its arrays and dictionaries nest (64
+   levels, as PDFium does), so a request cannot recurse the parser through the stack.
+
 6. **A sandbox a host-side error unwound through is never freed.** The worker drops a sandbox whole,
    unfreed, when a host-side error poisoned its runtime or a job is still queued in it, because
    freeing such a runtime aborts the instance. A queued job never runs, so a plugin that queues a
