@@ -6,6 +6,7 @@
  * journeys chunk takes it without the print model, which loads with `print()`.
  */
 import type { FormTextKey } from "../../core/localization/form-texts.js";
+import { kernelIsDateAnswer } from "../../core/schema/answer-kinds.js";
 import type { ComponentNode } from "../../core/schema/types.js";
 import type { RenderComponentModel } from "../core/component-model.js";
 import { printAnswerText } from "./answer-text.js";
@@ -17,9 +18,16 @@ function configurationOf(node: ComponentNode | undefined): Record<string, unknow
   return configuration && typeof configuration === "object" && !Array.isArray(configuration) ? (configuration as Record<string, unknown>) : {};
 }
 
+/** No answer given, as validation reads one (`isEmptyValue`): text of spaces alone is none. */
 function isBlankAnswer(value: unknown): boolean {
-  if (value === undefined || value === null || value === "") {
+  if (value === undefined || value === null) {
     return true;
+  }
+  if (typeof value === "string") {
+    return value.trim() === "";
+  }
+  if (typeof value === "number") {
+    return !Number.isFinite(value);
   }
   if (Array.isArray(value)) {
     return value.length === 0;
@@ -84,12 +92,8 @@ export function formatPrintNumber(value: string, locale: string): string {
  * so the words name the same date as the day, month and year boxes beside them.
  */
 export function formatPrintDate(value: string, locale: string, gregorian = false): string {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) {
-    return value;
-  }
-  const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
-  if (Number.isNaN(date.getTime())) {
+  const date = calendarDateOf(value);
+  if (date === undefined) {
     return value;
   }
   try {
@@ -97,6 +101,20 @@ export function formatPrintDate(value: string, locale: string, gregorian = false
   } catch {
     return value;
   }
+}
+
+/**
+ * A stored `YYYY-MM-DD` as the UTC midnight it names, or `undefined` for anything that is not a real
+ * calendar date (`kernelIsDateAnswer`: a 30 February or a 13th month is no date, not one rolled
+ * over). The year is set on its own: `Date.UTC` reads a year below 100 as 19xx.
+ */
+function calendarDateOf(value: string): Date | undefined {
+  if (!kernelIsDateAnswer(value)) {
+    return undefined;
+  }
+  const date = new Date(Date.UTC(2000, Number(value.slice(5, 7)) - 1, Number(value.slice(8, 10))));
+  date.setUTCFullYear(Number(value.slice(0, 4)));
+  return date;
 }
 
 /** The order a locale writes a date's parts in, read from Intl (en-US: month day year; fr: day month year), in the Gregorian calendar the stored date is in. */
@@ -120,15 +138,11 @@ function datePartOrder(locale: string): Array<"day" | "month" | "year"> {
  * to). `undefined` for anything that is not a real calendar date, which leaves the boxes empty.
  */
 function datePartValues(value: string, locale: string): { day: string; month: string; year: string } | undefined {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) {
+  const date = calendarDateOf(value);
+  if (date === undefined) {
     return undefined;
   }
-  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
-  const date = new Date(Date.UTC(year, month - 1, day));
-  if (Number.isNaN(date.getTime()) || date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
-    return undefined;
-  }
+  const [year, month, day] = [date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()];
   let named: string | undefined;
   try {
     const parts = new Intl.DateTimeFormat(locale.replace(/_/g, "-"), { month: "long", timeZone: "UTC", calendar: "gregory" }).formatToParts(date);
@@ -157,6 +171,17 @@ export interface FieldContext {
   signGap: string;
 }
 
+/** The types whose answer is a secret, shown as {@link ANSWER_MASK} wherever an answer is worded (print, Check answers). */
+export const MASKED_ANSWER_TYPES: ReadonlySet<string> = new Set(["password"]);
+
+/** What a given secret answer shows in its place. */
+export const ANSWER_MASK = "••••••••";
+
+/** Whether a component of `type` (with base type `base`) holds a secret answer. */
+export function isMaskedAnswerType(type: string, base: string): boolean {
+  return MASKED_ANSWER_TYPES.has(base) || MASKED_ANSWER_TYPES.has(type);
+}
+
 /** The base types print draws no field for: nothing to answer on paper (a button, a picture), or not covered yet (a signature). */
 const NOT_PRINTED: ReadonlySet<string> = new Set(["button", "button-group", "image", "signature", "pdf-signature"]);
 
@@ -179,14 +204,18 @@ export function fieldOf(model: RenderComponentModel, base: string, context: Fiel
       }
       return option;
     });
-  // A stored value no option lists (an answer from before the list changed) still stands on a filled form, as an option of its own.
-  const withStored = (listed: PrintOption[], given: string): PrintOption[] =>
-    given !== "" && !listed.some((option) => option.chosen) ? [...listed, { label: given, chosen: true }] : listed;
+  // A stored value no option lists (an answer from before the list changed) still stands, as a
+  // chosen option of its own worded as stored: the answer is never dropped for want of a label.
+  const withStored = (listed: PrintOption[], given: readonly string[]): PrintOption[] => {
+    const values = new Set(model.optionState.items.map((item) => item.value));
+    const unlisted = given.filter((entry) => entry !== "" && !values.has(entry));
+    return unlisted.length > 0 ? [...listed, ...unlisted.map((entry) => ({ label: entry, chosen: true }))] : listed;
+  };
   let answer: PrintAnswer;
   let empty = blank || isBlankAnswer(value);
   switch (base) {
     case "radio":
-      answer = { shape: "choices", multiple: false, single: false, options: options((option) => option === stored) };
+      answer = { shape: "choices", multiple: false, single: false, options: withStored(options((option) => option === stored), [stored]) };
       break;
     case "checkboxes": {
       const picked = Array.isArray(value)
@@ -194,7 +223,7 @@ export function fieldOf(model: RenderComponentModel, base: string, context: Fiel
         : value && typeof value === "object"
           ? new Set(Object.entries(value as Record<string, unknown>).flatMap(([key, on]) => (on === true ? [key] : [])))
           : new Set<string>();
-      answer = { shape: "choices", multiple: true, single: false, options: options((option) => picked.has(option)) };
+      answer = { shape: "choices", multiple: true, single: false, options: withStored(options((option) => picked.has(option)), [...picked]) };
       empty = blank || picked.size === 0;
       break;
     }
@@ -206,7 +235,7 @@ export function fieldOf(model: RenderComponentModel, base: string, context: Fiel
       answer = blank
         ? { shape: "choices", multiple: false, single: false, options: options(() => false) }
         : filled
-          ? { shape: "choices", multiple: false, single: false, options: withStored(options((option) => option === stored), stored) }
+          ? { shape: "choices", multiple: false, single: false, options: withStored(options((option) => option === stored), [stored]) }
           : { shape: "text", text: model.optionState.items.find((item) => item.value === stored)?.label ?? stored, lines: 1, multiline: false };
       break;
     case "date": {
@@ -265,6 +294,10 @@ export function fieldOf(model: RenderComponentModel, base: string, context: Fiel
         return undefined;
       }
       answer = { shape: "text", text: stored, lines: 1, multiline: false };
+  }
+  // A secret's answer is never printed: a mask stands in its place, as on Check answers.
+  if (!empty && answer.shape === "text" && isMaskedAnswerType(model.type, base)) {
+    answer = { shape: "text", text: ANSWER_MASK, lines: answer.lines, multiline: answer.multiline };
   }
   const field: PrintField = { kind: "field", id: model.id, type: model.type, base, label: model.label, required: model.accessibility.required, empty, answer };
   if (model.description) {

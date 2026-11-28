@@ -30,7 +30,17 @@ function displayValue(value: unknown): string {
   if (attachments.length > 0) {
     return attachments.map((attachment) => `${attachment.name} (${formatFileSize(attachment.size)})`).join(", ");
   }
-  return JSON.stringify(value);
+  if (typeof value === "bigint") {
+    return value.toString();
+  }
+  // A value no JSON holds (a cycle, a getter that throws, a function) reads as nothing rather
+  // than failing the whole read-only render; a BigInt inside one reads as its digits.
+  try {
+    const text = JSON.stringify(value, (_key, inner: unknown) => (typeof inner === "bigint" ? inner.toString() : inner));
+    return typeof text === "string" ? text : "";
+  } catch {
+    return "";
+  }
 }
 
 export async function buildReadonlyRenderModel(

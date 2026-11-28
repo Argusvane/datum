@@ -32,7 +32,7 @@ What happens to the values you give:
 - A token you leave out keeps Datum's value.
 - A token that falls back to another (`color-input-border` reads `color-border`) follows that one until you set it.
 - A name the list below does not contain is kept as a private token, for your own `css` option to read.
-- A value is dropped if it contains `{`, `}` or `;`, a closing tag, `@import`, or a `url()` that runs script or carries anything but an image.
+- A value is dropped if it contains `{`, `}` or `;`, a closing tag, `@import`, or a `url()` that runs script or carries anything but an image. So is one that would run on into the CSS after it: a `(` or `[` left open or closed out of turn, a quote left open, a comment's `/*` or `*/`, or a `\` at its end. A `media` or `container` condition is dropped, with its tokens, for the same reasons.
 
 ### Page CSS reaches only some of them
 

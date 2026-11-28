@@ -522,8 +522,9 @@ function indexOfClose(html: string, name: string, from: number): number {
  * could execute or navigate is dropped.
  *
  * Unbalanced input is normalized rather than trusted — an unclosed element is closed at the
- * end, and a stray closing tag is dropped — so the block cannot break out of its wrapper and
- * take the rest of the form's markup with it.
+ * end, a self-closed element that is not void (`<a/>`) is written open and closed at once, and a
+ * stray closing tag is dropped — so the block cannot break out of its wrapper and take the rest
+ * of the form's markup with it.
  */
 export function sanitizeStaticHtml(html: string): string {
   if (typeof html !== "string" || html.length === 0) {
@@ -603,10 +604,18 @@ export function sanitizeStaticHtml(html: string): string {
     }
 
     out += serializeTag(tag);
-    if (!tag.selfClosing && !SELF_CLOSING_TAGS.has(tag.name)) {
-      open.push(tag.name);
-      openCount.set(tag.name, (openCount.get(tag.name) ?? 0) + 1);
+    if (SELF_CLOSING_TAGS.has(tag.name)) {
+      continue;
     }
+    if (tag.selfClosing) {
+      // `<a/>` or `<b />` is no empty element to a browser: the slash is ignored and the element
+      // stays open over whatever follows. It is written as the empty element its author spelt, so
+      // it holds nothing and closes where it stands.
+      out += `</${tag.name}>`;
+      continue;
+    }
+    open.push(tag.name);
+    openCount.set(tag.name, (openCount.get(tag.name) ?? 0) + 1);
   }
 
   for (let index = open.length - 1; index >= 0; index -= 1) {

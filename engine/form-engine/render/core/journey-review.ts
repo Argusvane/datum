@@ -3,7 +3,7 @@ import type { FormTextResolver } from "../../core/localization/form-texts.js";
 import { addressOf, resolveText, type TextSources } from "../../core/localization/translations.js";
 import { journeyPageKind, journeyReviewSettings, PRESENTATION_REFERENCE_TYPE, PRESENTATION_VALUE_TYPE } from "../../core/schema/journey.js";
 import { baseTypeOf } from "../../registry/kinds.js";
-import { answerTextOf } from "../print/field-answer.js";
+import { ANSWER_MASK, answerTextOf, MASKED_ANSWER_TYPES } from "../print/field-answer.js";
 import type { RenderComponentModel } from "./component-model.js";
 import { rowHeadingOf } from "./error-wording.js";
 
@@ -132,7 +132,8 @@ function settingsOf(value: unknown): Record<string, unknown> {
  * The form components each step on the path lists for a Check answers page, in path order and
  * each step's own order: a listed id, the component a reference names, the form field an alias
  * fills. A component under the earliest step holding it, once; a Check answers or exit step lists
- * none. Their subtrees are not walked here: what they hold is in the same section.
+ * none. Their subtrees are not walked here: what they hold is in the same section, less a field
+ * an earlier step asks on its own (that step's answer, listed there).
  */
 export function journeyReviewListed(view: Pick<JourneyView, "path" | "journey" | "pageOf">): Array<{ pageId: string; ids: string[]; askedBy: Record<string, string> }> {
   const out: Array<{ pageId: string; ids: string[]; askedBy: Record<string, string> }> = [];
@@ -198,11 +199,11 @@ export function journeyReviewComponentIds(view: Pick<JourneyView, "path" | "jour
   return journeyReviewListed(view).flatMap((entry) => entry.ids.flatMap((id) => (entry.askedBy[id] !== undefined ? [id, entry.askedBy[id] as string] : [id])));
 }
 
-/** The base types whose answer is never shown back: a password reads as a mask. */
-const MASKED_TYPES: ReadonlySet<string> = new Set(["password"]);
+/** The base types whose answer is never shown back: a password reads as a mask (print reads the same set). */
+const MASKED_TYPES: ReadonlySet<string> = MASKED_ANSWER_TYPES;
 
 /** What a given masked answer shows in its place. */
-export const REVIEW_MASK = "••••••••";
+export const REVIEW_MASK = ANSWER_MASK;
 
 /** A link's name split where the binding draws it: `text` visible, the rest visually hidden. */
 export function reviewAction(pageId: string, text: string, name: string): ReviewAction {
@@ -394,7 +395,11 @@ export function buildReviewModel(input: ReviewModelInput): ReviewModel | undefin
       return;
     }
     if (model.node.children !== undefined) {
-      (formChildren.get(model.id) ?? []).forEach((child) => walk(child, pageId, out));
+      // A field belongs to the earliest step on the path that asks it: one an earlier step lists
+      // on its own is that step's answer, not this container's.
+      (formChildren.get(model.id) ?? [])
+        .filter((child) => !Object.prototype.hasOwnProperty.call(view.pageOf, child.id) || view.pageOf[child.id] === pageId)
+        .forEach((child) => walk(child, pageId, out));
       return;
     }
     const row = rowOf(model, pageId, false, asked);

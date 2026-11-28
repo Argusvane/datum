@@ -1,6 +1,6 @@
 import type { FormError } from "../../core/errors/form-error.js";
 import type { ComponentTree } from "../../core/tree/component-tree.js";
-import { resolveErrorNavigationTarget } from "../../core/errors/error-navigation.js";
+import { resolveErrorNavigationTarget, type ErrorNavigationTabSlot } from "../../core/errors/error-navigation.js";
 
 export interface ErrorAnnouncement {
   text: string;
@@ -19,7 +19,13 @@ export interface ErrorFocusTarget {
   targetPath?: string | undefined;
   /** The component that entry goes to: the grid for a cell error no row owns, else `componentId`. */
   targetComponentId?: string | undefined;
+  /**
+   * The tabs to open for the field to be seen, nearest first: a `tab` ancestor's id, and for a
+   * `tabs` container the id of the tab (its slot) the field sits in.
+   */
   activateTabIds: string[];
+  /** The `tabs` containers' tabs among {@link activateTabIds}, each with its container, nearest first. */
+  activateTabSlots?: ErrorNavigationTabSlot[] | undefined;
   activateStepIds: string[];
 }
 
@@ -55,6 +61,7 @@ export function resolveFirstErrorFocusTarget(
   return {
     componentId: first.componentId,
     activateTabIds: target.activateTabIds,
+    activateTabSlots: target.activateTabSlots,
     activateStepIds: target.activateStepIds
   };
 }
