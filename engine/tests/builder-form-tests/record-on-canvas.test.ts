@@ -52,6 +52,7 @@ type Panel = HTMLElement & {
   definition?: () => unknown;
   recordOnCanvas?: (listener: (event: unknown) => void) => () => void;
   assertSnapshot?: () => unknown;
+  assertReady?: () => boolean;
   testsEditorLoader?: () => Promise<never>;
   whenIdle(): Promise<void>;
   recording: boolean;
@@ -110,6 +111,7 @@ async function mount(options: { root?: ComponentNode; ready?: boolean } = {}): P
   panel.definition = () => ({ id: "f", version: "1", schemaVersion: "1", root: controller.snapshot(), tests: controller.tests() });
   panel.recordOnCanvas = (listener) => canvas.recordTry(listener as Parameters<DatumBuilderCanvasElement["recordTry"]>[0]);
   panel.assertSnapshot = () => canvas.assertSnapshot();
+  panel.assertReady = () => canvas.assertReady;
   panel.controller = controller;
   if (options.ready) {
     canvas.addEventListener("canvas-record-change", (event) => {

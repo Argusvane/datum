@@ -539,7 +539,7 @@ export class DatumBuilderTestsPanelElement extends BuilderPanelElement {
   /**
    * Whether {@link assertSnapshot} would give a form now (`canvas.assertReady`), lent by the shell
    * beside it: a paint asks whether to offer Assert this, and building a snapshot to find out is
-   * every field's state each time. Absent, the panel asks the snapshot as before.
+   * every field's state each time. Assert this is offered only while both are lent.
    */
   public set assertReady(value: (() => boolean) | undefined) {
     this.assertReadyValue = value;
@@ -2566,7 +2566,7 @@ export class DatumBuilderTestsPanelElement extends BuilderPanelElement {
       : "";
     // Assert this reads the tried form: offered while Try it is on (a recording turns it on).
     const ready = this.assertReadyValue;
-    const tried = this.assertSnapshotValue !== undefined && (recording || (ready ? ready() : this.assertSnapshotValue() !== undefined));
+    const tried = this.assertSnapshotValue !== undefined && ready !== undefined && (recording || ready());
     const assert = tried
       ? `<button type="button" class="btn small" data-tests-assert-open aria-haspopup="dialog" aria-expanded="${this.assertState !== undefined}" aria-controls="tests-assert-pop">${esc(this.text("tests.panel.assert"))} <span aria-hidden="true">▾</span></button>`
       : "";

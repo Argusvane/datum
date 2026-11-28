@@ -832,6 +832,7 @@ function fakeCanvas(initial?: TestsAssertSnapshot) {
       };
     },
     snapshot: (): TestsAssertSnapshot | undefined => canvas.current,
+    ready: (): boolean => canvas.current !== undefined,
     emit(event: TestsRecordEvent): void {
       canvas.listener?.(event);
     }
@@ -861,6 +862,7 @@ function recordingPanel(source = 'test "a"\n  set age = 30\n\n', initial?: Tests
   const mounted = mount({ scenarios: [{ id: "a", source }] }, undefined, form);
   mounted.el.recordOnCanvas = canvas.record;
   mounted.el.assertSnapshot = canvas.snapshot;
+  mounted.el.assertReady = canvas.ready;
   click(mounted.shadow, '[data-tests-entry="a"]');
   return { ...mounted, canvas };
 }
@@ -979,6 +981,7 @@ describe("Record", () => {
     const canvas = fakeCanvas();
     el.recordOnCanvas = canvas.record;
     el.assertSnapshot = canvas.snapshot;
+    el.assertReady = canvas.ready;
     click(shadow, '[data-tests-entry="a"]');
     click(shadow, "[data-tests-record]");
     expect(el.recording).toBe(true);
@@ -1064,6 +1067,7 @@ describe("Record", () => {
     const canvas = fakeCanvas();
     el.recordOnCanvas = canvas.record;
     el.assertSnapshot = canvas.snapshot;
+    el.assertReady = canvas.ready;
     click(shadow, "[data-tests-record-new]");
     expect(el.recording).toBe(true);
     expect(q(shadow, "[data-tests-name]").textContent).toBe("Recorded 2");
