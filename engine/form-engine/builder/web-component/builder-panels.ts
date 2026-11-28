@@ -1953,9 +1953,10 @@ export class DatumBuilderCanvasElement extends BuilderPanelElement implements Te
     window.removeEventListener("mousemove", this.onSheetDrag);
     window.removeEventListener("mouseup", this.onSheetDragEnd);
     // Committed only if the pointer actually moved: a stray mousedown on the grip must not
-    // freeze the sheet at whatever width it happened to have.
+    // freeze the sheet at whatever width it happened to have. The width goes to the controller
+    // whose tree the sheet draws: the tried form's while it is tried over a mode's tree.
     if (drag?.lastW !== undefined) {
-      this.ctrl?.setPreviewWidth(drag.lastW);
+      this.sheetController()?.setPreviewWidth(drag.lastW);
     }
   };
 
@@ -4637,7 +4638,7 @@ export class DatumBuilderCanvasElement extends BuilderPanelElement implements Te
       "touchstart",
       (event) => {
         const touch = event as TouchEvent;
-        if (touch.touches.length === 2 && this.hasAttribute("data-phone") && this.ctrl?.sheetWidth() !== undefined) {
+        if (touch.touches.length === 2 && this.hasAttribute("data-phone") && this.sheetController()?.sheetWidth() !== undefined) {
           pinch = { distance: spread(touch.touches), zoom: this.zoomValue };
         }
       },
@@ -4675,8 +4676,8 @@ export class DatumBuilderCanvasElement extends BuilderPanelElement implements Te
       }
       const surface = this.root.querySelector<HTMLElement>(".canvas-surface");
       // The grips are hidden while the tree fixes the width; a stray hit on one must not
-      // start a drag the sheet would not honour.
-      if (!surface || this.ctrl?.sheetWidth() !== undefined) {
+      // start a drag the sheet would not honour. The tree is the sheet's: the tried form's over a mode's.
+      if (!surface || this.sheetController()?.sheetWidth() !== undefined) {
         return;
       }
       this.sheetDrag = {
