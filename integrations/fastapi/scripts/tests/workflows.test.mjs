@@ -120,6 +120,24 @@ test("release-fastapi.yml: the security suite's program mode runs with --gate re
   assert.ok(suite < build, "the suite runs before uv build");
 });
 
+test("release-fastapi.yml: the security suite also runs on the server's qjs-wasi.wasm, held to runtime.json, before uv build", () => {
+  const steps = stepsOf(read(".github/workflows/release-fastapi.yml"), "build");
+  const names = steps.map((step) => step.name).join(", ");
+  const suites = steps.filter((step) => step.run.includes("conformance-suite/dist/cli.mjs") && /--gate release\b/.test(step.run));
+  const server = steps.findIndex((step) => step.run.includes("conformance-suite/dist/cli.mjs") && step.run.includes("--qjs-wasm"));
+  const page = steps.findIndex((step) => step.run.includes("conformance-suite/dist/cli.mjs") && !step.run.includes("--qjs-wasm"));
+  const assets = steps.findIndex((step) => step.run.includes("fastapi:assets"));
+  const build = steps.findIndex((step) => step.run.includes("uv build"));
+  assert.equal(suites.length, 2, names);
+  assert.ok(page !== -1 && server !== -1, names);
+  // The module is fetched and checked by the asset build; the suite runs it before anything is built for upload.
+  assert.ok(assets < server && server < build, names);
+  const run = steps[server].run;
+  assert.match(run, /--qjs-sha256 "\$sha256"/);
+  assert.match(run, /datum_qjs_wasm\/runtime\.json/);
+  assert.match(run, /--qjs-wasm "\$\(dirname "\$pin"\)\/qjs-wasi\.wasm"/);
+});
+
 test("release-fastapi.yml: the one umbrella tag v<version> triggers it and names the version", () => {
   const workflow = read(".github/workflows/release-fastapi.yml");
   assert.match(workflow, /tags: \["v\*"\]/);

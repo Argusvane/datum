@@ -64,7 +64,8 @@ Endpoint mode needs one fixture form installed on the server. `datum-security-ch
 
 | Flag | Effect |
 |---|---|
-| `--program <file>` | Check this sandbox program |
+| `--program <file>` | Check this sandbox program. It runs on quickjs-emscripten, the engine of the page and the Node.js hosts |
+| `--qjs-wasm <file>` `--qjs-sha256 <hex>` | Run the program on `qjs-wasi.wasm` instead, the engine of the Spring Boot and FastAPI hosts, as they run it: a fresh instance per call under node:wasi, behind the same run script and answer frame. The file is refused unless it has this SHA-256. The budget is the servers' default, 5 s, where a vector names none |
 | `--manifest <file>` | Check the program against its release `manifest.json` |
 | `--abi-floor <x.y.z>` | Require a later sandbox interface version within the suite's major (4.0.0 is the floor) |
 | `--budget-profile node\|browser` | The nominal evaluation budget the time bounds are multiples of: `node` (the default) or `browser` |

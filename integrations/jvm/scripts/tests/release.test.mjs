@@ -7,7 +7,7 @@ import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { changelogProblems, ciProblems, realRunProblems, isDatumRemote, originRemoteProblems, releaseGuardProblems, checkBundles, newestBundle, checkBundleEntries, checkNoTestsJar, checkTestSupportModules, publishedModules, readmeText, releaseCommitProblems } from "../release.mjs";
+import { changelogProblems, ciProblems, qjsWasmFile, realRunProblems, securitySuiteArgs, isDatumRemote, originRemoteProblems, releaseGuardProblems, checkBundles, newestBundle, checkBundleEntries, checkNoTestsJar, checkTestSupportModules, publishedModules, readmeText, releaseCommitProblems } from "../release.mjs";
 
 const source = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "release.mjs"), "utf8");
 
@@ -299,6 +299,26 @@ test("a real run takes a plain x.y.z and refuses --allow-stale and --skip-securi
   const body = source.slice(source.indexOf("const main = () =>"));
   const gate = body.indexOf("realRunProblems({ version, allowStale");
   assert.ok(gate > -1 && body.lastIndexOf("if (!dryRun && !checkOnly) {", gate) > -1 && gate < body.indexOf('run("npm", ["run", "datum:build"])'));
+});
+
+test("the security suite runs on the page's engine, then on the qjs-wasi.wasm the build compiled, held to the pom's pin", () => {
+  const paths = { cli: "/s/cli.mjs", program: "/p/program.js", manifest: "/p/manifest.json" };
+  assert.deepEqual(securitySuiteArgs(paths), ["/s/cli.mjs", "--program", "/p/program.js", "--manifest", "/p/manifest.json", "--gate", "release"]);
+  const server = securitySuiteArgs({ ...paths, wasm: "/q/qjs-wasi.wasm", sha256: "a".repeat(64) });
+  assert.deepEqual(server.slice(-4), ["--qjs-wasm", "/q/qjs-wasi.wasm", "--qjs-sha256", "a".repeat(64)]);
+  assert.ok(server.includes("--gate") && server[server.indexOf("--gate") + 1] === "release");
+  // The build's own file, or the one an air-gapped build names, resolved against the module as Maven resolves it.
+  assert.equal(qjsWasmFile([], "/r/jvm"), "/r/jvm/libs/datum-sandbox-endive/target/qjs/qjs-wasi.wasm");
+  assert.equal(qjsWasmFile(["-Dfoo=1", "-Dqjs.wasm.file=/air/qjs-wasi.wasm"], "/r/jvm"), "/air/qjs-wasi.wasm");
+  assert.equal(qjsWasmFile(["-Dqjs.wasm.file=wasm/qjs.wasm"], "/r/jvm"), "/r/jvm/libs/datum-sandbox-endive/wasm/qjs.wasm");
+  // The second run follows the Maven verify that compiles the module and precedes the post-checks and any upload; the pin is the pom's.
+  const body = source.slice(source.indexOf("const main = () =>"));
+  const verify = body.indexOf('"clean", "verify"]);');
+  const serverRun = body.indexOf("securitySuiteArgs({ ...suiteProgram, wasm: qjsWasmFile(mavenArgs), sha256: pin.sha256 })");
+  const postChecks = body.indexOf("const modules = publishedModules();");
+  assert.ok(verify > -1 && verify < serverRun && serverRun < postChecks, "the server-engine run sits between the verify and the post-checks");
+  assert.match(body.slice(verify, serverRun), /readJvmPin\(join\(jvm, "libs", "datum-sandbox-endive", "pom\.xml"\)\)/);
+  assert.match(body.slice(serverRun, postChecks), /fail\(`release: the security suite did not pass the sandbox program on qjs-wasi\.wasm/);
 });
 
 test("the deploy re-checks the tree and the tag right before Maven deploys", () => {

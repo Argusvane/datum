@@ -1,12 +1,12 @@
 # Release workflow of the npm packages.
 #
-# NOT EXERCISED YET. The publish job names a GitHub environment, "npm", and reads a secret, NPM_TOKEN: before the first tag the
-# owner creates the environment in the repository settings (Settings, Environments) with a required reviewer, and stores an
-# automation token that can publish the @argusvane scope in it. The publish jobs wait for that
-# reviewer and nothing else: GitHub creates an environment that does not exist on its first use with no protection rules, so
-# a pushed tag publishes unapproved until the environment is configured. The publish jobs also run only in argusvane/datum, so a fork or a
-# mirror never publishes. The build job runs for every tag. npm "trusted publishing" would replace the token once the packages
-# exist; provenance needs no token.
+# NOT EXERCISED YET. The publish job names a GitHub environment, "npm", and publishes with npm trusted publishing (the job's
+# OIDC token; no npm secret): before the next tag the owner creates the environment in the repository settings (Settings,
+# Environments) with a required reviewer, and on npmjs.com adds a trusted publisher to each published package (GitHub
+# Actions, argusvane/datum, workflow release-npm.yml, environment npm), then deletes the NPM_TOKEN secret. The publish jobs
+# wait for that reviewer and nothing else: GitHub creates an environment that does not exist on its first use
+# with no protection rules, so a pushed tag publishes unapproved until the environment is configured. The publish jobs also
+# run only in argusvane/datum, so a fork or a mirror never publishes. The build job runs for every tag.
 #
 # A tag v<version> (the one tag of a release, shared with the other hosts) runs: build (the tagged commit must be on main, every
 # published package carries the tag's version, the web components and the two command packages are built, the source maps are
@@ -84,10 +84,13 @@ jobs:
           echo "::error::No ci.yml run on $GITHUB_SHA concluded success with ci-ok passing; push the commit to main, wait for CI, then tag it."
           exit 1
 
+      # No dependency cache in a release job: a cache is written by runs on main, so a compromised dependency there could
+      # plant files this build would pack and publish. npm ci fetches every dependency fresh, checked against the lockfiles.
       - name: Setup Node
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
+          package-manager-cache: false
 
       # The tag names the version: every published package must already carry it and the canonical repository URL, and
       # the packages whose code the bundles carry must still be private.
@@ -162,7 +165,7 @@ jobs:
     environment: npm
     permissions:
       contents: read
-      # The one place the OIDC token is available: npm signs the provenance statement with it.
+      # The one place the OIDC token is available: npm publishes with it (trusted publishing) and signs the provenance statement.
       id-token: write
     steps:
       - name: Setup Node
@@ -170,6 +173,24 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      # Trusted publishing needs npm 11.5.1 or later on Node 22.14.0 or later; Node 22 bundles npm 10, so the CLI is
+      # pinned here, and the step fails when either is older than that.
+      - name: Install the npm CLI for trusted publishing
+        run: |
+          set -euo pipefail
+          npm install --global npm@11.21.1
+          node -e '
+            const at = (text) => text.replace(/^v/, "").split(".").map(Number);
+            const least = (have, want) => { for (let i = 0; i < 3; i += 1) { if (have[i] !== want[i]) return have[i] > want[i]; } return true; };
+            const npm = require("child_process").execFileSync("npm", ["--version"], { encoding: "utf8" }).trim();
+            if (!least(at(process.version), [22, 14, 0]) || !least(at(npm), [11, 5, 1])) {
+              console.error(`::error::trusted publishing needs Node 22.14.0 and npm 11.5.1 or later (Node ${process.version}, npm ${npm})`);
+              process.exit(1);
+            }
+            console.log(`Node ${process.version}, npm ${npm}`);
+          '
 
       - name: Download the tarballs
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -182,9 +203,9 @@ jobs:
       # after a partial failure publishes what is missing and never overwrites; a name and version held by anyone else, or
       # by another build of this one, answers a different digest and fails the job. An empty answer means the version is not
       # published: a missing version can exit 0 with no output, so the answer is compared, not the exit status.
+      # No token: npm publish trades this job's OIDC token for a short-lived one (trusted publishing), which npmjs.com
+      # grants only to release-npm.yml of argusvane/datum in the npm environment, and signs the provenance with it.
       - name: Publish with provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         working-directory: npm
         run: |
           set -euo pipefail

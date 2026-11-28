@@ -5,6 +5,8 @@ import { QuickJsExecutionError, QuickJsWasmHostAdapter, loadQuickJs } from "@arg
 
 import type { Json, Observation, ObservedError, ObservedLog, RefusalKind } from "../../observation.js";
 import type { PluginSource } from "../../vectors/schema.js";
+import type { QjsWasiModule } from "./qjs-wasi.js";
+import { QjsWasiHost } from "./qjs-wasi-host.js";
 
 export interface SessionOptions {
   /** The program's source text; the suite never builds one itself. */
@@ -23,13 +25,21 @@ export interface SessionOptions {
   host?: "sync" | "worker";
   /** False runs the synchronous adapter without its freeze of the kernel and the intrinsics (a negative control for ISO-04; hosts freeze). Default true. */
   freezeIntrinsics?: boolean;
+  /**
+   * The server hosts' engine (`qjs-wasi.wasm`, checked against its pin): every call is a guest run of its own, as on
+   * the FastAPI and Spring Boot hosts, and `host` and `recycleHeapBytes` do not apply. Left out: quickjs-emscripten,
+   * the engine of the browser and Node hosts.
+   */
+  engine?: QjsWasiModule;
 }
 
-/** What both hosts give a session: a run and an inspect over text, the worker's asynchronously. */
+/** What every host gives a session: a run and an inspect over text, the worker's and the guest's asynchronously. */
 interface HostInstance {
   run(text: string): string | Promise<string>;
   inspect?(text: string): string | Promise<string>;
   dispose?(): void | Promise<void>;
+  /** The evaluation time of the last call, when the host measures it apart from its own start (the qjs-wasi guest). */
+  readonly lastEvalMs?: number | undefined;
 }
 
 interface WorkerModule {
@@ -85,6 +95,9 @@ export class ProgramSession {
   }
 
   public static async open(options: SessionOptions): Promise<ProgramSession> {
+    if (options.engine !== undefined) {
+      return ProgramSession.openQjsWasi(options, options.engine);
+    }
     if (options.host === "worker") {
       return ProgramSession.openWorker(options);
     }
@@ -133,6 +146,34 @@ export class ProgramSession {
     }
   }
 
+  /**
+   * The server hosts' engine: one guest per call. Building the host proves the program loads and every module registers,
+   * so a module that is not one stops the sandbox from starting here too.
+   */
+  private static async openQjsWasi(options: SessionOptions, engine: QjsWasiModule): Promise<ProgramSession> {
+    try {
+      const host = await QjsWasiHost.create({
+        module: engine,
+        program: options.program,
+        plugins: options.plugins ?? [],
+        ...(options.maxEvalMs !== undefined ? { maxEvalMs: options.maxEvalMs } : {}),
+        ...(options.memoryLimitBytes !== undefined ? { memoryLimitBytes: options.memoryLimitBytes } : {}),
+        ...(options.freezeIntrinsics === false ? { freezeIntrinsics: false } : {})
+      });
+      return new ProgramSession(host, new JsonWasmAbi());
+    } catch (error) {
+      if (error instanceof QuickJsExecutionError) {
+        throw new StartupError(error.code, error.message);
+      }
+      throw new StartupError("runtime_error", error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  /** A call's time: the evaluation alone when the host measures it, else the whole call. */
+  private elapsedSince(started: number): number {
+    return this.instance.lastEvalMs ?? performance.now() - started;
+  }
+
   /** Serializes a context the way every host does (stable keys, extras dropped). */
   public serialize(context: Record<string, unknown>): string {
     return this.abi.serializeContext(context as never, WasmValidationHost.STRICT_POLICY);
@@ -147,9 +188,9 @@ export class ProgramSession {
       if (observation.kind === "verdict") {
         observation.outcome = { length: outcome.length, sha256: createHash("sha256").update(outcome, "utf8").digest("hex") };
       }
-      return { observation, elapsedMs: performance.now() - started, text: outcome };
+      return { observation, elapsedMs: this.elapsedSince(started), text: outcome };
     } catch (error) {
-      return { observation: refusalFrom(error), elapsedMs: performance.now() - started };
+      return { observation: refusalFrom(error), elapsedMs: this.elapsedSince(started) };
     }
   }
 
@@ -158,18 +199,18 @@ export class ProgramSession {
     const started = performance.now();
     try {
       if (this.instance.inspect === undefined) {
-        return { observation: { kind: "refusal", refusal: "other", code: "no_inspect", detail: "the program has no inspect entry point" }, elapsedMs: performance.now() - started };
+        return { observation: { kind: "refusal", refusal: "other", code: "no_inspect", detail: "the program has no inspect entry point" }, elapsedMs: this.elapsedSince(started) };
       }
       const answer = await this.instance.inspect(text);
       let json: Json;
       try {
         json = JSON.parse(answer) as Json;
       } catch {
-        return { observation: { kind: "refusal", refusal: "malformed_response", detail: "the inspect answer is not JSON" }, elapsedMs: performance.now() - started, text: answer };
+        return { observation: { kind: "refusal", refusal: "malformed_response", detail: "the inspect answer is not JSON" }, elapsedMs: this.elapsedSince(started), text: answer };
       }
-      return { observation: { kind: "answer", json }, elapsedMs: performance.now() - started, text: answer };
+      return { observation: { kind: "answer", json }, elapsedMs: this.elapsedSince(started), text: answer };
     } catch (error) {
-      return { observation: refusalFrom(error), elapsedMs: performance.now() - started };
+      return { observation: refusalFrom(error), elapsedMs: this.elapsedSince(started) };
     }
   }
 

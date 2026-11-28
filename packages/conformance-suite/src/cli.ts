@@ -9,6 +9,7 @@ import { describe as describeExpectation } from "./predicates.js";
 import { renderJson } from "./report/json.js";
 import { renderMarkdown } from "./report/markdown.js";
 import { loadProgram, ProgramLoadError, type LoadedProgram } from "./runners/program/load-program.js";
+import { loadQjsWasiModule, QjsWasiLoadError } from "./runners/program/qjs-wasi.js";
 import { readManifestAbi, runSuite } from "./run.js";
 import { loadPdfProgramFile, PdfProgramLoadError, runPdfVectors, withPdf } from "./runners/pdf/index.js";
 import type { Report } from "./report/model.js";
@@ -47,7 +48,7 @@ export async function runCli(argv: readonly string[], io: CliIo = processIo, hoo
   try {
     return await dispatch(argv, io, hooks);
   } catch (error) {
-    if (error instanceof UsageError || error instanceof ProgramLoadError || error instanceof PdfProgramLoadError) {
+    if (error instanceof UsageError || error instanceof ProgramLoadError || error instanceof QjsWasiLoadError || error instanceof PdfProgramLoadError) {
       io.stderr(`datum-security-check: ${error.message}\n`);
       return EXIT.usage;
     }
@@ -188,6 +189,13 @@ async function run(options: CliOptions, io: CliIo, hooks: CliHooks): Promise<Exi
   } else if (options.parity || options.all) {
     throw new UsageError("--parity and --all compare against a program: give --program <file> as well");
   }
+  if ((options.qjsWasm === undefined) !== (options.qjsSha256 === undefined)) {
+    throw new UsageError("--qjs-wasm and --qjs-sha256 go together: the server hosts' engine runs only once it matches its pin");
+  }
+  if (options.qjsWasm !== undefined && program === undefined) {
+    throw new UsageError("--qjs-wasm runs a program on the server hosts' engine: give --program <file> as well");
+  }
+  const engine = options.qjsWasm !== undefined && options.qjsSha256 !== undefined ? loadQjsWasiModule(options.qjsWasm, { sha256: options.qjsSha256 }) : undefined;
   const manifestAbi = options.manifest !== undefined ? manifestAbiOf(options.manifest) : undefined;
   const golden = options.golden !== undefined ? goldenFrom(options.golden) : undefined;
   const plugins = options.plugins.map(pluginFrom);
@@ -205,6 +213,7 @@ async function run(options: CliOptions, io: CliIo, hooks: CliHooks): Promise<Exi
     failOn: options.failOn,
     heavy: options.heavy,
     modes: options.all ? ["program", "parity"] : options.parity ? ["parity"] : ["program"],
+    ...(engine !== undefined ? { engine } : {}),
     argv: options.argv
   });
   if (endpointConfig !== undefined) {

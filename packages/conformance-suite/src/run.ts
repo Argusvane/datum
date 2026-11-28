@@ -11,6 +11,7 @@ import type { Divergence } from "./runners/parity/divergences.js";
 import { runParityVectors } from "./runners/parity/parity-runner.js";
 import { ProgramRunner, type BudgetProfile } from "./runners/program/program-runner.js";
 import { programFromText, type LoadedProgram } from "./runners/program/load-program.js";
+import type { QjsWasiModule } from "./runners/program/qjs-wasi.js";
 import { SUITE_NAME, SUITE_VERSION, VECTOR_SET_ID, DEFAULT_ABI_FLOOR } from "./version.js";
 import { VECTORS, matchesSelector } from "./vectors/index.js";
 import type { PluginSource, Vector } from "./vectors/schema.js";
@@ -41,6 +42,12 @@ export interface RunSuiteOptions {
   vectors?: readonly Vector[];
   /** Called as each vector finishes. */
   onResult?: (result: VectorResult) => void;
+  /**
+   * The server hosts' engine: `qjs-wasi.wasm` (quickjs-ng), checked against its pin ({@link loadQjsWasiModule}), on which
+   * the program and parity modes run the program instead of quickjs-emscripten (Bellard QuickJS, the engine of the
+   * browser and Node hosts).
+   */
+  engine?: QjsWasiModule;
 }
 
 /** Which vectors a `--only` / `--skip` pair selects, in catalogue order. */
@@ -72,6 +79,7 @@ export async function runSuite(options: RunSuiteOptions): Promise<Report> {
       ...(options.plugins !== undefined ? { plugins: options.plugins } : {}),
       heavy: options.heavy === true || gate === "full",
       ...(options.freezeIntrinsics === false ? { freezeIntrinsics: false } : {}),
+      ...(options.engine !== undefined ? { engine: options.engine } : {}),
       gate
     },
     options.golden !== undefined ? { golden: options.golden, file: "custom" } : chooseGolden(undefined)
@@ -124,7 +132,8 @@ export async function runSuite(options: RunSuiteOptions): Promise<Report> {
       heavy: options.heavy === true || gate === "full",
       ...(options.only !== undefined ? { only: options.only } : {}),
       ...(options.skip !== undefined ? { skip: options.skip } : {}),
-      ...(options.onResult !== undefined ? { onResult: options.onResult } : {})
+      ...(options.onResult !== undefined ? { onResult: options.onResult } : {}),
+      ...(options.engine !== undefined ? { engine: options.engine } : {})
     });
     results.push(...parity.results);
     parityReport = parity.report;
@@ -148,7 +157,7 @@ export async function runSuite(options: RunSuiteOptions): Promise<Report> {
       gate,
       argv: redactArgv(options.argv ?? [])
     },
-    environment: environment(),
+    environment: environment(options.engine),
     program: programReport,
     ...(parityReport !== undefined ? { parity: parityReport } : {}),
     summary: summarize(results),
@@ -158,15 +167,18 @@ export async function runSuite(options: RunSuiteOptions): Promise<Report> {
   };
 }
 
-/** The environment block of a report (node, platform, engine ABI, commit). */
-export function environment(): Report["environment"] {
+/** The environment block of a report (node, platform, engine ABI, commit, and the JavaScript engine the program ran on). */
+export function environment(qjsWasi?: QjsWasiModule): Report["environment"] {
   return {
     node: process.versions.node,
     platform: process.platform,
     arch: process.arch,
     ci: process.env["CI"] !== undefined && process.env["CI"] !== "" && process.env["CI"] !== "false",
     engine: { abi: WASM_ABI_VERSION, commit: gitCommit() },
-    quickjs: { package: "quickjs-emscripten-core@0.32.0", variant: "singlefile-mjs-release-sync" }
+    quickjs:
+      qjsWasi !== undefined
+        ? { package: `qjs-wasi.wasm (quickjs-ng) sha256:${qjsWasi.sha256}`, variant: "node:wasi, one guest per call" }
+        : { package: "quickjs-emscripten-core@0.32.0", variant: "singlefile-mjs-release-sync" }
   };
 }
 
