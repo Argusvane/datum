@@ -50,7 +50,8 @@ Continue, and hands a `StepsState` to the binding's `steps` adapter, falling bac
   - Continue (`data-step-next`)
 - The last step has no Continue, the form's own submit button ending the journey.
 - While a move is in flight the form is busy and both buttons are `aria-disabled`, never `disabled`.
-- A review (`readonly` mode) or a print sets `StepsState.flat`: every step drawn headed, in order,
+- A review (`readonly` mode) or a print (the page's own, from the window's `beforeprint` to its
+  `afterprint`) sets `StepsState.flat`: every step drawn headed, in order,
   with no indicator and no buttons; a `tabs` container is drawn the same way there, every tab
   stacked under its name.
 
@@ -77,8 +78,11 @@ navigates to the next through `runtime.navigate`, whose hooks and gating rules m
   zones and the preview is never held by a required field.
 - A `steps` container in a data grid's row switches in place too, each row its own: the runtime
   has one current step for the form, so a row's container keeps its step, its completed steps and
-  its heading ids by its instance key. Its Continue checks the step and is held only by that
-  row's errors (the scoped check still lists the step's errors in the other rows).
+  its heading ids by its instance key. Its Continue checks the step in that row alone
+  (`validate({ scope, entry })`, `entry` the row's value path such as `items[1]`): only that
+  row's answers in the step are checked, only the stored errors there are replaced, and the
+  errors already shown elsewhere, the same step's in the other rows among them, stay as they
+  were. It is held only by that row's errors.
 
 **4. Wording through `texts`**: `stepOf` ("Step {{n}} of {{total}}"), `stepTagSeparator`,
 `back`, `continue`, `stepCompleted` and `stepNotCompleted` (read beside a step's name). English is

@@ -130,6 +130,7 @@ export const QUEBEC_MESSAGES: LanguagePackTable = {
     number: "Saisissez un nombre.",
     date: "Saisissez une date valide.",
     dateIncomplete: "Saisissez une date complète.",
+    "date.year": "Saisissez l'année en quatre chiffres.",
     "number.min": "Saisissez un nombre égal ou supérieur à {min}.",
     "number.max": "Saisissez un nombre égal ou inférieur à {max}.",
     "date.min": "Saisissez une date égale ou postérieure au {min}.",

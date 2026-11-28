@@ -674,6 +674,8 @@ export class DatumFormRendererElement extends HTMLElementBase {
       features: [this.quietFeature(), ...features, ...(journeyPage ? [journeyPage] : []), this.hostFeature(journeyPage)],
       host: this,
       journeyKit: kit,
+      // A features list without print leaves the page's own print to draw the form as on screen.
+      browserPrint: this.allows("print"),
       // Read at every build or draw: a setter asks for one (`request`, `redraw`) rather than mounting again.
       get messages() {
         return element.messagesValue;

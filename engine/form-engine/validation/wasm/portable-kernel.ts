@@ -6821,6 +6821,7 @@ export function kernelFormTestOpMessagesEn(): Record<string, string> {
     number: "Enter a number",
     date: "Enter a real date",
     dateIncomplete: "Enter a complete date",
+    "date.year": "Enter the year in four digits",
     "number.min": "Enter a number of {min} or more",
     "number.max": "Enter a number of {max} or less",
     "date.min": "Enter a date on or after {min}",
@@ -6849,7 +6850,8 @@ export function kernelFormTestOpMessagesEn(): Record<string, string> {
 export function kernelFormTestOpEngineCodes(): string[] {
   return [
     "required", "minLength", "maxLength", "pattern", "fileType", "maxFileSize", "fileSize", "file.sizeMismatch", "file", "fileCount",
-    "text", "number", "number.min", "number.max", "date", "date.min", "date.max", "dateIncomplete", "rule", "rows.min", "rows.max"
+    "text", "number", "number.min", "number.max", "date", "date.min", "date.max", "dateIncomplete", "date.year", "rule", "rows.min",
+    "rows.max"
   ];
 }
 

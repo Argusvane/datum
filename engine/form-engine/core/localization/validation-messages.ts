@@ -56,6 +56,7 @@ export const ENGINE_VALIDATION_CODES: ReadonlyArray<ValidationCodeDescription> =
   { code: "date.min", label: "A date is before the earliest allowed", parameters: ["min"] },
   { code: "date.max", label: "A date is after the latest allowed", parameters: ["max"] },
   { code: "dateIncomplete", label: "A date is missing a part", parameters: ["missing", "missingKey"] },
+  { code: "date.year", label: "A date's year is not four digits", parameters: [] },
   // The field's Validate rule (`rules.validWhen`) does not hold.
   { code: "rule", label: "The answer fails the field's Validate rule", parameters: [] },
   // A data grid holds fewer rows than its minimum, or more than its maximum.
@@ -77,8 +78,9 @@ export const ENGINE_VALIDATION_CODES: ReadonlyArray<ValidationCodeDescription> =
  *   declared limits, which no kernel words (a pattern's author-written message travels as the
  *   error's `message` and outranks this one).
  * - `number`: a number's answer is not a number, or its box holds text the browser cannot read.
- * - `date`: a date's answer is not a real calendar date.
+ * - `date`: a date's answer is not a real calendar date, or its box holds a date the browser cannot read.
  * - `dateIncomplete`: a date was typed in part (`{missing}` names the parts left, "month and year").
+ * - `date.year`: a date's year was typed in fewer than four digits ("24").
  * - `number.min`, `number.max`: a number outside the field's declared bounds (`{min}` / `{max}` is the bound).
  * - `date.min`, `date.max`: a date outside the field's declared bounds (`{min}` / `{max}` is the bound).
  * - `text`: a text or text area was sent an answer that is not text.
@@ -113,6 +115,7 @@ export const DEFAULT_VALIDATION_MESSAGES: Readonly<Record<string, string>> = {
   number: "Enter a number",
   date: "Enter a real date",
   dateIncomplete: "Enter a complete date",
+  "date.year": "Enter the year in four digits",
   "number.min": "Enter a number of {min} or more",
   "number.max": "Enter a number of {max} or less",
   "date.min": "Enter a date on or after {min}",

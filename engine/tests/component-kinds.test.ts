@@ -154,7 +154,7 @@ describe("a kinds-mapped date in the browser runtime", () => {
     const stage = createFieldConstraintsStage(ROOT, { kinds: KINDS });
     const result = await stage.validate({ formId: "f", values: { born: "2026-13-01" }, locale: "en" });
     expect(codes(result.errors)).toEqual(["born:date"]);
-    expect(validationCodesRaisedBy(ROOT, KINDS)).toEqual(["required", "number", "date", "date.min", "date.max", "dateIncomplete"]);
+    expect(validationCodesRaisedBy(ROOT, KINDS)).toEqual(["required", "number", "date", "date.min", "date.max", "dateIncomplete", "date.year"]);
     expect(validationCodesRaisedBy(ROOT)).toEqual(["required"]);
   });
 });

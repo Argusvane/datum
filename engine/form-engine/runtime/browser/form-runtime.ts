@@ -281,6 +281,11 @@ function entryKeyOf(key: string, collectionPath: string): { index: number; field
   return { index: Number(digits), field: key.slice(close + 2) };
 }
 
+/** Whether the value path `path` is an answer of the collection entry at `entryPath` (`items[1]`, not `items[10]`). */
+function inEntry(path: string, entryPath: string): boolean {
+  return path === entryPath || path.startsWith(`${entryPath}.`) || path.startsWith(`${entryPath}[`);
+}
+
 /**
  * Whether a host-supplied catalog is a record at all. The type says it is when present, but a
  * JavaScript embedder can hand `null` or a list; that is no catalog (the map words the text),
@@ -784,6 +789,11 @@ interface PathCheck {
 interface RunValidationOptions {
   keep?: (componentId: string) => boolean;
   within?: ReadonlySet<string>;
+  /**
+   * One collection entry's answers (`items[1]`): only the errors on its value paths are found,
+   * and they replace only the stored ones there that `keep` accepts.
+   */
+  entry?: string;
   idPrefix?: string;
   foldCheck?: boolean;
   stale?: () => boolean;
@@ -932,6 +942,12 @@ export class FormRuntime {
    * them as they are committed even before an error shows.
    */
   private readonly attemptedComponents = new Set<string>();
+  /**
+   * The collection entries a Continue scoped to one entry has checked (`validate({ entry })`),
+   * each with the components of its scope: their answers there count as ones the person tried
+   * to go on from, and the same components' answers in the other entries do not.
+   */
+  private attemptedEntries: Array<{ entry: string; components?: ReadonlySet<string> }> = [];
   /**
    * After a journey draft is restored, the components of the pages it had already continued from
    * (`completedPagesScope`): attempted too, as if those Continues had been pressed in this session.
@@ -2555,10 +2571,11 @@ export class FormRuntime {
 
   /**
    * Records what the control at the value path `path` knows that its stored answer cannot say
-   * — a date typed in part (`incomplete`, with the parts still empty) or a number
-   * box holding text the browser could not read (`badInput`) — or forgets it (`undefined`).
-   * The renderer calls it right after it writes the empty answer such a control stores. The
-   * next validation raises `dateIncomplete` or `number` for that empty answer in place of
+   * — a date typed in part (`incomplete`, with the parts still empty), a date whose year was
+   * typed in fewer than four digits (`shortYear`), or a number or date box holding text the
+   * browser could not read (`badInput`) — or forgets it (`undefined`). The renderer calls it
+   * right after it writes the empty answer such a control stores. The next validation raises
+   * `dateIncomplete`, `date.year`, `number` or `date` for that empty answer in place of
    * `required`. Client-only: never in a draft, the envelope or a server check. Forgotten when
    * any answer is written to the path, empty included (so a host's write replaces what the
    * control said), when a draft is loaded, and when a journey is left or another started.
@@ -2566,7 +2583,7 @@ export class FormRuntime {
    */
   public setInputState(path: string, state: FieldInputState | undefined): void {
     const key = stringifyComponentPath(parseComponentPath(path));
-    if (state !== undefined && (state.badInput === true || state.incomplete !== undefined)) {
+    if (state !== undefined && (state.badInput === true || state.shortYear === true || state.incomplete !== undefined)) {
       this.inputStates.set(key, state);
     } else {
       this.inputStates.delete(key);
@@ -2580,17 +2597,19 @@ export class FormRuntime {
 
   /**
    * Composes a date answer from the boxes it is typed into (year, month, day) and writes it.
-   * All-or-nothing: with every part present the answer is `YYYY-MM-DD` (year padded to four
-   * digits, month and day to two); with any part missing it is the empty string, so an
-   * incomplete date stores nothing a half-typed value could fail on. The month may be a name
-   * in the form's language or English ("Feb", "February", {@link readTypedMonth}) and is
-   * stored as its number; a name that cannot be read is kept as typed, for validation to call
-   * not a real date. The answer is written only when it differs from the one stored, so a
+   * All-or-nothing: with every part present and the year typed in four digits the answer is
+   * `YYYY-MM-DD` (month and day padded to two digits); with any part missing, or a year of
+   * fewer than four digits ("24", which could mean 1924 or 2024), it is the empty string, so
+   * a date typed in part stores nothing a half-typed value could fail on, and no year is
+   * guessed. The month may be a name in the form's language or English ("Feb", "February",
+   * {@link readTypedMonth}) and is stored as its number; a name that cannot be read is kept as
+   * typed, for validation to call not a real date. The answer is written only when it differs from the one stored, so a
    * keystroke that changes nothing the store holds does not repaint.
    *
    * After the write, which forgets what the control said, a date typed in part
    * records which parts are still empty ({@link setInputState} `incomplete`), so validation
-   * names them; whole, or empty again, it records nothing. Returns the composed answer.
+   * names them, and a whole date with a short year records `shortYear`, so validation asks for
+   * four digits; whole, or empty again, it records nothing. Returns the composed answer.
    * `options` go to the write ({@link setValue}).
    */
   public setDateParts(
@@ -2603,13 +2622,15 @@ export class FormRuntime {
     const day = (parts.day ?? "").trim();
     const monthNumber = /^\d+$/.test(typedMonth) ? undefined : readTypedMonth(typedMonth, this.stateStore.snapshot().locale);
     const month = monthNumber === undefined ? typedMonth : String(monthNumber);
-    const composed = year && month && day ? `${year.padStart(4, "0")}-${month.padStart(2, "0")}-${day.padStart(2, "0")}` : "";
+    // Digits alone and fewer than four: a year no one can read without guessing its century.
+    const shortYear = /^\d{1,3}$/.test(year);
+    const composed = year && month && day && !shortYear ? `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}` : "";
     const current = ownValue(this.stateStore.readView().values, stringifyComponentPath(parseComponentPath(path)));
     if ((current ?? "") !== composed) {
       this.setValue(path, composed, options);
     }
     const missing = (["day", "month", "year"] as const).filter((part) => (parts[part] ?? "").trim() === "");
-    this.setInputState(path, missing.length > 0 && missing.length < 3 ? { incomplete: { missing } } : undefined);
+    this.setInputState(path, missing.length > 0 && missing.length < 3 ? { incomplete: { missing } } : missing.length === 0 && shortYear ? { shortYear: true } : undefined);
     return composed;
   }
 
@@ -2720,6 +2741,7 @@ export class FormRuntime {
     // on commit (a journey's completed pages count as continued from, `validateCompletedPages`).
     this.submitAttempted = false;
     this.attemptedComponents.clear();
+    this.attemptedEntries = [];
     this.attemptedOnResume = undefined;
     // The controls' states were about the answers being replaced.
     this.inputStates.clear();
@@ -2980,8 +3002,13 @@ export class FormRuntime {
    * asks, leaving the errors other pages hold where they are. An error the host's server
    * reported on one of the page's answers stays until that answer changes: the page's own
    * validation cannot unsay the server. `page` wins over `scope`.
+   *
+   * With `entry`, a collection entry's value path (`items[1]`), only the errors on that entry's
+   * answers are kept (with `scope`, of that component's subtree too), and they replace only the
+   * stored errors there: what Continue in a steps container drawn in a data grid's row asks,
+   * leaving the same step's errors in the other rows, and every other error, as they were.
    */
-  public async validate(options: { scope?: string; page?: string } = {}): Promise<ReturnType<ErrorStore["listAll"]>> {
+  public async validate(options: { scope?: string; entry?: string; page?: string } = {}): Promise<ReturnType<ErrorStore["listAll"]>> {
     if (options.page !== undefined) {
       const within = this.pageComponentIds(options.page);
       // Continue on a journey page is the first submit attempt for the fields on that page.
@@ -2994,6 +3021,15 @@ export class FormRuntime {
       });
     }
     const inScope = options.scope !== undefined ? this.scopedComponentIds(options.scope) : undefined;
+    const entry = options.entry !== undefined ? (normalizedValuePath(options.entry) ?? options.entry) : undefined;
+    if (entry !== undefined) {
+      this.attemptedEntries.push({ entry, ...(inScope ? { components: inScope } : {}) });
+      return this.runValidation({
+        ...(inScope ? { keep: (componentId: string) => inScope.has(componentId) } : {}),
+        entry,
+        idPrefix: `${options.scope ?? ""}_${entry}_`
+      });
+    }
     inScope?.forEach((componentId) => this.attemptedComponents.add(componentId));
     return this.runValidation(inScope ? { keep: (componentId) => inScope.has(componentId) } : { foldCheck: true });
   }
@@ -3073,7 +3109,21 @@ export class FormRuntime {
     const onNewer = (error: FormError): boolean => newer.some((key) => this.errorIsOnPath(error, key));
     const written = newer.length > 0 ? stored.filter((error) => !onNewer(error)) : stored;
     const within = options.within;
-    if (within) {
+    const entry = options.entry;
+    if (entry !== undefined) {
+      // One entry's run: its errors take the place of the ones stored on its paths, and every
+      // other error stands where it was, the same step's in the other entries among them.
+      const keep = options.keep;
+      this.errorStore.replaceAround(
+        (error) =>
+          !onNewer(error) &&
+          error.path !== undefined &&
+          inEntry(stringifyComponentPath(error.path), entry) &&
+          (keep === undefined || (error.componentId !== undefined && keep(error.componentId))) &&
+          !this.serverErrorStands(error, state.values),
+        written
+      );
+    } else if (within) {
       this.errorStore.replaceWhere(
         (error) =>
           !onNewer(error) &&
@@ -3167,7 +3217,7 @@ export class FormRuntime {
   private async validationErrors(
     context: FieldConstraintsContext,
     state: FormState,
-    options: { keep?: (componentId: string) => boolean; foldCheck?: boolean; trackPending?: boolean }
+    options: { keep?: (componentId: string) => boolean; entry?: string; foldCheck?: boolean; trackPending?: boolean }
   ): Promise<ValidationResult["errors"]> {
     // A run that stores what it finds marks the paths its async stages declare pending while
     // they run (`checkValues` only reports, and marks nothing).
@@ -3190,9 +3240,14 @@ export class FormRuntime {
     // Enforce hidden-validation / hidden-required policy from effective state.
     const policed = [...raw.errors, ...ownErrors].filter((error) => this.errorPassesHiddenPolicy(error));
     const keep = options.keep;
-    const filteredErrors = keep
-      ? policed.filter((error) => error.componentId !== undefined && keep(error.componentId))
-      : [...policed];
+    const entry = options.entry;
+    const filteredErrors = policed.filter((error) => {
+      if (keep && (error.componentId === undefined || !keep(error.componentId))) {
+        return false;
+      }
+      const path = entry !== undefined ? normalizedValuePath(error.path) : undefined;
+      return entry === undefined || (path !== undefined && inEntry(path, entry));
+    });
     if (options.foldCheck === true && !this.orchestrator.lastFoldConverged()) {
       // No componentId: nothing the hidden policy or a page's scope reads can drop it.
       filteredErrors.push({ code: FOLD_UNSETTLED_CODE, stage: "state", source: "client", severity: "error" });
@@ -3390,6 +3445,7 @@ export class FormRuntime {
     const owner = this.componentIdForValuePath(key);
     return (
       (owner !== undefined && (this.attemptedComponents.has(owner) || this.attemptedOnResume?.(owner) === true)) ||
+      this.attemptedEntries.some((attempt) => inEntry(key, attempt.entry) && (attempt.components === undefined || (owner !== undefined && attempt.components.has(owner)))) ||
       this.errorStore.listAll().some((error) => this.errorIsOnPath(error, key))
     );
   }
@@ -3397,6 +3453,8 @@ export class FormRuntime {
   /** Calls off the checks of one field still out on the entries of `collectionPath`: its rows were removed, moved or replaced. */
   private callOffEntryChecks(collectionPath: string): void {
     this.pathRuns.cancelWhere((path) => entryKeyOf(path, collectionPath) !== undefined);
+    // An entry continued from names a row by its place, which no longer holds the same row.
+    this.attemptedEntries = this.attemptedEntries.filter((attempt) => !attempt.entry.startsWith(`${collectionPath}[`));
   }
 
   /**
@@ -4974,7 +5032,7 @@ export class FormRuntime {
    * the answer that hides a field must not be able to store anything in it. `required`, and
    * every other stage's errors (a plugin's, a custom one), stay dropped. The renderer lists such
    * an error in the summary, since its field is not shown. What a control says about an empty
-   * answer (`dateIncomplete`, a `number` marked `badInput`) is not a shape: it goes
+   * answer (`dateIncomplete`, `date.year`, a `number` or `date` marked `badInput`) is not a shape: it goes
    * whenever the component is not visible, whatever its hidden-validation behaviour says — a
    * control nobody sees has nothing to tell the person, and a server never hears it.
    */
@@ -4993,7 +5051,7 @@ export class FormRuntime {
     if (!effective) {
       return true;
     }
-    if (!effective.visible && (error.code === "dateIncomplete" || (error.code === "number" && error.parameters?.badInput === true))) {
+    if (!effective.visible && (error.code === "dateIncomplete" || error.code === "date.year" || error.parameters?.badInput === true)) {
       return false;
     }
     if (!effective.runValidation) {

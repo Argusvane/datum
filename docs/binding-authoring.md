@@ -383,7 +383,10 @@ The rules this follows, which hold for every field adapter:
   - Radios and selects report a final `on.input(value)` and then `on.commit()`.
   - Checkboxes report the list of chosen values (`on.input(values)`), then `on.commit()`.
   - A date reports `on.parts({ day, month, year }, { interim })` from its boxes. It commits when
-    focus leaves the whole group, not between its boxes.
+    focus leaves the whole group, not between its boxes. A date drawn as the browser's own
+    `type="date"` box reports `on.input(box.value, { interim: true })`, and `{ badInput: true }`
+    with the empty string when the browser holds a date it cannot read (typed in part). Typing a
+    part into an empty box fires no `input`, so read the box again on `blur`, before the commit.
 - **No words of your own.** Markers, the error prefix, a date's "Day" and a notice's "Warning:"
   come from `state.words(...)`. The sentence of an error is `state.errors`.
 - **A visually-hidden class.** If the design system has none for what it needs hidden (a hidden
@@ -1215,6 +1218,12 @@ export const gcdsPrintTheme: PrintTheme = {
   print document, and the scripts never are. `selfCheck` runs once those have loaded; any problem
   prints the whole form with the basic theme, and `datum-print` reports `fellBack`.
 - A host sets the theme on the element: `form.printTheme = gcdsPrintTheme`.
+- The page's own print (the browser's Print command) does not go through a print theme: it
+  prints the live form as the binding draws it. From the window's `beforeprint` to its
+  `afterprint`, `LiveContext.printing()` is true and the renderer draws tabs and steps flat
+  (`TabsState.flat`, `StepsState.flat`), as in a review, synchronously inside the event. A tabs
+  or steps adapter draws its flat view whenever `flat` is set, and the binding's own `@media
+  print` rules hide what else should not reach paper (buttons, tooltips, file pickers).
 
 `bindings/gcds/print/` is the worked example. GCDS's stylesheet ships only tokens and fonts
 without its script, so the theme restates each component from the tokens, and its `selfCheck`

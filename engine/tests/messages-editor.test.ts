@@ -76,6 +76,7 @@ describe("inspector model — validation messages row", () => {
       "date.min",
       "date.max",
       "dateIncomplete",
+      "date.year",
       // A Validate rule's words; "used" only on a field with `rules.validWhen`.
       "rule",
       "rows.min",
@@ -141,6 +142,7 @@ describe("inspector model — validation messages row", () => {
       "date.min",
       "date.max",
       "dateIncomplete",
+      "date.year",
       "rule",
       "rows.min",
       "rows.max"
@@ -152,7 +154,7 @@ describe("inspector model — validation messages row", () => {
     const bareRow = bare.sections.flatMap((section) => section.fields).find((field) => field.control === "messages");
     expect(bareRow?.messagesEditor?.usedCodes).toEqual([]);
     // Every engine code, `rule` included.
-    expect(codesOf(bareRow?.messagesEditor?.engineCodes)).toHaveLength(21);
+    expect(codesOf(bareRow?.messagesEditor?.engineCodes)).toHaveLength(22);
   });
 });
 

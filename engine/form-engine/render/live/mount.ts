@@ -28,6 +28,9 @@
  * - the hooks' order and guards: select, render, after (every draw), ready (budgeted), connect;
  *   a hook that throws is reported (`datum-binding-error`) and the drawing falls back to Datum's;
  * - the mounted guard: nothing is built, drawn, focused, written or emitted after `unmount`;
+ * - the page's own print: from the window's `beforeprint` to its `afterprint` (or while `print`
+ *   media matches, where a browser fires neither) the form is drawn for printing (`setPrinting`),
+ *   unless `browserPrint` is `false`;
  * - focus on a field (`focusField`): the adapter's or the binding's target, the deep active
  *   element checked afterwards, the wrapper on a miss.
  *
@@ -219,7 +222,10 @@ export interface LiveContext {
   busy(): FormBusy | undefined;
   /** Whether the form is drawn for printing: every paged container (steps, tabs) draws all its panels. */
   printing(): boolean;
-  /** Draws the form for printing (or back): the print module calls it around `beforeprint` and `afterprint`. */
+  /**
+   * Draws the form for printing (or back), at once. The renderer calls it around the page's own
+   * print (the window's `beforeprint` and `afterprint`), unless the mount's `browserPrint` is `false`.
+   */
   setPrinting(on: boolean): void;
   /**
    * Takes the person to the first blocking error after a check that found some: the first
@@ -398,6 +404,12 @@ export interface LiveMountOptions {
   host?: EventTarget;
   /** How long a field's `ready` may take, in ms (3000); `Infinity` for no budget. */
   readyBudgetMs?: number;
+  /**
+   * Whether the page's own print (the browser's Print command) draws the form for printing
+   * (`LiveContext.setPrinting`): from the window's `beforeprint` to its `afterprint`, or while
+   * `print` media matches where a browser fires neither. On when left out.
+   */
+  browserPrint?: boolean | undefined;
   /** Hears every hook call, in order. */
   trace?(entry: TraceEntry): void;
 }
@@ -1540,8 +1552,9 @@ export function mountLive(root: ShadowRoot, options: LiveMountOptions): LiveForm
           composed = runtime.setDateParts
             ? runtime.setDateParts(path, parts, isInterim ? { interim: true } : undefined)
             : (() => {
-                const whole = parts.year.trim() !== "" && parts.month.trim() !== "" && parts.day.trim() !== "";
-                const answer = whole ? `${parts.year.trim().padStart(4, "0")}-${parts.month.trim().padStart(2, "0")}-${parts.day.trim().padStart(2, "0")}` : "";
+                // A year typed in fewer than four digits is no year yet, as the runtime's own reading has it.
+                const whole = parts.year.trim().length >= 4 && parts.month.trim() !== "" && parts.day.trim() !== "";
+                const answer = whole ? `${parts.year.trim()}-${parts.month.trim().padStart(2, "0")}-${parts.day.trim().padStart(2, "0")}` : "";
                 runtime.setValue(path, answer, isInterim ? { interim: true } : undefined);
                 return answer;
               })();
@@ -2354,6 +2367,57 @@ export function mountLive(root: ShadowRoot, options: LiveMountOptions): LiveForm
 
   // ── Listening ──
 
+  /**
+   * Draws the form for printing while the page it is in is printed, and back afterwards. The
+   * draw is synchronous, inside `beforeprint`, so the printed page has the flat layout. A
+   * print the form's own `print()` presents is its frame's: the events and the media query
+   * fire on the frame's window, never on this one. A print state something else set is left
+   * as it is: `afterprint` takes back only what `beforeprint` set.
+   */
+  function followBrowserPrint(): () => void {
+    const view = root.host.ownerDocument.defaultView;
+    if (!view) {
+      return () => undefined;
+    }
+    let ours = false;
+    const enter = (): void => {
+      if (!printing) {
+        ours = true;
+        context.setPrinting(true);
+      }
+    };
+    const leave = (): void => {
+      if (ours) {
+        ours = false;
+        context.setPrinting(false);
+      }
+    };
+    view.addEventListener("beforeprint", enter);
+    view.addEventListener("afterprint", leave);
+    const media = typeof view.matchMedia === "function" ? view.matchMedia("print") : undefined;
+    // The event says whether the page now prints; a listener called without one reads the query.
+    const change = (event?: MediaQueryListEvent): void => ((event?.matches ?? media?.matches) ? enter() : leave());
+    if (media) {
+      if (typeof media.addEventListener === "function") {
+        media.addEventListener("change", change);
+      } else {
+        // Browsers old enough to fire no `beforeprint` know only the older listener.
+        media.addListener(change);
+      }
+    }
+    return () => {
+      view.removeEventListener("beforeprint", enter);
+      view.removeEventListener("afterprint", leave);
+      if (media) {
+        if (typeof media.removeEventListener === "function") {
+          media.removeEventListener("change", change);
+        } else {
+          media.removeListener(change);
+        }
+      }
+    };
+  }
+
   function listen(): void {
     const events = runtime.events();
     for (const type of REDRAW_EVENTS) {
@@ -2493,6 +2557,9 @@ export function mountLive(root: ShadowRoot, options: LiveMountOptions): LiveForm
   });
   const unadopt = adoptOwnSheets(root, ownSheetsCss(binding, datum));
   stops.push(unadopt);
+  if (options.browserPrint !== false) {
+    stops.push(followBrowserPrint());
+  }
 
   const ready = (async (): Promise<void> => {
     try {

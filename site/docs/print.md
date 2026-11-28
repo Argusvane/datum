@@ -220,7 +220,7 @@ A print a newer `print()` replaces, or whose element leaves the page before its 
 
 ## Switching print off
 
-The `features` attribute lists what a form can do. A list without `print` makes `print()` reject.
+The `features` attribute lists what a form can do. A list without `print` makes `print()` reject, and the browser's own Print command then prints the form's tabs and steps as they are on screen rather than one after another.
 
 ```html
 <datum-form src="/forms/intake.json" features="journeys pdf"></datum-form>

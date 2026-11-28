@@ -146,7 +146,7 @@ describe("the rule's shape", () => {
 
   it("names the code for the builder: the engine's codes, the field's codes and the default wording", () => {
     expect(ENGINE_VALIDATION_CODES.some((entry) => entry.code === "rule")).toBe(true);
-    expect(validationCodesRaisedBy(DATES.root)).toEqual(["date", "dateIncomplete", "rule"]);
+    expect(validationCodesRaisedBy(DATES.root)).toEqual(["date", "dateIncomplete", "date.year", "rule"]);
     expect(DEFAULT_VALIDATION_MESSAGES.rule).toBe("Check this answer");
   });
 

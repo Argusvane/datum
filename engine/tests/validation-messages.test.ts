@@ -238,6 +238,7 @@ describe("ENGINE_VALIDATION_CODES", () => {
       "date.min",
       "date.max",
       "dateIncomplete",
+      "date.year",
       // The field's Validate rule.
       "rule",
       // A data grid's row count.
@@ -264,6 +265,7 @@ describe("ENGINE_VALIDATION_CODES", () => {
       "date.min": ["min"],
       "date.max": ["max"],
       dateIncomplete: ["missing", "missingKey"],
+      "date.year": [],
       rule: [],
       "rows.min": ["min", "count"],
       "rows.max": ["max", "count"]

@@ -17,13 +17,17 @@ A number must be a number and a date must be a date, in the browser and on every
 - A date drawn as parts (day, month, year) must not be joined without a check: 31 February,
   day 45 or a text month are not dates.
 - A date typed in part stores "", and the person must be told what was missing, not just
-  "required" or nothing.
+  "required" or nothing. The same holds for the browser's own date box typed in part, which
+  reports an empty value.
+- A year typed in two digits ("24") is no year: padding it to four stores 0024, a date the
+  person did not mean, and guessing the century would store one they may not have meant.
 
 ## Decision
 
-1. **Three codes.** `number`: a non-empty answer on a `number` component that is not a number.
+1. **Four codes.** `number`: a non-empty answer on a `number` component that is not a number.
    `date`: a non-empty answer on a `date` component that is not a real calendar date.
-   `dateIncomplete`: a date typed in part, browser only (decision 7).
+   `dateIncomplete`: a date typed in part, browser only (decision 7). `date.year`: a date whose
+   year was typed in fewer than four digits, browser only (decision 7).
 
 2. **What passes.** An empty answer raises neither code: Required judges it. A number is a finite
    number or a string that is a plain decimal numeral once trimmed; numeric strings pass so host
@@ -53,42 +57,53 @@ A number must be a number and a date must be a date, in the browser and on every
    forged non-numeric worked-out total is refused) and for a field of a repeating section or a
    data grid at each entry's key (`items[0].qty`).
 
-6. **Messages.** `ENGINE_VALIDATION_CODES` lists the three codes, so the builder's messages
-   editor offers them, and `validationCodesRaisedBy` names `number` for a number and `date` and
-   `dateIncomplete` for a date. `DEFAULT_VALIDATION_MESSAGES` words them in English; a binding's
+6. **Messages.** `ENGINE_VALIDATION_CODES` lists the four codes, so the builder's messages
+   editor offers them, and `validationCodesRaisedBy` names `number` for a number and `date`,
+   `dateIncomplete` and `date.year` for a date. `DEFAULT_VALIDATION_MESSAGES` words them in English; a binding's
    language pack or the form's translations word them over that. Under a binding with
    `unwordedErrors: "noted"` (`LiveBinding`; the GOV.UK reference binding sets it), the builder
    puts its advisory note on every number and date field that has no message of its own for them.
 
-7. **What only the browser knows.** Two things a control knows cannot be carried by the value,
-   because the value is empty: a date typed in part, and a number box holding text the browser
-   cannot read (`validity.badInput`). The runtime keeps them as **input states**, by value path
+7. **What only the browser knows.** Three things a control knows cannot be carried by the value,
+   because the value is empty: a date typed in part, a date whose year was typed in fewer than
+   four digits, and a number or date box holding what the browser cannot read
+   (`validity.badInput`). The runtime keeps them as **input states**, by value path
    (`FormRuntime.setInputState(path, state)` and `inputState(path)`). The renderer records them
-   right after it writes the empty answer: an adapter reports an unreadable number box with its
-   write (`on.input(value, { badInput: true })`; an empty box stores "" and never 0), and a date
-   drawn as parts reports its parts (`on.parts`), which the runtime composes (`setDateParts`). Any
+   right after it writes the empty answer: an adapter reports an unreadable number or date box
+   with its write (`on.input("", { badInput: true })`; an empty number box stores "" and never
+   0), and a date drawn as parts reports its parts (`on.parts`), which the runtime composes
+   (`setDateParts`). The runtime composes a date only from a year of four digits or more: a year
+   of one to three digits ("24", "987") stores the empty answer and records `shortYear`, so no
+   century is guessed and no padded year is stored as if it were the answer. Any
    answer written to the path forgets the state, the empty one included, so a host that clears a
    field replaces what the control said; the control's own write keeps it because the state is
    recorded after it. Loading a draft, leaving a journey and starting another forget every state.
 
-   Only a date drawn as parts can be typed in part: the datum binding's date by default
+   A date drawn as parts names the parts it lacks: the datum binding's date by default
    (`render/live/datum/date.ts`), and any binding's date adapter that reports parts. A browser's
-   own `<input type="date">` (the datum date's `control: "native"`) typed in part reports an empty value and says nothing more, so it
-   reads `required`, or nothing.
+   own `<input type="date">` (the datum date's `control: "native"`) typed in part holds the
+   empty value with `validity.badInput`, and cannot say which part is missing. Its adapter
+   reports it as a number box's is reported, `on.input("", { badInput: true })`; as typing a
+   part into an empty box changes no value, the browser fires no `input`, so the adapter also
+   reads the box when it is left.
 
    Validation hands the states to its stages as `ValidationContext.inputStates`. For an empty
-   answer, the field-constraints stage then raises, in place of `required`, `dateIncomplete` for a
-   date typed in part (with or without Required; its parameters `missing`, `missingKey` and
-   `missingParts` name the parts left (`missingKey` is one of `day`, `month`, `year`, `day-month`,
-   `day-year`, `month-year`), so a binding or a translation can word each case), or
-   `number` with `parameters: { badInput: true }` for a number box the browser could not read.
+   answer, the field-constraints stage then raises, in place of `required` and with or without
+   Required, `dateIncomplete` for a date typed in part (its parameters `missing`, `missingKey`
+   and `missingParts` name the parts left (`missingKey` is one of `day`, `month`, `year`,
+   `day-month`, `day-year`, `month-year`), so a binding or a translation can word each case),
+   `date.year` for a date whose year was typed short, or `number` or `date` with
+   `parameters: { badInput: true }` for a number or date box the browser could not read.
 
    The states never leave the browser. They are not in a draft, the envelope or the sandbox
    request (`WasmSubmissionContext` leaves `inputStates` out, and `JsonWasmAbi.serializeContext`
    drops it by name, as it drops `requiredComponents`). A server only ever holds the empty
    answer, so its verdict for the same envelope is `required` or nothing. This is the deliberate
    case where the browser is stricter than the server: the browser tells the person what they
-   typed; the server has nothing typed to judge. The states are dropped whenever the component is
+   typed; the server has nothing typed to judge. A stored date is only `YYYY-MM-DD` text, so a
+   server cannot tell a year typed "24" from one typed "0024", or a box typed in part from one
+   left alone: these are entry checks, held where the typing is, as a number box's `badInput`
+   is. The states are dropped whenever the component is
    not visible, whatever its hidden-validation behaviour says: a control nobody sees has nothing
    to tell the person, and a hidden, empty answer has no shape to check.
 
@@ -112,6 +127,8 @@ A number must be a number and a date must be a date, in the browser and on every
 - A cleared browser number box is empty, not 0, so Required fires.
 - Under a binding that draws dates as parts, a date typed in part reads "Enter a complete date"
   (or the binding's words) instead of the bare `required`, and an optional date typed in part is
-  refused in the browser. A browser's own date box typed in part reports nothing more.
+  refused in the browser. A year typed in fewer than four digits reads "Enter the year in four
+  digits" and stores nothing. A browser's own date box typed in part reads "Enter a real date"
+  (`date` with `badInput`), optional or required.
 - A number or date component whose calculation yields something else (a string, say) is refused
   on both sides, as the kernel works the same value out.

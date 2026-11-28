@@ -143,13 +143,18 @@ describe("collection entry keys", () => {
 describe("setDateParts", () => {
   const born = (): FormRuntime => runtimeOf([{ id: "born", type: "date", configuration: {} }]);
 
-  it("composes a whole date as YYYY-MM-DD, padding each part", () => {
+  it("composes a whole date as YYYY-MM-DD, padding the month and day, and stores no year typed short", () => {
     const runtime = born();
     expect(runtime.setDateParts("born", { year: "2026", month: "2", day: "5" })).toBe("2026-02-05");
     expect(runtime.state().values.born).toBe("2026-02-05");
     expect(runtime.inputState("born")).toBeUndefined();
+    // A year of fewer than four digits is not padded: nothing is stored and the state says so.
     runtime.setDateParts("born", { year: "987", month: "12", day: "31" });
+    expect(runtime.state().values.born).toBe("");
+    expect(runtime.inputState("born")).toEqual({ shortYear: true });
+    runtime.setDateParts("born", { year: "0987", month: "12", day: "31" });
     expect(runtime.state().values.born).toBe("0987-12-31");
+    expect(runtime.inputState("born")).toBeUndefined();
   });
 
   it("stores the empty string for a date in part and records the parts still missing", () => {

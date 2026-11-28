@@ -267,14 +267,15 @@ export interface ValidationContext {
   invalidComponents?: Readonly<Record<string, boolean>> | undefined;
   /**
    * What the controls know that their stored values cannot say, by value path: a
-   * date typed in part (`incomplete`, naming the parts still empty) or a number box holding
-   * text the browser could not read (`badInput`); both store the empty answer. `FormRuntime`
-   * sets it for its stages from `setInputState`, and the field-constraints stage then raises
-   * `dateIncomplete` or `number` in place of `required`. Client-only, like
+   * date typed in part (`incomplete`, naming the parts still empty), a date whose year was
+   * typed in fewer than four digits (`shortYear`), or a number or date box holding text the
+   * browser could not read (`badInput`); each stores the empty answer. `FormRuntime` sets it
+   * for its stages from `setInputState`, and the field-constraints stage then raises
+   * `dateIncomplete`, `date.year`, `number` or `date` in place of `required`. Client-only, like
    * `requiredComponents`: never in a draft or the envelope, and `WasmSubmissionContext` leaves
    * it out (`JsonWasmAbi.serializeContext` drops it by name).
    */
-  inputStates?: Readonly<Record<string, { incomplete?: { missing: ReadonlyArray<"day" | "month" | "year"> }; badInput?: true }>>;
+  inputStates?: Readonly<Record<string, { incomplete?: { missing: ReadonlyArray<"day" | "month" | "year"> }; shortYear?: true; badInput?: true }>>;
   /**
    * Aborted when the run this context belongs to goes stale: a newer check of the same value
    * path replaced it (`FormRuntime`'s per-path runs). An async stage doing I/O should pass it on

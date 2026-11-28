@@ -15,8 +15,8 @@
  *   holding nothing and does not open. An indicator entry opens a step already reached; an
  *   upcoming one is not a way to skip ahead;
  * - a steps container in a collection's row: each row's is its own, keyed by its instance key,
- *   and switches in place (the runtime has one current step for the form); its Continue is held
- *   by its own row's errors alone;
+ *   and switches in place (the runtime has one current step for the form); its Continue checks
+ *   the step in its own row alone, leaving the errors shown in the other rows as they were;
  * - focus: the new step's heading takes it (the page a multi-step form moves to), unless the
  *   caller has somewhere better in mind (an error);
  * - an error or a focus request on a field in a step that is not shown opens that step
@@ -48,7 +48,8 @@ interface StepsRuntime {
   /** Moves a multi-step form to `stepId`; `ok: false` when its hooks or rules refuse. */
   navigate?(stepId: string): Promise<{ ok: boolean }>;
   markStepCompleted?(stepId: string): void;
-  validate?(options?: { scope?: string }): Promise<unknown>;
+  /** With `entry`, only that collection entry's answers are checked, and only its stored errors replaced. */
+  validate?(options?: { scope?: string; entry?: string }): Promise<unknown>;
 }
 
 /** What the feature keeps for the life of the mount, by steps container instance (`node.key`). */
@@ -178,8 +179,9 @@ function proceed(live: LiveContext, containerKey: string, current: string, next:
     const authoring = live.options.canvasHooks !== undefined;
     const runtime = live.runtime as StepsRuntime;
     if (!authoring && typeof runtime.validate === "function") {
-      const errors = await runtime.validate({ scope: current });
-      // In a row, the step's components are every row's: this row's errors are the ones that hold it.
+      // In a row, the step's components are every row's: the check is of this row's answers alone.
+      const errors = await runtime.validate(row === undefined ? { scope: current } : { scope: current, entry: row.entryPath });
+      // The check resolves with every stored error, the other rows' too: this row's hold it.
       const ofRow = (error: unknown): boolean => {
         const path = (error as { path?: ComponentPath } | undefined)?.path;
         return row === undefined || (path !== undefined && inRow(stringifyComponentPath(path), row.entryPath));

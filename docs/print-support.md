@@ -456,8 +456,18 @@ binding](binding-authoring.md), section 12, covers writing one.
   `::part(print-label)`), or hidden and replaced by the host's own control. Its label is the form
   text `printLabel`. While a print the toolbar started is still in flight, pressing Print (or a
   choice in its menu) again starts no second one.
+- **The page's own print.** The browser's Print command (Ctrl or Cmd+P, or the browser's menu)
+  prints the page as it stands, not the print document: the live form as its binding draws it,
+  around it whatever the host has on the page. For that print the renderer draws every tab and
+  every step as a headed section, in order, with no tab strip, step indicator or Back and
+  Continue, from the window's `beforeprint` to its `afterprint` (or while `print` media matches,
+  in a browser that fires neither), and draws them as on screen again afterwards. The rest is the
+  binding's print sheet: Datum's hides the form's buttons, tooltips and file pickers. A print the
+  form's own `print()` presents happens in its frame and does not change the live form. A host
+  that mounts the live renderer itself turns this off with `browserPrint: false` on `mountLive`.
 - **Leave print out.** With the `features` attribute (ADR 0143), a form that omits `print` hides
-  the Print button, and `print()` rejects, naming the feature.
+  the Print button, `print()` rejects, naming the feature, and the page's own print draws the form
+  as on screen.
 - **Build the document without printing it.** `preparePrintDocument(options)` on
   `<datum-form-renderer>` takes the options `print()` takes and returns the document with the model
   it is drawn from and the theme id (`PreparedPrint`), with no frame, no `datum-print` event and no

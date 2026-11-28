@@ -52,9 +52,10 @@ import { buildRowKeys, buildValuePaths, collectionPathOf } from "../../core/tree
  * non-empty answer that is not a number raises `number`, one that is not a real calendar date
  * raises `date` — the kernel's own predicates (`core/schema/answer-kinds.ts`), so both sides
  * read an answer alike. Two more come from what the controls know and the value cannot say
- * (the context's `inputStates`, client-only): a date typed in part raises `dateIncomplete`
- * and a number box holding text the browser could not read raises `number`, each in place of
- * `required` for that empty answer.
+ * (the context's `inputStates`, client-only): a date typed in part raises `dateIncomplete`, a
+ * date whose year was typed in fewer than four digits raises `date.year`, and a number or date
+ * box holding text the browser could not read raises `number` or `date` (marked `badInput`),
+ * each in place of `required` for that empty answer.
  *
  * Four more readings hold the answer's shape and bounds, the
  * kernel's own, so both sides agree: a `text` or `textarea` answer that is not a string raises
@@ -459,7 +460,7 @@ export function validationCodesRaisedBy(root: ComponentNode, kinds?: Readonly<Re
       codes.add("maxFileSize");
     }
     // A number's answer is checked as a number, a date's as a date — and a date typed
-    // in part. A number or a date has its bounds when it declares them. The codes
+    // in part, or with a short year. A number or a date has its bounds when it declares them. The codes
     // that only hold an answer to its shape (`text`, `file`, `fileCount`) are not listed: no
     // control writes such an answer and no author configures them.
     if (base === "number") {
@@ -473,6 +474,7 @@ export function validationCodesRaisedBy(root: ComponentNode, kinds?: Readonly<Re
     } else if (base === "date") {
       codes.add("date");
       codes.add("dateIncomplete");
+      codes.add("date.year");
       if (constraint.min !== undefined) {
         codes.add("date.min");
       }
@@ -508,6 +510,7 @@ export function validationCodesRaisedBy(root: ComponentNode, kinds?: Readonly<Re
     "date.min",
     "date.max",
     "dateIncomplete",
+    "date.year",
     "rule",
     "rows.min",
     "rows.max"
@@ -553,22 +556,27 @@ export function isEmptyValue(value: unknown, type: string): boolean {
 
 /**
  * What a control's input state says about an empty answer, before `required`: a
- * number box holding text the browser could not read is `number` (`badInput: true` marks it as
- * the browser's alone); a date typed in part is `dateIncomplete`, naming the parts still empty
- * in day-month-year order — as a phrase (`missing`: "month and year"), a key a theme can word
- * each case by (`missingKey`: "month-year") and the list (`missingParts`). A date missing no
- * part, or all three, is not incomplete: the answer is simply there, or empty.
+ * number box holding text the browser could not read is `number`, and a date box holding a date
+ * it could not read (the browser's own date box typed in part) is `date` (`badInput: true` marks either as the browser's alone); a date typed in part is
+ * `dateIncomplete`, naming the parts still empty in day-month-year order — as a phrase
+ * (`missing`: "month and year"), a key a theme can word each case by (`missingKey`:
+ * "month-year") and the list (`missingParts`). A date missing no part, or all three, is not
+ * incomplete: the answer is simply there, or empty. A whole date whose year was typed in fewer
+ * than four digits is `date.year`.
  */
 function inputStateFailure(
   type: string,
   state: FieldInputState | undefined
 ): { code: string; parameters: Record<string, unknown> } | undefined {
-  if (type === "number" && state?.badInput === true) {
-    return { code: "number", parameters: { badInput: true } };
+  if ((type === "number" || type === "date") && state?.badInput === true) {
+    return { code: type, parameters: { badInput: true } };
   }
-  const listed = type === "date" ? state?.incomplete?.missing : undefined;
-  if (!Array.isArray(listed)) {
+  if (type !== "date") {
     return undefined;
+  }
+  const listed = state?.incomplete?.missing;
+  if (!Array.isArray(listed)) {
+    return state?.shortYear === true ? { code: "date.year", parameters: {} } : undefined;
   }
   const missingParts = (["day", "month", "year"] as DatePart[]).filter((part) => listed.includes(part));
   if (missingParts.length === 0 || missingParts.length === 3) {

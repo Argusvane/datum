@@ -829,8 +829,9 @@ message may quote the error's details in braces, as the table below lists. A fie
 | `fileType` | An attached file's type is not among the accepted ones | `{file}` its name, `{type}` its type, `{accept}` the accepted types |
 | `maxFileSize` | An attached file is larger than the field's limit | `{file}` its name, `{sizeLabel}` and `{maxFileSizeLabel}` readable sizes (`{size}`, `{maxFileSize}` in bytes) |
 | `number` | A number field holds an answer that is not a number | — (a box the browser could not read adds `badInput: true`) |
-| `date` | A date field holds an answer that is not a real date | — |
+| `date` | A date field holds an answer that is not a real date | — (a browser's date box holding a date it could not read adds `badInput: true`) |
 | `dateIncomplete` | A date was typed in part (browser only) | `{missing}` the parts left ("month and year"), `{missingKey}` (one of `day`, `month`, `year`, `day-month`, `day-year`, `month-year`, so each case can be worded), `{missingParts}` |
+| `date.year` | A date's year was typed in fewer than four digits (browser only) | — |
 | `rule` | A field's Validate rule (`rules.validWhen`) does not hold | — |
 
 Codes beyond these come from the application: what its server answers for a field
@@ -852,14 +853,16 @@ number or date input is not checked), come after Required and before bounds, len
 and hold for a hidden answer that is still submitted, a field a presentation fills, and a field of
 a repeating section at each entry.
 
-Two things a control knows are not in the answer, which is empty, so they stay in the browser.
+Three things a control knows are not in the answer, which is empty, so they stay in the browser.
 A date drawn as parts that is typed in part raises `dateIncomplete` in place of `required`, with or
 without Required; its details name the parts left in day-month-year order, and no part missing, or
-all three, is not incomplete. A number box holding text the browser cannot read raises `number` with
-`badInput: true`. A server holds only the empty answer, so for the same submission it says
-`required` or nothing; this is the one case where the browser is stricter than the server. The
-states are forgotten when anything else writes the answer, when a draft loads, and while the
-component is not visible, and a browser's own date box typed in part reports nothing more.
+all three, is not incomplete. A date whose year is typed in fewer than four digits ("24") stores
+nothing and raises `date.year` ("Enter the year in four digits"), so no century is guessed. A
+number box holding text the browser cannot read raises `number` with `badInput: true`, and a
+browser's own date box typed in part raises `date` with `badInput: true`. A server holds only the
+empty answer, so for the same submission it says `required` or nothing; this is the one case where
+the browser is stricter than the server. The states are forgotten when anything else writes the
+answer, when a draft loads, and while the component is not visible.
 
 A number text box and a date's month typed as a name are read in the form's language where the box
 is read, and only the canonical value is stored (a number, or a `YYYY-MM-DD` date), so the checks

@@ -244,8 +244,11 @@ describe("the field-constraints stage: number, date and dateIncomplete", () => {
     ]);
     // An answer there after all: the state says nothing, the answer is judged.
     expect(stageErrors(root, { age: 4, born: "2026-02-28", count: 2 }, states)).toEqual([]);
-    // A badInput state on a date means nothing.
-    expect(stageErrors(root, { born: "" }, { born: { badInput: true } }).map((error) => error.code)).toEqual(["required", "required"]);
+    // A badInput state on a date (the browser's date box typed in part) says date, marked the same way.
+    expect(stageErrors(root, { born: "" }, { born: { badInput: true } }).map((error) => [error.code, error.parameters])).toEqual([
+      ["date", { badInput: true }],
+      ["required", undefined]
+    ]);
   });
 
   it("says dateIncomplete, naming the parts left in day-month-year order, in place of required — or of nothing", () => {
@@ -322,11 +325,11 @@ describe("the field-constraints stage: number, date and dateIncomplete", () => {
     expect(where(runKernel({ ...context, values: whole }, []).errors)).toEqual(expected);
   });
 
-  it("lists number for a number, date and dateIncomplete for a date, for the messages editor", () => {
+  it("lists number for a number, date, dateIncomplete and date.year for a date, for the messages editor", () => {
     expect(validationCodesRaisedBy({ id: "n", type: "number", configuration: {} })).toEqual(["number"]);
     expect(validationCodesRaisedBy({ id: "n", type: "number", configuration: { required: true } })).toEqual(["required", "number"]);
-    expect(validationCodesRaisedBy({ id: "d", type: "date", configuration: {} })).toEqual(["date", "dateIncomplete"]);
-    expect(validationCodesRaisedBy(root)).toEqual(["required", "number", "date", "dateIncomplete"]);
+    expect(validationCodesRaisedBy({ id: "d", type: "date", configuration: {} })).toEqual(["date", "dateIncomplete", "date.year"]);
+    expect(validationCodesRaisedBy(root)).toEqual(["required", "number", "date", "dateIncomplete", "date.year"]);
     expect(validationCodesRaisedBy({ id: "t", type: "text", configuration: {} })).toEqual([]);
   });
 

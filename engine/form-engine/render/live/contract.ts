@@ -422,7 +422,10 @@ export interface ButtonFieldState extends FieldState {
 export interface FieldInputOptions {
   /** Written while the person types: the runtime hears a commit only when the field is left. */
   interim?: boolean;
-  /** With an empty value: a native number box holds text the browser could not read. */
+  /**
+   * With an empty value: a native number box holds text the browser could not read, or a native
+   * date box holds a date it could not read (typed in part: a day and a month, no year).
+   */
   badInput?: boolean;
   /**
    * `"number"`: the value is the text as typed in a text box drawn for a number field (a design
@@ -446,8 +449,8 @@ export interface FieldEvents {
   /**
    * A new value, in the type the field reports (a string; a number for a number box; the chosen
    * values for checkboxes). `interim` while typing. `badInput` with an empty value: the box
-   * holds text the browser could not read as a number, so validation says "number"
-   * rather than "required". `typed: "number"` with the text as typed in a text box drawn for a
+   * holds text the browser could not read as a number, or a date it could not read, so
+   * validation says "number" or "date" rather than "required". `typed: "number"` with the text as typed in a text box drawn for a
    * number: the renderer reads it (see {@link FieldInputOptions.typed}).
    */
   input(value: unknown, options?: FieldInputOptions): void;

@@ -145,13 +145,13 @@ describe("<datum-form> a date typed in part", () => {
       expect(part("month")!.value).toBe("");
     });
 
-    it("keeps the year as typed, key by key, while each keystroke completes the date", async () => {
+    it("keeps the year as typed, key by key, storing the date once the year has four digits", async () => {
       const { element, root } = await mount([{ id: "dob", type: "date", configuration: { label: "Date of birth" } }]);
       const part = (name: string) => box(root, "dob").querySelector<HTMLInputElement>(`[data-value-part="${name}"]`)!;
       type(part("day"), "27");
       type(part("month"), "3");
-      // Each digit of the year completes the date ("2" is stored as 0002-03-27) and repaints; the
-      // box being typed in keeps what was typed, never the stored, padded year.
+      // A year of fewer than four digits stores nothing (no year is padded or guessed); the fourth
+      // digit completes the date and repaints, and the box being typed in keeps what was typed.
       part("year").focus();
       let typed = "";
       for (const key of "2007") {
@@ -160,7 +160,7 @@ describe("<datum-form> a date typed in part", () => {
         year.value = typed;
         year.setSelectionRange(typed.length, typed.length);
         year.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
-        await until(() => (element.values as Record<string, unknown>).dob === `${typed.padStart(4, "0")}-03-27`);
+        await until(() => ((element.values as Record<string, unknown>).dob ?? "") === (typed.length < 4 ? "" : `${typed}-03-27`));
         await drawn(element);
         expect(part("year").value).toBe(typed);
         expect(part("year")).toBe(year);

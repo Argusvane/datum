@@ -59,7 +59,13 @@ collapsed part must also not keep what it holds off the paper.
    calls the frame's `print()`. Only the form reaches the paper, whatever the host has around
    it. The frame is reclaimed on `afterprint`, on the next print, or when the element
    disconnects, never on a timer. The wait and the parse are in
-   [`docs/print-support.md`](../print-support.md), section 5.
+   [`docs/print-support.md`](../print-support.md), section 5. The frame's print fires its
+   `beforeprint` and `afterprint` on the frame's window, not the page's. The page's own print
+   (the browser's Print command) is not this document: it prints the live form as the binding
+   draws it, and from the page window's `beforeprint` to its `afterprint` (or while `print`
+   media matches) the live form draws every tab and step as a headed section in order
+   (`setPrinting`, ADR 0081's flat view). A `features` list without `print` leaves that print as
+   the screen draws it.
 
 5. **A cancelable `datum-print` event is the host's seam.** Before presenting, the renderer
    dispatches `datum-print` carrying the document HTML, the theme and, when it fell back, why.

@@ -25,8 +25,9 @@ export type DatePart = "day" | "month" | "year";
 /**
  * What the browser knows about a control that the stored value cannot say, keyed by
  * value path in `ValidationContext.inputStates`: a date typed in part (`incomplete`, with the
- * parts still empty) or a number box holding text the browser could not read (`badInput`).
- * Both store the empty answer. Client-only: never in a draft, the envelope or the sandbox.
+ * parts still empty), a date whose year was typed in fewer than four digits (`shortYear`), or a
+ * number or date box holding text the browser could not read (`badInput`). Each stores the
+ * empty answer. Client-only: never in a draft, the envelope or the sandbox.
  */
 export type FieldInputState = NonNullable<ValidationContext["inputStates"]>[string];
 

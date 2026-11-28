@@ -3,7 +3,8 @@
  * system prescribes in place of the browser's date picker. The renderer composes the one stored
  * `YYYY-MM-DD` answer from the parts the adapter reports (`on.parts`), keeps a date typed in part
  * as it was typed, and tells validation what is missing; the adapter only draws the boxes.
- * `control: "native"` draws the browser's own date box instead (the browser's own look): one `<input type="date">` that reports the whole answer (`on.input`).
+ * `control: "native"` draws the browser's own date box instead (the browser's own look): one `<input type="date">` that reports the whole answer (`on.input`), and
+ * a date the box holds but cannot read (typed in part) as the empty answer with `badInput`.
  *
  * `createDatumDateAdapter(options)` is the seam: the parts' order, a fixed one or one by
  * locale; whether the month is a select of names or a two-digit box; the boxes' widths; a class
@@ -176,9 +177,12 @@ export function createDatumDateAdapter(
                 aria-invalid=${ifDefined(aria.invalid)}
                 aria-describedby=${ifDefined(describedByAttr(s.describedBy))}
                 aria-required=${ifDefined(aria.required)}
-                @input=${(event: Event) => on.input((event.target as HTMLInputElement).value, { interim: true })}
+                @input=${(event: Event) => reportNative(event.target as HTMLInputElement, on)}
                 @change=${leave.change}
-                @blur=${leave.blur}
+                @blur=${(event: Event) => {
+                  reportUnread(event.target as HTMLInputElement, on);
+                  leave.blur(event);
+                }}
                 @focus=${leave.focus}
               />`,
               error: errorView(s, field)
@@ -309,16 +313,51 @@ export function createDatumDateAdapter(
   };
 }
 
+/** The browser's date boxes whose last report said they hold a date the browser could not read. */
+const unread = new WeakSet<HTMLInputElement>();
+
+/**
+ * What the browser's date box holds, reported as the whole answer: its `YYYY-MM-DD` value, or,
+ * when it holds a date the browser cannot read (a day and a month with no year yet), the empty
+ * answer with `badInput`, so validation says the date is not one rather than "required".
+ */
+function reportNative(input: HTMLInputElement, on: FieldEvents): void {
+  if (input.validity?.badInput === true) {
+    unread.add(input);
+    on.input("", { interim: true, badInput: true });
+    return;
+  }
+  unread.delete(input);
+  on.input(input.value, { interim: true });
+}
+
+/**
+ * Before the box is left: a date typed in part from an empty box changes no value, so the
+ * browser fires no `input` and the box is read here. A box that held such a date and was
+ * emptied part by part (no `input` either) is reported empty, which forgets what it said.
+ */
+function reportUnread(input: HTMLInputElement, on: FieldEvents): void {
+  if (input.validity?.badInput === true || unread.has(input)) {
+    reportNative(input, on);
+  }
+}
+
 /**
  * Where focus goes on a date drawn as part boxes: the first box the date still lacks, in the
- * order the boxes stand, else the first (an impossible day). Read from the boxes, which hold what
+ * order the boxes stand, else a year typed in fewer than four digits, else the first (an
+ * impossible day). Read from the boxes, which hold what
  * was typed even when no draw has followed. Any binding whose date draws its boxes marked
  * `data-value-part` (`day`, `month`, `year`) in the field's own tree takes it as it is
  * (`datum.components.date.focusTarget`).
  */
 export function datePartsFocusTarget(wrapper: HTMLElement): HTMLElement | null {
   const boxes = Array.from(wrapper.querySelectorAll<HTMLInputElement | HTMLSelectElement>("[data-value-part]"));
-  return boxes.find((box) => box.value.trim() === "") ?? boxes[0] ?? null;
+  return (
+    boxes.find((box) => box.value.trim() === "") ??
+    boxes.find((box) => box.getAttribute("data-value-part") === "year" && /^\d{1,3}$/.test(box.value.trim())) ??
+    boxes[0] ??
+    null
+  );
 }
 
 /** Datum's date with the engine's own choices: day, month, year; the month a two-digit box. */
