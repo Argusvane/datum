@@ -172,6 +172,7 @@ export const DATA_EN = {
   "schemaRows.type.anyOf": "Any of {count}",
   "schemaRows.type.oneOf": "One of {count}",
   "schemaRows.type.oneOfList": "One of a list",
+  "schemaRows.type.anyOfList": "Any of a list",
   "schemaRows.type.date": "Date",
   "schemaRows.type.dateTime": "Date and time",
   "schemaRows.type.time": "Time",

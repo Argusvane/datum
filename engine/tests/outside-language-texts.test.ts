@@ -167,4 +167,14 @@ describe("what an edit of a layout does to the addresses of its texts", () => {
     expect(layoutTextChanges(paper, rewired).prune).toEqual([{ kind: "pdf", owner: "paper", path: ["fields", "topmostSubform[0].Greeting[0]"] }]);
     expect(layoutTextChanges(paper, paper)).toEqual({ prune: [], move: [] });
   });
+
+  it("moves an area's fill text whose id changed and nothing else did, and prunes it when the text went too", () => {
+    const renamed: PdfTemplateLayout = { ...paper, areas: paper.areas!.map((area) => ({ ...area, id: "greeting" })) };
+    expect(layoutTextChanges(paper, renamed)).toEqual({
+      prune: [],
+      move: [{ from: { kind: "pdf", owner: "paper", path: ["areas", "a1"] }, to: { kind: "pdf", owner: "paper", path: ["areas", "greeting"] } }]
+    });
+    const rewired: PdfTemplateLayout = { ...paper, areas: paper.areas!.map((area) => ({ ...area, id: "greeting", source: { kind: "component", componentId: "name" } })) };
+    expect(layoutTextChanges(paper, rewired)).toEqual({ prune: [{ kind: "pdf", owner: "paper", path: ["areas", "a1"] }], move: [] });
+  });
 });

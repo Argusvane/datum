@@ -158,7 +158,8 @@ describe("<datum-form> journey checks through validate-url", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toBe("/api/journey-check");
+    // The attribute keeps the absolute URL it was checked as.
+    expect(url).toBe(new URL("/api/journey-check", document.baseURI).href);
     expect(init?.method).toBe("POST");
     expect((init?.headers as Record<string, string>)["content-type"]).toBe("application/json");
     expect(init?.signal).toBeInstanceOf(AbortSignal);

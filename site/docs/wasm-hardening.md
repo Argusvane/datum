@@ -25,7 +25,7 @@ A WebAssembly runtime confines a module only as far as the host tells it to. A r
 
 | # | Control | Spring Boot | FastAPI |
 |---|---|---|---|
-| 1 | [Verify the engine module and the programs](#verify-what-you-run) | Held to a pinned hash at build and compiled into the jar | Re-hashed against the pin at every start |
+| 1 | [Verify the engine module and the programs](#verify-what-you-run) | The engine module held to a pinned hash at build and compiled into the jar; the programs re-hashed at every start against hashes built into the host | Re-hashed against the pin at every start |
 | 2 | [One fresh instance per run](#one-instance-per-run) | Done | Done |
 | 3 | [Hand the run nothing](#hand-the-run-nothing) | Done: no environment, a read-only folder in memory holding only the program | Done: no environment, a private read-only folder holding only the program |
 | 4 | [A deadline the runtime enforces](#a-deadline-the-runtime-enforces) | `datum.runtime.validation.time-limit`, 5 s | `datum.runtime.validation.time_limit`, 5 s |
@@ -55,7 +55,7 @@ Three files decide every verdict: the engine module and the two programs. Hold e
 
 What the Datum hosts do:
 
-- **Spring Boot.** The build downloads the engine module, holds it to its pinned hash and size, and compiles it into a class in the jar. The file itself never ships, so there is nothing on disk to swap.
+- **Spring Boot.** The build downloads the engine module, holds it to its pinned hash and size, and compiles it into a class in the jar. The file itself never ships, so there is nothing on disk to swap. At every start the host hashes the freeze snippet and each program it loads from `datum-programs`, and refuses to start unless each hash is the one `datum-programs` lists and the one built into `datum-sandbox` from the same build. A missing list, a file it does not list, or a `datum-programs` from another release stops the start.
 - **FastAPI.** The engine module ships in its own distribution with its hash, and the runtime hashes it again at every start. To run a copy of your own, set `datum.runtime.qjs_path` together with `datum.runtime.qjs_sha256`. The programs are held to the digests in their distribution.
 - **Both.** A program you point `datum.runtime.programs.sandbox` at is still proved by the version probe before any run.
 

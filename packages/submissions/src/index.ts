@@ -5,6 +5,7 @@ export * from "./store/in-memory-store.js";
 export * from "./store/indexeddb-store.js";
 export * from "./validation/validator.js";
 export * from "./digest.js";
+export * from "./strict-json.js";
 export * from "./signatures/document.js";
 export * from "./signatures/envelope.js";
 export * from "./signatures/pdf.js";

@@ -701,6 +701,21 @@ export function moduleAttributeUrl(value: string): string | undefined {
 }
 
 /**
+ * A `wasm` or `pdf` attribute's value with the URL it names made absolute against the page's base
+ * as it is now ({@link moduleAttributeUrl}). The element checks the origin of this URL and stores
+ * this URL, so what is checked is what is loaded: a `<base>` added to the page afterwards cannot
+ * move a relative value elsewhere. A value that names no URL (`auto`, `off`, blank) or does not
+ * parse is returned unchanged, for its own case to read or report.
+ */
+export function absoluteModuleAttribute(value: string): string {
+  try {
+    return moduleAttributeUrl(value) ?? value;
+  } catch {
+    return value;
+  }
+}
+
+/**
  * Why an attribute may not use `url` (absolute, already resolved against the page): it is on
  * neither the page's own origin nor one `allow-origins` on `host` lists. Markup reaches places a
  * script does not (a CMS that lets editors write attributes, a sanitiser that passes custom

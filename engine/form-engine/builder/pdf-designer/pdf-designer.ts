@@ -91,7 +91,10 @@ export interface PdfDesigner {
   layoutFrom(root: ComponentNode): PdfGeneratedLayout;
   /** The form's components a `pdf-field` may bind. */
   components: PdfBindableComponent[];
-  /** Rebuilds the field previews over other sample answers. The host repaints the canvas afterwards. */
+  /**
+   * Rebuilds the field previews over other sample answers. The host repaints the canvas afterwards.
+   * When calls overlap, the last one started wins, however their renders finish.
+   */
   refresh(values: Record<string, unknown>): Promise<void>;
   /**
    * Adopts plugin formula functions wired after the designer was built and rebuilds the field
@@ -222,9 +225,13 @@ export async function createPdfDesigner(options: PdfDesignerOptions): Promise<Pd
 
   let formulaSource = options.formulaFunctions;
   let lastValues: Record<string, unknown> = options.values ?? {};
+  // Bumped by every refresh: one whose render finishes after a later one started leaves the
+  // previews to that later one, which drew them over the newer answers and functions.
+  let refreshRun = 0;
 
   const refresh = async (values: Record<string, unknown>): Promise<void> => {
     lastValues = values;
+    const run = (refreshRun += 1);
     const pluginFunctions = formulaSource !== undefined && typeof formulaSource.functions === "function" ? formulaSource.functions() : undefined;
     const preview = new BuilderPreviewRuntime(options.formRoot, {
       ...(pluginFunctions !== undefined ? { functions: pluginFunctions } : {}),
@@ -241,6 +248,9 @@ export async function createPdfDesigner(options: PdfDesignerOptions): Promise<Pd
     const output = await buildRuntimeRenderOutput(preview, "readonly", {
       ...(options.dataSources ? { dataSources: options.dataSources } : {})
     });
+    if (run !== refreshRun) {
+      return;
+    }
     previews.clear();
     if (output.mode !== "readonly") {
       return;

@@ -37,9 +37,11 @@ import run.endive.wasm.types.MemoryLimits;
  * <ul>
  *   <li>WASI preview 1 over exactly what the harness hands a run: the argv, stdin, the bounded stdout and stderr (a cap's
  *       exception propagates out of {@code fd_write}, which Endive's WASI layer does not catch, so the run ends at once),
- *       {@code /app} as the only preopen, no environment, WASI's own clock, and the harness's {@code SecureRandom} (Endive's
- *       default is a {@code ThreadLocalRandom} captured on the caller's thread, whose sequence on a fresh pool thread
- *       repeats from one JVM to the next);</li>
+ *       {@code /app} as the only preopen, no environment, and the harness's fixed realtime clock and per-run
+ *       {@code random_get} stream ({@link GuestIo}: the same date and the same bytes on every run). Endive's WASI reads the
+ *       realtime clock from that {@code Clock} and the monotonic one from {@code System.nanoTime()}, which no option
+ *       replaces: the monotonic clock stays the host's, so sleeps and the {@code qjs:os} timers keep real time and a stop
+ *       still lands (an interrupt ends a sleep at once);</li>
  *   <li>linear memory limited to {@code budget.memoryBytes / 65536} pages from the module's own initial pages
  *       ({@link #QJS_PAGES}); past it QuickJS's allocator fails (memory.grow answers -1) and QuickJS reports it;</li>
  *   <li>the precompiled module on the runner {@link ProviderSelector} chose: {@code provider.builder(Qjs.load(),
@@ -58,8 +60,9 @@ import run.endive.wasm.types.MemoryLimits;
  * harness never interrupts {@code build()} (it maps the linear memory before it constructs the instance; repeated stops
  * during set-up leaked a whole memory limit of address space each), and should {@code build()} fail
  * for another reason (the JVM out of heap mid-set-up) the native memories it made are closed here before the failure goes
- * on. Each native instance also costs about 150 MiB of transient heap and 0.4 s of set-up, and its linear
- * memory lives off-heap (mmap) under a native runner, on the heap under bytecode.
+ * on. Each native instance also costs a few MiB of heap (what one warm run allocates: under 8 MiB on the Panama runner,
+ * under 2 MiB on JFFI; the start-up memory check counts {@code MemoryBudget.SETUP_HEAP} a slot) and about 0.4 s of set-up,
+ * and its linear memory lives off-heap (mmap) under a native runner, on the heap under bytecode.
  */
 public final class EndiveGuestRuntime implements GuestRuntime, AutoCloseable {
 
@@ -292,6 +295,7 @@ public final class EndiveGuestRuntime implements GuestRuntime, AutoCloseable {
                 .withArguments(io.argv())
                 .withDirectory(GuestIo.GUEST_APP, io.app())
                 .withRandom(io.random())
+                .withClock(io.clock())
                 // Pipes, as a wasmtime host gives them: QuickJS's own print flushes each line.
                 .withStdin(io.stdin(), false)
                 .withStdout(io.stdout(), false)

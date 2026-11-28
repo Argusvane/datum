@@ -165,6 +165,30 @@ describe("a journey removed or copied", () => {
     expect(mode.journeys.map((journey) => journey.id)).toEqual(["intake", "quick", copy.id]);
   });
 
+  it("gives a journey made afresh under a removed journey's id none of that journey's translations", async () => {
+    const { form, mode } = await activated();
+    // Renamed, the journey keeps its id: its French name is now of a wording it no longer has.
+    mode.renameJourney("quick", "Applicant path");
+    mode.removeJourney("quick");
+    const made = await mode.newJourney({ from: "blank", name: "Quick" });
+    expect(made.id).toBe("quick");
+    expect(form.translations()?.fr?.journeys?.quick).toBeUndefined();
+    expect(form.translations()?.fr?.journeys?.intake).toEqual(translations().fr?.journeys?.intake);
+  });
+
+  it("gives a copy that takes a removed journey's id only the original's translations", async () => {
+    const { form, mode } = await activated();
+    form.replaceTranslations({ ...translations(), es: { journeys: { quick: { name: entry("Rápido", "Quick") } } } }, { silent: true });
+    mode.replaceJourney("quick", { ...(mode.journeys.find((journey) => journey.id === "quick") as Journey), id: "intake-copy" });
+    expect(readTranslation(form.translations(), "es", addressOf.journey("intake-copy", "name"))).toEqual(entry("Rápido", "Quick"));
+    mode.removeJourney("intake-copy");
+    const copy = mode.duplicateJourney("intake");
+    expect(copy.id).toBe("intake-copy");
+    // The original has no Spanish: neither has its copy.
+    expect(form.translations()?.es?.journeys?.["intake-copy"]).toBeUndefined();
+    expect(form.translations()?.fr?.journeys?.["intake-copy"]?.pages).toEqual(translations().fr?.journeys?.intake?.pages);
+  });
+
   it("moves them when a host gives the journey another id, announces the id with its kind, and one Undo moves them back", async () => {
     const { form, mode } = await activated();
     const heard: Array<{ kind: string; from: string; to: string }> = [];

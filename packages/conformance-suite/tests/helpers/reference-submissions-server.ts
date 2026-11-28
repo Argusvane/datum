@@ -8,6 +8,7 @@ import {
   createKernelValidator,
   createSubmissionService,
   errorResponse,
+  parseStrictJson,
   receiveResponse,
   validationBody,
   type SubmissionService,
@@ -22,7 +23,7 @@ import { checkRequestOf } from "./contract-wire.js";
  * kernel validator, an in-memory store) behind `node:http`, answering with the package's own
  * helpers (`parseValidateRequest`, `validationBody`, `receiveResponse`, `errorResponse`). It is a GOOD server: the submissions-profile
  * vectors must all pass against it. The HTTP layer does what a host must do before the service
- * sees a body (a body cap, strict UTF-8, JSON, a finite number, an object), because the service
+ * sees a body (a body cap, strict UTF-8, JSON with no repeated key, a finite number, an object), because the service
  * takes already-parsed input. The package's answers are the hosts' contract as it stands: a check is strict
  * about its request and answers `{accepted, errors, notes?}`, and a run that failed is a 503 with its code.
  */
@@ -121,7 +122,7 @@ export async function startReferenceServer(options: ReferenceServerOptions = {})
     let jsonOk = false;
     if (utf8) {
       try {
-        json = JSON.parse(bodyText);
+        json = parseStrictJson(bodyText);
         jsonOk = true;
       } catch {
         jsonOk = false;

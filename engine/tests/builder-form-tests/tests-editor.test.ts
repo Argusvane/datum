@@ -17,6 +17,9 @@ import { mountTestsEditor, testsCompletionSource } from "../../form-engine/build
 import { loadTestsEditor } from "../../form-engine/builder/form-tests/tests-editor-loader.js";
 import type { TestsEditor, TestsEditorOptions } from "../../form-engine/builder/form-tests/tests-model.js";
 import { lineStartOffset, SHOWN_CLASS, type TestsInsertLineOptions } from "../../form-engine/builder/form-tests/tests-textarea.js";
+import { formulaFunctionSignatures } from "../../form-engine/core/expressions/function-table.js";
+import { kernelParseFormTests } from "../../form-engine/core/form-tests/form-test-parse.js";
+import type { ComponentNode, FormDefinition } from "../../form-engine/core/schema/types.js";
 import { FORM_TESTS_FIXTURE } from "../form-tests/fixtures/form-tests-fixture.js";
 
 const SOURCE = ['test "Name is required"', '  set applicant_name = "Ana"  # a note', "  expect applicant_name required", "  submit"].join("\n");
@@ -229,6 +232,35 @@ describe("the CodeMirror test editor", () => {
     apply(closed, option, result?.from ?? 0, closed.state.doc.length - 1);
     expect(closed.state.doc.toString()).toBe('set contact_method = "email"');
     closed.destroy();
+  });
+
+  it("escapes an option chosen inside a string, so the line still reads the option", () => {
+    const root = {
+      id: "form",
+      type: "form",
+      configuration: {},
+      children: { content: [{ id: "size", type: "select", configuration: { label: "Size", options: [{ value: 'say "hi"' }, { value: "a\\b" }, { value: "it's" }] } }] }
+    } as unknown as ComponentNode;
+    const own = createTestsCompletions(() => root, () => ({ id: "f", version: "1.0.0", schemaVersion: "1.0.0", root }) as unknown as FormDefinition, () => []);
+    const source = testsCompletionSource({ lists: () => own, words: undefined });
+    for (const [line, value] of [
+      ['set size = "', 'say "hi"'],
+      ['set size = "', "a\\b"],
+      ["set size = '", "it's"],
+      ["set size = '", 'say "hi"']
+    ] as const) {
+      const result = source(new CompletionContext(EditorState.create({ doc: line }), line.length, false)) as CompletionResult | null;
+      const option = result?.options.find((entry) => entry.label === value) as Completion;
+      const view = new EditorView({ state: EditorState.create({ doc: line }), parent: document.body });
+      (option.apply as (v: EditorView, c: Completion, from: number, to: number) => void)(view, option, result?.from ?? 0, line.length);
+      const text = view.state.doc.toString();
+      // The caret lands after the closing quote.
+      expect(view.state.selection.main.head, text).toBe(text.length);
+      view.destroy();
+      const parsed = kernelParseFormTests(`test "x"\n  ${text}`, formulaFunctionSignatures());
+      expect(parsed.problems, text).toEqual([]);
+      expect(parsed.scenarios[0]?.steps[0], text).toMatchObject({ value: value });
+    }
   });
 
   it("completes a statement word with its trailing space", () => {

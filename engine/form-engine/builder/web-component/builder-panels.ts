@@ -478,7 +478,8 @@ export const DATUM_BUILDER_FORM_PANEL_TAG = "datum-builder-form-panel";
 /**
  * Base for the independently-usable builder panels. Assign a shared
  * {@link BuilderController} via the `controller` property; the panel re-renders on every
- * controller `change` / `selection`.
+ * controller `change` / `selection`. It stops listening while out of the document and listens
+ * again when put back, so a panel moved in the DOM keeps its controller.
  */
 export abstract class BuilderPanelElement extends HTMLElementBase {
   protected readonly root: ShadowRoot;
@@ -614,11 +615,7 @@ export abstract class BuilderPanelElement extends HTMLElementBase {
   public set controller(controller: BuilderController | undefined) {
     this.teardown();
     this.ctrl = controller;
-    if (controller) {
-      this.unsub.push(controller.on("change", (event) => this.onControllerChange(event.reason, event)));
-      this.unsub.push(controller.on("selection", () => this.onSelectionChange()));
-      this.unsub.push(controller.on("drawing", () => this.onDrawingChange()));
-    }
+    this.subscribe();
     this.paint();
   }
 
@@ -661,11 +658,27 @@ export abstract class BuilderPanelElement extends HTMLElementBase {
   }
 
   public connectedCallback(): void {
+    // Back in the document after a move: the subscriptions the disconnect dropped come back.
+    // The paint draws whatever the controller did meanwhile.
+    if (this.unsub.length === 0) {
+      this.subscribe();
+    }
     this.paint();
   }
 
   public disconnectedCallback(): void {
     this.teardown();
+  }
+
+  /** Listens to the controller on the panel, if there is one; {@link teardown} stops it. */
+  private subscribe(): void {
+    const controller = this.ctrl;
+    if (!controller) {
+      return;
+    }
+    this.unsub.push(controller.on("change", (event) => this.onControllerChange(event.reason, event)));
+    this.unsub.push(controller.on("selection", () => this.onSelectionChange()));
+    this.unsub.push(controller.on("drawing", () => this.onDrawingChange()));
   }
 
   private teardown(): void {
@@ -1289,6 +1302,8 @@ export class DatumBuilderCanvasElement extends BuilderPanelElement implements Te
   /** Stops the remote-picture guard on the renderer's shadow root. */
   private remoteImageGuard: (() => void) | undefined;
   private watchedRoot: ParentNode | undefined;
+  /** The renderer element that has the canvas's action and language listeners; a renderer built later takes its own. */
+  private boundRenderer: DatumFormRendererElement | undefined;
   /** Names the document load the canvas shows; a new one is made on every load, so confirmations never carry over. */
   private loadToken = newRemoteLoadToken();
   private inertQueued = false;
@@ -1938,9 +1953,10 @@ export class DatumBuilderCanvasElement extends BuilderPanelElement implements Te
     window.removeEventListener("mousemove", this.onSheetDrag);
     window.removeEventListener("mouseup", this.onSheetDragEnd);
     // Committed only if the pointer actually moved: a stray mousedown on the grip must not
-    // freeze the sheet at whatever width it happened to have.
+    // freeze the sheet at whatever width it happened to have. The width goes to the controller
+    // whose tree the sheet draws: the tried form's while it is tried over a mode's tree.
     if (drag?.lastW !== undefined) {
-      this.ctrl?.setPreviewWidth(drag.lastW);
+      this.sheetController()?.setPreviewWidth(drag.lastW);
     }
   };
 
@@ -4310,13 +4326,53 @@ export class DatumBuilderCanvasElement extends BuilderPanelElement implements Te
     });
   }
 
+  /**
+   * The listeners on the renderer element itself. Its own, unlike those on the shadow root: run
+   * for every renderer the canvas creates, so a renderer built after a no-controller render has them too.
+   */
+  private bindRenderer(): void {
+    const renderer = this.rendererEl;
+    if (!renderer || renderer === this.boundRenderer) {
+      return;
+    }
+    this.boundRenderer = renderer;
+    // A previewed button reports intent like any other; on the canvas it does nothing, but for
+    // Submit in Try it (a journey's own Submit included), which the stand-in server answers.
+    renderer.addEventListener("datum-form-action", (event) => {
+      event.stopPropagation();
+      const detail = (event as CustomEvent<DatumFormActionDetail>).detail;
+      const panel = this.root.querySelector<HTMLElement>("[data-try-panel]");
+      if (this.previewingValue && detail?.action === "submit" && panel && !panel.hidden) {
+        // Pressed before the chunk is in (a click straight after Try it): it runs once it is.
+        // Not if the author left Try it meanwhile: a Submit queued on the load dies with the panel.
+        void this.startTry().then((tryIt) => {
+          const shown = this.root.querySelector<HTMLElement>("[data-try-panel]");
+          if (tryIt && this.previewingValue && shown && !shown.hidden) {
+            void tryIt.submit();
+          }
+        });
+      }
+    });
+    // A language switcher the author placed in the form's own chrome previews on
+    // the canvas like the rest of it; a pick there is the same choice as the toolbar's locale
+    // select, so it goes the same way and the toolbar, inspector and canvas stay in step.
+    renderer.addEventListener("datum-locale-applied", (event) => {
+      event.stopPropagation();
+      const locale = (event as CustomEvent<{ locale: string }>).detail?.locale;
+      // Not while the form is tried over a designer: the switch is the tried form's own.
+      if (locale && !this.tryingForm() && locale !== this.ctrl?.currentLocale()) {
+        this.ctrl?.setOptions({ locale });
+      }
+    });
+  }
+
   private bind(): void {
     this.watchRenderer();
+    this.bindRenderer();
     if (this.bound) {
       return;
     }
     this.bound = true;
-    const renderer = this.rendererEl;
 
     this.root.addEventListener("click", (event) => {
       const path = event.composedPath() as HTMLElement[];
@@ -4582,7 +4638,7 @@ export class DatumBuilderCanvasElement extends BuilderPanelElement implements Te
       "touchstart",
       (event) => {
         const touch = event as TouchEvent;
-        if (touch.touches.length === 2 && this.hasAttribute("data-phone") && this.ctrl?.sheetWidth() !== undefined) {
+        if (touch.touches.length === 2 && this.hasAttribute("data-phone") && this.sheetController()?.sheetWidth() !== undefined) {
           pinch = { distance: spread(touch.touches), zoom: this.zoomValue };
         }
       },
@@ -4620,8 +4676,8 @@ export class DatumBuilderCanvasElement extends BuilderPanelElement implements Te
       }
       const surface = this.root.querySelector<HTMLElement>(".canvas-surface");
       // The grips are hidden while the tree fixes the width; a stray hit on one must not
-      // start a drag the sheet would not honour.
-      if (!surface || this.ctrl?.sheetWidth() !== undefined) {
+      // start a drag the sheet would not honour. The tree is the sheet's: the tried form's over a mode's.
+      if (!surface || this.sheetController()?.sheetWidth() !== undefined) {
         return;
       }
       this.sheetDrag = {
@@ -4632,35 +4688,6 @@ export class DatumBuilderCanvasElement extends BuilderPanelElement implements Te
       event.preventDefault();
       window.addEventListener("mousemove", this.onSheetDrag);
       window.addEventListener("mouseup", this.onSheetDragEnd);
-    });
-
-    // A previewed button reports intent like any other; on the canvas it does nothing, but for
-    // Submit in Try it (a journey's own Submit included), which the stand-in server answers.
-    renderer?.addEventListener("datum-form-action", (event) => {
-      event.stopPropagation();
-      const detail = (event as CustomEvent<DatumFormActionDetail>).detail;
-      const panel = this.root.querySelector<HTMLElement>("[data-try-panel]");
-      if (this.previewingValue && detail?.action === "submit" && panel && !panel.hidden) {
-        // Pressed before the chunk is in (a click straight after Try it): it runs once it is.
-        // Not if the author left Try it meanwhile: a Submit queued on the load dies with the panel.
-        void this.startTry().then((tryIt) => {
-          const shown = this.root.querySelector<HTMLElement>("[data-try-panel]");
-          if (tryIt && this.previewingValue && shown && !shown.hidden) {
-            void tryIt.submit();
-          }
-        });
-      }
-    });
-    // A language switcher the author placed in the form's own chrome previews on
-    // the canvas like the rest of it; a pick there is the same choice as the toolbar's locale
-    // select, so it goes the same way and the toolbar, inspector and canvas stay in step.
-    renderer?.addEventListener("datum-locale-applied", (event) => {
-      event.stopPropagation();
-      const locale = (event as CustomEvent<{ locale: string }>).detail?.locale;
-      // Not while the form is tried over a designer: the switch is the tried form's own.
-      if (locale && !this.tryingForm() && locale !== this.ctrl?.currentLocale()) {
-        this.ctrl?.setOptions({ locale });
-      }
     });
 
     this.root.addEventListener("dragstart", (event) => {
@@ -4995,7 +5022,8 @@ const EMPTY_TREE_VIEW: NestedTreeNodeView = {
  * The parsed expression lives in the controller's draft; JSON mid-keystroke does not parse and
  * so has nowhere to go but here. `texts` is what the box shows while the author types, `errors`
  * why the last keystroke did not reach the draft. Both are dropped when the selection moves
- * on, like the Rules tab's working state below.
+ * on, like the Rules tab's working state below, and with the draft on Discard or Escape, and
+ * when an Undo or a Redo changes the component: the box then shows the value as it stands.
  */
 interface ExpressionWorkingState {
   nodeId: string;
@@ -6859,7 +6887,7 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
     return this.rulesState;
   }
 
-  /** The expression-control working state for the current selection, reset when it or the controller moves. */
+  /** The expression-control working state for the current selection, reset when it or the controller moves (and see ExpressionWorkingState). */
   private expressions(nodeId: string): ExpressionWorkingState {
     this.followController();
     if (this.expressionState.nodeId !== nodeId) {
@@ -7080,6 +7108,11 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
       const key = keys?.full;
       if (key !== undefined && key === this.subjectKey) {
         return;
+      }
+      // An Undo or a Redo that changed the subject put back values the text typed in its
+      // expression boxes was not made against: the boxes show what the step left.
+      if (event?.historyStep) {
+        this.expressionState = emptyExpressionState("");
       }
       const typing = this.liveBoxWrite;
       if (event?.live && typing && typing.nodeId === this.subjectId() && key !== undefined && this.subjectKey !== undefined && keys?.clean === this.subjectKeyClean) {
@@ -7842,12 +7875,13 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
     }
     const messages = editor.kind === "messages";
     // A half-typed add row is not dropped without a word.
-    const unfinished = messages ? undefined : this.takePendingOptionRow(editor);
+    const unfinished = this.takePendingOptionRow(editor);
     if (unfinished) {
       editor.error = unfinished.message;
       this.captureOptionsFrame();
       this.paint();
-      // Focus the box the problem is in: a clashing key is in the key box, the rest in the label box.
+      // Focus the box the problem is in: a clashing or missing key (a message's code) is in the
+      // key box, the rest in the label box.
       this.root.querySelector<HTMLElement>(`[data-options-new='${unfinished.box}']`)?.focus();
       return;
     }
@@ -7877,12 +7911,29 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
   /**
    * The add row as Apply finds it: nothing typed, nothing to do; a label, a row
    * (under its key, or one made from the label); a key with no label, the reason it is not
-   * applied. A key some row already has is refused as Add refuses it.
+   * applied. A key some row already has is refused as Add refuses it. In the messages editor a
+   * row needs both: a code and its message are a row, and either one alone is the reason it is
+   * not applied (a code is never made from the message).
    */
   private takePendingOptionRow(editor: OptionsEditorView): { message: string; box: "value" | "label" } | undefined {
     const key = editor.newValue.trim();
     const label = editor.newLabel.trim();
     if (key.length === 0 && label.length === 0) {
+      return undefined;
+    }
+    if (editor.kind === "messages") {
+      if (key.length === 0) {
+        return { message: this.words.text("optionsEditor.err.enterCode"), box: "value" };
+      }
+      if (editor.rows.some((row) => row.value.trim() === key)) {
+        return { message: this.words.text("optionsEditor.err.codeHasMessage", { code: key }), box: "value" };
+      }
+      if (label.length === 0) {
+        return { message: this.words.text("optionsEditor.err.messageEmpty", { code: key }), box: "label" };
+      }
+      editor.rows.push({ value: key, label });
+      editor.newValue = "";
+      editor.newLabel = "";
       return undefined;
     }
     if (label.length === 0) {
@@ -9230,18 +9281,34 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
       this.paint();
       return true;
     }
+    return this.handleFormulaFeedbackClick(target, nodeId);
+  }
 
+  /**
+   * Handles a click in the feedback under a formula box: a "Try one" chip, or Retry after the
+   * formula editor failed to load. The Rules tab's rules and a Field-tab formula (a PDF template
+   * area's) draw the same feedback, so this runs on every tab. Returns false when the click was not ours.
+   */
+  private handleFormulaFeedbackClick(target: Element, nodeId: string): boolean {
     const tryButton = target.closest<HTMLElement>("[data-rule-try]");
     if (tryButton) {
       const key = tryButton.dataset.rule ?? "";
-      this.applyFormulaEdit(nodeId, key, tryButton.dataset.ruleTry ?? "");
+      const example = tryButton.dataset.ruleTry ?? "";
+      this.applyFormulaEdit(nodeId, key, example);
+      // The write is live, which paints nothing, so the box (and the editor over it) is set
+      // here: the formula is what the author sees next, not only what the draft holds.
+      const box = this.root.querySelector<HTMLTextAreaElement>(`textarea[data-rule-formula][data-rule="${key.replace(/["\\]/g, "\\$&")}"]`);
+      const editor = this.formulaEditors.get(key);
+      if (box) {
+        box.value = example;
+      }
+      editor?.editor.setText(example);
       // A click, not a keystroke: the canvas catches up now.
       this.commitFormulaEdit(nodeId, key);
-      const editor = this.formulaEditors.get(key);
       if (editor) {
         editor.editor.focus();
       } else {
-        this.root.querySelector<HTMLTextAreaElement>(`textarea[data-rule-formula][data-rule="${key.replace(/["\\]/g, "\\$&")}"]`)?.focus();
+        box?.focus();
       }
       return true;
     }
@@ -9455,8 +9522,10 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
         return;
       }
       if (target.closest?.("[data-unsaved-discard]")) {
-        // Working rule state is derived from the draft, so it goes with it (as on Cancel).
+        // Working rule state is derived from the draft, so it goes with it (as on Cancel), and
+        // so does the text typed in an expression box.
         this.rulesState = emptyRulesState("");
+        this.expressionState = emptyExpressionState("");
         this.ctrl?.answerUnsavedChangesPrompt("discard");
         return;
       }
@@ -9531,9 +9600,10 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
       }
       if (target.closest?.("[data-inspector-cancel]")) {
         // Working rule state is derived from the draft, so it goes with it — and the JSON
-        // view's text, which may hold what never reached the draft.
+        // view's text and the expression boxes' text, which may hold what never reached the draft.
         this.rulesState = emptyRulesState("");
         this.jsonState = undefined;
+        this.expressionState = emptyExpressionState("");
         this.ctrl?.discardDraft(this.subjectId());
         this.paint();
         this.syncBoxesToPainted();
@@ -9584,7 +9654,7 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
         return;
       }
 
-      if (this.tab === "rules" && nodeId && this.handleRulesClick(target, nodeId)) {
+      if (nodeId && (this.tab === "rules" ? this.handleRulesClick(target, nodeId) : this.handleFormulaFeedbackClick(target, nodeId))) {
         return;
       }
 
@@ -9878,8 +9948,10 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
         keyEvent.preventDefault();
         this.focusAfterLabel();
       } else if (keyEvent.key === "Escape" && this.ctrl?.hasPendingChanges(subject)) {
+        // What goes with the draft on Cancel goes with it here.
         this.rulesState = emptyRulesState("");
         this.jsonState = undefined;
+        this.expressionState = emptyExpressionState("");
         this.ctrl.discardDraft(subject);
         this.syncBoxesToPainted();
       }

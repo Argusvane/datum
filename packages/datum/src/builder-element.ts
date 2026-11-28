@@ -95,6 +95,7 @@ import {
   ElementBase,
   MAX_DEFINITION_BYTES,
   allowOriginsProblem,
+  absoluteModuleAttribute,
   attributeOriginProblem,
   canDefineCustomElements,
   emit,
@@ -1046,6 +1047,11 @@ export class DatumFormBuilderElement extends ElementBase {
       // A module attribute naming another origin is as good as absent (see attributeOriginProblem).
       if (name in ORIGIN_BOUND_ATTRIBUTES) {
         this.seenUrlAttributes.add(name);
+      }
+      // A module URL is resolved once, here: the origin check judges the absolute URL, and the
+      // element stores and later loads that same URL, whatever the page's base becomes.
+      if (value !== null && (name === "wasm" || name === "pdf" || name === "pdf-pages")) {
+        value = absoluteModuleAttribute(value);
       }
       if (value !== null && name in ORIGIN_BOUND_ATTRIBUTES && !this.originAllows(name, value)) {
         value = null;

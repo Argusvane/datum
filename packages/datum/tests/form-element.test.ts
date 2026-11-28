@@ -1236,7 +1236,7 @@ describe("<datum-form> sandboxed validation", () => {
     const errors = listen<DatumErrorDetail>(broken, "datum-error");
     const brokenForm = await paintedForm(broken);
     await until(() => errors.length === 1);
-    expect(errors[0]!.message).toContain('wasm="/nowhere/datum-wasm.js"');
+    expect(errors[0]!.message).toContain(`wasm="${new URL("/nowhere/datum-wasm.js", document.baseURI).href}"`);
     type(control(brokenForm, "fullName")!, "Ada Lovelace");
     await until(() => broken.values.fullName === "Ada Lovelace");
     const blocked = await submitted(broken);

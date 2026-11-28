@@ -49,7 +49,13 @@ group, where a runtime may also say which pools it serves).
 
 - **JVM (`.wasi`).** The layer's refusals are one small unchecked family (`WasiException`: a run
   that cannot start, limits an engine cannot honour, an engine that cannot be selected), which
-  the layer above translates once into the exceptions and wire codes the hosts share.
+  the layer above translates once into the exceptions and wire codes the hosts share. The guest gets
+  no real wall clock and no real randomness (`GuestIo`): the realtime clock and the file times of
+  `/app` read the Unix epoch, and `random_get` reads the same seeded stream (the pinned qjs-wasi
+  does not import it), on every run, so
+  QuickJS's own `Math.random`, which it seeds from the realtime clock, repeats too. The monotonic
+  clock stays the engine's (Endive reads it from `System.nanoTime()` with no option to replace
+  it): it times sleeps and timers and tells a guest how long it has run, never the date.
 - **Python (`datum_sandbox.wasi`).** Imports only the standard library. Each file name is one plain
   file name and the arguments are checked (a bare string is refused). The run directory is private
   (0700) and made read-only before the engine sees it. The layer's refusals are its own
@@ -94,7 +100,13 @@ down with details and names no web type; the binding adapts it.
 
 - **JVM.** `DatumSandbox` (`.runtime`) is `AutoCloseable`, built by `DatumSandbox.builder()`; with
   no runtime given it selects the engine by `SandboxSettings.engine().id()` (default `endive`) and
-  uses the packaged programs. The bytecode gate lives here: an engine that reports mode `bytecode`
+  uses the packaged programs. Each packaged file it reads (the freeze snippet, and each program not
+  overridden) must be listed in datum-programs' `programs.json` with its sha256 and have the sha256
+  datum-sandbox was built with: the build copies the same generation's `programs.json` into
+  datum-sandbox's jar (`ProgramStore.PINS`), as datum-sandbox-endive's holds `qjs-wasi.wasm` to
+  `qjs.sha256`. A missing description, an unlisted file or missing pins stop the start
+  (`ProgramUnavailableException`); a `datum.runtime.programs.*` override is listed nowhere and is
+  proved by the ABI probe. The bytecode gate lives here: an engine that reports mode `bytecode`
   stops the start unless `allow-bytecode`, before any program is proved, for an application's own
   runtime as for Endive.
 - **Python.** `DatumSandbox(settings, *, runtime=None, sandbox=None, ...)` is a context manager.

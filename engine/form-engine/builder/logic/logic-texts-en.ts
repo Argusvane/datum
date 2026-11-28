@@ -193,6 +193,7 @@ export const LOGIC_EN = {
   "logic.problem.notWritten": "The journey could not be changed. Look in the Journeys workspace for what is wrong with it.",
   "logic.problem.writeFormula": "Write the formula.",
   "logic.problem.writeCondition": "Write the condition as a formula.",
+  "logic.problem.replaces": "Apply replaces the rule {field} already has: {rule}.",
   "logic.paper.note": "Complete only if {condition}.",
   "logic.announce.applied": "Rule applied.",
   "logic.announce.removed": "Rule removed. Undo brings it back.",

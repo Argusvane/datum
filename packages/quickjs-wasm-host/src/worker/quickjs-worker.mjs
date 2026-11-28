@@ -55,18 +55,27 @@ function heapBytes(sandbox) {
 function withDeadline(sandbox, ms, work) {
   const overDeadline = shouldInterruptAfterDeadline(Date.now() + ms);
   let heapHit = false;
+  let deadlineHit = false;
   sandbox.runtime.setInterruptHandler((rt) => {
     if (typeof limits.maxWasmHeapBytes === "number" && (heapBytes(sandbox) ?? 0) > limits.maxWasmHeapBytes) {
       heapHit = true;
       return true;
     }
-    return overDeadline(rt);
+    const stop = overDeadline(rt);
+    if (stop) {
+      deadlineHit = true;
+    }
+    return stop;
   });
   try {
     return work();
   } catch (error) {
     if (heapHit) {
       throw new Failure("interrupted", `Sandbox evaluation interrupted: the sandbox's memory passed ${limits.maxWasmHeapBytes} bytes`);
+    }
+    // The host types a failure as `interrupted` by this flag alone, never by the guest error's words.
+    if (deadlineHit && error instanceof Failure) {
+      error.interrupted = true;
     }
     throw error;
   } finally {
@@ -248,7 +257,7 @@ function call(sandbox, entry, argument, maxEvalMs, resultCap) {
 
 function failureMessage(type, id, error, heap) {
   if (error instanceof Failure) {
-    return { type, id, code: error.code, message: error.message, detail: error.detail, plugin: error.plugin, heapBytes: heap };
+    return { type, id, code: error.code, message: error.message, detail: error.detail, plugin: error.plugin, interrupted: error.interrupted === true, heapBytes: heap };
   }
   // Not QuickJS's verdict but the thread's own (V8 unwinding through the WASM frames): the instance's state is unknown, and it is dropped.
   const name = error instanceof Error ? error.name : typeof error;

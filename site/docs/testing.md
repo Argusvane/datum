@@ -64,22 +64,14 @@ All the sources of one form share one set of names: a scenario name that an earl
 
 ## Installing the command
 
-`datum-form-test` and the vitest helper are in the `@argusvane/datum-form-test` package, which publishes with the first release. Once it is published, `npm install --save-dev @argusvane/datum-form-test` is all it takes. Until then, build it once from a checkout, then install the tarball in the project that holds the forms:
+`datum-form-test` and the vitest helper are in the `@argusvane/datum-form-test` package. Install it in the project that holds the forms:
 
 ```
-cd packages/form-test
-npm ci
-npm run build        # bundles dist/cli.mjs, dist/index.mjs and dist/vitest.mjs, for Node 22
-npm pack             # writes a tarball
+npm install --save-dev @argusvane/datum-form-test
+npx datum-form-test --version
 ```
 
-```
-cd ../my-project
-npm install ../datum/packages/form-test/argusvane-datum-form-test-0.1.0.tgz
-npx --package @argusvane/datum-form-test datum-form-test --version
-```
-
-`npm ci` in a pipeline then brings the command in from `package-lock.json`, as long as the tarball is where the lock file says it is.
+`npm ci` in a pipeline then brings the command in from `package-lock.json`.
 
 ## The command
 
@@ -248,7 +240,7 @@ The options:
 
 ## In a pipeline
 
-One command runs every definition and writes the reports a CI job reads. The recipes below run `npx --package @argusvane/datum-form-test datum-form-test` and so assume the package is installed in your project (it publishes with the first release; until then install it as in [Installing the command](#installing-the-command)). A GitHub Actions job:
+One command runs every definition and writes the reports a CI job reads. The recipes below run `npx --package @argusvane/datum-form-test datum-form-test` and so assume the package is installed in your project, as in [Installing the command](#installing-the-command). A GitHub Actions job:
 
 ```yaml
 name: Form tests

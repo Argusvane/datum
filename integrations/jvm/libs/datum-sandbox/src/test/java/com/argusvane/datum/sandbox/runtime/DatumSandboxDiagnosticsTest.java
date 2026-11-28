@@ -618,7 +618,7 @@ class DatumSandboxDiagnosticsTest {
 
         ProgramStore store() {
             return new ProgramStore(name -> {
-                if (name.endsWith("programs.json")) {
+                if (name.equals(ProgramStore.MANIFEST)) {
                     manifests.incrementAndGet();
                 }
                 return current.lookup().apply(name);

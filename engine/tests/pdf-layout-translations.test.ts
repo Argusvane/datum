@@ -4,9 +4,12 @@ import { describe, expect, it } from "vitest";
 import { BuilderController } from "../form-engine/builder/controller/builder-controller.js";
 import { createPdfBuilderMode, type PdfBuilderModeOptions } from "../form-engine/builder/pdf-designer/pdf-builder-mode.js";
 import { readTranslation, sourceHash, type FormTranslations, type TextAddress } from "../form-engine/core/localization/translations.js";
-import type { PdfConfiguration, PdfGeneratedLayout } from "../form-engine/core/schema/pdf-layout.js";
+import type { PdfConfiguration, PdfGeneratedLayout, PdfTemplateArea, PdfTemplateLayout } from "../form-engine/core/schema/pdf-layout.js";
 import type { ComponentNode } from "../form-engine/core/schema/types.js";
 import type { RenderableRuntime } from "../form-engine/render/core/runtime-render-bridge.js";
+import type { PdfTemplateInfo } from "../form-engine/render/pdf/pdf-abi.js";
+import type { PdfRenderProvider } from "../form-engine/render/pdf/pdf-provider.js";
+import { PDF_TEMPLATE_AREAS_SLOT } from "../form-engine/render/pdf/pdf-template-components.js";
 
 /**
  * A layout's texts are strings in the default language; their translations are the definition's
@@ -184,6 +187,27 @@ describe("the PDF mode and the definition's translations", () => {
     m.controller.renameId("title", "heading");
     expect(read(stand.held.map, at("receipt", "nodes", "title", "text"))).toBeUndefined();
     expect(read(stand.held.map, at("receipt", "nodes", "heading", "text"))).toBe("Reçu");
+  });
+
+  it("moves a populated form's area text translations with the area's new id", async () => {
+    const paper: PdfTemplateLayout = {
+      id: "paper",
+      kind: "template",
+      name: "Paper",
+      template: { storage: "base64", name: "paper.pdf", type: "application/pdf", size: 3, data: "AAA=" },
+      fields: [],
+      areas: [{ id: "note", page: 1, rect: { x: 10, y: 10, width: 100, height: 20 }, kind: "text", source: { kind: "template", text: "Hello" } } as PdfTemplateArea]
+    };
+    const stand = formController({ fr: { pdf: { paper: { areas: { note: { text: entry("Bonjour", "Hello") } } } } } });
+    const inspection: PdfTemplateInfo = { pageCount: 1, pages: [{ index: 1, width: 612, height: 792 }], fields: [], hasXfa: false, encrypted: false };
+    const m = mode({ layouts: [paper] }, stand, { support: { provider: { id: "fake", abiVersion: "4.0.0", inspect: async () => inspection } as unknown as PdfRenderProvider } });
+    await open(m);
+    await until(() => m.ready && m.controller.snapshot().children?.[PDF_TEMPLATE_AREAS_SLOT]?.length === 1);
+
+    m.controller.renameId("note", "greeting");
+    expect((m.layouts[0] as PdfTemplateLayout).areas?.map((area) => area.id)).toEqual(["greeting"]);
+    expect(read(stand.held.map, at("paper", "areas", "note", "text"))).toBeUndefined();
+    expect(read(stand.held.map, at("paper", "areas", "greeting", "text"))).toBe("Bonjour");
   });
 
   it("writes a node's translations again when the designer's Undo brings the node back, source-changed ones as they were", async () => {

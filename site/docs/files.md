@@ -10,13 +10,13 @@ The folder is `dist/` in the npm package `@argusvane/datum`:
 npm install @argusvane/datum
 ```
 
-It lands in `node_modules/@argusvane/datum/dist/`. That folder is what this page describes: copy it to your static files and serve it. Each [GitHub release](https://github.com/Argusvane/datum/releases) attaches the same files as an archive, for a machine without npm, and a page can load them from a CDN instead: see [From a CDN](#from-a-cdn).
+It lands in `node_modules/@argusvane/datum/dist/`. That folder is what this page describes: copy it to your static files and serve it. Each [GitHub release](https://github.com/Argusvane/datum/releases) attaches the same files, all but `types/`, as an archive, for a machine without npm, and a page can load them from a CDN instead: see [From a CDN](#from-a-cdn).
 
 To build the folder from the repository instead, you need Node 22, npm and git. From a clone, `npm run setup` installs the packages you name, each in its own folder and in dependency order, and builds the PDF program; then the build runs:
 
 <<< @/snippets/get-the-files.sh{sh}
 
-The build writes `packages/datum/dist/`, the same folder. [Getting started](/getting-started) does that step by step, with a first page. A Datum host builds the same folder into its own distribution; see [Server hosts](/server-hosts).
+The build writes `packages/datum/dist/`, the same folder. A Datum host builds the same folder into its own distribution; see [Server hosts](/server-hosts).
 
 A page that only shows a form asks for three of these files: `datum-form.css`, `datum-form.js` and the core chunk that loads with it. Everything else is fetched when a form first needs it, so copy the whole folder and let the element choose.
 
@@ -40,6 +40,7 @@ Other builds:
 | `datum-pdf.js` | The PDF kernel for the page, and `renderPdf` for a runtime | On the first PDF when `pdf="auto"` | 598 KB |
 | `datum-engine.js` | The runtime with no element, as one module: for a web worker, a test or a script in Node. A page that shows a form does not need it | By your own script, never by the element | 92 KB |
 | `datum-pdf-pages.js` | Page images of a PDF template, for the designer's preview | By the builder's PDF workspace | 156 KB |
+| `datum-webauthn.js` | The passkey functions with no element, for a script that registers or signs with a passkey itself. The element loads its own passkey chunk instead | By your own script, never by the element | 7 KB |
 | `datum-sandbox-program.js`, `datum-pdf-program.js` | The programs a server host runs inside its own WASM runtime | By your server, never by the page | 134 KB, 483 KB |
 | `pdfjs/` | The PDF viewer the builder uses to show a template: its worker `pdf.worker.min.mjs` and the `cmaps/`, `iccs/`, `standard_fonts/` and `wasm/` folders it reads | By the builder's PDF workspace | 203 files, about 5 MB |
 | `fonts/` | The faces the PDF module embeds: DejaVu Sans, Serif and Mono, seven files. Needed only with `pdf` | By the PDF module | about 3.4 MB |
@@ -47,6 +48,7 @@ Other builds:
 | `feature-files.json` | Which files each feature name loads, for a host that serves only what its `features` list needs | By your build or server | 18 KB |
 | `types/` | TypeScript declarations for the elements, their properties and events: see [React, Vue and Angular](/frameworks#typescript) | By your build | about 350 KB |
 | `datum-form-<name>-<hash>.js` and `datum-builder-<name>-<hash>.js` | Chunks the elements split off for themselves | By the element, when it needs the part | Between 1 KB and 250 KB each |
+| `<bundle>.LICENSE.txt` | Beside each entry file: the third-party packages that bundle carries and their licence texts | Never. Keep them with what you serve | |
 | `*.map` | A source map beside every script. Not in the folder unless the build was asked for them: `DATUM_SOURCE_MAPS=1 npm run datum:build` | By a browser's developer tools | about 75 MB in all |
 
 The sizes are those of one build and change with the next. The `features` list decides which of them a page ever asks for; see [Leaving parts out](/leaving-parts-out).
@@ -89,7 +91,45 @@ Any CDN that serves npm packages serves the folder, at the package's version. Wi
 - **The parts load from the CDN too.** The chunks, the fonts and `wasm="auto"` / `pdf="auto"` resolve beside the bundle, so they come from the same CDN folder with no other setting.
 - **A URL you write still follows the origin rule.** A `wasm`, `pdf`, `draft-store` or `validate-url` attribute that names a full URL on the CDN's origin needs that origin in [`allow-origins`](/security-headers#allow-origins). A definition in `src` on another origin needs CORS, as on any host.
 - **Security headers.** A page with a Content-Security-Policy lists the CDN's origin in `script-src`, `style-src`, `font-src` and `connect-src`: see [Security headers](/security-headers).
-- **A third party serves your code.** The CDN sees every visitor's address and decides what bytes arrive. For a form that collects records, host the folder yourself; for a network with no route to the Internet, see [Air-gapped deployments](/air-gapped).
+- **A third party serves your code.** The CDN sees every visitor's address and decides what bytes arrive. For a form that collects records, host the folder yourself; for a network with no route to the Internet, see [Air-gapped deployments](/air-gapped). If you do load from a CDN, pin each file to its hash: see [Pinning the files](#pinning-the-files).
+
+## Pinning the files
+
+`integrity.json`, beside the folder in the npm package (`node_modules/@argusvane/datum/integrity.json`, or `@argusvane/datum@0.1.0/integrity.json` on a CDN), lists the sha384 Subresource Integrity of every file in the folder a page can load, by its path in the folder. Each [GitHub release](https://github.com/Argusvane/datum/releases) attaches the same list as `datum-integrity-<version>.json`. Hosting the folder yourself is the stronger choice for production; on a CDN, pin each file the page loads.
+
+```json
+{ "algorithm": "sha384", "files": { "datum-form.css": "sha384-…", "datum-form.js": "sha384-…", "datum-form-core-<hash>.js": "sha384-…", "datum-wasm.js": "sha384-…" } }
+```
+
+- **The entry files.** Give the bundle and the stylesheet their hash and `crossorigin`:
+
+  ```html
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@argusvane/datum@0.1.0/dist/datum-form.css"
+        integrity="sha384-…" crossorigin="anonymous">
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@argusvane/datum@0.1.0/dist/datum-form.js"
+          integrity="sha384-…" crossorigin="anonymous"></script>
+  ```
+
+  A classic script (`datum-form.iife.js`) takes the same two attributes.
+- **The chunks a bundle imports.** The core chunk and the lazy chunks are imported by the bundle, not by a tag you write. List them in an import map's `integrity`, before the bundle's `<script>`; a browser that supports the key checks each one it imports:
+
+  ```html
+  <script type="importmap">
+  { "integrity": {
+      "https://cdn.jsdelivr.net/npm/@argusvane/datum@0.1.0/dist/datum-form-core-<hash>.js": "sha384-…",
+      "https://cdn.jsdelivr.net/npm/@argusvane/datum@0.1.0/dist/datum-form-pdf-service-<hash>.js": "sha384-…"
+  } }
+  </script>
+  ```
+
+  Take the names and hashes from `integrity.json`; `feature-files.json` says which chunks your `features` load. A browser without import-map integrity loads the chunks unchecked.
+- **The sandbox module.** `wasm-integrity` holds the module `wasm` names to a hash: the form fetches it, checks its bytes and imports exactly those bytes, on every load and every retry, in every browser with Web Crypto (a secure context). A module that does not match is never run, and a submit reports the sandbox unavailable. The page's Content-Security-Policy then needs `blob:` in `script-src`, and the module's origin in `connect-src`:
+
+  ```html
+  <datum-form wasm="auto" wasm-integrity="sha384-…"></datum-form>
+  ```
+
+- **The PDF module and the builder's page images.** `datum-pdf.js` and `datum-pdf-pages.js` are imported by URL: an import map's `integrity` pins the first load, but after a failed load the element asks again with `?retry=n`, a URL the map does not list, and the PDF viewer's worker and data files cannot carry a hash. Serve these from your own origin.
 
 ## Classic scripts
 

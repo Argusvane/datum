@@ -30,6 +30,16 @@ Any npm CDN serves the same folder. Pin the exact version:
 
 The lazy chunks and `wasm="auto"` / `pdf="auto"` load from beside the bundle on the CDN, with no other setting. A `wasm`, `pdf`, `draft-store` or `validate-url` attribute that names a full URL on another origin needs that origin in `allow-origins`. [Files you host](https://datum.argusvane.com/docs/files#from-a-cdn) has the details.
 
+Pin what a CDN serves to its hash. `integrity.json` in the package, beside `dist`, lists the sha384 of every file in `dist` (each release attaches it as `datum-integrity-<version>.json`):
+
+```html
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@argusvane/datum@0.1.0/dist/datum-form.css" integrity="sha384-…" crossorigin="anonymous">
+<script type="module" src="https://cdn.jsdelivr.net/npm/@argusvane/datum@0.1.0/dist/datum-form.js" integrity="sha384-…" crossorigin="anonymous"></script>
+<datum-form wasm="auto" wasm-integrity="sha384-…"></datum-form>
+```
+
+The chunks the bundle imports are pinned with an import map's `integrity`, and `wasm-integrity` holds the sandbox module to its hash (the page's policy then needs `blob:` in `script-src`). [Pinning the files](https://datum.argusvane.com/docs/files#pinning-the-files) has every file. For production, host the folder yourself.
+
 ## What is in `dist`
 
 | File | What it is |

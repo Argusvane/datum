@@ -121,8 +121,13 @@ function resolvePointer(root: Record<string, unknown>, ref: string): unknown {
   return cursor;
 }
 
-/** Whether `pattern` has a `|` outside any group or class, so anchors bind to its first and last branch only. */
-function hasTopLevelAlternation(pattern: string): boolean {
+/**
+ * `pattern` split at each `|` outside any group or class: its top-level branches. An anchor
+ * binds to its own branch only (`^a|b$` is "starts with a, or ends with b").
+ */
+function topLevelBranches(pattern: string): string[] {
+  const branches: string[] = [];
+  let start = 0;
   let depth = 0;
   let inClass = false;
   for (let index = 0; index < pattern.length; index += 1) {
@@ -144,10 +149,12 @@ function hasTopLevelAlternation(pattern: string): boolean {
     } else if (char === ")") {
       depth -= 1;
     } else if (char === "|" && depth === 0) {
-      return true;
+      branches.push(pattern.slice(start, index));
+      start = index + 1;
     }
   }
-  return false;
+  branches.push(pattern.slice(start));
+  return branches;
 }
 
 /** Whether `pattern` is one non-capturing group around everything: `(?:…)`. */
@@ -186,23 +193,27 @@ function isWrapped(pattern: string): boolean {
 /**
  * A JSON Schema `pattern` — found anywhere in the text, as ECMA-262 `test` does — as a form's
  * pattern, which the whole answer must match (`^(?:…)$`, the `pattern` attribute's reading).
- * An anchored pattern keeps its body; an unanchored side becomes "anything". Refused, with a
- * note, when the form's reading (the `u` flag) cannot compile it.
+ * Each top-level branch is read on its own, as its anchors bind to it alone: an anchored
+ * branch keeps its body, and an unanchored side becomes "anything" (`^a|b$` is
+ * `(?:a)[\s\S]*|[\s\S]*(?:b)`). Refused, with a note, when the form's reading (the `u` flag)
+ * cannot compile it.
  */
 export function patternForForm(pattern: string, given?: BuilderWords): { pattern?: string; note?: DataModelNote } {
   const words = areaWords(given);
-  const anchoredStart = pattern.startsWith("^");
-  const anchoredEnd = pattern.endsWith("$") && !pattern.endsWith("\\$");
-  let body = pattern.slice(anchoredStart ? 1 : 0, anchoredEnd ? pattern.length - 1 : pattern.length);
-  let result: string;
-  if (anchoredStart && anchoredEnd && !hasTopLevelAlternation(body)) {
-    while (isWrapped(body)) {
-      body = body.slice(3, -1);
-    }
-    result = body;
-  } else {
-    result = `${anchoredStart ? "" : "[\\s\\S]*"}(?:${body})${anchoredEnd ? "" : "[\\s\\S]*"}`;
-  }
+  const result = topLevelBranches(pattern)
+    .map((branch) => {
+      const anchoredStart = branch.startsWith("^");
+      const anchoredEnd = branch.endsWith("$") && !branch.endsWith("\\$");
+      let body = branch.slice(anchoredStart ? 1 : 0, anchoredEnd ? branch.length - 1 : branch.length);
+      if (anchoredStart && anchoredEnd) {
+        while (isWrapped(body)) {
+          body = body.slice(3, -1);
+        }
+        return body;
+      }
+      return `${anchoredStart ? "" : "[\\s\\S]*"}(?:${body})${anchoredEnd ? "" : "[\\s\\S]*"}`;
+    })
+    .join("|");
   try {
     new RegExp(`^(?:${result})$`, "u");
   } catch {

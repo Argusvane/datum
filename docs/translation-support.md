@@ -180,8 +180,10 @@ It applies the change to its catalog: first drop each `removed` code's entries, 
 `renamed` pair's wording from `from` to `to` (read every source before writing any, so two
 codes can swap). When the save has succeeded the baseline is reset — `fileActions.save`
 resolving does it, as does a save by the `save` attribute (bare or with an address); otherwise call `markSaved()` (which also resets the dirty flag) or
-`markLocalesSaved()`. A failed save leaves the count as it was. Loading another form resets it
-as well. The change event carries no `removedLocales` and no `renamedLocales`: the form's own
+`markLocalesSaved()`. The new baseline is the languages the save was handed: a language renamed or
+removed while a `fileActions.save` promise is pending is counted for the next save. A failed save
+leaves the count as it was, with anything moved while it was pending counted on top. Loading another
+form resets it as well. The change event carries no `removedLocales` and no `renamedLocales`: the form's own
 translations are pruned and moved inside the definition, so there is nothing for a host to
 act on there.
 

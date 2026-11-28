@@ -14,9 +14,8 @@ import tools.jackson.databind.json.JsonMapper;
  * The {@code run.js} a run executes.
  *
  * <p>One function, so what it holds is out of the rule modules' reach. It reads stdin (the run's nonce, a
- * line, then the input) and keeps print, the entry point and register in locals; removes {@code std},
- * {@code os}, {@code print}, {@code console}, {@code performance}, {@code scriptArgs} and {@code bjson} from
- * the global scope, failing the run if one stays; freezes the kernel's globals and the intrinsics (the
+ * line, then the input) and keeps print, the entry point and register in locals; removes the host's and the
+ * engine's extra globals ({@link #REMOVED_GLOBALS}) from the global scope, failing the run if one stays; freezes the kernel's globals and the intrinsics (the
  * {@code freeze-intrinsics.js} resource, FREEZE_INTRINSICS_SNIPPET of
  * {@code packages/quickjs-wasm-host/src/sandbox-program.ts}); prints the "started" marker; evaluates each rule module as a global
  * expression and registers it; calls the entry point; and prints the answer between the begin and end
@@ -48,8 +47,18 @@ public final class RunScript {
      */
     public static final String PDF = "__datum_pdf(std.in.readAsString()).then((json) => print(json));\n";
 
-    /** The globals run.js removes before any module is evaluated, in the script's order. */
-    static final List<String> REMOVED_GLOBALS = List.of("std", "os", "print", "console", "performance", "scriptArgs", "bjson");
+    /**
+     * The globals run.js removes before any module is evaluated, in the script's order: what qjs adds for its own
+     * scripts ({@code std}, {@code os}, {@code print}, {@code console}, {@code scriptArgs}, {@code bjson}, {@code gc},
+     * {@code argv0}, {@code execArgv}) and what quickjs-ng adds that Bellard QuickJS, the page's engine, has not
+     * ({@code performance}, {@code queueMicrotask}, {@code navigator}, {@code atob}, {@code btoa}, {@code DOMException}),
+     * so a rule module reaches the same globals on the server as in the browser. The standard ones quickjs-ng also has
+     * ({@code DisposableStack}, {@code AsyncDisposableStack}, {@code SuppressedError}) stay, frozen with the other
+     * intrinsics. The run script uses none of them but the {@code std} and {@code print} it captured first. The Python
+     * host's run script removes the same list.
+     */
+    public static final List<String> REMOVED_GLOBALS = List.of("std", "os", "print", "console", "performance", "scriptArgs",
+        "bjson", "queueMicrotask", "gc", "navigator", "argv0", "execArgv", "atob", "btoa", "DOMException");
 
     /** Which entry point a sandbox run calls. */
     public enum Entry {
@@ -135,7 +144,7 @@ public final class RunScript {
         lines.add("  var entry = globalThis.__datum_" + entry.word + ";");
         lines.add("  var register = globalThis.__datum_register;");
         lines.add("  if (typeof entry !== \"function\" || typeof register !== \"function\") { throw new Error(\"no sandbox program\"); }");
-        lines.add("  [\"std\", \"os\", \"print\", \"console\", \"performance\", \"scriptArgs\", \"bjson\"].forEach(function (name) {");
+        lines.add("  [" + String.join(", ", REMOVED_GLOBALS.stream().map(name -> "\"" + name + "\"").toList()) + "].forEach(function (name) {");
         lines.add("    delete globalThis[name];");
         lines.add("    if (name in globalThis) { throw new Error(\"cannot remove \" + name); }");
         lines.add("  });");

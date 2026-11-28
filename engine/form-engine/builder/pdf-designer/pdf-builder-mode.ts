@@ -1546,18 +1546,15 @@ class PdfBuilderModeImpl implements PdfBuilderMode {
       if (!id) {
         continue;
       }
+      // A checkbox's source and checked value are one guess, so one edit.
+      const pair = [
+        { componentId: id, propertyPath: "source", value: { ...mapping.source } },
+        ...(mapping.checkedValue !== undefined ? [{ componentId: id, propertyPath: "checkedValue", value: mapping.checkedValue }] : [])
+      ];
       if (options.batch) {
-        edits.push({ componentId: id, propertyPath: "source", value: { ...mapping.source } });
-        if (mapping.checkedValue !== undefined) {
-          edits.push({ componentId: id, propertyPath: "checkedValue", value: mapping.checkedValue });
-        }
+        edits.push(...pair);
       } else {
-        run(() => {
-          entry.controller.setProperty(id, "source", { ...mapping.source });
-          if (mapping.checkedValue !== undefined) {
-            entry.controller.setProperty(id, "checkedValue", mapping.checkedValue);
-          }
-        });
+        run(() => entry.controller.setProperties(pair));
       }
       count += 1;
     }
@@ -1867,9 +1864,6 @@ class PdfBuilderModeImpl implements PdfBuilderMode {
       throw new Error("The designer has no layout yet");
     }
     const support = await this.ensureSupport();
-    // A populated form's PDF, when the kernel has already read it, is handed over as bytes:
-    // an upload not yet saved by the host resolves nowhere else.
-    const inspected = layout?.kind === "template" ? this.inspectionFor(layout.template) : undefined;
     return renderFormPdf(
       options.runtime ? this.withLayouts(options.runtime) : this.options.runtime(),
       {
@@ -1879,7 +1873,7 @@ class PdfBuilderModeImpl implements PdfBuilderMode {
         theme: support.theme,
         binding: support.binding,
         themes: support.themes,
-        templates: this.templateResolver(inspected)
+        templates: this.templateResolver()
       },
       // A designer preview prints whatever the author has typed so far.
       { layout, formulaErrors: "warn" }
@@ -2909,13 +2903,10 @@ class PdfBuilderModeImpl implements PdfBuilderMode {
    * The templates a render resolves from: a PDF the kernel has already read is handed over as
    * bytes (an upload not yet saved by the host resolves nowhere else), whichever layout the
    * render turns out to print — a render by the answers cannot know it beforehand — and anything
-   * else goes to the host's resolver.
+   * else, such as a hosted upload the fill attaches, goes to the host's resolver.
    */
-  private templateResolver(inspected: Inspected | undefined): PdfTemplateResolver | undefined {
+  private templateResolver(): PdfTemplateResolver | undefined {
     const host = this.options.templates?.();
-    if (inspected) {
-      return { resolve: async () => inspected.bytes };
-    }
     if (this.inspections.length === 0) {
       return host;
     }
