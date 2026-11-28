@@ -16,7 +16,8 @@ import {
 } from "../../form-engine/runtime/browser/form-test-runtime-driver.js";
 import { createFieldConstraintsStage } from "../../form-engine/validation/core/field-constraints.js";
 import { ValidationPipeline } from "../../form-engine/validation/core/validation-pipeline.js";
-import { FORM_TEST_KERNEL_DRIVER_FUNCTIONS, createFormTestKernelDriver } from "../../form-engine/validation/wasm/form-test-kernel-driver.js";
+import { createFormTestKernelDriver } from "../../form-engine/validation/wasm/form-test-kernel-driver.js";
+import { FORM_TEST_KERNEL_DRIVER_FUNCTIONS } from "../../form-engine/validation/wasm/portable-kernel.js";
 import { createInProcessWasmValidationHost } from "../../form-engine/validation/wasm/in-process-host.js";
 import { FORM_TESTS_CLOCK_FIXTURE, FORM_TESTS_FIXTURE } from "./fixtures/form-tests-fixture.js";
 

@@ -15,10 +15,6 @@ import {
   journeyOwn
 } from "./journey-shared.js";
 
-// The helpers every form needs live apart, so a bundle without journeys does not carry the
-// path engine; they are re-exported here for importers of the path engine.
-export { journeyCollectionPathOf, journeyHoldsOwnAnswer, journeyLeadingSegment, journeyOwn };
-
 /**
  * The journey path engine: which pages a set of answers takes, and where each
  * component stands against that path.

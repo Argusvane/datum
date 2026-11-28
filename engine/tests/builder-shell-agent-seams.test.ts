@@ -13,7 +13,6 @@ import type { DatumBuilderCanvasElement } from "../form-engine/builder/web-compo
 import type { BuilderMode } from "../form-engine/builder/web-component/builder-modes.js";
 import {
   defineDatumBuilderElement,
-  parseSimulatedOptions as fromShell,
   type BuilderAgentTryParts,
   type DatumBuilderElement
 } from "../form-engine/builder/web-component/default-builder-element.js";
@@ -489,8 +488,7 @@ describe("agentLanguageInputs and agentLanguagesPending", () => {
 });
 
 describe("parseSimulatedOptions", () => {
-  it("is one function: the shell's name, the builder barrel's and the module's", () => {
-    expect(fromShell).toBe(fromModule);
+  it("is one function: the builder barrel's and the module's", () => {
     expect(fromBarrel).toBe(fromModule);
   });
 });

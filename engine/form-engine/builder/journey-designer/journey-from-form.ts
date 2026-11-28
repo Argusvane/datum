@@ -39,7 +39,8 @@ import { addressOf, type TextAddress } from "../../core/localization/translation
 import { STEP_COMPONENT_TYPE, STEPS_COMPONENT_TYPE } from "../../core/schema/steps.js";
 import { kernelReadFlag } from "../../core/state/semantic-state.js";
 import { holdsData, isDataScopeContainer } from "../../core/tree/data-scope.js";
-import { journeyOwn, journeyOwnership } from "../../core/journey/journey-path.js";
+import { journeyOwnership } from "../../core/journey/journey-path.js";
+import { journeyOwn } from "../../core/journey/journey-shared.js";
 import { TABS_COMPONENT_TYPE, readTabDescriptors, tabSlotIds } from "../../render/core/tab-slots.js";
 import { trailingButtonIds } from "../data-model/generate.js";
 

@@ -33,7 +33,7 @@ export default function guard({ dist, expect }) {
   for (const { file } of manifest.core) {
     expect(!seen.has(file), `feature-files: ${file} is core but also listed under ${seen.get(file)}`);
   }
-  // The two models' tokens are all there (the script reads them from src/form-features.ts and builder-features.ts).
+  // The two models' tokens are all there (the script reads them from the engine's form-features.ts and builder-features.ts).
   for (const token of ["pdf", "pdf-pages", "wasm", "webauthn", "validate-url", "journeys", "signing", "try-it"]) {
     expect(token in manifest.features, `feature-files: token ${token} is missing from the manifest`);
   }

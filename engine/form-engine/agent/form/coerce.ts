@@ -14,6 +14,7 @@
  * move).
  */
 
+import type { FieldKind } from "../../registry/kinds.js";
 import {
   coerceAnswer,
   coerceRowsAnswer,
@@ -22,8 +23,7 @@ import {
   STRING_VALUE_CAP,
   type AnswerProblem,
   type AnswerResult,
-  type FieldColumn,
-  type FieldKind
+  type FieldColumn
 } from "../answers/index.js";
 import type { RenderComponentModel } from "../../render/core/component-model.js";
 

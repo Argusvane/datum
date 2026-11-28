@@ -545,13 +545,6 @@ function documentKind(mode: BuilderMode, document: BuilderDocument | undefined, 
   return mode.id === "pdf" && noun === "layout" ? words.text("shell.doc.kind.pdfLayout") : capitalized(noun);
 }
 
-/*
- * Reading a stand-in option list moved below the shell so the browser-assistant
- * tools read a list exactly as the Settings panel does without naming this module; it keeps its
- * old name here for the panel below and for anyone who imported it from the shell.
- */
-export { parseSimulatedOptions };
-
 function capitalized(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }

@@ -54,6 +54,7 @@ export * from "./schema/pdf-renditions.js";
 export * from "./schema/journey.js";
 export * from "./journey/journey-types.js";
 export * from "./journey/journey-path.js";
+export * from "./journey/journey-shared.js";
 export * from "./journey/presentation.js";
 export * from "./journey/journey-server-check.js";
 export * from "./journey/journey-diagnostics.js";

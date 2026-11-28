@@ -29,7 +29,7 @@
  */
 import type { ComponentNode } from "../../core/schema/types.js";
 import { PRESENTATION_REFERENCE_TYPE, PRESENTATION_VALUE_TYPE, type Journey, type JourneyPageEntry } from "../../core/schema/journey.js";
-import { journeyLeadingSegment } from "../../core/journey/journey-path.js";
+import { journeyLeadingSegment } from "../../core/journey/journey-shared.js";
 import { formulaReadsField } from "../formula/rename.js";
 import { OWN_RULE_KEYS, isScopedPath, renameConditionPaths, renameEntry, renameReviewLabels } from "./journey-config-rename.js";
 

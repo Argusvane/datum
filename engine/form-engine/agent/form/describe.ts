@@ -36,6 +36,7 @@ import type { JourneyRenderKit } from "../../render/core/journey-render-kit.js";
 import type { RenderOutput } from "../../render/core/render-orchestrator.js";
 import { buildRuntimeRenderOutput } from "../../render/core/runtime-render-bridge.js";
 import type { FormRuntime } from "../../runtime/browser/form-runtime.js";
+import type { FieldKind } from "../../registry/kinds.js";
 import {
   DESCRIPTION_CAP,
   LABEL_CAP,
@@ -45,7 +46,6 @@ import {
   unfillableStaticKind,
   writabilityOf,
   type FieldColumn,
-  type FieldKind,
   type Option,
   type UnfillableKind,
   type WhyNotWritable
@@ -55,25 +55,6 @@ import { displayOf } from "./display.js";
 import { placeOf } from "./guards.js";
 import type { FormAgentHost } from "./host.js";
 import { wordErrors, type MessageContext, type WordedError } from "./messages.js";
-
-// The kinds, options and static writability live in the shared answers module, which the builder's Try it tool reads too; they are re-exported here so the form
-// modules and their tests import them where they always did.
-export {
-  DESCRIPTION_CAP,
-  LABEL_CAP,
-  isCalculated,
-  isNestedCollection,
-  kindOf,
-  optionsOf,
-  unfillableStaticKind,
-  writabilityOf,
-  type FieldColumn,
-  type FieldKind,
-  type Option,
-  type UnfillableKind,
-  type WhyNotWritable,
-  type Writability
-} from "../answers/index.js";
 
 // ---- shared result types  ----------------------------------------------------------
 

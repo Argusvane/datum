@@ -27,6 +27,7 @@ import { collectionEntryCount, type RenderComponentModel } from "../../render/co
 import type { RenderOutput } from "../../render/core/render-orchestrator.js";
 import { buildRuntimeRenderOutput } from "../../render/core/runtime-render-bridge.js";
 import type { TryCheckProblem } from "../../builder/web-component/try-it-types.js";
+import type { FieldKind } from "../../registry/kinds.js";
 import {
   STRING_VALUE_CAP,
   isNestedCollection,
@@ -35,7 +36,6 @@ import {
   writabilityOfState,
   type AnswerProblem,
   type FieldColumn,
-  type FieldKind,
   type UnfillableKind,
   type WhyNotWritable,
   type Writability,

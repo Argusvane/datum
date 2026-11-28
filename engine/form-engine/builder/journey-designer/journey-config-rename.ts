@@ -18,7 +18,7 @@ import {
   type JourneyPage,
   type JourneyPageEntry
 } from "../../core/schema/journey.js";
-import { journeyLeadingSegment } from "../../core/journey/journey-path.js";
+import { journeyLeadingSegment } from "../../core/journey/journey-shared.js";
 import { renamePathsInFormula } from "../formula/rename.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {

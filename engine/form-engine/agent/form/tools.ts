@@ -34,7 +34,8 @@ import { stringifyComponentPath } from "../../core/tree/component-path.js";
 import { collectionPathOf } from "../../core/tree/data-scope.js";
 import type { RenderComponentModel } from "../../render/core/component-model.js";
 import type { FormRuntime } from "../../runtime/browser/form-runtime.js";
-import { writabilityOfState } from "../answers/index.js";
+import type { FieldKind } from "../../registry/kinds.js";
+import { isNestedCollection, kindOf, writabilityOfState } from "../answers/index.js";
 import { checkActionArgs } from "../folded-actions.js";
 import { pageOf } from "../result-caps.js";
 import {
@@ -66,8 +67,6 @@ import {
   guidanceFor,
   isBlocking,
   type GuidanceExtras,
-  isNestedCollection,
-  kindOf,
   localesOf,
   onCurrentPage,
   pageContext,
@@ -80,7 +79,6 @@ import {
   titleOf,
   type Field,
   type FieldContext,
-  type FieldKind,
   type MemoStore,
   type Page,
   type PageContext,
@@ -129,21 +127,9 @@ import {
 } from "./journal.js";
 import { wordErrors, type MessageContext } from "./messages.js";
 
-export type {
-  Field,
-  FieldKind,
-  Page,
-  PageRef,
-  WordedError,
-  Option,
-  LocaleOption,
-  FieldRows,
-  FieldColumn,
-  WhyNotWritable,
-  UnfillableKind,
-  Structure,
-  SubmitInfo
-} from "./describe.js";
+export type { Field, Page, PageRef, WordedError, LocaleOption, FieldRows, Structure, SubmitInfo } from "./describe.js";
+export type { FieldColumn, Option, UnfillableKind, WhyNotWritable } from "../answers/index.js";
+export type { FieldKind };
 export type { Refusal } from "./coerce.js";
 export type { JournalEntry, UndoScope, Kept, KeptReason, WritersBefore } from "./journal.js";
 

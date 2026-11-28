@@ -82,7 +82,7 @@ are not a group.
      `component.unknown` (ADR 0043), even under `unknownComponents: "fail"`.
    - The kernel needs no code for it: the PDF program bundles the engine's model builder.
 
-7. **Not a `LAYOUT_CONTAINER_TYPES` member.** That set (`render/core/component-model.ts`)
+7. **Not a `LAYOUT_CONTAINER_TYPES` member.** That set (`registry/engine-component-types.ts`)
    feeds `layoutForNode`, which calls every member a grid of
    `configuration.columns` (default 2). A button group in it would report
    `{ kind: "grid", columns: 2 }`, which is wrong, and fixing that needs a second edit to

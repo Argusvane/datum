@@ -1,25 +1,26 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
+import type { FieldKind } from "../form-engine/registry/kinds.js";
 import {
   coerceAnswer,
   coerceRowsAnswer,
-  isNestedCollection as answersIsNestedCollection,
+  isNestedCollection,
+  kindOf,
   kindOfNode,
   matchOption as answersMatchOption,
-  optionsOf as answersOptionsOf,
-  unfillableStaticKind as answersUnfillableStaticKind,
-  writabilityOf as answersWritabilityOf,
+  optionsOf,
+  unfillableStaticKind,
+  writabilityOf,
   writabilityOfState,
   type AnswerProblem,
   type AnswerResult,
   type FieldColumn,
-  type FieldKind,
   type Writability,
   type WritableState
 } from "../form-engine/agent/answers/index.js";
 import { coerceRows, coerceScalar, matchOption } from "../form-engine/agent/form/coerce.js";
-import { createMemoStore, ensureMemo, isNestedCollection, kindOf, optionsOf, unfillableStaticKind, writabilityOf, type RenderMemo } from "../form-engine/agent/form/describe.js";
+import { createMemoStore, ensureMemo, type RenderMemo } from "../form-engine/agent/form/describe.js";
 import { notWritable, resolveRef, writeGuard } from "../form-engine/agent/form/guards.js";
 import { runtimeAgentHost } from "../form-engine/agent/form/host.js";
 import type { FormDefinition } from "../form-engine/core/schema/types.js";
@@ -37,8 +38,8 @@ import { PROVINCES, agentRuntime } from "./fixtures/agent-form.js";
  * (`fixtures/agent-answers-golden.json`, written by a capture script; the file carries the
  * definitions, the scenarios and every run's inputs, so this test rebuilds them from it alone):
  *
- * - the renderer's wrappers (`coerceScalar`, `coerceRows`, `matchOption`, `writeGuard`, and the
- *   names `describe.ts` re-exports) give the golden results byte for byte, refusal messages and
+ * - the renderer's wrappers (`coerceScalar`, `coerceRows`, `matchOption`, `writeGuard`) and
+ *   `kindOf` with the static writability give the golden results byte for byte, refusal messages and
  *   hints included, key order too (the JSON text is compared, not the parsed objects);
  * - the answers functions (`coerceAnswer`, `coerceRowsAnswer`, `matchOption`, `kindOfNode`,
  *   `writabilityOf`, `writabilityOfState`) give the golden results with the message and the
@@ -290,7 +291,7 @@ describe("the golden file", () => {
   });
 });
 
-describe("kinds, options and static writability (describe.ts re-exports and agent/answers)", () => {
+describe("kinds, options and static writability (agent/answers)", () => {
   it.each(groupsOf("model"))("%s", (_title, group) => {
     const { memo } = scenarioOf(group.scenario);
     for (const run of group.runs) {
@@ -302,10 +303,10 @@ describe("kinds, options and static writability (describe.ts re-exports and agen
       expectSameJson(renderer, run.result, where);
       const shared = {
         kindOf: kindOfNode(model),
-        writabilityOf: answersWritabilityOf(model, kindOfNode(model)),
-        optionsOf: answersOptionsOf(model),
-        unfillableStaticKind: answersUnfillableStaticKind(model),
-        isNestedCollection: answersIsNestedCollection(model)
+        writabilityOf: writabilityOf(model, kindOfNode(model)),
+        optionsOf: optionsOf(model),
+        unfillableStaticKind: unfillableStaticKind(model),
+        isNestedCollection: isNestedCollection(model)
       };
       expect(toJson(shared), where).toEqual(run.result);
     }

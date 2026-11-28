@@ -30,7 +30,7 @@ import {
   type PdfGeneratedLayout
 } from "../../core/schema/pdf-layout.js";
 import { STEP_COMPONENT_TYPE, STEPS_COMPONENT_TYPE } from "../../core/schema/steps.js";
-import { LAYOUT_CONTAINER_TYPES } from "../core/component-model.js";
+import { LAYOUT_CONTAINER_TYPES } from "../../registry/engine-component-types.js";
 import { readLegendMark } from "../../core/schema/legend-mark.js";
 import { TABS_COMPONENT_TYPE, configuredSlotIds, readTabDescriptors } from "../core/tab-slots.js";
 import { createFormTextResolver } from "../../core/localization/form-texts.js";

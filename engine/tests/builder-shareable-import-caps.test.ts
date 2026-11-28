@@ -9,7 +9,7 @@ import { BuilderController } from "../form-engine/builder/controller/builder-con
 import { readDataModelInput } from "../form-engine/builder/data-model/read-input.js";
 import { BUILDER_DRAG_MIME_TYPE, MAX_DRAG_PAYLOAD_LENGTH, deserializeDragPayload } from "../form-engine/builder/drag-drop/html5-drag-drop.js";
 import { BuilderWords } from "../form-engine/builder/logic/builder-texts.js";
-import { parseSimulatedOptions } from "../form-engine/builder/web-component/default-builder-element.js";
+import { parseSimulatedOptions } from "../form-engine/builder/controller/simulated-options.js";
 import { parseValidationMessageCatalog } from "../form-engine/core/localization/validation-messages.js";
 import { setPathValue } from "../form-engine/core/localization/locale-documents.js";
 import { kernelStructureLimits } from "../form-engine/core/expressions/definition-structure.js";

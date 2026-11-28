@@ -117,16 +117,16 @@ import { loadJourneyReview } from "./journey-review-loader.js";
 import { createFetchJourneyValidator, loadServerValidator } from "./server-validator-loader.js";
 import { createUrlDraftStore, parseDraftStoreSpec, type DraftStoreSpec } from "./draft-store-url.js";
 import { adoptPreUpgradeProperties } from "./pre-upgrade.js";
-import { plainHostContext } from "./host-context.js";
 import {
   AGENT_ACCESS_VALUES,
   DEFAULT_AGENT_ACCESS,
   FORM_FEATURE_PRESETS,
   parseFormFeatures,
+  plainHostContext,
   type AgentAccess,
   type FormFeature,
   type FormFeaturesInput
-} from "./form-features.js";
+} from "@argusvane/datum-engine";
 // The agent tools: a lazy chunk the opt-in `agent` token asks for; the entry holds only the loader and types.
 import { loadAgent } from "./agent-loader.js";
 import type { AgentMarks, FormAgentAttachment } from "./agent.js";

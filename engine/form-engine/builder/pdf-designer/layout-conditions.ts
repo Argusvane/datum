@@ -19,7 +19,7 @@
 import type { TranslationCatalog } from "../../core/schema/contracts.js";
 import type { ComponentNode } from "../../core/schema/types.js";
 import { isScopedExpressionPath } from "../../core/expressions/condition-shape.js";
-import { journeyLeadingSegment } from "../../core/journey/journey-path.js";
+import { journeyLeadingSegment } from "../../core/journey/journey-shared.js";
 import { addressOf, type FormTranslations, type TextSources, resolveText } from "../../core/localization/translations.js";
 import { PDF_TEMPLATE_COMPONENT_TYPE } from "../../render/pdf/pdf-template-constants.js";
 import {

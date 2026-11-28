@@ -14,7 +14,7 @@ import { isScopedExpressionPath } from "../../core/expressions/condition-shape.j
 import { kernelRuleExpression } from "../../core/expressions/compile.js";
 import { kernelParseFormula } from "../../core/expressions/formula.js";
 import { formulaFunctionSignatures } from "../../core/expressions/function-table.js";
-import { journeyLeadingSegment } from "../../core/journey/journey-path.js";
+import { journeyLeadingSegment } from "../../core/journey/journey-shared.js";
 import type { PdfConfiguration } from "../../core/schema/pdf-layout.js";
 import type { ComponentNode } from "../../core/schema/types.js";
 import { collectionPathOf, dataKeyOf } from "../../core/tree/data-scope.js";

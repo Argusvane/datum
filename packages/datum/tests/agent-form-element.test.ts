@@ -30,7 +30,7 @@ import type { DatumFormElement, DatumFormSubmitDetail } from "../src/form.js";
 import type { AgentToolResult } from "@argusvane/datum-engine/agent";
 import type { FormDefinition } from "@argusvane/datum-engine";
 
-import { AGENT_HIGHLIGHT_RULE } from "../src/agent-host.js";
+import { AGENT_HIGHLIGHT_RULE } from "../src/agent-ui.js";
 import type { AgentProvenance, DatumPdfDetail, FormDraft, FormPlugin } from "@argusvane/datum-engine";
 import { sampleDefinition, until, withEngineWords } from "./helpers.js";
 

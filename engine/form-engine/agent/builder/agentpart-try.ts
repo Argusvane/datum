@@ -28,7 +28,8 @@
 import { TRY_SUBMISSION_FAILED_MESSAGE } from "../../builder/controller/try-submission.js";
 import type { TryCheckOutcome, TrySubmitOutcome } from "../../builder/web-component/try-it-types.js";
 import type { JourneyNavigationResult, JourneyView } from "../../core/journey/journey-types.js";
-import { coerceAnswer, coerceRowsAnswer, kindOfNode, isNestedCollection, type FieldColumn, type FieldKind } from "../answers/index.js";
+import type { FieldKind } from "../../registry/kinds.js";
+import { coerceAnswer, coerceRowsAnswer, kindOfNode, isNestedCollection, type FieldColumn } from "../answers/index.js";
 import type { ToolBody } from "../lazy-tool.js";
 import { cutString } from "../result-caps.js";
 import { ToolRefusal, type ToolContext, type ToolData } from "../tool-types.js";

@@ -85,9 +85,6 @@ import {
   type WasmValidationError
 } from "./wasm-validation-host.js";
 
-// The list the sandbox splices, kept importable from here where the tests and the name checks read it.
-export { FORM_TEST_KERNEL_DRIVER_FUNCTIONS } from "./portable-kernel.js";
-
 /**
  * The validation kernel's driver for form tests: the server's reading of
  * a scenario. It holds the answers itself, as a host holds a stored record, and asks the

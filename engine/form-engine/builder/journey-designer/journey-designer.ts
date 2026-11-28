@@ -98,7 +98,6 @@ export type { JourneyAddChoice, JourneyAddPopover, JourneyAddPopoverContext, Jou
 // The try session's values (`createJourneyPreviewSession`, `previewJourney`, its texts) are its
 // own chunk's: import them from `journey-preview.js`. Only its types pass through here.
 export type {
-  JourneyPreview,
   JourneyPreviewSession,
   JourneyPreviewSessionOptions,
   JourneyPreviewSubject,

@@ -22,15 +22,17 @@ import { extractDependencies } from "../../rules/dependencies/dependency-extract
 import { kernelExprReadsClock, kernelExprReadsHost } from "../../rules/evaluator/evaluator.js";
 import {
   journeyFormKeys,
-  journeyHoldsOwnAnswer,
-  journeyLeadingSegment,
-  journeyOwn,
   journeyOwnNodeRule,
   journeyEntryPlacesForm,
   journeyOwnership,
   journeyStaticGraph,
   journeyTargetUsable
 } from "./journey-path.js";
+import {
+  journeyHoldsOwnAnswer,
+  journeyLeadingSegment,
+  journeyOwn
+} from "./journey-shared.js";
 
 /**
  * What is wrong with a journey as written, for the builder to show beside it and

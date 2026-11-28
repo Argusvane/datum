@@ -8,10 +8,8 @@ import type { JourneyOwnership, JourneyTrace } from "../form-engine/core/journey
 import {
   JOURNEY_PATH_FUNCTIONS,
   journeyFormKeys,
-  journeyCollectionPathOf,
   journeyEntryPlacesForm,
   journeyFrontier,
-  journeyHoldsOwnAnswer,
   journeyOwnNodeRule,
   journeyOwnNodeUsable,
   journeyOwnership,
@@ -24,6 +22,7 @@ import {
   journeyStaticGraph,
   journeyTargetUsable
 } from "../form-engine/core/journey/journey-path.js";
+import { journeyCollectionPathOf, journeyHoldsOwnAnswer } from "../form-engine/core/journey/journey-shared.js";
 import { kernelFoldHoldsOwnAnswer } from "../form-engine/core/state/submittable-fold.js";
 import { isValidComponentId } from "../form-engine/core/tree/component-id.js";
 import { evaluateExpression } from "../form-engine/rules/evaluator/evaluator.js";
@@ -517,9 +516,10 @@ describe("ids and keys named after Object.prototype members", () => {
 });
 
 describe("JOURNEY_PATH_FUNCTIONS", () => {
-  it("lists every exported function of the path engine, each a top-level declaration", async () => {
-    const module = (await import("../form-engine/core/journey/journey-path.js")) as Record<string, unknown>;
-    const exported = Object.entries(module)
+  it("lists every exported function of the path engine and of the shared helpers it calls, each a top-level declaration", async () => {
+    const path = (await import("../form-engine/core/journey/journey-path.js")) as Record<string, unknown>;
+    const shared = (await import("../form-engine/core/journey/journey-shared.js")) as Record<string, unknown>;
+    const exported = [...Object.entries(path), ...Object.entries(shared)]
       .filter(([, value]) => typeof value === "function")
       .map(([name]) => name)
       .sort();

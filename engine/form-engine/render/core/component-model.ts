@@ -42,9 +42,6 @@ import { isBlockingError, wordComponentErrors, type ErrorWordingSources } from "
 
 import { LAYOUT_CONTAINER_TYPES } from "../../registry/engine-component-types.js";
 
-// The registry holds the list (it is data about the types); the render entry keeps exporting it.
-export { LAYOUT_CONTAINER_TYPES };
-
 export interface LayoutSpec {
   /** `stack` = one item per row (default). `grid` = several per row. */
   kind: "stack" | "grid";

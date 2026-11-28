@@ -6,7 +6,8 @@ import type { Journey, PresentationNode, PresentationReference } from "../schema
 import type { ComponentNode, ComponentRules } from "../schema/types.js";
 import { ComponentTree } from "../tree/component-tree.js";
 import { buildValuePaths } from "../tree/data-scope.js";
-import { journeyEntryPlacesForm, journeyFormKeys, journeyHoldsOwnAnswer, journeyMaxDepth, journeyOwn, journeyOwnNodeUsable } from "./journey-path.js";
+import { journeyEntryPlacesForm, journeyFormKeys, journeyMaxDepth, journeyOwnNodeUsable } from "./journey-path.js";
+import { journeyHoldsOwnAnswer, journeyOwn } from "./journey-shared.js";
 import type { JourneyOwnership } from "./journey-types.js";
 export { workedOutTextOwner } from "./worked-out-text.js";
 

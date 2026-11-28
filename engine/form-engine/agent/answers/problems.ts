@@ -5,7 +5,7 @@
  * into the renderer's refusal byte for byte, the builder's Try it tool into its own.
  */
 
-import type { FieldKind } from "./kinds.js";
+import type { FieldKind } from "../../registry/kinds.js";
 
 export type AnswerProblemCode = "invalid-value" | "too-large" | "options-loading" | "options-failed" | "option-ambiguous" | "no-such-option";
 

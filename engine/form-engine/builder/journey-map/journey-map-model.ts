@@ -64,7 +64,7 @@
 import type { ComponentNode } from "../../core/schema/types.js";
 import { PRESENTATION_VALUE_TYPE, type Journey } from "../../core/schema/journey.js";
 import type { JourneyFlow, JourneyFlowEdge, JourneyFlowIgnoreReason } from "../../core/journey/journey-flow.js";
-import { journeyHoldsOwnAnswer, journeyOwn } from "../../core/journey/journey-path.js";
+import { journeyHoldsOwnAnswer, journeyOwn } from "../../core/journey/journey-shared.js";
 import type { JourneyCheck, JourneyFinding, JourneyPageEntry, JourneyTreeIndex } from "../journey-designer/journey-checks.js";
 import { JOURNEY_CONTENT_SLOT, JOURNEY_FIELD_TYPE, JOURNEY_ROUTE_TYPE, JOURNEY_ROUTES_SLOT } from "../journey-designer/journey-mode-model.js";
 import { estimateTextWidth, wrapText, type FlowLayoutInput } from "./journey-map-layout.js";

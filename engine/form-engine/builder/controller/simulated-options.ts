@@ -6,7 +6,6 @@
  * Its own module, below the shell, so the browser-assistant tools
  * (`try_it { action: 'settings' }`) read a list exactly as the Settings panel does without
  * reaching into `default-builder-element.ts`, which the agent layer may only name as a type.
- * The shell imports it from here and re-exports it under its old name.
  */
 import type { LocalizedText } from "../../core/schema/contracts.js";
 import { MAX_IMPORTED_OPTIONS, MAX_IMPORTED_OPTIONS_BYTES } from "../../core/schema/inline-options.js";

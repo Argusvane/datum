@@ -11,7 +11,7 @@ import type { FormTextResolver } from "../../core/localization/form-texts.js";
 import type { RenderComponentModel } from "../../render/core/component-model.js";
 import { formatPdfValue } from "../../render/pdf/pdf-values.js";
 import { cutString } from "../result-caps.js";
-import type { FieldKind } from "./describe.js";
+import type { FieldKind } from "../../registry/kinds.js";
 
 const DISPLAY_CAP = 2_000;
 
