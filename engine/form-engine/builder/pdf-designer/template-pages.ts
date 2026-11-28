@@ -89,32 +89,30 @@ type Drag =
   | { kind: "move"; page: PageEntry; id: string; start: { x: number; y: number }; from: PdfAreaRect; rect: PdfAreaRect; moved: boolean }
   | { kind: "resize"; page: PageEntry; id: string; handle: Handle; start: { x: number; y: number }; from: PdfAreaRect; rect: PdfAreaRect; moved: boolean };
 
-function resized(from: PdfAreaRect, handle: Handle, dx: number, dy: number): PdfAreaRect {
-  let { x, y, width, height } = from;
+/**
+ * `from` with the edges `handle` names moved by `dx`, `dy`, each stopped at the page's edge so
+ * the edges the author did not drag stay where they were.
+ */
+function resized(from: PdfAreaRect, handle: Handle, dx: number, dy: number, page: { width: number; height: number }): PdfAreaRect {
+  const within = (value: number, limit: number): number => Math.min(Math.max(0, value), limit);
+  let left = from.x;
+  let right = from.x + from.width;
+  let top = from.y;
+  let bottom = from.y + from.height;
   if (handle.includes("w")) {
-    x += dx;
-    width -= dx;
+    left = within(left + dx, page.width);
   }
   if (handle.includes("e")) {
-    width += dx;
+    right = within(right + dx, page.width);
   }
   if (handle.includes("n")) {
-    y += dy;
-    height -= dy;
+    top = within(top + dy, page.height);
   }
   if (handle.includes("s")) {
-    height += dy;
+    bottom = within(bottom + dy, page.height);
   }
   // A handle dragged past the opposite edge flips the box rather than folding it.
-  if (width < 0) {
-    x += width;
-    width = -width;
-  }
-  if (height < 0) {
-    y += height;
-    height = -height;
-  }
-  return { x, y, width, height };
+  return { x: Math.min(left, right), y: Math.min(top, bottom), width: Math.abs(right - left), height: Math.abs(bottom - top) };
 }
 
 function sameRect(a: PdfAreaRect, b: PdfAreaRect): boolean {
@@ -557,7 +555,7 @@ export function createTemplatePageViewer(options: TemplatePageViewerOptions): Te
       setAttributes(drag.draft, { x: drag.rect.x, y: drag.rect.y, width: drag.rect.width, height: drag.rect.height });
       return;
     }
-    const next = drag.kind === "move" ? { ...drag.from, x: drag.from.x + dx, y: drag.from.y + dy } : resized(drag.from, drag.handle, dx, dy);
+    const next = drag.kind === "move" ? { ...drag.from, x: drag.from.x + dx, y: drag.from.y + dy } : resized(drag.from, drag.handle, dx, dy, size);
     drag.rect = clampAreaRect(next, size);
     drag.moved = true;
     const group = page.areas.querySelector<SVGGElement>(byAttribute("data-area", drag.id));

@@ -273,24 +273,15 @@ export interface LayoutTextChanges {
 }
 
 /**
- * What changing `before` into `after` (the same layout, edited in its designer) does to the
- * addresses its translations live at: a node, a field mapping or an area that is
- * gone takes its translations with it; a node whose id changed — the tree has the same shape
- * and exactly those ids differ, in place — takes them to its new id. A mapping whose fill text
- * is gone (its source is no longer a template) loses that text's entries too. Nothing in
- * `after` that `before` lacked is touched: a node added has no translation yet.
+ * The ids gone from `idsBefore` that `idsAfter` holds under another id, old to new. A rename
+ * keeps the list's shape: the same number of ids, and every position whose id differs holds an
+ * id that went at an id that came. Anything else is a deletion (and an add), and renames none.
  */
-export function layoutTextChanges(before: PdfLayoutDocument, after: PdfLayoutDocument): LayoutTextChanges {
-  const owner = before.id;
-  const changes: LayoutTextChanges = { prune: [], move: [] };
-  const idsBefore = nodeIdsOf(before);
-  const idsAfter = nodeIdsOf(after);
+function renamedIds(idsBefore: readonly string[], idsAfter: readonly string[]): Map<string, string> {
   const kept = new Set(idsAfter);
   const gone = idsBefore.filter((id) => !kept.has(id));
   const had = new Set(idsBefore);
   const added = idsAfter.filter((id) => !had.has(id));
-  // A rename keeps the tree's shape: the same number of nodes, and every position whose id
-  // differs holds an id that went at an id that came. Anything else is a deletion (and an add).
   const renamed = new Map<string, string>();
   if (gone.length > 0 && gone.length === added.length && idsBefore.length === idsAfter.length) {
     const goneSet = new Set(gone);
@@ -304,7 +295,31 @@ export function layoutTextChanges(before: PdfLayoutDocument, after: PdfLayoutDoc
       });
     }
   }
-  for (const id of gone) {
+  return renamed;
+}
+
+/** The ids of a template layout's areas in order. */
+function areaIdsOf(layout: PdfLayoutDocument): string[] {
+  return layout.kind === "template" ? (layout.areas ?? []).map((area) => area.id) : [];
+}
+
+/**
+ * What changing `before` into `after` (the same layout, edited in its designer) does to the
+ * addresses its translations live at: a node, a field mapping or an area that is
+ * gone takes its translations with it; a node or an area whose id changed — the tree or the
+ * area list has the same shape and exactly those ids differ, in place — takes them to its new
+ * id. A mapping or an area whose fill text is gone (its source is no longer a template) loses
+ * that text's entries too. Nothing in `after` that `before` lacked is touched: a node added has
+ * no translation yet.
+ */
+export function layoutTextChanges(before: PdfLayoutDocument, after: PdfLayoutDocument): LayoutTextChanges {
+  const owner = before.id;
+  const changes: LayoutTextChanges = { prune: [], move: [] };
+  const idsBefore = nodeIdsOf(before);
+  const idsAfter = nodeIdsOf(after);
+  const kept = new Set(idsAfter);
+  const renamed = renamedIds(idsBefore, idsAfter);
+  for (const id of idsBefore.filter((id) => !kept.has(id))) {
     const to = renamed.get(id);
     if (to !== undefined) {
       changes.move.push({ from: { kind: "pdf", owner, path: ["nodes", id] }, to: { kind: "pdf", owner, path: ["nodes", to] } });
@@ -312,11 +327,19 @@ export function layoutTextChanges(before: PdfLayoutDocument, after: PdfLayoutDoc
       changes.prune.push({ kind: "pdf", owner, path: ["nodes", id] });
     }
   }
-  // Fill texts of a template: an address that was listed before and is not now.
+  // Fill texts of a template: an address that was listed before and is not now. An area's,
+  // whose id changed while its text stayed a text, moves to the new id.
   const fillsAfter = new Set(layoutTextEntries({ layouts: [after] }).map((entry) => addressKey(entry.address)));
+  const areasRenamed = renamedIds(areaIdsOf(before), areaIdsOf(after));
   for (const entry of layoutTextEntries({ layouts: [before] })) {
-    if (entry.address.path[0] !== "nodes" && entry.address.path.length === 3 && (entry.address.path[0] === "fields" || entry.address.path[0] === "areas") && !fillsAfter.has(addressKey(entry.address))) {
-      changes.prune.push({ kind: "pdf", owner, path: entry.address.path.slice(0, 2) });
+    const [level, id] = entry.address.path;
+    if (level !== "nodes" && entry.address.path.length === 3 && (level === "fields" || level === "areas") && !fillsAfter.has(addressKey(entry.address))) {
+      const to = level === "areas" && id !== undefined ? areasRenamed.get(id) : undefined;
+      if (to !== undefined && fillsAfter.has(addressKey({ ...entry.address, path: [level, to, ...entry.address.path.slice(2)] }))) {
+        changes.move.push({ from: { kind: "pdf", owner, path: [level, id!] }, to: { kind: "pdf", owner, path: [level, to] } });
+      } else {
+        changes.prune.push({ kind: "pdf", owner, path: entry.address.path.slice(0, 2) });
+      }
     }
   }
   return changes;

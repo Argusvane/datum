@@ -23,11 +23,12 @@ const PIPELINE = "mapping.unresolved"; // render/pdf/pdf-template.ts, the PDF re
 // createFormFields' around, applyCatalogForAgent, openState and whenOpenReady), the prune stash
 // the designer's Undo restores and the one-step undo of a layout block with the map.
 const PDF_MODE_CHUNK_BUDGET_KB = 65;
-// The Journeys mode: measured 64,951 B (63.4 KB), plus about 1 KB, rounded up. It carries the agent
+// The Journeys mode: measured 65.2 KB in CI, plus about 1 KB, rounded up. It carries the agent
 // seams for journeys, the Logic host for Go to rules (open-from-map and new-rule-from-map requests,
-// the registry beside the form's controller), the Step view's seams, the findings card, the Form
-// fields panel's rows and the Try it map marks.
-const JOURNEY_MODE_CHUNK_BUDGET_KB = 65;
+// the registry beside the form's controller), the Step view's seams and their release when the
+// journey shown is removed, the dropping of a removed journey's translations, the findings card,
+// the Form fields panel's rows and the Try it map marks.
+const JOURNEY_MODE_CHUNK_BUDGET_KB = 67;
 // The builder's PDF pipeline chunk: 69.1 KB measured with the PDF render caps, the attachment-name
 // and attachment-type checks, the decoded-length size check and the sniffer; lazy chunks get measured + 2.
 const PIPELINE_CHUNK_BUDGET_KB = 72;

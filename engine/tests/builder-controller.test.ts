@@ -65,6 +65,21 @@ describe("BuilderController", () => {
     expect(ctrl.selectedComponentId()).toBeDefined();
   });
 
+  it("keeps its component definitions when a later setOptions opens another form without them", () => {
+    const ctrl = controller();
+    expect(ctrl.hasComponentType("bogus")).toBe(false);
+    ctrl.setOptions({
+      initialRoot: { id: "root", type: "form", configuration: {}, children: { content: [{ id: "group", type: "fieldset", configuration: {}, children: { body: [] } }] } }
+    });
+    expect(ctrl.hasComponentType("bogus")).toBe(false);
+    ctrl.add("number", "group", "body");
+    expect(ctrl.dropError).toMatch(/not allowed in slot/i);
+
+    // An empty list is what takes the definitions away.
+    ctrl.setOptions({ componentDefinitions: [] });
+    expect(ctrl.hasComponentType("bogus")).toBe(true);
+  });
+
   it("enforces registry slot constraints and surfaces dropError instead of throwing", () => {
     const ctrl = controller({
       id: "root",
@@ -370,6 +385,17 @@ describe("BuilderController", () => {
       ctrl.setTextWords({});
       ctrl.setDraftProperty(id, "cssClass", 'x" onload="z');
       expect(ctrl.cssClassError).toMatch(/not a valid class name/);
+    });
+
+    it("words the problems it already listed in the new language once lent other words", () => {
+      const ctrl = themed();
+      ctrl.add("text");
+      const id = ctrl.selectedComponentId()!;
+      ctrl.setDraftProperty(id, "cssClass", "bad!class");
+      expect(ctrl.problemsOf(id).find((problem) => problem.target === "cssClass")?.message).toBe('"bad!class" is not a valid class name.');
+      ctrl.setTextWords({ locale: "fr", catalog: { fr: { "themeClasses.invalid.one": "FR: {list} invalide." } } });
+      expect(ctrl.cssClassError).toBe('FR: "bad!class" invalide.');
+      expect(ctrl.problemsOf(id).find((problem) => problem.target === "cssClass")?.message).toBe('FR: "bad!class" invalide.');
     });
 
     it("refuses to commit a malformed token — the renderer would drop it silently", () => {
@@ -1407,6 +1433,70 @@ describe("BuilderController — unsaved changes prompt", () => {
     expect(ctrl.unsavedChangesPrompt()).toBeUndefined();
     expect(ctrl.selectedComponentId()).toBeUndefined();
   });
+
+  describe("an action held while the Save renames the component it targets", () => {
+    /** A fieldset `box`, selected, with an unsaved id `details`. */
+    function renaming() {
+      const ctrl = controller({
+        id: "root",
+        type: "form",
+        configuration: {},
+        children: {
+          content: [
+            { id: "box", type: "fieldset", configuration: {}, children: { body: [] } },
+            { id: "loose", type: "text", configuration: {} }
+          ]
+        }
+      });
+      ctrl.select("box");
+      ctrl.setDraftId("box", "details");
+      return ctrl;
+    }
+    const bodyOf = (ctrl: BuilderController) => ctrl.snapshot().children!.content![0]!;
+
+    it("lands a held drop in the renamed container", () => {
+      const ctrl = renaming();
+      ctrl.applyDrop(dropOf(ctrl.dragPayloadForType("text")), "box", "body", 0);
+      expect(ctrl.unsavedChangesPrompt()).toEqual({ componentId: "box", action: "drop" });
+      ctrl.answerUnsavedChangesPrompt("save");
+
+      expect(ctrl.dropError).toBeUndefined();
+      expect(bodyOf(ctrl).id).toBe("details");
+      expect(bodyOf(ctrl).children!.body).toHaveLength(1);
+    });
+
+    it("adds and moves into the renamed container", () => {
+      const added = renaming();
+      expect(added.requestAdd("text", "box", "body")).toBe(false);
+      added.answerUnsavedChangesPrompt("save");
+      expect(added.dropError).toBeUndefined();
+      expect(bodyOf(added).children!.body).toHaveLength(1);
+
+      const moved = renaming();
+      expect(moved.requestMove("loose", { parentId: "box", slotId: "body", index: 0 })).toBe(false);
+      moved.answerUnsavedChangesPrompt("save");
+      expect(moved.dropError).toBeUndefined();
+      expect(bodyOf(moved).children!.body!.map((n) => n.id)).toEqual(["loose"]);
+
+      const movedTo = renaming();
+      expect(movedTo.requestMoveTo("loose", "box", 0, "body")).toBe(false);
+      movedTo.answerUnsavedChangesPrompt("save");
+      expect(movedTo.dropError).toBeUndefined();
+      expect(bodyOf(movedTo).children!.body!.map((n) => n.id)).toEqual(["loose"]);
+    });
+
+    it("moves and duplicates the renamed component itself", () => {
+      const moved = renaming();
+      expect(moved.requestMoveBy("box", 1)).toBe(false);
+      moved.answerUnsavedChangesPrompt("save");
+      expect(moved.snapshot().children!.content!.map((n) => n.id)).toEqual(["loose", "details"]);
+
+      const copied = renaming();
+      expect(copied.requestDuplicate("box")).toBe(false);
+      copied.answerUnsavedChangesPrompt("save");
+      expect(copied.snapshot().children!.content).toHaveLength(3);
+    });
+  });
 });
 
 describe("BuilderController — host validation codes for the messages editor", () => {
@@ -1630,6 +1720,28 @@ describe("BuilderController — undo and redo around a rename", () => {
     ctrl.redo();
     ctrl.redo();
     expect(content(ctrl)).toEqual([labelled("contact", "New, from a JSON sample")]);
+  });
+
+  it("drops the draft of a replaced field even when the new content reuses its id", () => {
+    const ctrl = controller(form({ id: "email", type: "text", configuration: { label: "Old email", placeholder: "old@x" } }, labelled("name", "Name")));
+    ctrl.select("email");
+    // Typed and typed back: a draft with nothing pending, which the replace's guard lets through.
+    ctrl.setDraftProperty("email", "label", "Changed");
+    ctrl.setDraftProperty("email", "label", "Old email");
+    // A draft left open on a field that is not selected any more.
+    ctrl.setDraftProperty("name", "label", "Pending");
+    ctrl.select("email");
+    expect(ctrl.hasPendingChanges("email")).toBe(false);
+    expect(ctrl.requestReplaceContent([{ id: "email", type: "number", configuration: { label: "Email from model" } }, labelled("name", "Name from model")])).toBe(true);
+
+    const fresh = [{ id: "email", type: "number", configuration: { label: "Email from model" } }, labelled("name", "Name from model")];
+    expect(content(ctrl)).toEqual(fresh);
+    expect(ctrl.hasPendingChanges("email")).toBe(false);
+    expect(ctrl.hasPendingChanges("name")).toBe(false);
+    expect(ctrl.editedNode("email")?.configuration).toEqual({ label: "Email from model" });
+    ctrl.commitDraft("email");
+    ctrl.commitDraft("name");
+    expect(content(ctrl)).toEqual(fresh);
   });
 
   it("renames the one of two nodes sharing a hand-written id it finds first, and undoes it on that one", () => {

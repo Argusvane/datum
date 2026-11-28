@@ -167,8 +167,10 @@ for (const [name, budget] of Object.entries(BUDGETS_KB)) {
 // row keys, the stylesheet scanner, the submission lock's focus rules and the print answer rules
 // (datum-form.js +3,417 B, datum-builder.js +4,256 B). Both were raised by 512 B more for the origin
 // rule's own code in the elements: an attribute's URL resolved once and checked again before its
-// module is imported, and the wasm-integrity attribute (its check is a lazy chunk).
-const GZIP_BASE = { "datum-form.js": 207_397, "datum-builder.js": 521_535 };
+// module is imported, and the wasm-integrity attribute (its check is a lazy chunk). The builder's
+// was raised by 768 B more for the fixes to its drafts, renames, mode switches, panels and Logic
+// editor, which add about 760 B gzip to its eager code.
+const GZIP_BASE = { "datum-form.js": 207_397, "datum-builder.js": 522_303 };
 const GZIP_ALLOWANCE = 4 * 1024;
 const pairGzip = (name) => [name, ...coreOf(name.replace(/\.js$/, ""))].reduce((total, part) => total + gzipSync(readFileSync(join(dist, part)), { level: 9 }).length, 0);
 for (const [name, base] of Object.entries(GZIP_BASE)) {

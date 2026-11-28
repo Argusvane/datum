@@ -461,6 +461,23 @@ describe("journeyRenameEdits", () => {
     expect(JSON.stringify(journeyFromTree(root, "j"))).toBe(JSON.stringify(sharing()));
     expect(journeyRenameEdits(root, "form", "approved_amount", "approved")).toEqual([]);
   });
+
+  it("renames a Check answers step's row wording inside its review when ids are shared, as setProperties' nested path does", () => {
+    const journey: Journey = {
+      id: "j",
+      name: "J",
+      pages: [
+        { id: "one", components: ["fullName", { id: "dup", type: "text" }, { id: "dup", type: "text" }] },
+        { id: "check", kind: "review", review: { labels: { fullName: "Your name" } } }
+      ]
+    } as Journey;
+    const root = treeFromJourney(journey);
+    const edits = journeyRenameEdits(root, "form", "fullName", "name");
+    expect(edits).toHaveLength(1);
+    expect(edits[0]).toMatchObject({ componentId: root.id, propertyPath: "", target: "children" });
+    const written = journeyFromTree({ ...root, children: edits[0]!.value as Record<string, ComponentNode[]> }, "j");
+    expect(written?.pages[1]).toEqual({ id: "check", kind: "review", review: { labels: { name: "Your name" } } });
+  });
 });
 
 describe("journeyOwnNodeIds and references written with an id", () => {

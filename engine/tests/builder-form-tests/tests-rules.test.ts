@@ -132,4 +132,32 @@ describe("componentIdOfPath", () => {
     expect(componentIdOfPath(keyed, "firstName")).toBe("first_name_field");
     expect(decidingRuleOf(keyed, { line: 2, status: "failed", code: "expect.visible", params: { path: "firstName" } })).toEqual({ componentId: "first_name_field", kind: "visibleWhen" });
   });
+
+  it("finds a row's field by the path a test names it by, with its row (`items[0].qty`)", () => {
+    const rows = {
+      id: "form",
+      type: "form",
+      configuration: {},
+      children: {
+        content: [
+          {
+            id: "items",
+            type: "repeatingSection",
+            collection: {},
+            children: {
+              content: [
+                { id: "qty", type: "number", configuration: {}, rules: { visibleWhen: "true" } },
+                { id: "note_field", type: "text", configuration: { dataKey: "note" }, rules: { requiredWhen: "true" } }
+              ]
+            }
+          }
+        ]
+      }
+    } as unknown as ComponentNode;
+    expect(componentIdOfPath(rows, "items[0].qty")).toBe("qty");
+    expect(componentIdOfPath(rows, "items[12].note")).toBe("note_field");
+    expect(componentIdOfPath(rows, "items[0].missing")).toBeUndefined();
+    expect(decidingRuleOf(rows, { line: 2, status: "failed", code: "expect.visible", params: { path: "items[0].qty" } })).toEqual({ componentId: "qty", kind: "visibleWhen" });
+    expect(decidingRuleOf(rows, { line: 2, status: "failed", code: "expect.required", params: { path: "items[1].note" } })).toEqual({ componentId: "note_field", kind: "requiredWhen" });
+  });
 });

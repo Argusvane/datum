@@ -762,7 +762,7 @@ export function journeyNodeLabel(context: JourneyFacesContext, node: ComponentNo
       return words(configuration.name, context.locale(), context.sources(), addressOf.journey(context.journeyId(), "name")) ?? context.journeyId();
     case JOURNEY_PAGE_TYPE: {
       const page = context.view().index.pageOf.get(node.id);
-      return page ? pageReference({ ...page, node }, form, context.locale(), context.sources(), undefined, context.journeyId()) : undefined;
+      return page ? pageReference({ ...page, node }, form, context.locale(), context.sources(), wordsOf(context), context.journeyId()) : undefined;
     }
     case JOURNEY_FIELD_TYPE: {
       const componentId = stringOf(configuration.componentId);

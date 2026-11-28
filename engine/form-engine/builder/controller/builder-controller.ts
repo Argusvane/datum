@@ -338,7 +338,11 @@ export interface FormIdentity {
 export interface BuilderControllerOptions {
   componentTypes?: BuilderComponentType[];
   initialRoot?: ComponentNode;
-  /** When supplied, the controller uses a registry-backed editor (slot constraints + composed inspector). */
+  /**
+   * When supplied, the controller uses a registry-backed editor (slot constraints + composed inspector).
+   * Left out of a later {@link BuilderController.setOptions}, the definitions stay, a new `initialRoot`
+   * included; an empty list takes them away.
+   */
   componentDefinitions?: ComponentDefinition[];
   /** The language the canvas and the inspector show the form in (a label resolves through the translations). Defaults to `"en"`. */
   locale?: string;
@@ -777,6 +781,13 @@ export interface BuilderMoveToResult {
  * the host's: switching away from the builder page, closing it (see {@link BuilderController.requestLeave}).
  */
 export type HeldActionKind = "select" | "add" | "drop" | "leave" | "replace" | "remove" | "panel";
+
+/**
+ * A held action. `follow` gives the id a component has when the action runs for the id it had
+ * when the action was held: the prompt's Save may rename the component the draft is of, and an
+ * action aimed at it (a drop into it, a move of it) must land on it under its new id.
+ */
+type HeldRun = (follow: (id: string) => string) => void;
 
 /**
  * A selection-changing action the controller is holding until the author says what to do
@@ -1638,7 +1649,7 @@ export class BuilderController {
    * An action held back by the selection's unsaved edits until the author answers the
    * prompt (see {@link requestSelect}); `run` performs it once the draft is dealt with.
    */
-  private heldAction: { prompt: UnsavedChangesPrompt; run: () => void } | undefined;
+  private heldAction: { prompt: UnsavedChangesPrompt; run: HeldRun } | undefined;
   /** Unsaved edits outside the tree that leaving is held for too (see {@link LeaveGuard}). */
   private leaveGuard: LeaveGuard | undefined;
   /**
@@ -2083,7 +2094,13 @@ export class BuilderController {
         const registry = this.registryOf(options.componentDefinitions);
         const editor = new RegistryBackedTreeEditor(root, registry);
         this.editor = editor;
-        this.useRegistry(editor, registry, options.componentDefinitions);
+        this.useRegistry(editor, registry, typesOf(options.componentDefinitions));
+      } else if (options.componentDefinitions === undefined && this.componentRegistry) {
+        // Another form alone keeps the definitions, as every option left out keeps its value;
+        // only an empty list takes them away.
+        const editor = new RegistryBackedTreeEditor(root, this.componentRegistry);
+        this.editor = editor;
+        this.useRegistry(editor, this.componentRegistry, this.registeredTypes);
       } else {
         this.editor = new TreeEditor(root);
         this.resolver = undefined;
@@ -2127,14 +2144,14 @@ export class BuilderController {
   }
 
   /** `registry`, which `editor` now reads, and its constraints, the slots the other-slots hook adds laid over them. */
-  private useRegistry(editor: RegistryBackedTreeEditor, registry: ComponentRegistry, definitions: readonly ComponentDefinition[]): void {
+  private useRegistry(editor: RegistryBackedTreeEditor, registry: ComponentRegistry, types: readonly string[]): void {
     const declared = editor.constraintsResolver();
     this.resolver = (type) => {
       const otherSlots = this.otherSlotsHook?.(type);
       return otherSlots ? { ...declared(type), otherSlots } : declared(type);
     };
     this.componentRegistry = registry;
-    this.registeredTypes = typesOf(definitions);
+    this.registeredTypes = types;
   }
 
   /**
@@ -2155,7 +2172,7 @@ export class BuilderController {
     }
     const registry = this.registryOf(definitions);
     editor.useRegistry(registry);
-    this.useRegistry(editor, registry, definitions);
+    this.useRegistry(editor, registry, typesOf(definitions));
     this.dataKeyOffers.clear();
     // The panels redraw with the new choices; the tree did not move, so this is no edit.
     this.emitChange("preview");
@@ -2440,6 +2457,36 @@ export class BuilderController {
   public markLocalesSaved(): void {
     this.localeBaseline = supportedLocaleCodes(this.localizationValue);
     this.localeLineage = new Map(this.localeBaseline.map((code) => [code, code]));
+  }
+
+  /**
+   * {@link markLocalesSaved} for a save still pending: the languages as they stand, which the save
+   * was handed, are the baseline from now, so a language renamed or removed before the save
+   * settles is the next save's to report. Returns what to call should the save fail: the baseline
+   * goes back where it was, with what moved meanwhile counted on top of it. A baseline set again in
+   * between (a load, a host's own {@link markLocalesSaved}) is left as it is.
+   */
+  public markLocalesSaving(): () => void {
+    const baseline = this.localeBaseline;
+    const lineage = this.localeLineage;
+    this.markLocalesSaved();
+    const handed = this.localeBaseline;
+    return () => {
+      if (this.localeBaseline !== handed) {
+        return;
+      }
+      // Each language now descends from one the save was handed, which descends from one of the old baseline.
+      const since = this.localeLineage;
+      this.localeBaseline = baseline;
+      this.localeLineage = new Map();
+      for (const [code, origin] of since) {
+        const first = lineage.get(origin);
+        if (first !== undefined) {
+          this.localeLineage.set(code, first);
+        }
+      }
+      this.followLocales();
+    };
   }
 
   // --- translations ----------------------------------------------------------
@@ -3577,6 +3624,8 @@ export class BuilderController {
   public setTextWords(words: { locale?: string | undefined; catalog?: BuilderTextCatalog | (() => BuilderTextCatalog | undefined) | undefined }): void {
     this.textLocaleValue = words.locale;
     this.textCatalogValue = words.catalog;
+    // The problems kept for the panels (problemsOf) are worded in these words: kept no longer.
+    this.revision += 1;
     if (this.selectedId) {
       this.refreshCssClassChecks();
     }
@@ -4320,8 +4369,15 @@ export class BuilderController {
     } catch (error) {
       return error instanceof Error ? error.message : this.builderWords().text("controller.idInvalid");
     }
-    // A component with no data key of its own is stored under its id: a new id
-    // moves its answer, which must not land where another component's is.
+    return this.renameDataProblem(currentId, nextId);
+  }
+
+  /**
+   * Whether re-seating `currentId` under `nextId` would put its answer where another component's
+   * is: a component with no data key of its own is stored under its id, so a new id moves its
+   * answer. The Save's check ({@link validateId}) and {@link renameId}'s.
+   */
+  private renameDataProblem(currentId: string, nextId: string): string | undefined {
     return this.dataPathProblemAfter((tree) => {
       const node = tree.find(currentId);
       if (node) {
@@ -5157,12 +5213,12 @@ export class BuilderController {
       this.select(componentId);
       return true;
     }
-    return this.holdUnlessClean("select", () => this.select(componentId));
+    return this.holdUnlessClean("select", (follow) => this.select(componentId === undefined ? undefined : follow(componentId)));
   }
 
   /** {@link add} through the same guard: a new component takes the selection with it. */
   public requestAdd(type: string, parentId?: string, slotId?: string, init?: AddComponentInit): boolean {
-    return this.holdUnlessClean("add", () => this.add(type, parentId, slotId, init));
+    return this.holdUnlessClean("add", (follow) => this.add(type, parentId === undefined ? undefined : follow(parentId), slotId, init));
   }
 
   /**
@@ -5403,9 +5459,11 @@ export class BuilderController {
   /**
    * Answers the prompt. `save` commits the draft and carries on with what was held — unless
    * the save is refused (an unusable id or class), in which case nothing moves and the
-   * refusal shows where it always does. `discard` throws the draft away and carries on.
-   * `stay` drops the held action: the author is where they were, draft intact. A prompt
-   * held for a leave guard's edits is settled through the guard the same way.
+   * refusal shows where it always does. A Save that gives the component a new id carries the
+   * held action to it under that id: a drop into it lands there, a move of it moves it.
+   * `discard` throws the draft away and carries on. `stay` drops the held action: the author
+   * is where they were, draft intact. A prompt held for a leave guard's edits is settled
+   * through the guard the same way.
    */
   public answerUnsavedChangesPrompt(decision: UnsavedChangesDecision): void {
     const held = this.heldAction;
@@ -5426,24 +5484,29 @@ export class BuilderController {
         return;
       }
       this.emitChange("select");
-      held.run();
+      held.run((id) => id);
       return;
     }
+    const from = held.prompt.componentId;
+    const to = this.drafts.get(from)?.id.trim();
     if (decision === "discard") {
-      this.discardDraft(held.prompt.componentId);
-    } else if (!this.commitDraft(held.prompt.componentId)) {
+      this.discardDraft(from);
+    } else if (!this.commitDraft(from)) {
       return;
     }
+    // A Save that renamed the component: what the action names by its old id it now finds under the new.
+    const tree = this.editor.componentTree();
+    const renamed = decision === "save" && to !== undefined && to !== from && !tree.find(from) && tree.find(to) !== undefined;
     // Back through the guard: the draft is settled, but a leave may still have a leave
     // guard's edits to ask about (a second prompt); anything else runs now.
-    this.holdUnlessClean(held.prompt.action, held.run);
+    this.holdUnlessClean(held.prompt.action, (follow) => held.run((id) => follow(renamed && id === from ? to : id)));
   }
 
   /**
    * Runs `run` now, or holds it behind a prompt while the selection has unsaved edits. A
    * newer held action replaces an older one: the author's latest click is the one that counts.
    */
-  private holdUnlessClean(action: HeldActionKind, run: () => void, vanishing?: ReadonlySet<string>): boolean {
+  private holdUnlessClean(action: HeldActionKind, run: HeldRun, vanishing?: ReadonlySet<string>): boolean {
     /*
      * Which drafts count depends on where the author is going.
      *
@@ -5476,7 +5539,7 @@ export class BuilderController {
       return false;
     }
     this.heldAction = undefined;
-    run();
+    run((id) => id);
     return true;
   }
 
@@ -5681,8 +5744,9 @@ export class BuilderController {
     entries: readonly InsertComponentEntry[] | (() => readonly InsertComponentEntry[]),
     options: InsertComponentsOptions & { onResult?: (result: InsertComponentsResult) => void } = {}
   ): boolean {
-    return this.holdUnlessClean("add", () => {
-      const result = this.insertComponents(typeof entries === "function" ? entries() : entries, options);
+    return this.holdUnlessClean("add", (follow) => {
+      const planned = typeof entries === "function" ? entries() : entries.map((entry) => (entry.parentId === undefined ? entry : { ...entry, parentId: follow(entry.parentId) }));
+      const result = this.insertComponents(planned, options);
       options.onResult?.(result);
     });
   }
@@ -5693,8 +5757,8 @@ export class BuilderController {
    * new ones, in their order — a form's closing buttons, say. Checked like
    * {@link insertComponents}: the new ids only have to avoid what remains (the root, its other
    * slots and what is kept) and what is claimed beside the tree, so a rebuilt form may reuse the
-   * ids it replaces. Drafts of the removed components go with them; the selection is dropped if
-   * it went too.
+   * ids it replaces. Drafts of the removed components go with them, a reused id's too (its draft
+   * holds the old component's settings); the selection is dropped if it went too.
    */
   public replaceContent(nodes: readonly ComponentNode[], options: { slotId?: string; keep?: readonly string[] } = {}): InsertComponentsResult {
     const tree = this.editor.componentTree();
@@ -5756,17 +5820,15 @@ export class BuilderController {
       return this.refuseInsert(clash);
     }
 
-    const before = new Set(collectIds(root));
+    const going = current.filter((child) => !keep.has(child.id)).flatMap((child) => collectIds(child));
     // What goes takes its translations with it, from every language and in the same undo entry; an id the new content reuses keeps them (a changed string flags them stale).
     const staying = new Set([...fresh, ...kept].flatMap((node) => collectIds(node)));
-    const prune = this.pruneOwnersCommand(current.filter((child) => !keep.has(child.id)).flatMap((child) => collectIds(child)).filter((id) => !staying.has(id)));
+    const prune = this.pruneOwnersCommand(going.filter((id) => !staying.has(id)));
     const replacement = new ReplaceChildrenCommand(tree, root.id, nextChildren);
     this.editor.execute(prune ? new CompositeCommand("REPLACE_CONTENT", [replacement, prune]) : replacement);
-    const after = new Set(collectIds(this.editor.componentTree().getRoot()));
-    for (const id of before) {
-      if (!after.has(id)) {
-        this.drafts.delete(id);
-      }
+    // A draft is of the node it was opened on, which is gone even when a new one reuses its id.
+    for (const id of going) {
+      this.drafts.delete(id);
     }
     this.heldAction = undefined;
     this.dropError = undefined;
@@ -5780,8 +5842,8 @@ export class BuilderController {
     nodes: readonly ComponentNode[] | (() => readonly ComponentNode[]),
     options: { slotId?: string; keep?: readonly string[]; onResult?: (result: InsertComponentsResult) => void } = {}
   ): boolean {
-    return this.holdUnlessClean("replace", () => {
-      const result = this.replaceContent(typeof nodes === "function" ? nodes() : nodes, options);
+    return this.holdUnlessClean("replace", (follow) => {
+      const result = this.replaceContent(typeof nodes === "function" ? nodes() : nodes, options.keep ? { ...options, keep: options.keep.map((id) => follow(id)) } : options);
       options.onResult?.(result);
     });
   }
@@ -5860,9 +5922,9 @@ export class BuilderController {
     node: ComponentNode | (() => ComponentNode | undefined),
     options: { onResult?: (result: InsertComponentsResult) => void } = {}
   ): boolean {
-    return this.holdUnlessClean("replace", () => {
+    return this.holdUnlessClean("replace", (follow) => {
       const planned = typeof node === "function" ? node() : node;
-      options.onResult?.(planned ? this.replaceComponent(componentId, planned) : { ok: false, ids: [] });
+      options.onResult?.(planned ? this.replaceComponent(follow(componentId), planned) : { ok: false, ids: [] });
     });
   }
 
@@ -6243,8 +6305,8 @@ export class BuilderController {
     }
     return this.holdUnlessClean(
       "remove",
-      () => {
-        const ids = typeof componentIds === "function" ? componentIds() : componentIds;
+      (follow) => {
+        const ids = typeof componentIds === "function" ? componentIds() : componentIds.map((id) => follow(id));
         const removed = options.removeReferences ? this.removeEachWithReferences(ids) : this.removeComponents(ids);
         options.onResult?.(removed);
       },
@@ -6444,8 +6506,8 @@ export class BuilderController {
     after?: (moved: boolean, result: BuilderMoveToResult) => void
   ): boolean {
     // `after` runs when the move does, now or once the prompt's Save or Apply lets it through.
-    return this.holdUnlessClean("drop", () => {
-      const result = this.moveToResult(componentId, container, index, slotId);
+    return this.holdUnlessClean("drop", (follow) => {
+      const result = this.moveToResult(follow(componentId), follow(container), index, slotId);
       after?.(result.moved, result);
     });
   }
@@ -6564,22 +6626,22 @@ export class BuilderController {
 
   /** {@link move} through the unsaved-edits guard, as a drop goes through it. Whether it ran now. */
   public requestMove(componentId: string, target: { parentId: string; slotId: string; index: number }): boolean {
-    return this.holdUnlessClean("drop", () => this.move(componentId, target));
+    return this.holdUnlessClean("drop", (follow) => this.move(follow(componentId), { ...target, parentId: follow(target.parentId) }));
   }
 
   /** {@link moveBy} through the unsaved-edits guard. Whether it ran now. */
   public requestMoveBy(componentId: string, delta: -1 | 1): boolean {
-    return this.holdUnlessClean("drop", () => this.moveBy(componentId, delta));
+    return this.holdUnlessClean("drop", (follow) => this.moveBy(follow(componentId), delta));
   }
 
   /** {@link duplicate} through the unsaved-edits guard: the copy takes the selection, as an add does. Whether it ran now. */
   public requestDuplicate(componentId: string): boolean {
-    return this.holdUnlessClean("add", () => this.duplicate(componentId));
+    return this.holdUnlessClean("add", (follow) => this.duplicate(follow(componentId)));
   }
 
   /** {@link addAfter} through the unsaved-edits guard, as {@link requestAdd}. Whether it ran now. */
   public requestAddAfter(type: string, afterId?: string, init?: AddComponentInit): boolean {
-    return this.holdUnlessClean("add", () => this.addAfter(type, afterId, init));
+    return this.holdUnlessClean("add", (follow) => this.addAfter(type, afterId === undefined ? undefined : follow(afterId), init));
   }
 
   /**
@@ -6805,7 +6867,8 @@ export class BuilderController {
 
   /**
    * Re-seats a component under another id (refused, with {@link idError}, for one the tree or
-   * {@link BuilderControllerOptions.claimedIds} has, or outside the grammar). The rename is one
+   * {@link BuilderControllerOptions.claimedIds} has, one outside the grammar, or one that would
+   * put the component's answer where another component's is). The rename is one
    * step of the history with everything it rewrites: its
    * collection path and the row fields that list it, the rules that read it, its translations,
    * and what a listener of the change writes as it hears of it (a PDF layout's conditions and
@@ -6850,6 +6913,12 @@ export class BuilderController {
       // The form's root is the definition, not a component: its id is never re-seated.
       if (currentId === tree.rootId()) {
         this.idError = this.builderWords().text("controller.renameFailed");
+        this.emitChange("edit");
+        return false;
+      }
+      const clash = this.renameDataProblem(currentId, nextId);
+      if (clash) {
+        this.idError = clash;
         this.emitChange("edit");
         return false;
       }
@@ -7353,11 +7422,12 @@ export class BuilderController {
     // The dropped component takes the selection with it. Moving the very component whose
     // edits are pending leaves nothing behind, so only a drop that lands the selection
     // somewhere else waits on the unsaved-changes prompt.
-    const run = (): void => {
-      this.performDrop(intent);
+    const run: HeldRun = (follow) => {
+      const target = { ...intent.target, parentId: follow(intent.target.parentId) };
+      this.performDrop(intent.kind === "move-existing" ? { ...intent, componentId: follow(intent.componentId), target } : { ...intent, target });
     };
     if (intent.kind === "move-existing" && intent.componentId === this.selectedId) {
-      run();
+      run((id) => id);
     } else {
       this.holdUnlessClean("drop", run);
     }
