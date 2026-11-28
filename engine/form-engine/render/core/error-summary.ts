@@ -37,7 +37,7 @@ export interface ErrorSummaryEntry {
   componentId: string;
   /** What the field is called in the entry: its label, with its row's heading in front inside a grid ("Row 2 - Quantity"). */
   label: string;
-  /** The error's own wording; `undefined` for a component the render output does not carry. */
+  /** The error's own wording (for a component the render output does not carry, worded as the form's own catalog words it). */
   message: string | undefined;
   /** The whole line, `message` and `label` put together by the `summaryEntry` form text. */
   text: string;
@@ -66,6 +66,11 @@ export interface ErrorSummaryWording {
   entries: ErrorSummaryEntry[];
 }
 
+/** The summary worded, with the blocking error its first entry words: the one the first error's focus goes to. */
+export interface WordedErrorSummary extends ErrorSummaryWording {
+  firstError: FormError | undefined;
+}
+
 export interface ErrorSummaryInput {
   components: readonly RenderComponentModel[];
   /** The page's errors by component id (`RenderErrorSummary.byComponent`), in the order the summary lists them. */
@@ -83,7 +88,7 @@ export interface ErrorSummaryInput {
  * problems, each going to the same field), the form-level errors first. The same wording the
  * markup's summary uses, so a surface drawing from these entries says what the markup says.
  */
-export function wordErrorSummary(input: ErrorSummaryInput): ErrorSummaryWording {
+export function wordErrorSummary(input: ErrorSummaryInput): WordedErrorSummary {
   const { components, locale } = input;
   const text: FormTextResolver = createFormTextResolver(locale, input.wording.texts, input.wording.translationCatalog, input.wording.bindingTexts, {
     translations: input.wording.translations,
@@ -129,13 +134,22 @@ export function wordErrorSummary(input: ErrorSummaryInput): ErrorSummaryWording 
   const formEntries = input.formErrors.filter(isBlockingError).map(wordFormError);
 
   const entries: ErrorSummaryEntry[] = [];
+  let firstError: FormError | undefined;
+  const add = (entry: ErrorSummaryEntry, error: FormError): void => {
+    firstError ??= error;
+    entries.push(entry);
+  };
   const defaultWording = createDefaultMessageWording({ ...input.wording, locale });
   for (const id of Object.keys(input.byComponent)) {
     const model = componentsById.get(id);
     if (!model) {
-      // A counted error whose component the render output does not carry: name the field alone.
-      if (input.fieldErrors.some((error) => error.componentId === id && isBlockingError(error))) {
-        entries.push({ targetPath: id, componentId: id, label: id, message: undefined, text: id, authored: false });
+      // A counted error whose component the render output does not carry: one entry per error,
+      // worded as an error on a field the page does not draw is (its message, no label to add).
+      for (const error of input.fieldErrors) {
+        if (error.componentId === id && isBlockingError(error)) {
+          const worded = wordFormError(error);
+          add({ targetPath: id, componentId: id, label: id, message: worded.message, text: worded.text, authored: false }, error);
+        }
       }
       continue;
     }
@@ -150,19 +164,19 @@ export function wordErrorSummary(input: ErrorSummaryInput): ErrorSummaryWording 
         const owner = componentsById.get(row.row.ownerId)?.node;
         const heading = owner !== undefined ? rowHeadingOf(owner, row.row.index + 1, locale, sources, text) : text("dataGridRow", { n: row.row.index + 1 });
         const label = `${heading}${text("stepTagSeparator")}${model.label}`;
-        entries.push({ targetPath: row.valuePath, componentId: id, label, message, text: wordedWith(label), authored });
+        add({ targetPath: row.valuePath, componentId: id, label, message, text: wordedWith(label), authored }, error);
         return;
       }
       // A cell error no row owns is the grid's to show: the entry goes to the
       // grid, still named by the field.
       const grid = gridOfCellError(componentsById, rowModels, error);
       if (grid !== undefined) {
-        entries.push({ targetPath: grid.valuePath, componentId: grid.id, label: model.label, message, text: wordedWith(model.label), authored });
+        add({ targetPath: grid.valuePath, componentId: grid.id, label: model.label, message, text: wordedWith(model.label), authored }, error);
         return;
       }
-      entries.push({ targetPath: model.valuePath, componentId: id, label: model.label, message, text: wordedWith(model.label), authored });
+      add({ targetPath: model.valuePath, componentId: id, label: model.label, message, text: wordedWith(model.label), authored }, error);
     });
   }
   const count = entries.length + formEntries.length;
-  return { heading: text.plural("summaryHeading", count, { count }), formEntries, entries };
+  return { heading: text.plural("summaryHeading", count, { count }), formEntries, entries, firstError };
 }

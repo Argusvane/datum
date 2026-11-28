@@ -1,5 +1,5 @@
 import type { DataSourceSet } from "../../core/schema/contracts.js";
-import { HTMLElementBase, canDefineCustomElements } from "./custom-element-base.js";
+import { HTMLElementBase, adoptPreUpgradeProperties, canDefineCustomElements } from "./custom-element-base.js";
 import type { ValidationMessageCatalog } from "../../core/localization/validation-messages.js";
 import { createFormTextResolver, type FormTextCatalog } from "../../core/localization/form-texts.js";
 import { FormEventType } from "../../core/events/event-types.js";
@@ -14,6 +14,8 @@ import { LANGUAGE_SWITCHER_PART_TYPE, type FormChromeConfiguration } from "../..
 import {
   DatumFormRendererElement,
   defineDatumFormRendererElement,
+  type PrintCallOptions,
+  type PrintRenditionsOffered,
   type RenderHostRuntime
 } from "./form-renderer-element.js";
 import type { RenderFormPdfOptions } from "../pdf/pdf-service.js";
@@ -25,6 +27,7 @@ import type { PdfSignatureOptions } from "./form-renderer-element.js";
 import type { PdfThemeDefinition, PdfThemeSource } from "../pdf/pdf-theme.js";
 import { resolveJourneySelection, type JourneyConfiguration, type JourneyHostChoice } from "../../core/schema/journey.js";
 import { parseFormFeatures, type FormFeature } from "./form-features.js";
+import { readPrintConfiguration } from "../../core/schema/print.js";
 
 export const DATUM_FORM_HOST_TAG = "datum-form-host";
 
@@ -165,6 +168,8 @@ export class DatumFormHostElement extends HTMLElementBase {
   /** The unknown journey id last warned about: once per choice, not once per runtime handed over. */
   private warnedJourneyId: string | undefined;
   private pdfBusy = false;
+  /** Set while a print the toolbar started is in flight: a press meanwhile starts no second one. */
+  private printBusy = false;
   /** Off-switches for the runtime events the toolbar's wording follows (the locale). */
   private unsubLocale: Array<() => void> = [];
   /** Stops hearing the binding registry (a binding registered after `binding = "id"` brings its words). */
@@ -187,7 +192,15 @@ export class DatumFormHostElement extends HTMLElementBase {
   }
 
   public connectedCallback(): void {
-    this.buildDom();
+    adoptPreUpgradeProperties(this);
+    // Built once: an element moved or put back keeps its toolbar, its listeners and the renderer
+    // inside it, which keeps its form across a move within one task as a bare renderer does.
+    if (!this.rendererEl) {
+      this.buildDom();
+    } else {
+      this.refreshPrintControls();
+      this.applyToolbarTexts();
+    }
     this.followLocale();
     // The binding this host names by id may be registered (or replaced) later: the toolbar takes its words then.
     this.stopBindings ??= onBindingsChanged(() => {
@@ -479,7 +492,7 @@ export class DatumFormHostElement extends HTMLElementBase {
   private pressPrint(): void {
     this.refreshPrintControls();
     if (this.printMenuRenditions.length === 0) {
-      void this.rendererEl?.print();
+      void this.printOnce();
       return;
     }
     if (this.printMenuOpen()) {
@@ -487,6 +500,39 @@ export class DatumFormHostElement extends HTMLElementBase {
     } else {
       this.openPrintMenu("first");
     }
+  }
+
+  /** Prints through the renderer, unless a print the toolbar started is still in flight. */
+  private async printOnce(options?: PrintCallOptions): Promise<void> {
+    if (!this.rendererEl || this.printBusy) {
+      return;
+    }
+    this.printBusy = true;
+    try {
+      await this.rendererEl.print(options);
+    } finally {
+      this.printBusy = false;
+    }
+  }
+
+  /**
+   * The renditions the form offers a person and its default, as the inner renderer's
+   * `printRenditions` gives them (`configuration.print.renditions`, `["answers"]` when it says
+   * nothing), for a page or toolbar of its own that offers a choice.
+   */
+  public get printRenditions(): PrintRenditionsOffered {
+    if (this.rendererEl) {
+      return this.rendererEl.printRenditions;
+    }
+    // Not yet on the page (no renderer drawn): read off the runtime's form the same way.
+    let configuration: unknown;
+    try {
+      configuration = this.runtimeRef?.formRoot()?.configuration;
+    } catch {
+      configuration = undefined;
+    }
+    const print = readPrintConfiguration(configuration);
+    return { offered: [...print.renditions], default: print.defaultRendition };
   }
 
   private forwardFeatures(): void {
@@ -1039,7 +1085,7 @@ export class DatumFormHostElement extends HTMLElementBase {
       if (target.dataset.printRendition !== undefined) {
         const rendition = target.dataset.printRendition as PrintRendition;
         this.closePrintMenu(true);
-        void this.rendererEl?.print({ rendition });
+        void this.printOnce({ rendition });
       }
       if (target.dataset.pdf !== undefined) {
         void this.producePdf();

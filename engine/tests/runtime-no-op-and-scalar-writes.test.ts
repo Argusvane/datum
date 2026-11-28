@@ -200,10 +200,11 @@ describe("a non-scalar answer for a field that holds one value is refused when w
     runtime.setValue("born", null);
     runtime.setValue("bio", undefined);
     runtime.setValue("pets", { cat: true });
+    // A checkbox group's list of picked values is stored as its record, one boolean per option.
     runtime.setValue("pets", ["cat"]);
     // A key no component owns is the host's own (an extra kept beside the answers).
     runtime.setValue("extra", { anything: [1, 2] });
-    expect(runtime.state().values).toMatchObject({ name: "Ada", age: 12, agree: true, born: null, pets: ["cat"], extra: { anything: [1, 2] } });
+    expect(runtime.state().values).toMatchObject({ name: "Ada", age: 12, agree: true, born: null, pets: { cat: true, dog: false }, extra: { anything: [1, 2] } });
   });
 
   it("refuses one in a row's field too, whether written by key or with the rows whole", () => {

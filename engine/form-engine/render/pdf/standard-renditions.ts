@@ -22,9 +22,13 @@ import { BUTTON_GROUP_COMPONENT_TYPE } from "../../core/schema/button-group.js";
 import { DATA_GRID_COMPONENT_TYPE } from "../../core/schema/data-grid.js";
 import { readGridColumnWidths } from "../../core/schema/grid.js";
 import { GRID_TRACK_COUNT } from "../../core/schema/grid.js";
-import { resolveText } from "../../core/localization/translations.js";
+import { addressOf, resolveText } from "../../core/localization/translations.js";
+import type { ComponentNode } from "../../core/schema/types.js";
 import { readLegendMark } from "../../core/schema/legend-mark.js";
 import { readTabDescriptors } from "../core/tab-slots.js";
+import { rowHeadingOf } from "../core/error-wording.js";
+import { scalarText } from "../core/scalar-text.js";
+import { createFormTextResolver, type FormTextResolver } from "../../core/localization/form-texts.js";
 import type {
   PdfBlock,
   PdfBoxBlock,
@@ -43,13 +47,74 @@ import type {
 import type { RenderComponentModel } from "../core/component-model.js";
 import { pdfBlocksPrint } from "./pdf-document.js";
 import type { PdfRenditionContext, PdfRenditionRenderer } from "./pdf-renditions.js";
+import { stripAnswerBidi, type PdfChoiceItem, type PdfFormattedValue } from "./pdf-values.js";
 
 export const GENERIC_PDF_RENDITION_ID = "text";
 
 type Renderer = PdfRenditionRenderer;
 
+/** Component types whose answer is never printed back: what a reader of the paper sees is a mask. */
+const MASKED_TYPES: ReadonlySet<string> = new Set(["password"]);
+
+/** What a given masked answer prints in its place, the mask the review and print surfaces show. */
+export const PDF_ANSWER_MASK = "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
+
+/** Whether a component's answer prints as {@link PDF_ANSWER_MASK}: by its type (after the `kinds` map was applied), as the review masks it. */
+function isMasked(model: RenderComponentModel): boolean {
+  return MASKED_TYPES.has(model.type);
+}
+
+/** A formatted answer as the text drawn for it: the theme's empty word for none, the mask for a masked type. */
+function answerText(model: RenderComponentModel, formatted: PdfFormattedValue, empty: string): string {
+  return formatted.empty ? empty : isMasked(model) ? PDF_ANSWER_MASK : formatted.text;
+}
+
 function valueRuns(context: PdfRenditionContext): PdfTextRun[] {
-  return [{ text: context.value.empty ? context.texts.empty : context.value.text }];
+  return [{ text: answerText(context.model, context.value, context.texts.empty) }];
+}
+
+/** The option values a stored choice answer picks: one, several, or the ticked keys of a checkboxes object. */
+function storedChoices(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((entry) => entry !== undefined && entry !== null).map(scalarText).filter((entry) => entry !== "");
+  }
+  if (value && typeof value === "object") {
+    return Object.entries(value as Record<string, unknown>)
+      .filter(([, picked]) => picked === true)
+      .map(([key]) => key);
+  }
+  const text = scalarText(value);
+  return text === "" ? [] : [text];
+}
+
+/**
+ * A choice's options, with every stored answer no option lists after them as a chosen item of
+ * its own, labelled by the stored value: an answer from before the list changed, or one whose
+ * data source failed to load, still prints, as print's filled choice keeps it.
+ */
+function choiceItems(context: PdfRenditionContext): PdfChoiceItem[] {
+  const items = [...(context.value.items ?? [])];
+  const listed = new Set(items.map((item) => item.value));
+  for (const stored of storedChoices(context.model.value)) {
+    if (!listed.has(stored)) {
+      listed.add(stored);
+      items.push({ value: stored, label: stripAnswerBidi(stored), checked: true });
+    }
+  }
+  return items;
+}
+
+/**
+ * An option value as one part of an AcroForm field name. A `.` separates a name's parts, so it
+ * is written `%2E`, and `%` is written `%25` so two values never share a part.
+ */
+export function pdfFieldNamePart(value: string): string {
+  return value.replace(/%/g, "%25").replace(/\./g, "%2E");
+}
+
+/** The words of the form a rendition draws that no field supplies (a row's heading, an untitled tab's caption). */
+function formTextOf(context: PdfRenditionContext): FormTextResolver {
+  return createFormTextResolver(context.locale, undefined, context.translationCatalog, undefined, { translations: context.translations });
 }
 
 function blockStyle(context: PdfRenditionContext) {
@@ -162,7 +227,11 @@ function fieldSpec(context: PdfRenditionContext, kind: PdfFormFieldKind): PdfFor
     spec.required = true;
   }
   if (context.model.maxLength !== undefined) {
-    spec.maxLength = context.model.maxLength;
+    // The form counts characters (code points), a PDF field UTF-16 units: the limit is widened to
+    // the answer's own length in units, so an answer of astral characters within the limit, or
+    // one stored past it, is written whole rather than refused by the field.
+    const answer = !context.value.empty && !isMasked(context.model) ? context.value.text.length : 0;
+    spec.maxLength = Math.max(context.model.maxLength, answer);
   }
   const tooltip = context.model.description ?? context.model.tooltip;
   if (tooltip) {
@@ -196,7 +265,8 @@ function widget(
 function textFieldRendition(kind: "text" | "multiline"): Renderer {
   return (_node, context) => {
     const field = fieldSpec(context, kind);
-    if (!context.value.empty) {
+    // A masked answer is not written into the field, whose value a reader could copy out.
+    if (!context.value.empty && !isMasked(context.model)) {
       field.value = context.value.text;
     }
     return [widget(context, field)];
@@ -209,7 +279,11 @@ const checkboxFieldRendition: Renderer = (_node, context) => {
   return [widget(context, field, "after")];
 };
 
-/** Every option of a choice as its own checkbox widget, named `<field>.<option>`. */
+/**
+ * Every option of a choice as its own checkbox widget, named `<field>.<option>` with the option
+ * written by {@link pdfFieldNamePart}, its on state named by the option's value. Required means at
+ * least one on screen, which no single box can say, so none of them is marked required.
+ */
 const checkboxesFieldRendition: Renderer = (_node, context) => {
   const blocks: PdfBlock[] = [];
   if (context.label !== undefined) {
@@ -222,9 +296,10 @@ const checkboxesFieldRendition: Renderer = (_node, context) => {
       role: "P"
     });
   }
-  for (const item of context.value.items ?? []) {
+  for (const item of choiceItems(context)) {
     const field = fieldSpec(context, "checkbox");
-    field.name = `${context.fieldName}.${item.value}`;
+    delete field.required;
+    field.name = `${context.fieldName}.${pdfFieldNamePart(item.value)}`;
     field.value = item.checked;
     field.exportValue = item.value;
     blocks.push(widget(context, field, "after", item.label));
@@ -236,7 +311,7 @@ const checkboxesFieldRendition: Renderer = (_node, context) => {
 function choiceFieldRendition(kind: "dropdown" | "radio" | "listbox"): Renderer {
   return (_node, context) => {
     const field = fieldSpec(context, kind);
-    const items = context.value.items ?? [];
+    const items = choiceItems(context);
     field.options = items.map((item) => ({ value: item.value, label: item.label }));
     const picked = items.filter((item) => item.checked).map((item) => item.value);
     if (kind === "listbox") {
@@ -271,7 +346,7 @@ function checklistRendition(marker: "check" | "radio"): Renderer {
       kind: "checklist",
       componentId: context.model.id,
       ...(context.label !== undefined ? { label: context.label } : {}),
-      items: (context.value.items ?? []).map((item) => ({
+      items: choiceItems(context).map((item) => ({
         label: item.label,
         checked: item.checked,
         ...(item.description ? { description: item.description } : {})
@@ -351,7 +426,8 @@ function decodeEntities(text: string): string {
   return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, entity: string) => {
     if (entity[0] === "#") {
       const code = entity[1]?.toLowerCase() === "x" ? parseInt(entity.slice(2), 16) : parseInt(entity.slice(1), 10);
-      return Number.isFinite(code) ? String.fromCodePoint(code) : whole;
+      // As a browser decodes it: NUL, a surrogate or a number past U+10FFFF is the replacement character.
+      return code > 0 && code <= 0x10ffff && (code < 0xd800 || code > 0xdfff) ? String.fromCodePoint(code) : "\uFFFD";
     }
     return ENTITIES[entity.toLowerCase()] ?? whole;
   });
@@ -365,6 +441,8 @@ interface HtmlList {
   items: PdfListItem[];
   /** The item being filled, its runs so far. */
   current: PdfTextRun[] | undefined;
+  /** The last item's `<li>` is still open after a list nested in it closed: text that follows is that item's. */
+  resume: boolean;
 }
 
 /**
@@ -414,7 +492,12 @@ export function htmlToPdfBlocks(html: string, context: PdfRenditionContext): Pdf
   };
   const endItem = (): void => {
     const list = lists[lists.length - 1];
-    if (!list || list.current === undefined) {
+    if (!list) {
+      return;
+    }
+    const resume = list.resume;
+    list.resume = false;
+    if (list.current === undefined) {
       return;
     }
     const kept = trimRuns(list.current);
@@ -423,6 +506,9 @@ export function htmlToPdfBlocks(html: string, context: PdfRenditionContext): Pdf
     // An item opened by text before any `<li>`, or a nested list's host: the runs join the item.
     if (last && last.runs.length === 0) {
       last.runs = kept;
+    } else if (last && resume) {
+      // Text after a nested list, inside the same `<li>`: a line of the item's own.
+      last.runs = kept.length > 0 ? [...last.runs, { text: "\n" }, ...kept] : last.runs;
     } else if (kept.length > 0) {
       list.items.push({ runs: kept });
     }
@@ -437,11 +523,12 @@ export function htmlToPdfBlocks(html: string, context: PdfRenditionContext): Pdf
     list.current = [];
   };
   const endList = (): void => {
+    // The list's own open item ends with it, before the list is closed.
+    endItem();
     const list = lists.pop();
     if (!list) {
       return;
     }
-    endItem();
     const items = list.items.filter((item) => item.runs.length > 0 || (item.blocks && item.blocks.length > 0));
     if (items.length === 0) {
       return;
@@ -455,6 +542,7 @@ export function htmlToPdfBlocks(html: string, context: PdfRenditionContext): Pdf
         if (parent.current !== undefined) {
           host.runs = trimRuns(parent.current);
           parent.current = undefined;
+          parent.resume = true;
         }
         host.blocks = [...(host.blocks ?? []), block];
       } else {
@@ -516,7 +604,7 @@ export function htmlToPdfBlocks(html: string, context: PdfRenditionContext): Pdf
           if (lists.length === 0) {
             flushParagraph();
           }
-          lists.push({ ordered: tag === "ol", items: [], current: undefined });
+          lists.push({ ordered: tag === "ol", items: [], current: undefined, resume: false });
         }
         break;
       case "li":
@@ -674,18 +762,31 @@ function groupRendition(keepTogether: boolean): Renderer {
   };
 }
 
+/** A label the author gave a component, as authored (before any translation). */
+function configuredLabel(node: ComponentNode): string | undefined {
+  const configuration = node.configuration;
+  const raw = configuration && typeof configuration === "object" && !Array.isArray(configuration) ? (configuration as Record<string, unknown>)["label"] : undefined;
+  return typeof raw === "string" && raw !== "" ? raw : undefined;
+}
+
 /** Tabs become sequential sections, one per tab, captioned with the tab's label. */
 const tabsRendition: Renderer = (node, context) => {
   const blocks: PdfBlock[] = [...containerHeading(context)];
   const descriptors = readTabDescriptors(node);
-  for (const slotId of context.slotIds()) {
+  const sources = { translations: context.translations, catalog: context.translationCatalog };
+  context.slotIds().forEach((slotId, index) => {
     const descriptor = descriptors.find((tab) => tab.id === slotId);
     // A tab is worded under its container, by the tab's id (the slot), never its place.
     const authored = typeof descriptor?.label === "string" && descriptor.label !== "" ? descriptor.label : undefined;
+    const label = authored !== undefined ? resolveText(authored, { kind: "components", owner: node.id, path: ["tabs", slotId, "label"] }, context.locale, sources) : undefined;
+    // An untitled tab is named by the label of the `tab` component that is its whole content, when
+    // the author gave it one, else by its place: never its id, as on screen.
+    const content = node.children?.[slotId] ?? [];
+    const lone = content.length === 1 && content[0]?.type === "tab" ? content[0] : undefined;
+    const loneLabel = lone ? configuredLabel(lone) : undefined;
+    const own = lone && loneLabel !== undefined ? resolveText(loneLabel, addressOf.component(lone.id, "label"), context.locale, sources) : undefined;
     const caption =
-      authored !== undefined
-        ? resolveText(authored, { kind: "components", owner: node.id, path: ["tabs", slotId, "label"] }, context.locale, { translations: context.translations, catalog: context.translationCatalog })
-        : slotId;
+      label !== undefined && label !== "" ? label : own !== undefined && own !== "" ? own : formTextOf(context)("tabFallback", { n: index + 1 });
     const children = context.children(slotId);
     blocks.push({
       id: context.nextId("tab"),
@@ -703,11 +804,15 @@ const tabsRendition: Renderer = (node, context) => {
       blocks: children,
       keepTogether: false
     });
-  }
+  });
   return blocks;
 };
 
-/** A grid becomes a borderless one-row table, a cell per column; a single column stacks. */
+/**
+ * A grid becomes a borderless one-row table, a cell per column; a single column stacks. The
+ * table is layout, not data: it is an artifact, which tags no structure of its own while the
+ * fields in its cells are content under the grid's parent.
+ */
 const gridRendition: Renderer = (node, context) => {
   const slots = context.slotIds();
   if (slots.length <= 1) {
@@ -759,7 +864,7 @@ const collectionTableRendition: Renderer = (_node, context) => {
           {
             id: context.nextId("td-p"),
             kind: "paragraph",
-            runs: [{ text: formatted.empty ? "" : formatted.text }]
+            runs: [{ text: answerText(field, formatted, "") }]
           }
         ]
       } satisfies PdfTableCell;
@@ -786,6 +891,8 @@ const collectionTableRendition: Renderer = (_node, context) => {
 const collectionSectionsRendition: Renderer = (_node, context) => {
   const fields = context.rowFields();
   const blocks: PdfBlock[] = [...containerHeading(context)];
+  // A row is headed as on screen, in print and in the review: the container's `rowLabel`, else "Row n".
+  const text = formTextOf(context);
   context.rows().forEach((row, index) => {
     blocks.push({
       id: context.nextId(`row-${index}`),
@@ -798,7 +905,7 @@ const collectionSectionsRendition: Renderer = (_node, context) => {
           id: context.nextId("row-heading"),
           kind: "heading",
           level: headingLevel({ ...context, headingLevel: context.headingLevel + 1 }),
-          runs: [{ text: `${context.label ?? ""} ${index + 1}`.trim() }],
+          runs: [{ text: rowHeadingOf(context.model.node, index + 1, context.locale, { translations: context.translations, catalog: context.translationCatalog }, text) }],
           keepWithNext: true
         },
         ...fields.map((field): PdfBlock => {
@@ -809,7 +916,7 @@ const collectionSectionsRendition: Renderer = (_node, context) => {
             kind: "labelValue",
             componentId: field.id,
             label: field.label,
-            value: [{ text: formatted.empty ? context.texts.empty : formatted.text }],
+            value: [{ text: answerText(field, formatted, context.texts.empty) }],
             arrangement,
             ...affixes(field),
             ...frameFor(context, arrangement, field.type)

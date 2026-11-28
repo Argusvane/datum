@@ -99,7 +99,8 @@ collapsed part must also not keep what it holds off the paper.
     `print.on` says where it is drawn (screen, paper or both; paper-only is limited to what
     holds no answer, ADR 0174). `print.show` says what a live print does while a rule hides the
     component: `auto` leaves it as on screen, `always` prints it with its contents and a note,
-    `answered` prints it only when it holds an answer. `print.breakBefore` and
+    `answered` prints it only when it holds an answer (a column of a data grid or repeating
+    section, when any row answers it). `print.breakBefore` and
     `print.keepTogether` are the breaks (ADR 0174), and `print.note` is the text printed beside
     a field printed `always` while a rule hides it. A read-only print reads the breaks and
     `print.on` and no other setting. `livePrintPlan(root)` turns the settings into a decision
@@ -123,7 +124,8 @@ collapsed part must also not keep what it holds off the paper.
     `journeyView` to interactive renders only), and takes the journey's pages from the runtime's
     `journeyView`: each page on the person's path is a headed section, in path order, titled by
     the page's title (else its first labelled component), holding the components the page lists.
-    A live print adds each page off the path that holds a component printed whatever the rules
+    Each component is printed once, on the earliest page that lists it or a container holding it,
+    the rule Check answers lists a field by (ADR 0172). A live print adds each page off the path that holds a component printed whatever the rules
     say, at its place in the journey's order, with only those components. A journey kit that
     cannot pick a page's components (the no-op kit, ADR 0144) prints the form whole.
 
@@ -132,8 +134,10 @@ collapsed part must also not keep what it holds off the paper.
 14. **The print model is the input of a pure function.** `print()` (`<datum-form-renderer>`, and
     `<datum-form>`, which forwards to it) builds a `PrintModel` (`printModelOf`,
     `render/print/model.ts`). The model is the presentation fold (ADR 0162) of the read-only
-    output, with every word already chosen: choice labels with each option marked, dates and
-    numbers formatted for the locale through `Intl`, "Not answered", prefixes and suffixes. It
+    output, with every word already chosen: choice labels with each option marked (a stored value
+    no option lists as a chosen option of its own), dates and numbers formatted for the locale
+    through `Intl` (a date the calendar does not have as stored), "Not answered" (for text of
+    spaces alone too), a password's answer as a mask, prefixes and suffixes. It
     carries:
     - the rendition (`answers`, `blank`, `filled`; decision 9). A call that names none prints the
       form's default rendition (ADR 0174). `filled` reuses the shapes of the other two: a text

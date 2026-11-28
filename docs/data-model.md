@@ -53,6 +53,31 @@ a container that nests data or a repeating section moves it. The Saves to note s
 how the path is made and what `[]` stands for. A PDF layout's components store no answers, so
 on a layout's tab there is no Saves to line and the ID's note says so.
 
+### What a checkbox stores
+
+A lone `checkbox` stores `true` when it is ticked and `false` when it is not. Only `true` is a
+tick: the live form, the printout, the PDF and validation all read every other value as
+unticked, and `required` (on the browser and on the server) refuses it, so a required consent box
+is met by `true` alone. A `checkboxes` group stores one boolean per option,
+`{ "cat": true, "dog": false }`, and an option is picked only when its entry is `true`; anything
+other than such a record (a list, a text) picks nothing.
+
+`setValue`, `setValues`, `addRow`, `addRows` and `hydrateFromDraft` store these shapes when
+given another spelling of them:
+
+| Written | Stored |
+|---|---|
+| `"true"` on a checkbox | `true` |
+| `"false"` on a checkbox | `false` |
+| `["cat"]` on a checkboxes group with options `cat` and `dog` | `{ "cat": true, "dog": false }`: `true` for each value in the list (a number picks its text), `false` for each inline option it leaves out |
+
+Any other value for a checkbox (`0`, `1`, `"yes"`) is neither refused nor guessed at: it is kept
+as written, as a number box keeps text that is no number, and it reads as unticked everywhere.
+A host that holds consent as `1` or `"yes"` turns it into `true` before writing it. An object or
+a list for a lone checkbox is refused (`NonScalarAnswerError`, `value.notScalar`), as for every
+field that holds one value. A list holding anything but text and numbers is kept as written on a
+checkboxes group, and picks nothing.
+
 ### Repeating sections
 
 A **repeating section** is not a component. It is the name for any container that carries a

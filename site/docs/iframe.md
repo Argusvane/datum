@@ -42,7 +42,7 @@ Without that header a browser frames the page anywhere, which is rarely what a f
 ## What changes inside a frame
 
 - **Drafts.** A draft kept in the browser belongs to the framed page's origin. When that origin differs from the host's, browsers partition or block its storage, so a draft may not survive a return visit. Keep drafts on the server instead: see [Drafts](/drafts).
-- **Passkeys.** Signing a submission with a passkey from inside a cross-origin frame needs `allow="publickey-credentials-get"` on the `<iframe>`. See [Signing a form with a passkey](/passkey-signing).
+- **Passkeys.** Signing a submission with a passkey from inside a cross-origin frame needs `allow="publickey-credentials-get"` on the `<iframe>`. The engine's verifier and the Spring Boot host refuse a signature made in a cross-origin frame (`crossOrigin: true`): a signature that must verify is made in a top-level page, or in a frame of the same origin as every page around it. See [Signing a form with a passkey](/passkey-signing).
 - **Browser assistants.** The assistant tools need `allow="tools"` on the frame: see [Browser assistants](/assistants).
 - **Printing and PDFs.** Both work from the framed page as they do on a page of its own.
 - **The language.** The host cannot set an attribute on a form in another page. Pass the locale in the frame's address and read it in the framed page, or let the form's own switcher do it.

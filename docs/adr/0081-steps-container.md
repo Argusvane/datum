@@ -64,12 +64,21 @@ navigates to the next through `runtime.navigate`, whose hooks and gating rules m
 (the new page's title, as a multi-page service moves it).
 
 - Back navigates with no check
+- Continue and Back pass over a step a rule hides (`visibleWhen`): the indicator still lists it,
+  holding nothing, but neither button lands on it, and its indicator entry opens nothing. The
+  runtime's `next` and `back` pass over it the same way. When the step the form is on is hidden
+  (the first step, or one a rule hides while it is shown), the next step shown is drawn in its
+  place, else the one before it.
 - an indicator entry reopens a visited step, an upcoming one is not a way to skip ahead.
 - A submit validates the whole form, and an error or a focus request on a field in a step not shown
   opens that step first (the feature's `reveal`, through the runtime when it navigates).
 - On the builder canvas, and under any runtime without `navigate`, every control switches the panels
   in place and the renderer keeps the choice across draws, so the author reaches every step's drop
   zones and the preview is never held by a required field.
+- A `steps` container in a data grid's row switches in place too, each row its own: the runtime
+  has one current step for the form, so a row's container keeps its step, its completed steps and
+  its heading ids by its instance key. Its Continue checks the step and is held only by that
+  row's errors (the scoped check still lists the step's errors in the other rows).
 
 **4. Wording through `texts`**: `stepOf` ("Step {{n}} of {{total}}"), `stepTagSeparator`,
 `back`, `continue`, `stepCompleted` and `stepNotCompleted` (read beside a step's name). English is

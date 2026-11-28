@@ -134,7 +134,7 @@ components side by side and adds nothing to the data.
 8. **The PDF prints a grid as a collection.** `dataGrid` is in the rendition catalog with the
    collection renditions: `table` (header from the children's labels, one body row per entry,
    repeated header, kept-together rows, tagged Table/TR/TH/TD) by default and under `layout:
-   "table"` or `"auto"`, `sections` (one labelled group per row) under `layout: "stacked"`; a
+   "table"` or `"auto"`, `sections` (one labelled group per row, headed as the screen heads it: `rowLabel` with `{{n}}` filled, else "Row n") under `layout: "stacked"`; a
    layout may choose either. The derived default layout binds the grid as one field; the template
    designer offers the grid's path as it offers a section's.
 

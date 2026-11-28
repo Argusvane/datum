@@ -64,7 +64,9 @@ on the receiving side, is a separate record (ADR 0064).
    and the renderer's write guard drops any write that still arrives while the form is
    submitting, so nothing reaches the runtime and no action is dispatched. Datum's stylesheet
    dims the locked regions. Focus is remembered when the lock comes and put back when it lifts,
-   unless something else took it meanwhile (the first error, a notice).
+   unless something else took it meanwhile (the first error, a notice, a control elsewhere on the
+   page). A design system's component that does not delegate focus gets it back through its
+   field's focus target. A draw that fails while the submission runs still locks the regions.
 
 3. **The wording is the page's, per locale.** A `FormTextCatalog` (`texts` on the renderer, the
    host element and `<datum-form>`, JSON in the attribute) holds the form's own chrome text as

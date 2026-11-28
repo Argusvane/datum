@@ -161,12 +161,16 @@ for (const [name, budget] of Object.entries(BUDGETS_KB)) {
 // Each entry's initial payload, the entry plus its core chunk, gzipped at level 9 file by file
 // (Node's zlib, as here; a page fetches them as two files), is at most the recorded base pair plus
 // 4 KB. The base pairs are what CI measures on its runner, whose build comes out slightly larger
-// than a developer machine's. A gate is raised only deliberately, never to fit a measurement. Both
-// were raised by 512 B for the origin rule's own code in the elements: an attribute's URL resolved
-// once and checked again before its module is imported, and the wasm-integrity attribute (its
-// check is a lazy chunk). The builder's was raised by 768 B more for the fixes to its drafts,
-// renames, mode switches, panels and Logic editor, which add about 760 B gzip to its eager code.
-const GZIP_BASE = { "datum-form.js": 203_980, "datum-builder.js": 518_047 };
+// than a developer machine's. A gate is raised only deliberately, never to fit a measurement.
+// Raised by what the renderer's checks add to the initial payload, as measured against the previous
+// build on one machine: the token value scan, the stored-answer shapes, the file writes' guard and
+// row keys, the stylesheet scanner, the submission lock's focus rules and the print answer rules
+// (datum-form.js +3,417 B, datum-builder.js +4,256 B). Both were raised by 512 B more for the origin
+// rule's own code in the elements: an attribute's URL resolved once and checked again before its
+// module is imported, and the wasm-integrity attribute (its check is a lazy chunk). The builder's
+// was raised by 768 B more for the fixes to its drafts, renames, mode switches, panels and Logic
+// editor, which add about 760 B gzip to its eager code.
+const GZIP_BASE = { "datum-form.js": 207_397, "datum-builder.js": 522_303 };
 const GZIP_ALLOWANCE = 4 * 1024;
 const pairGzip = (name) => [name, ...coreOf(name.replace(/\.js$/, ""))].reduce((total, part) => total + gzipSync(readFileSync(join(dist, part)), { level: 9 }).length, 0);
 for (const [name, base] of Object.entries(GZIP_BASE)) {
@@ -177,8 +181,10 @@ for (const [name, base] of Object.entries(GZIP_BASE)) {
 // The renderer's lazy PDF pipeline has a budget of its own: the chunk a form's Preview PDF loads,
 // which the engine's side-effect-free marking keeps to what it uses. It holds the theme and layout
 // logic, the PDF render caps, the attachment-type sniff, the decoded-length size check and the
-// structural sniffer. Measured 81.3 KB at the last raise; lazy chunks get measured + 2.
-const FORM_PDF_CHUNK_BUDGET_KB = 84;
+// structural sniffer, the component style checks, the value-path model index, the stored-answer
+// fallback of the choice renditions and the attachment refusal by name. Measured 88.1 KB at the
+// last raise; lazy chunks get measured + 2.
+const FORM_PDF_CHUNK_BUDGET_KB = 91;
 // The builder's Journeys designer chunk, the one the Journeys side loads when it is first opened:
 // the designer, its Step view, the Check answers step, the findings wording and the preview
 // surface's session, surface and styles; the runtime it builds comes from datum-builder.js. The

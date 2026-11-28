@@ -95,7 +95,7 @@ describe("the host's actions row", () => {
     expect(rendererShadowOf(el).querySelectorAll("[data-validate], [data-print]")).toHaveLength(0);
   });
 
-  it("puts Print after Validate, as part print, and a click on its glyph still prints", () => {
+  it("puts Print after Validate, as part print, and a click on its glyph still prints", async () => {
     const el = mountHost();
     const row = el.shadowRoot!.querySelector(".host-actions-row")!;
     const print = row.querySelector<HTMLButtonElement>("[data-print]")!;
@@ -106,6 +106,8 @@ describe("the host's actions row", () => {
     const spy = vi.spyOn(rendererOf(el), "print").mockResolvedValue(undefined);
     print.click();
     expect(spy).toHaveBeenCalledTimes(1);
+    // A press while a print is in flight starts none: the first one finishes first.
+    await new Promise((done) => setTimeout(done, 0));
     // The click usually lands on the glyph inside the button; it must still reach print().
     print.querySelector("svg")!.dispatchEvent(new MouseEvent("click", { bubbles: true, composed: true }));
     expect(spy).toHaveBeenCalledTimes(2);

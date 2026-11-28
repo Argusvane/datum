@@ -166,7 +166,7 @@ export function embedAttachments(pdf: PDFDocument, options: EmbedAttachmentsOpti
   }
   const resolved: PdfAttachment[] = [];
   for (const candidate of candidates) {
-    const refusedWhy = isResolvedPdfAttachment(candidate) ? refusedAttachmentType(candidate.mimeType, candidate.data) : undefined;
+    const refusedWhy = isResolvedPdfAttachment(candidate) ? refusedAttachmentType(candidate.mimeType, candidate.data, candidate.name) : undefined;
     if (refusedWhy !== undefined) {
       // The kernel backs the engine's check: a host's own attachments reach it without the collector.
       warnings.push({ code: "attachment.refusedType", message: `The file "${candidate.name}" was not attached: ${refusedWhy}.`, ...(candidate.componentId !== undefined ? { componentId: candidate.componentId } : {}) });

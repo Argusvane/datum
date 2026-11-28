@@ -214,7 +214,8 @@ function buildMeta(
         effectiveStates: request.effectiveStates
       })
     : undefined;
-  const byComponent: Record<string, number> = {};
+  // Keyed by component ids, which a form names freely ("toString", "__proto__"): no prototype to collide with.
+  const byComponent: Record<string, number> = Object.create(null) as Record<string, number>;
   const formErrors: FormError[] = [];
   const fieldErrors: FormError[] = [];
   for (const error of errors) {
@@ -296,27 +297,27 @@ export async function buildRenderOutput(
   // the catalogs layered down the parent chain all need the whole list.
   const withSummary = <M extends RenderModel>(model: M): M & { meta: RenderOutputMeta } => {
     if (errors.length > 0) {
-      Object.assign(
-        meta.errorSummary,
-        wordErrorSummary({
-          components: model.components,
-          byComponent: meta.errorSummary.byComponent,
-          fieldErrors,
-          formErrors: meta.errorSummary.formErrors,
+      const { firstError, ...summary } = wordErrorSummary({
+        components: model.components,
+        byComponent: meta.errorSummary.byComponent,
+        fieldErrors,
+        formErrors: meta.errorSummary.formErrors,
+        locale,
+        wording: {
+          ...wording,
           locale,
-          wording: {
-            ...wording,
-            locale,
-            translations: request.translations,
-            translationCatalog: request.translationCatalog
-          }
-        })
-      );
+          translations: request.translations,
+          translationCatalog: request.translationCatalog
+        }
+      });
+      Object.assign(meta.errorSummary, summary);
       // The first error goes where the summary's first line does (a row's control, a grid for
-      // a cell error no row owns): the summary lists the errors in the order the focus takes the first.
+      // a cell error no row owns): the component, the tabs and steps to open and the control
+      // all come from the error that line words, so the focus never mixes two errors.
       const first = meta.errorSummary.entries[0];
-      if (meta.firstErrorFocus !== undefined && first !== undefined) {
-        meta.firstErrorFocus = { ...meta.firstErrorFocus, targetPath: first.targetPath, targetComponentId: first.componentId };
+      const target = request.componentTree && firstError !== undefined ? resolveFirstErrorFocusTarget([firstError], request.componentTree) : undefined;
+      if (meta.firstErrorFocus !== undefined && first !== undefined && target !== undefined) {
+        meta.firstErrorFocus = { ...target, targetPath: first.targetPath, targetComponentId: first.componentId };
       }
     }
     return { ...model, meta };

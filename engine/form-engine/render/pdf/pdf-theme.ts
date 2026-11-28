@@ -359,7 +359,59 @@ function mergeTexts(over: PdfThemeTexts | undefined): Required<PdfThemeTexts> {
   };
 }
 
-function mergeComponents(over: unknown): Record<string, PdfThemeComponentChoice> {
+/** What each style field a built-in rendition reads must be, and how it is read. */
+const STYLE_FIELDS: Record<keyof PdfComponentStyle, { read: (value: unknown) => unknown; expected: string }> = {
+  spacingBefore: { read: nonNegative, expected: "a number of points, 0 or more" },
+  spacingAfter: { read: nonNegative, expected: "a number of points, 0 or more" },
+  labelArrangement: { read: (value) => oneOf(value, ["stacked", "inline"] as const), expected: '"stacked" or "inline"' },
+  ruledLines: { read: positiveInteger, expected: "a whole number above 0" },
+  widgetHeight: { read: positive, expected: "a number of points above 0" },
+  width: { read: positive, expected: "a number of points above 0" },
+  color: { read: color, expected: "a colour" },
+  size: { read: positive, expected: "a number of points above 0" }
+};
+
+/**
+ * A component style (a theme's `components.<type>.style`, a `pdf-field` binding's `style`) with
+ * every field a built-in rendition reads checked: a value of the wrong kind (`"12"`, `-50`,
+ * `Infinity`, `"sideways"`) is dropped and `report` is told which, so the rest of the document
+ * draws. `null` drops a field without a report. A field no built-in reads is kept as given, for a
+ * plugin's rendition to read.
+ */
+export function readPdfComponentStyle(value: unknown, report?: (key: string, expected: string) => void): PdfComponentStyle {
+  if (!isRecord(value)) {
+    return {};
+  }
+  const out: Record<string, unknown> = {};
+  for (const [key, given] of Object.entries(value)) {
+    const field = Object.prototype.hasOwnProperty.call(STYLE_FIELDS, key) ? STYLE_FIELDS[key as keyof PdfComponentStyle] : undefined;
+    if (!field) {
+      out[key] = given;
+      continue;
+    }
+    if (given === null || given === undefined) {
+      continue;
+    }
+    const read = field.read(given);
+    if (read === undefined) {
+      report?.(key, field.expected);
+      continue;
+    }
+    out[key] = read;
+  }
+  return out as PdfComponentStyle;
+}
+
+/** The `style.invalid` warning for one dropped style field. */
+export function pdfStyleWarning(where: string, key: string, expected: string, componentId?: string): PdfWarning {
+  return {
+    code: "style.invalid",
+    message: `The ${where} style's "${key}" is not ${expected}; it was ignored.`,
+    ...(componentId !== undefined ? { componentId } : {})
+  };
+}
+
+function mergeComponents(over: unknown, warn?: (warning: PdfWarning) => void): Record<string, PdfThemeComponentChoice> {
   const components: Record<string, PdfThemeComponentChoice> = { ...DEFAULT_PDF_COMPONENTS };
   if (!isRecord(over)) {
     return components;
@@ -373,7 +425,7 @@ function mergeComponents(over: unknown): Record<string, PdfThemeComponentChoice>
       entry.rendition = choice.rendition;
     }
     if (isRecord(choice.style)) {
-      entry.style = choice.style as PdfComponentStyle;
+      entry.style = readPdfComponentStyle(choice.style, (key, expected) => warn?.(pdfStyleWarning(`theme's "${type}"`, key, expected)));
     }
     components[type] = entry;
   }
@@ -485,9 +537,13 @@ function scaleTheme(theme: ResolvedPdfTheme, scale: number): ResolvedPdfTheme {
 /**
  * The theme a PDF renders under, defaults filled in. A theme that is not a PDF theme (a host
  * that passed another target by habit) contributes nothing: a form's CSS has no meaning on
- * paper, so the result is the engine default rather than a guess.
+ * paper, so the result is the engine default rather than a guess. A component style field of the
+ * wrong kind is dropped and `warn` told (`style.invalid`), as {@link readPdfComponentStyle} reads it.
  */
-export function resolvePdfTheme(theme: PdfThemeDefinition | { readonly target?: string } | undefined): ResolvedPdfTheme {
+export function resolvePdfTheme(
+  theme: PdfThemeDefinition | { readonly target?: string } | undefined,
+  warn?: (warning: PdfWarning) => void
+): ResolvedPdfTheme {
   const settings: PdfThemeSettings = isPdfTheme(theme) && isRecord(theme.pdf) ? theme.pdf : (DEFAULT_PDF_THEME.pdf ?? {});
   const resolved: ResolvedPdfTheme = {
     id: isPdfTheme(theme) ? theme.id : DEFAULT_PDF_THEME_ID,
@@ -503,7 +559,7 @@ export function resolvePdfTheme(theme: PdfThemeDefinition | { readonly target?: 
     panel: mergePanel(settings.panel),
     list: mergeList(settings.list),
     spacing: mergeSpacing(settings.spacing),
-    components: mergeComponents(settings.components),
+    components: mergeComponents(settings.components, warn),
     texts: mergeTexts(settings.texts),
     tagged: typeof settings.tagged === "boolean" ? settings.tagged : undefined,
     pdfa: resolvePdfConformance({ pdfa: settings.pdfa })?.pdfa,

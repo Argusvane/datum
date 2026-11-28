@@ -32,7 +32,9 @@ const escape = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, "\\
  * The number `text` writes, or undefined when it is not one. Digits may be grouped in threes by
  * spaces or the locale's grouping mark (never in other sizes: "1,5" is not 15 in English), and the
  * fraction follows the locale's decimal mark, or "." where "." is not the locale's grouping mark.
- * A plain numeral JavaScript reads ("12", "-3.5", "1e3") is read as JavaScript reads it.
+ * A first group led by a zero ("0,500", "00,500", "0.500" in German) is never a grouping, so it
+ * is not read, even where JavaScript would read it as a fraction. A plain numeral JavaScript
+ * reads ("12", "-3.5", "1e3") is read as JavaScript reads it.
  */
 export function readTypedNumber(text: string, locale: string): number | undefined {
   const trimmed = text.trim();
@@ -44,7 +46,10 @@ export function readTypedNumber(text: string, locale: string): number | undefine
   const compact = trimmed.replace(SPACES, " ");
   const groupClass = [...groupMarks].map(escape).join("");
   const decimalClass = [...decimals].filter((mark) => !groupMarks.has(mark)).map(escape).join("");
-  const grouped = new RegExp(`^([+-]?)(\\d{1,3}(?:[${groupClass}]\\d{3})+|\\d+)(?:[${decimalClass}](\\d+))?$`);
+  if (new RegExp(`^[+-]?0\\d{0,2}(?:[${groupClass}]\\d{3})+(?:[${decimalClass}]\\d+)?$`).test(compact)) {
+    return undefined;
+  }
+  const grouped = new RegExp(`^([+-]?)([1-9]\\d{0,2}(?:[${groupClass}]\\d{3})+|\\d+)(?:[${decimalClass}](\\d+))?$`);
   const match = decimalClass === "" ? null : grouped.exec(compact);
   if (match) {
     const value = Number(`${match[1]}${match[2]!.replace(/\D/g, "")}${match[3] !== undefined ? `.${match[3]}` : ""}`);
@@ -67,7 +72,7 @@ function monthNames(locale: string): string[][] {
   for (const code of [locale, "en"]) {
     for (const month of ["long", "short"] as const) {
       try {
-        const format = new Intl.DateTimeFormat(code, { month, timeZone: "UTC" });
+        const format = new Intl.DateTimeFormat(code, { month, timeZone: "UTC", calendar: "gregory" });
         lists.push(Array.from({ length: 12 }, (_, index) => fold(format.format(new Date(Date.UTC(2024, index, 15))))));
       } catch {
         // An unknown locale: English's names still read.

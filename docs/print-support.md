@@ -141,10 +141,16 @@ instance), is dropped, not cut.
 
 - `answers` (the default) is a record of what the person gave. An empty field reads
   "Not answered" (the form text `printEmpty`), drawn as a muted note rather than inside a box; an
-  unanswered choice reads the same, without its options (a lone checkbox keeps its empty box).
+  unanswered choice reads the same, without its options (a lone checkbox keeps its empty box, and
+  only `true` ticks it). Text of spaces alone is no answer, as validation reads it. A choice whose
+  stored value no option lists (an answer from before the options changed) prints that value as
+  a chosen option of its own; a date the calendar does not have (30 February) prints as stored. A
+  password's answer prints as a mask (`••••••••`), as Check answers shows it. A data grid or
+  repeating section with no rows reads "Not answered" under its heading.
 - `blank` is a paper form to fill in by hand. Text fields leave room to write, a date shows its
-  parts in the order the locale writes them, choices show every option, a data grid prints
-  empty rows, and a required field carries its mark. It follows the same settings as the other
+  parts in the order the locale writes them, choices show every option, a data grid or a
+  repeating section prints empty rows (one whose rows hold groups prints each empty row as its
+  groups, headed by the row's name), and a required field carries its mark. It follows the same settings as the other
   two, except that a component printed only when answered (`print.show: "answered"`) prints as on
   screen, since nothing on a blank form is answered.
 - `filled` is the paper form's look with the person's answers written in. It draws what `blank`
@@ -178,7 +184,9 @@ Which components print follows the element's `mode` (the `mode` attribute or pro
 | A journey | The pages on the person's path, in order, each a headed section; a page off the path brings only its components whose choice is `always` | The pages on the person's path |
 
 A rule that hides a field is evaluated against the answers at the moment of printing. A journey
-page with no title is headed by its first labelled component, as on screen. A page off the path
+page with no title is headed by its first labelled component, as on screen. A component prints
+once, on the earliest page that lists it or a container holding it, as Check answers lists it
+under the earliest step that asks it. A page off the path
 that holds an `always` component is placed at its place in the journey's order, with only those
 components. Where no journey kit is loaded (the no-op kit), the form prints whole.
 
@@ -239,12 +247,14 @@ journey page but the first.
 |---|---|---|
 | `auto` | As on screen | Printed as the screen shows it: a field a rule hides is left off |
 | `always` | Always, with a note while a rule hides it | Printed even while a rule hides it, with everything inside it (except any inside component whose own choice is `screen`). While a rule hides it, the note follows it. A rule that hides a container it sits in still takes it off paper: set the container to `always` too |
-| `answered` | Only when it has an answer | Printed only while its value is not empty (even if a rule hides it: a value kept from before the rule still prints, without a note); dropped otherwise. On a container other than a data grid it always leaves the container off, since a container holds no value of its own |
+| `answered` | Only when it has an answer | Printed only while its value is not empty (even if a rule hides it: a value kept from before the rule still prints, without a note); dropped otherwise. On a column of a data grid or repeating section, it prints the column while any row answers it. On a container other than a data grid it always leaves the container off, since a container holds no value of its own |
 
 Details:
 
-- **What counts as an answer** (for `answered`): not `undefined`, `null`, `""` or `false`, not an
-  empty array, and not an object whose entries are all `false`, `undefined`, `null` or `""`.
+- **What counts as an answer** (for `answered`): not `undefined`, `null` or `false`, not text of
+  spaces alone, not a number that is not finite, not an empty array, and not an object with no
+  entry `true` (a checkboxes group with nothing ticked): the same reading as the printed field's
+  "Not answered" and validation's required check.
 - **Inside an `always` component.** Components below it are kept too (they print even if a rule
   hides them), but only the `always` component itself carries the note.
 - **The note.** It prints under the component, only while the component is `always` and a rule
@@ -437,13 +447,15 @@ binding](binding-authoring.md), section 12, covers writing one.
 - **Print from script.** `<datum-form>.print()` and `<datum-form-renderer>.print()` do what the
   button does. Without a rendition they print the form's default; `print({ rendition: "blank" })`
   prints the paper form, `print({ rendition: "filled" })` the paper form with the answers in it, and
-  `print({ locale: "fr" })` prints in another language and leaves the form's own as it is.
+  `print({ locale: "fr" })` prints in another language and leaves the form's own as it is (its
+  data sources are asked in that language too, so a choice's label is the one they word in it).
   `print({ page: { size, margin } })` sets the paper: `size` is `auto` (the dialog's, the
   default), `A4`, `letter`, `legal` or `A5`; `margin` is one to four CSS lengths (default
   `16mm`). `printRenditions` on the form, the renderer and the host element gives the versions
   the form offers and its default, for a page with a control of its own. The toolbar button can be restyled through `::part(print)` (its label through
   `::part(print-label)`), or hidden and replaced by the host's own control. Its label is the form
-  text `printLabel`.
+  text `printLabel`. While a print the toolbar started is still in flight, pressing Print (or a
+  choice in its menu) again starts no second one.
 - **Leave print out.** With the `features` attribute (ADR 0143), a form that omits `print` hides
   the Print button, and `print()` rejects, naming the feature.
 - **Build the document without printing it.** `preparePrintDocument(options)` on
@@ -455,7 +467,10 @@ binding](binding-authoring.md), section 12, covers writing one.
   `document.write`), waits for its stylesheets, fonts and images (4 seconds at most, then prints
   anyway), and calls the frame's `print()`. The frame is removed on `afterprint`, on the next
   print, or when the element leaves the page, never on a timer, which would tear a still-open
-  dialog's document away. The `datum-print` event bubbles.
+  dialog's document away. A print a newer `print()` superseded, or whose element left the page
+  (not merely moved within one task) before its dialog, opens none: it is checked again once the
+  wait is over, right before the frame's `print()`, and its frame is removed. The `datum-print`
+  event bubbles.
 - **Take the document over.** Before the dialog, the renderer dispatches a cancelable, composed
   `datum-print` event. Its `detail` is `{ html, theme, fellBack? }`: the complete document, the id
   of the theme it is drawn with, and why the chosen theme was set aside when it was. Calling

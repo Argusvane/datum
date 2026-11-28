@@ -26,9 +26,53 @@ export interface ResponsiveTokens {
  * the sheet), and a `url()` whose scheme executes or carries a document rather than an image
  * (`javascript:`, `vbscript:`, `data:` other than `data:image/`). A token set is host-supplied,
  * but a host may have loaded it from data; the value is dropped, never emitted broken.
+ * {@link breaksOutOfDeclaration} adds the text that would swallow what follows it instead.
  */
 const TOKEN_BREAKOUT =
   /[{};]|<\/|<!--|@import|url\(\s*["']?\s*(?:javascript|vbscript)\s*:|url\(\s*["']?\s*data\s*:(?!\s*image\/)/i;
+
+/**
+ * Whether a token value or media condition could escape its declaration: any of
+ * {@link TOKEN_BREAKOUT}, a comment opener or closer (`/*`, `*\/`), a quote left open, a `(` or
+ * `[` left open or closed out of turn, or a trailing backslash that escapes whatever comes next.
+ * Each of these makes the CSS parser read on into the next rule (the dark theme, the choice
+ * rules, the host's css), so the value is dropped rather than emitted.
+ */
+function breaksOutOfDeclaration(text: string): boolean {
+  if (TOKEN_BREAKOUT.test(text) || text.includes("/*") || text.includes("*/")) {
+    return true;
+  }
+  const open: string[] = [];
+  let quote: string | undefined;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index]!;
+    if (char === "\\") {
+      if (index === text.length - 1) {
+        return true;
+      }
+      index += 1;
+      continue;
+    }
+    if (quote !== undefined) {
+      if (char === quote) {
+        quote = undefined;
+      } else if (char === "\n" || char === "\r" || char === "\f") {
+        return true;
+      }
+      continue;
+    }
+    if (char === '"' || char === "'") {
+      quote = char;
+    } else if (char === "(" || char === "[") {
+      open.push(char === "(" ? ")" : "]");
+    } else if (char === ")" || char === "]") {
+      if (open.pop() !== char) {
+        return true;
+      }
+    }
+  }
+  return quote !== undefined || open.length > 0;
+}
 
 /**
  * Normalizes a token map into CSS custom properties. Keys are prefixed with `--` when not
@@ -41,7 +85,7 @@ export function buildThemeStyleVars(theme: { tokens?: Readonly<Record<string, st
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(source)) {
     const name = key.startsWith("--") ? key : `--${key}`;
-    if (!/^--[A-Za-z0-9_-]+$/.test(name) || typeof value !== "string" || TOKEN_BREAKOUT.test(value) || /[<>]/.test(value)) {
+    if (!/^--[A-Za-z0-9_-]+$/.test(name) || typeof value !== "string" || breaksOutOfDeclaration(value) || /[<>]/.test(value)) {
       continue;
     }
     out[name] = value;
@@ -56,14 +100,14 @@ export function themeStyleVarsToCssText(vars: Record<string, string>): string {
     .join(" ");
 }
 
-/** A media condition the engine will put inside `@media (...)`: not blank, none of {@link TOKEN_BREAKOUT}. */
+/** A media condition the engine will put inside `@media (...)`: not blank, nothing {@link breaksOutOfDeclaration}. */
 function isUsableMediaCondition(media: unknown): media is string {
-  return typeof media === "string" && media.trim().length > 0 && !TOKEN_BREAKOUT.test(media);
+  return typeof media === "string" && media.trim().length > 0 && !breaksOutOfDeclaration(media.trim());
 }
 
-/** A token value the engine will put inside a declaration: not blank, none of {@link TOKEN_BREAKOUT}. */
+/** A token value the engine will put inside a declaration: not blank, nothing {@link breaksOutOfDeclaration}. */
 function isUsableTokenValue(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0 && !TOKEN_BREAKOUT.test(value);
+  return typeof value === "string" && value.trim().length > 0 && !breaksOutOfDeclaration(value.trim());
 }
 
 /**

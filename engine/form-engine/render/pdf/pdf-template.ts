@@ -8,6 +8,7 @@ import type { TranslationCatalog } from "../../core/schema/contracts.js";
 import { pdfFillTextAddress } from "./pdf-text-addresses.js";
 import { resolveText, type FormTranslations, type TextAddress } from "../../core/localization/translations.js";
 import { isDataGrid } from "../../core/schema/data-grid.js";
+import { FILE_COMPONENT_TYPE } from "../../core/schema/file-upload.js";
 import {
   pdfRuleExpression,
   readPdfValueMap,
@@ -27,7 +28,8 @@ import { scalarText } from "../core/scalar-text.js";
 import type { PdfSignatureSettings } from "./pdf-abi.js";
 import type { PdfDocumentAttachment, PdfDocumentConformance, PdfWarning } from "./pdf-document.js";
 import type { PdfThemeColors, PdfTypography } from "./pdf-theme.js";
-import { formatPdfPlainValue, formatPdfValue, stripAnswerBidi, type PdfValueTexts } from "./pdf-values.js";
+import { PdfModelIndex, formatPdfPlainValue, formatPdfValue, isMaskedPdfAnswer, stripAnswerBidi, type PdfValueTexts } from "./pdf-values.js";
+import { PDF_ANSWER_MASK } from "./standard-renditions.js";
 import { evaluateTemplateExpression, pdfRegexCache, renderTemplateText } from "./template-text.js";
 
 /** What an AcroForm field can be set to: text, a checkbox state, one option, or several. */
@@ -99,6 +101,8 @@ export interface FieldMappingContext {
   riskyPatterns?: "refuse" | "allow" | undefined;
   /** The cache the expressions of one resolution share; made by {@link resolveFieldMappings}. */
   regexCache?: Record<string, unknown> | undefined;
+  /** The components by id, value path and indexed entry path; made by {@link resolveFieldMappings}. */
+  modelIndex?: PdfModelIndex | undefined;
 }
 
 function applyFormat(value: PdfFillValue, format: PdfValueFormat | undefined, texts: PdfValueTexts): PdfFillValue {
@@ -111,7 +115,12 @@ function applyFormat(value: PdfFillValue, format: PdfValueFormat | undefined, te
     return truthy ? (yes ?? texts.yes) : (no ?? texts.no);
   }
   if (format.kind === "number") {
-    const number = typeof value === "number" ? value : Number(Array.isArray(value) ? value[0] : value);
+    // No answer stays no answer: `Number("")` is 0, which would print an empty field as "0.00".
+    const first = Array.isArray(value) ? value[0] : value;
+    if (first === undefined || (typeof first === "string" && first.trim() === "")) {
+      return value;
+    }
+    const number = typeof first === "number" ? first : Number(first);
     if (!Number.isFinite(number)) {
       return value;
     }
@@ -225,6 +234,14 @@ function componentValue(
   return formatted.empty ? null : formatted.text;
 }
 
+function modelIndexOf(context: FieldMappingContext): PdfModelIndex {
+  return context.modelIndex ?? new PdfModelIndex(context.modelsById.values());
+}
+
+function nullIfEmpty(formatted: { text: string; empty: boolean }): PdfFillValue {
+  return formatted.empty ? null : formatted.text;
+}
+
 function ruleContext(context: FieldMappingContext): RuleEvaluationContext {
   return {
     values: context.values,
@@ -279,16 +296,33 @@ function resolveBinding(
     }
     case "path": {
       const raw = context.values[source.path];
-      value = raw === undefined || raw === null ? null : Array.isArray(raw) ? raw.map((entry) => stripAnswerBidi(scalarText(entry))) : formatPdfPlainValue(raw);
+      // A path naming a file field (`applicant.doc`, `items[0].receipt`) writes the files' names
+      // and sizes, as a component source does, never the envelope and its bytes.
+      const model = modelIndexOf(context).at(source.path);
+      value =
+        raw === undefined || raw === null
+          ? null
+          : model?.type === FILE_COMPONENT_TYPE
+            ? nullIfEmpty(formatPdfValue(model, context.texts, raw))
+            : Array.isArray(raw)
+              ? raw.map((entry) => stripAnswerBidi(scalarText(entry)))
+              : formatPdfPlainValue(raw);
       break;
     }
     case "template": {
       const text = resolveText(source.text, textAddress, context.locale, { translations: context.translations, catalog: context.translationCatalog });
       const rendered = renderTemplateText(text, {
         ...ruleContext(context),
+        // A placeholder names a component by id, by value path or by an entry's indexed path
+        // (`items[0].pick`): its answer reads as that component's, an option's label, a file's name.
         formatPath: (path, raw) => {
-          const model = context.modelsById.get(path);
-          return model ? formatPdfValue(model, context.texts, raw).text : undefined;
+          const model = modelIndexOf(context).at(path);
+          if (!model) {
+            return undefined;
+          }
+          // A password's answer is never written back in clear: the mask the renditions print.
+          const formatted = formatPdfValue(model, context.texts, raw);
+          return !formatted.empty && isMaskedPdfAnswer(model) ? PDF_ANSWER_MASK : formatted.text;
         }
       });
       value = rendered.segments.map((segment) => (segment.kind === "text" ? segment.text : "")).join("");
@@ -343,7 +377,11 @@ export function resolveFieldMappings(
   const values: Record<string, PdfFillValue> = {};
   const areas: PdfFillArea[] = [];
   const warnings: PdfWarning[] = [];
-  const context: FieldMappingContext = { ...given, regexCache: given.regexCache ?? pdfRegexCache(given.riskyPatterns) };
+  const context: FieldMappingContext = {
+    ...given,
+    regexCache: given.regexCache ?? pdfRegexCache(given.riskyPatterns),
+    modelIndex: given.modelIndex ?? new PdfModelIndex(given.modelsById.values())
+  };
   for (const mapping of layout.fields) {
     // A fill text is worded under the layout by the mapping's PDF field: `pdf › layout › fields › field › text`.
     values[mapping.pdfField] = resolveBinding(mapping, `Field "${mapping.pdfField}"`, pdfFillTextAddress(layout.id, "fields", mapping.pdfField), context, warnings);

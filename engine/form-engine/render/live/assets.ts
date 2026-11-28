@@ -7,10 +7,12 @@
  * A stylesheet goes through four steps:
  * 1. fetched (`fetch()`, so it must be same-origin or served with CORS; `integrity` checked by
  *    the fetch), once per page per `(url, integrity)`;
- * 2. composed as text: every relative `url()` resolved against the sheet's own address (a
- *    constructed sheet has no base of its own for text inlined from elsewhere), and the leading
- *    `@import` rules replaced by the text they name, kept under their `layer`, `supports()` and
- *    media conditions (a constructed sheet drops `@import`);
+ * 2. composed as text: every relative address (a `url()` in any case, a string in
+ *    `image-set()`; none inside a comment or another string) resolved against the sheet's own
+ *    address (a constructed sheet has no base of its own for text inlined from elsewhere), and
+ *    the leading `@import` rules replaced by the text they name where they stand among the
+ *    `@layer` statements, kept under their `layer`, `supports()` and media conditions (a
+ *    constructed sheet drops `@import`);
  * 3. parsed by the browser into a constructed sheet, and its rules rewritten in place over the
  *    parsed `cssRules`: selectors that open with the page (`html`, `body`, `:root`, also inside a
  *    leading `:where()`/`:is()`) name the shadow host instead, page-only declarations on the bare
@@ -124,27 +126,95 @@ function fetchedText(address: string, integrity: string | undefined, importedBy?
   return text;
 }
 
-// A `url()` with or without quotes, spaces inside the parentheses allowed.
-const URL_TOKEN = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^)\s'"]*))\s*\)/g;
 /** An address that stands on its own: a scheme (`data:`, `blob:`, `https:`), protocol-relative, or a fragment. */
 const STANDS_ALONE = /^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i;
+/** A character of a CSS name: what the function name before a `(` is made of. */
+const FUNCTION_NAME_CHAR = /[-\w\\\u0080-￿]/;
+/** The functions whose strings are addresses as a `url()` is. */
+const IMAGE_SET = new Set(["image-set", "-webkit-image-set"]);
 
-/** Every relative `url()` resolved against `address`; one that stands on its own is left as it is. */
+/** `path` resolved against `address`, or undefined when it stands on its own or is no address. */
+function resolvedPath(path: string, address: string): string | undefined {
+  const trimmed = path.trim();
+  if (trimmed === "" || STANDS_ALONE.test(trimmed)) {
+    return undefined;
+  }
+  try {
+    return new URL(trimmed, address).href;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The name of the function whose `(` is at `open`, lowercased; empty for a bare parenthesis. */
+function functionNameBefore(text: string, open: number): string {
+  let from = open;
+  while (from > 0 && FUNCTION_NAME_CHAR.test(text[from - 1] as string)) {
+    from -= 1;
+  }
+  return text.slice(from, open).toLowerCase();
+}
+
+/**
+ * Every relative address resolved against `address`: a `url()` (any case, quoted or not) and a
+ * string inside `image-set()`. One that stands on its own is left as it is, and nothing inside a
+ * comment or a string (a `content` naming `url(x)`) is touched.
+ */
 export function resolveUrls(text: string, address: string): string {
-  return text.replace(URL_TOKEN, (match, double: string | undefined, single: string | undefined, bare: string | undefined) => {
-    const path = (double ?? single ?? bare ?? "").trim();
-    if (path === "" || STANDS_ALONE.test(path)) {
-      return match;
+  let out = "";
+  let copied = 0;
+  /** The functions open around the scan, innermost last. */
+  const open: string[] = [];
+  for (let i = 0; i < text.length; ) {
+    const c = text[i] as string;
+    if (c === "\\") {
+      i += 2;
+      continue;
     }
-    let resolved: string;
-    try {
-      resolved = new URL(path, address).href;
-    } catch {
-      return match;
+    if (c === '"' || c === "'" || text.startsWith("/*", i)) {
+      const end = skipOpaque(text, i);
+      const closed = text[end - 1] === c && end - i >= 2;
+      if (c !== "/" && closed && IMAGE_SET.has(open[open.length - 1] ?? "")) {
+        const resolved = resolvedPath(text.slice(i + 1, end - 1), address);
+        if (resolved !== undefined) {
+          out += `${text.slice(copied, i)}${c}${resolved}${c}`;
+          copied = end;
+        }
+      }
+      i = end;
+      continue;
     }
-    const quote = double !== undefined ? '"' : single !== undefined ? "'" : "";
-    return `url(${quote}${resolved}${quote})`;
-  });
+    if (c === "(") {
+      const name = functionNameBefore(text, i);
+      if (name === "url") {
+        // A url() runs to its own parenthesis: a quoted address may hold one, a bare one cannot.
+        let at = i + 1;
+        while (at < text.length && /\s/.test(text[at] as string)) {
+          at += 1;
+        }
+        const quote = text[at] === '"' || text[at] === "'" ? (text[at] as string) : "";
+        const pathEnd = quote !== "" ? skipOpaque(text, at) : text.indexOf(")", at);
+        const close = quote !== "" ? text.indexOf(")", pathEnd) : pathEnd;
+        if (close < 0) {
+          break;
+        }
+        const path = quote !== "" ? text.slice(at + 1, pathEnd - 1) : text.slice(at, close);
+        const wellFormed = quote !== "" ? text.slice(pathEnd, close).trim() === "" : !/[\s'"(]/.test(path.trim());
+        const resolved = wellFormed ? resolvedPath(path, address) : undefined;
+        if (resolved !== undefined) {
+          out += `${text.slice(copied, i - name.length)}url(${quote}${resolved}${quote})`;
+          copied = close + 1;
+        }
+        i = close + 1;
+        continue;
+      }
+      open.push(name);
+    } else if (c === ")") {
+      open.pop();
+    }
+    i += 1;
+  }
+  return copied === 0 ? text : out + text.slice(copied);
 }
 
 /** Index just past the comment or string starting at `at`, or `at` when neither starts there. */
@@ -194,10 +264,20 @@ function statementEnd(text: string, at: number): number {
   return text.length;
 }
 
+interface LeadingImport {
+  target: string;
+  conditions: string;
+}
+
 interface LeadingImports {
-  /** `@layer a, b;` statements before the imports: they fix the layer order, so they stay first. */
-  layers: string[];
-  imports: Array<{ target: string; conditions: string }>;
+  /**
+   * The `@layer a, b;` statements and the imports, in the order the sheet has them: a layer
+   * statement fixes the layer order where it stands, so one after an import names its layers
+   * after the imported one's.
+   */
+  prelude: Array<{ layer: string } | LeadingImport>;
+  /** The imports alone, in order. */
+  imports: LeadingImport[];
   /** The text after the imports. */
   rest: string;
 }
@@ -209,8 +289,8 @@ const IMPORT_TARGET = /^@import\s*(?:url\(\s*(?:"([^"]*)"|'([^']*)'|([^)]*?))\s*
  * invalid CSS, and one inside a comment or a string is not a rule at all.
  */
 export function leadingImports(text: string): LeadingImports {
-  const layers: string[] = [];
-  const imports: LeadingImports["imports"] = [];
+  const prelude: LeadingImports["prelude"] = [];
+  const imports: LeadingImport[] = [];
   let at = 0;
   for (;;) {
     while (at < text.length && /\s/.test(text[at] as string)) {
@@ -231,17 +311,19 @@ export function leadingImports(text: string): LeadingImports {
     }
     const statement = text.slice(at, end).trim();
     if (keyword === "layer") {
-      layers.push(statement);
+      prelude.push({ layer: statement });
     } else if (keyword === "import") {
       const match = IMPORT_TARGET.exec(statement);
       if (match) {
         const target = [match[1], match[2], match[3], match[4], match[5]].find((part) => part !== undefined) ?? "";
-        imports.push({ target: target.trim(), conditions: (match[6] ?? "").trim() });
+        const found = { target: target.trim(), conditions: (match[6] ?? "").trim() };
+        prelude.push(found);
+        imports.push(found);
       }
     }
     at = end;
   }
-  return { layers, imports, rest: text.slice(at) };
+  return { prelude, imports, rest: text.slice(at) };
 }
 
 /**
@@ -285,16 +367,21 @@ export function importWrappers(conditions: string): { open: string; close: strin
  */
 async function composedCss(address: string, integrity: string | undefined, chain: readonly string[] = []): Promise<string> {
   const text = await fetchedText(address, integrity, chain[chain.length - 1]);
-  const { layers, imports, rest } = leadingImports(text);
+  const { prelude, imports, rest } = leadingImports(text);
   if (imports.length === 0) {
-    return layers.length === 0 ? text : `${layers.join("\n")}\n${rest}`;
+    return text;
   }
   if (chain.length >= IMPORT_DEPTH) {
     throw new AssetLoadError(`Stylesheet ${address} imports sheets more than ${IMPORT_DEPTH} deep.`, address);
   }
   const onChain = [...chain, address];
+  // Each import's text stands where the import stood, among the layer statements around it.
   const inlined = await Promise.all(
-    imports.map(async ({ target, conditions }) => {
+    prelude.map(async (item) => {
+      if ("layer" in item) {
+        return item.layer;
+      }
+      const { target, conditions } = item;
       const imported = absolute(target, address);
       if (onChain.includes(imported)) {
         return "";
@@ -304,7 +391,7 @@ async function composedCss(address: string, integrity: string | undefined, chain
       return open === "" ? css : `${open}\n${css}\n${close}`;
     })
   );
-  return [...layers, ...inlined, rest].join("\n");
+  return [...inlined, rest].join("\n");
 }
 
 // ── Rewriting the parsed rules for a shadow root ───────────────────────────────────────────
@@ -651,18 +738,20 @@ export function shadowSheet(text: string, doc: Document, options: RewriteOptions
   sheet.replaceSync(text);
   const faces: string[] = [];
   rewriteRules(sheet, remRatio(options), faces);
-  return { sheet, faces };
+  // A face goes to the document's sheet, which has no base of its own: a relative address in it
+  // would be read against the page.
+  return { sheet, faces: baseURL === undefined ? faces : faces.map((face) => resolveUrls(face, baseURL)) };
 }
 
-/** The `@font-face` rules of a sheet's text, without keeping the sheet. */
-function fontFacesOf(text: string, doc: Document): string[] {
+/** The `@font-face` rules of a sheet's text, without keeping the sheet, every address resolved against `address`. */
+function fontFacesOf(text: string, doc: Document, address: string): string[] {
   const sheet = constructSheet(doc);
   sheet.replaceSync(text);
   const faces: string[] = [];
   const collect = (list: RuleList): void => {
     for (const rule of Array.from(list.cssRules)) {
       if (isFontFace(rule)) {
-        faces.push(rule.cssText);
+        faces.push(resolveUrls(rule.cssText, address));
       } else {
         const children = childRules(rule);
         if (children) {
@@ -1079,7 +1168,7 @@ export async function adoptInto(root: ShadowRoot, assets: LiveAssets, options: A
         address = absolute(source.url, base);
         const text = await composedCss(address, checkedIntegrity(source.integrity, "Font sheet", address));
         if (!released) {
-          fonts.add(fontFacesOf(text, doc));
+          fonts.add(fontFacesOf(text, doc, address));
         }
       } catch (thrown) {
         if (!released) {

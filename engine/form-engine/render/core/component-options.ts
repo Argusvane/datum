@@ -30,6 +30,8 @@ export interface DataSourceResolver {
     componentId: string;
     sourcePropertyPath?: string | undefined;
     query?: Record<string, unknown> | undefined;
+    /** The locale to load in, when a render asks for another than the runtime's current one. */
+    locale?: string | undefined;
   }): Promise<DataSourceResult | undefined>;
 }
 

@@ -3,8 +3,9 @@
  * The adapter draws the strip and the panels; what the renderer owns, whatever binding draws:
  *
  * - which tab shows. Every panel is drawn (a field keeps its nodes and its answer while its tab
- *   is shut) and the choice is kept across draws; a tab an edit removed is simply gone and the
- *   first shows;
+ *   is shut) and the choice is kept across draws, by the container's instance key, so the tabs
+ *   in each row of a grid keep their own (and their own ids); a tab an edit removed is simply
+ *   gone and the first shows;
  * - the keys: arrows (the previous and next tab, wrapping; reversed in a right-to-left form),
  *   Home and End, with automatic activation as the ARIA tabs pattern has it. The tab is the
  *   element carrying `TabState.tabId`, wherever the binding put it. An adapter that answers
@@ -33,10 +34,12 @@ export const defaultTabsAdapter: TabsAdapter = datumTabsAdapter;
 
 /** What the feature keeps for the life of the mount. */
 interface TabsMemory {
-  /** The tab the person (or an error) opened, by tabs container id. */
+  /** The tab the person (or an error) opened, by tabs container instance (`node.key`: a row's tabs are its own). */
   chosen: Map<string, string>;
-  /** The tab each container showed in the last draw, and its first. */
+  /** Each container instance's first tab. */
   first: Map<string, string>;
+  /** Which container instance each reveal entry of a panel's components names (a row's own, where the id is shared). */
+  owners: WeakMap<PresentationReveal, string>;
   /** The form is narrower than the binding's breakpoint. */
   narrow: boolean;
   /** Tabs containers drawn by the draw in progress. */
@@ -46,11 +49,12 @@ interface TabsMemory {
 }
 
 function memoryOf(live: LiveContext): TabsMemory {
-  return live.memory<TabsMemory>(OWNER, () => ({ chosen: new Map(), first: new Map(), narrow: false, drawn: 0, observed: undefined, observer: undefined }));
+  return live.memory<TabsMemory>(OWNER, () => ({ chosen: new Map(), first: new Map(), owners: new WeakMap(), narrow: false, drawn: 0, observed: undefined, observer: undefined }));
 }
 
-export const tabIdOf = (tabsId: string, slotId: string): string => `${tabsId}__tab-${slotId}`;
-export const panelIdOf = (tabsId: string, slotId: string): string => `${tabsId}__panel-${slotId}`;
+/** A tab's id and its panel's, from the container's instance key (`node.key`), so the tabs drawn in each row of a grid have their own. */
+export const tabIdOf = (tabsKey: string, slotId: string): string => `${tabsKey}__tab-${slotId}`;
+export const panelIdOf = (tabsKey: string, slotId: string): string => `${tabsKey}__panel-${slotId}`;
 
 /** The elements a panel's own heading can be, found by tag: the panel's first one that can take focus. */
 const PANEL_HEADINGS = "h1[tabindex],h2[tabindex],h3[tabindex],h4[tabindex],h5[tabindex],h6[tabindex],[role=heading][tabindex]";
@@ -88,21 +92,30 @@ function drawTabs(node: PresentationTabs, draw: DrawContext): ReturnType<DrawCon
   }
   const memory = memoryOf(live);
   memory.drawn += 1;
+  const own = node.key;
   const slotIds = node.tabs.map((tab) => tab.slotId);
   const first = slotIds[0] as string;
-  memory.first.set(node.id, first);
+  memory.first.set(own, first);
   const flat = live.mode === "readonly" || live.printing();
-  const chosen = memory.chosen.get(node.id);
+  const chosen = memory.chosen.get(own);
   const shown = chosen !== undefined && slotIds.includes(chosen) ? chosen : first;
   // The builder canvas keeps the strip: it is how an author reaches each panel's drop zone.
   const narrow = memory.narrow && !flat && live.options.canvasHooks === undefined;
 
+  for (const tab of node.tabs) {
+    // Each of the panel's components names this instance when it asks for the tab to open.
+    for (const entry of tab.children[0]?.reveal ?? []) {
+      if (entry.kind === "tab" && entry.tabsId === node.id && entry.slotId === tab.slotId) {
+        memory.owners.set(entry, own);
+      }
+    }
+  }
   const tabs: TabState[] = node.tabs.map((tab) => ({
     slotId: tab.slotId,
     label: tab.label,
     selected: flat || tab.slotId === shown,
-    tabId: tabIdOf(node.id, tab.slotId),
-    panelId: panelIdOf(node.id, tab.slotId),
+    tabId: tabIdOf(own, tab.slotId),
+    panelId: panelIdOf(own, tab.slotId),
     errorCount: tab.errorCount,
     select: () => {
       if (flat) {
@@ -110,13 +123,13 @@ function drawTabs(node: PresentationTabs, draw: DrawContext): ReturnType<DrawCon
       }
       if (narrow) {
         // Every panel is stacked and shown: following a contents link goes to the panel.
-        goToPanel(live, panelIdOf(node.id, tab.slotId));
+        goToPanel(live, panelIdOf(own, tab.slotId));
         return;
       }
-      if ((memory.chosen.get(node.id) ?? shown) === tab.slotId) {
+      if ((memory.chosen.get(own) ?? shown) === tab.slotId) {
         return;
       }
-      memory.chosen.set(node.id, tab.slotId);
+      memory.chosen.set(own, tab.slotId);
       live.redraw();
     },
     // An empty tab on the builder canvas shows its drop zone (`emptySlot`), as an empty group slot does.
@@ -269,8 +282,9 @@ export function createTabsFeature(): LiveFeature {
         if (step.kind !== "tab") {
           continue;
         }
-        if ((memory.chosen.get(step.tabsId) ?? memory.first.get(step.tabsId)) !== step.slotId) {
-          memory.chosen.set(step.tabsId, step.slotId);
+        const own = memory.owners.get(step) ?? step.tabsId;
+        if ((memory.chosen.get(own) ?? memory.first.get(own)) !== step.slotId) {
+          memory.chosen.set(own, step.slotId);
           changed = true;
         }
       }

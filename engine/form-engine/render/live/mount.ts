@@ -396,7 +396,7 @@ export interface LiveMountOptions {
   colorScheme?: "light" | "dark" | undefined;
   /** Where `datum-*` events are dispatched; the shadow root's host when left out. */
   host?: EventTarget;
-  /** How long a field's `ready` may take, in ms (3000). */
+  /** How long a field's `ready` may take, in ms (3000); `Infinity` for no budget. */
   readyBudgetMs?: number;
   /** Hears every hook call, in order. */
   trace?(entry: TraceEntry): void;
@@ -474,7 +474,11 @@ export interface LiveForm {
   tree(): PresentationTree | undefined;
   /** The fields of the last draw, in drawn order. */
   fields(): readonly DrawnField[];
-  /** Asks the runtime for a new output and draws it: after a host setting the build reads (its wording, its data sources) changed. */
+  /**
+   * Asks the runtime for a new output and draws it: after a host setting the build reads (its
+   * wording, its data sources) changed. Asked for while the features still prepare (the design
+   * system's files loading), it is the first build that draws the change.
+   */
   request(): void;
   /** Draws the last output again. */
   redraw(): void;
@@ -535,6 +539,27 @@ const VALIDATION_SETTLED_EVENTS: readonly string[] = [
 ];
 
 const READY_BUDGET_MS = 3000;
+
+/** The longest delay a timer holds (2^31 - 1 ms): a longer one fires at once. */
+const LONGEST_TIMER_MS = 2 ** 31 - 1;
+
+/**
+ * The ready budget a host asked for: `Infinity` is none (`undefined`), a finite one at most the
+ * longest timer, and one that is no duration (negative, `NaN`, not a number) the default, warned about.
+ */
+function readyBudgetOf(asked: unknown, bindingId: string): number | undefined {
+  if (asked === undefined) {
+    return READY_BUDGET_MS;
+  }
+  if (asked === Number.POSITIVE_INFINITY) {
+    return undefined;
+  }
+  if (typeof asked !== "number" || Number.isNaN(asked) || asked < 0) {
+    console.warn(`[binding ${bindingId}] readyBudgetMs must be a duration in ms of 0 or more, or Infinity for none; ${String(asked)} is not, so ${READY_BUDGET_MS} ms is used.`);
+    return READY_BUDGET_MS;
+  }
+  return Math.min(asked, LONGEST_TIMER_MS);
+}
 
 /** The Datum container a container with no adapter of its own is drawn by. */
 const FALLBACK_GROUP_TYPE = "fieldset";
@@ -659,7 +684,8 @@ export function mountLive(root: ShadowRoot, options: LiveMountOptions): LiveForm
   const mode: LiveMode = options.mode ?? "interactive";
   const features = options.features ?? [];
   const host: EventTarget = options.host ?? root.host;
-  const budgetMs = options.readyBudgetMs ?? READY_BUDGET_MS;
+  /** How long a field's `ready` may take; `undefined` when it may take as long as it takes. */
+  const budgetMs = readyBudgetOf(options.readyBudgetMs, binding.id);
   const pack: LanguagePack | undefined = binding.texts !== undefined || binding.messages !== undefined ? { texts: binding.texts, messages: binding.messages } : undefined;
 
   // ── State the draws share ──
@@ -669,11 +695,23 @@ export function mountLive(root: ShadowRoot, options: LiveMountOptions): LiveForm
   let draws = 0;
   let token = 0;
   let requested = false;
+  /**
+   * The features are prepared and started and the first build is out: until then a request is
+   * dropped, since that build reads everything a request would.
+   */
+  let started = false;
+  let markPrepared: () => void = () => undefined;
+  /** Settles when the features' `prepare` is over, however it ended. */
+  const prepared = new Promise<void>((done) => {
+    markPrepared = done;
+  });
   let composing = false;
   let requestWhileComposing = false;
   let drawingNow = false;
   let redrawQueued = false;
   let building: Promise<void> = Promise.resolve();
+  /** Why the last build that failed before anything was drawn failed: what `ready` rejects with when no build drew. */
+  let undrawn: { thrown: unknown } | undefined;
   /** Each data source's last answer, so a build can be drawn from them while a source is out (`provisional`). */
   const answerMemo = new Map<string, DataSourceResult | undefined>();
   /** The draw running now is a provisional one. */
@@ -1014,7 +1052,7 @@ export function mountLive(root: ShadowRoot, options: LiveMountOptions): LiveForm
 
   /** Asks for a new output; the events of one change come in one task and make one build. */
   function request(): void {
-    if (!mounted || failed) {
+    if (!mounted || failed || !started) {
       return;
     }
     if (composing) {
@@ -1074,6 +1112,11 @@ export function mountLive(root: ShadowRoot, options: LiveMountOptions): LiveForm
               provisionalDraw = true;
               try {
                 draw(output);
+              } catch (thrown) {
+                // The full build draws and reports in its turn; a form already shown hears it now.
+                if (mounted && draws > 0) {
+                  error({ hook: "render", message: messageOf(thrown) });
+                }
               } finally {
                 provisionalDraw = false;
               }
@@ -1086,6 +1129,8 @@ export function mountLive(root: ShadowRoot, options: LiveMountOptions): LiveForm
     building = next.catch((thrown: unknown) => {
       if (mounted && draws > 0) {
         error({ hook: "render", message: messageOf(thrown) });
+      } else if (draws === 0) {
+        undrawn = { thrown };
       }
       throw thrown;
     });
@@ -1096,11 +1141,20 @@ export function mountLive(root: ShadowRoot, options: LiveMountOptions): LiveForm
   /** Draws the last output again, now. */
   function redraw(): void {
     if (mounted && !failed && lastOutput) {
-      draw(lastOutput);
+      try {
+        draw(lastOutput);
+      } catch (thrown) {
+        // Reported as a build's draw is; the caller (a host's setBusy, a feature) is not thrown at.
+        if (mounted) {
+          error({ hook: "render", message: messageOf(thrown) });
+        }
+      }
     }
   }
 
   async function updated(): Promise<void> {
+    // A change asked for while the features prepare is drawn by the first build.
+    await prepared;
     for (let rounds = 0; rounds < 100; rounds += 1) {
       const seenBuild = building;
       await seenBuild.catch(() => undefined);
@@ -1142,7 +1196,8 @@ export function mountLive(root: ShadowRoot, options: LiveMountOptions): LiveForm
       return Promise.resolve();
     }
     let shared: Promise<unknown> | undefined;
-    const bindingReady = (): Promise<unknown> => (shared ??= Promise.resolve().then(() => binding.ready?.(root)));
+    // The hooks run a microtask later: none once the form is unmounted (or the field's wrapper replaced) meanwhile.
+    const bindingReady = (): Promise<unknown> => (shared ??= Promise.resolve().then(() => (mounted ? binding.ready?.(root) : undefined)));
     const waits = added.map((field) => {
       const instance = instances.get(field.key);
       if (!instance) {
@@ -1150,13 +1205,15 @@ export function mountLive(root: ShadowRoot, options: LiveMountOptions): LiveForm
       }
       trace("ready", field.key);
       const ready = field.adapter?.ready
-        ? Promise.resolve().then(() => field.adapter?.ready?.(instance.wrapper))
+        ? Promise.resolve().then(() => (mounted && instances.get(field.key) === instance ? field.adapter?.ready?.(instance.wrapper) : undefined))
         : field.adapter
           ? bindingReady()
           : Promise.resolve();
       let timer: ReturnType<typeof setTimeout> | undefined;
       const budget = new Promise<"late">((done) => {
-        timer = setTimeout(() => done("late"), budgetMs);
+        if (budgetMs !== undefined) {
+          timer = setTimeout(() => done("late"), budgetMs);
+        }
       });
       return Promise.race([
         ready.then(
@@ -1354,7 +1411,8 @@ export function mountLive(root: ShadowRoot, options: LiveMountOptions): LiveForm
       // The bubble is a description of the control, read after the field's own description.
       const id = tooltipIdOf(state.id);
       if (!next.describedBy.includes(id)) {
-        const at = state.hintId !== undefined ? next.describedBy.indexOf(state.hintId) + 1 : 0;
+        // The hint may be one only the folding above made.
+        const at = next.hintId !== undefined ? next.describedBy.indexOf(next.hintId) + 1 : 0;
         const ids = [...next.describedBy];
         ids.splice(at, 0, id);
         next = { ...next, describedBy: ids };
@@ -1980,14 +2038,40 @@ export function mountLive(root: ShadowRoot, options: LiveMountOptions): LiveForm
       return;
     }
     lockedFocus = undefined;
-    if (snapshot === undefined || root.activeElement !== null) {
+    if (snapshot === undefined || focusTakenMeanwhile()) {
       return;
     }
     if (snapshot.element.isConnected) {
       snapshot.element.focus();
+      // A design system's component that does not delegate focus takes none itself: its field's focus target does.
+      if (root.activeElement === null && snapshot.key !== null) {
+        focusField(snapshot.key);
+      }
     } else if (snapshot.key !== null) {
       focusField(snapshot.key);
     }
+  }
+
+  /**
+   * Something has focus that the person or the page put there while the lock held: an element in
+   * the form (the first error, a notice) or one elsewhere on the page. Focus left on the page's
+   * body, or on this form's host with nothing in it focused (where the lock left it), is no one's.
+   */
+  function focusTakenMeanwhile(): boolean {
+    if (root.activeElement !== null) {
+      return true;
+    }
+    const owner = root.host.ownerDocument;
+    let active: Element | null = owner.activeElement;
+    // Down through the shadow roots the focus is in, to the element that has it.
+    while (active !== null && active !== root.host) {
+      const inner: Element | null | undefined = active.shadowRoot?.activeElement;
+      if (inner === null || inner === undefined) {
+        break;
+      }
+      active = inner;
+    }
+    return active !== null && active !== owner.body && active !== owner.documentElement && active !== root.host;
   }
 
   function draw(output: RenderOutput): void {
@@ -2098,21 +2182,30 @@ export function mountLive(root: ShadowRoot, options: LiveMountOptions): LiveForm
     if (!mounted) {
       return;
     }
-    render(
-      html`<form
-        class=${formClassOf(d, decor)}
-        novalidate
-        dir=${formState.dir}
-        lang=${locale}
-        data-mode=${mode}
-        aria-busy=${ifDefined(formState.busy !== undefined ? "true" : undefined)}
-        @submit=${onSubmit}
-      >${regionOf("alerts", d)}${regionOf("header", d)}${regionOf("languages", d)}${regionOf("summary-top", d)}${regionOf("page-header", d)}${body}${regionOf("page-actions", d)}${regionOf("summary-bottom", d)}${regionOf("footer", d)}${regionOf("live", d)}</form>`,
-      root
-    );
+    try {
+      render(
+        html`<form
+          class=${formClassOf(d, decor)}
+          novalidate
+          dir=${formState.dir}
+          lang=${locale}
+          data-mode=${mode}
+          aria-busy=${ifDefined(formState.busy !== undefined ? "true" : undefined)}
+          @submit=${onSubmit}
+        >${regionOf("alerts", d)}${regionOf("header", d)}${regionOf("languages", d)}${regionOf("summary-top", d)}${regionOf("page-header", d)}${body}${regionOf("page-actions", d)}${regionOf("summary-bottom", d)}${regionOf("footer", d)}${regionOf("live", d)}</form>`,
+        root
+      );
+    } catch (thrown) {
+      // lit's commit threw part way (a ref callback, a directive): what it drew stays, and a
+      // submission in flight still locks it.
+      if (mounted) {
+        applySubmissionLock(formElement(), formState.busy === "submitting");
+      }
+      throw thrown;
+    }
     if (!mounted) {
       // A feature's region view unmounted the form while it was drawn.
-      render(nothing, root);
+      clearRoot();
       return;
     }
     draws += 1;
@@ -2320,6 +2413,19 @@ export function mountLive(root: ShadowRoot, options: LiveMountOptions): LiveForm
     });
   }
 
+  /**
+   * Takes the drawing out of the root. A commit that throws on the way (a ref callback run as its
+   * element goes) is logged, and the form element is removed by hand, so an unmount always ends.
+   */
+  function clearRoot(): void {
+    try {
+      render(nothing, root);
+    } catch (thrown) {
+      console.error(`[binding ${binding.id}] taking the form out of the page failed on unmount`, thrown);
+      formElement()?.remove();
+    }
+  }
+
   /** The form could not be drawn: an alert takes its place, the host hears why, and nothing draws again. */
   function failLoud(hook: string, thrown: unknown): void {
     failed = true;
@@ -2410,6 +2516,8 @@ export function mountLive(root: ShadowRoot, options: LiveMountOptions): LiveForm
         failLoud("assets", thrown);
       }
       throw thrown;
+    } finally {
+      markPrepared();
     }
     for (const feature of features) {
       if (feature.start) {
@@ -2420,6 +2528,7 @@ export function mountLive(root: ShadowRoot, options: LiveMountOptions): LiveForm
       }
     }
     listen();
+    started = true;
     build();
     const firstBuild = building;
     try {
@@ -2439,6 +2548,11 @@ export function mountLive(root: ShadowRoot, options: LiveMountOptions): LiveForm
     }
     if (!mounted) {
       return;
+    }
+    if (draws === 0 && !failed && undrawn !== undefined) {
+      // The first build was overtaken, and the one that overtook it failed: nothing is shown.
+      failLoud("render", undrawn.thrown);
+      throw undrawn.thrown;
     }
     connectForm();
     const check = binding.designSystem?.selfCheck;
@@ -2496,7 +2610,7 @@ export function mountLive(root: ShadowRoot, options: LiveMountOptions): LiveForm
           console.error(`[binding ${binding.id}] a clean-up failed on unmount`, thrown);
         }
       }
-      render(nothing, root);
+      clearRoot();
       lastFields = [];
       fieldsByKey.clear();
       lastOutput = undefined;

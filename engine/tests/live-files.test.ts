@@ -50,7 +50,8 @@ describe("live files: state", () => {
     const picker = wrapper(root, "doc").querySelector("input[type=file]") as HTMLInputElement;
     expect(picker.multiple).toBe(true);
     expect(picker.getAttribute("accept")).toBe(".pdf");
-    expect(fileItemId("doc", 1)).toBe("doc__file_1");
+    // An item's id is made from the attachment, not its place in the list.
+    expect(items[1]?.getAttribute("data-file")).toBe(fileItemId("doc", { storage: "s3", name: "b.pdf", type: "", size: 9 }));
   });
 });
 

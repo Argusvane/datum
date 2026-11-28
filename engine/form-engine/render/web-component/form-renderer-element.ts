@@ -1,6 +1,6 @@
 import type { ComponentDefinition, DataSourceSet } from "../../core/schema/contracts.js";
 import type { FieldInputState } from "../../core/schema/answer-kinds.js";
-import { HTMLElementBase, canDefineCustomElements } from "./custom-element-base.js";
+import { HTMLElementBase, adoptPreUpgradeProperties, canDefineCustomElements } from "./custom-element-base.js";
 import { addressOf, resolveText } from "../../core/localization/translations.js";
 import type { ValidationMessageCatalog } from "../../core/localization/validation-messages.js";
 import { createFormTextResolver, type FormTextCatalog } from "../../core/localization/form-texts.js";
@@ -529,6 +529,7 @@ export class DatumFormRendererElement extends HTMLElementBase {
   // ── Lifecycle ──────────────────────────────────────────────────────────────────────────────
 
   public connectedCallback(): void {
+    adoptPreUpgradeProperties(this);
     // A binding registered (or replaced) under the id this element names is drawn with at once.
     this.stopBindings ??= onBindingsChanged(() => {
       if (typeof this.bindingValue === "string" && this.liveForm !== undefined && (this.drawingBinding() !== this.mountedBinding || this.drawnAssets() !== this.mountedAssets)) {
@@ -578,7 +579,10 @@ export class DatumFormRendererElement extends HTMLElementBase {
       if (!this.isConnected) {
         this.unmountLive();
         // Not on a runtime swap: that must not pull the document out from under an open print
-        // dialog, but an element leaving the page has nothing left to print.
+        // dialog, but an element leaving the page has nothing left to print. A print still
+        // being built or waiting on its sheets is superseded, so it opens no dialog and
+        // removes the frame it made.
+        this.printToken++;
         this.printFrame?.remove();
         this.printFrame = undefined;
       }
@@ -1855,7 +1859,8 @@ export class DatumFormRendererElement extends HTMLElementBase {
    *
    * Resolves once the frame's `print()` has been called (Chrome and Firefox return when the
    * dialog closes, Safari immediately), or at once when there is no runtime, when a newer
-   * `print()` superseded this one, or when the event was cancelled. The frame stays in
+   * `print()` superseded this one or the element left the page (checked again right before the
+   * dialog, after the wait for the document's sheets), or when the event was cancelled. The frame stays in
    * `document.body` until its `afterprint`, the next print, or this element leaving the page.
    */
   public async print(options: PrintCallOptions = {}): Promise<void> {
@@ -1941,6 +1946,7 @@ export class DatumFormRendererElement extends HTMLElementBase {
       fellBack: prepared.fellBack,
       selfCheck: prepared.selfCheck,
       fallback: prepared.fallback,
+      stillWanted: () => token === this.printToken,
       beforePrint: ({ html, theme, fellBack }) =>
         token === this.printToken &&
         this.dispatchEvent(

@@ -22,7 +22,7 @@ Loading it from the page, not through the application's bundler, keeps the folde
 
 The package can also be imported through the bundler, as `import "@argusvane/datum/form"` (the other entry points are in [JavaScript exports](/exports#importing-the-package)). Vite, for one, emits `datum-wasm.js` and `datum-pdf.js` for `wasm="auto"` and `pdf="auto"`, but not the folders those modules fetch by name: `fonts/`, `pdfjs/` and `builder-fonts/`. A bundled application still copies the folder into its static files and points `pdf` at the copy, `pdf="/datum/datum-pdf.js"`, so the fonts are found beside it.
 
-The order does not matter. A property a component sets before the module has defined the element is kept and applied once it has.
+The order does not matter. A property a component sets before the module has defined the element is kept and applied once it has. The engine's `<datum-form-renderer>` and `<datum-form-host>` keep such a property the same way.
 
 ## A form component
 

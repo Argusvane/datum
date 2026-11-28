@@ -17,6 +17,7 @@
  * group, so tabbing from day to month checks nothing. Focus goes to the first part the date still
  * lacks, in the order drawn.
  */
+import { kernelAnswerBounds } from "../../../core/schema/answer-kinds.js";
 import type { DateFieldState, DateParts, FieldAdapter, FieldEvents } from "../contract.js";
 import type { FieldStateBuilder } from "../fields.js";
 import { html, ifDefined, live, nothing, type TemplateResult } from "../lit.js";
@@ -55,7 +56,11 @@ export interface DatumDateOptions {
   sizes?: Partial<Record<DatePartName, number>> | undefined;
   /** An extra class per part wrapper, for a design system's own width classes. */
   partClass?: ((part: DatePartName) => string | undefined) | undefined;
-  /** The `autocomplete` base the parts complete with (`bday` completes `bday-day`); the component's own wins. */
+  /**
+   * The `autocomplete` base the parts complete with (`bday` completes `bday-day`, as does
+   * `bday-day`); `off` and `on` are written as they are, and the browser's date box writes the
+   * base (`bday`). The component's own wins.
+   */
   autocomplete?: string | undefined;
   /** Each part described by a visually hidden hint of its own (`dateDayHint` ...), before the error. Default: off. */
   partHints?: boolean | undefined;
@@ -81,6 +86,23 @@ const HINT_KEYS = { day: "dateDayHint", month: "dateMonthHint", year: "dateYearH
 function readParts(group: Element): DateParts {
   const read = (part: DatePartName): string => group.querySelector<HTMLInputElement | HTMLSelectElement>(`[data-value-part="${part}"]`)?.value ?? "";
   return { year: read("year"), month: read("month"), day: read("day") };
+}
+
+/**
+ * The `autocomplete` a date control writes from the configured token: "off" and "on" as they
+ * are; otherwise the token's stem (a final `-day`, `-month` or `-year` dropped, so "bday-day"
+ * reads as "bday") with the part's suffix, or the stem alone for the browser's date box.
+ */
+export function dateAutocomplete(token: string | undefined, part?: DatePartName): string | undefined {
+  const trimmed = token?.trim() ?? "";
+  if (trimmed === "") {
+    return undefined;
+  }
+  if (trimmed === "off" || trimmed === "on") {
+    return trimmed;
+  }
+  const stem = trimmed.replace(/-(?:day|month|year)$/, "");
+  return part !== undefined ? `${stem}-${part}` : stem;
 }
 
 /** The drawn order of the parts for a locale under `options`. */
@@ -129,10 +151,11 @@ export function createDatumDateAdapter(
       template(s: DateFieldState, on: FieldEvents): TemplateResult {
         const aria = ariaStates(s, field);
         const leave = leaveListeners(on);
-        const configuration = configurationOf(s);
-        const bound = (key: string): string | undefined => {
-          const value = configuration[key];
-          return typeof value === "number" && Number.isFinite(value) ? String(value) : typeof value === "string" && value.length > 0 ? value : undefined;
+        // The bounds validation enforces, read as it reads them: a bound that is no real date, or an inverted pair, is none.
+        const bounds = kernelAnswerBounds("date", configurationOf(s));
+        const bound = (key: "min" | "max"): string | undefined => {
+          const value = bounds[key];
+          return typeof value === "string" ? value : undefined;
         };
         return html`<label class=${fieldClassNames(s, "date")} for=${s.id}
           >${assembleParts(
@@ -146,6 +169,7 @@ export function createDatumDateAdapter(
                 .value=${live(s.value)}
                 min=${ifDefined(bound("min"))}
                 max=${ifDefined(bound("max"))}
+                autocomplete=${ifDefined(dateAutocomplete(s.model.autocomplete ?? options.autocomplete))}
                 aria-labelledby=${s.labelId}
                 ?disabled=${s.disabled}
                 ?readonly=${s.readOnly}
@@ -187,7 +211,7 @@ export function createDatumDateAdapter(
       // `readonly`, so the renderer refuses its change and marks it `aria-readonly` (guards.ts).
       const locked = s.disabled;
       const autocompleteBase = s.model.autocomplete ?? options.autocomplete;
-      const autocompleteFor = (part: DatePartName): string | undefined => (autocompleteBase ? `${autocompleteBase}-${part}` : undefined);
+      const autocompleteFor = (part: DatePartName): string | undefined => dateAutocomplete(autocompleteBase, part);
       const partHintId = (part: DatePartName): string => `${s.id}__${part}-hint`;
       const partDescribedBy = (part: DatePartName): string | undefined =>
         describedByAttr([...(options.partHints ? [partHintId(part)] : []), ...(partErrorId !== undefined ? [partErrorId] : [])]);
@@ -237,6 +261,8 @@ export function createDatumDateAdapter(
         );
       const monthSelect = (): TemplateResult => {
         const names = monthNamesFor(s.locale);
+        // The caption shows whenever the month is none of the twelve (empty, or "13" from a stored answer).
+        const unmatched = !names.some((_, index) => String(index + 1).padStart(2, "0") === parts.month);
         return wrap(
           "month",
           html`<select
@@ -250,7 +276,7 @@ export function createDatumDateAdapter(
             aria-describedby=${ifDefined(partDescribedBy("month"))}
             @change=${(event: Event) => report(event, false)}
           >
-            <option value="" disabled .selected=${live(parts.month === "")}>${s.words("dateSelectMonth")}</option>
+            <option value="" disabled .selected=${live(unmatched)}>${s.words("dateSelectMonth")}</option>
             ${names.map((name, index) => {
               const value = String(index + 1).padStart(2, "0");
               return html`<option value=${value} .selected=${live(value === parts.month)}>${monthLabel === "numbered" ? `${value} - ${name}` : name}</option>`;

@@ -21,7 +21,13 @@
  * The adapter draws the list (`FileFieldState.files`), the pick control, and the regions the
  * contract names (contract.ts `FILE_*_ATTRIBUTE`); the behaviour here finds them by those marks.
  * Writes pass through the renderer's write guard like every other, so none lands while the form
- * is read-only or disabled.
+ * is read-only or disabled. A pick is stored before it is written, so the guard is asked again
+ * when the storage answers: a submission that started meanwhile, or a field made read-only or
+ * disabled, refuses the write (reported, `datum-binding-error`). A file field in a row writes to
+ * that row wherever it has moved by then, and nowhere once the row is gone.
+ *
+ * An attachment's id (`FileItem.id`) is made from the attachment, not its place in the list, so
+ * a Remove bound to it removes that file or, once it is gone, nothing.
  */
 import type { PresentationField } from "../core/presentation-tree.js";
 import {
@@ -63,24 +69,54 @@ export const FILE_STATUS_CLEAR_MS = 5000;
 /** The wrapper of a file field, from any node inside it. */
 const FILE_WRAPPER = '.datum-live-field[data-kind="file"]';
 
-/** An attachment's id as the adapter sees it (`FileItem.id`): the field's id and its place in the list. */
-export function fileItemId(fieldId: string, index: number): string {
-  return `${fieldId}__file_${index}`;
+/** Each attachment's mark, worked out once per stored object. */
+const marks = new WeakMap<object, string>();
+
+/** A short mark of everything an attachment holds (FNV-1a over its JSON): equal attachments share it. */
+function markOf(attachment: FileAttachment): string {
+  let mark = marks.get(attachment);
+  if (mark === undefined) {
+    const text = JSON.stringify(attachment);
+    let hash = 0x811c9dc5;
+    for (let i = 0; i < text.length; i += 1) {
+      hash ^= text.charCodeAt(i);
+      hash = Math.imul(hash, 0x01000193) >>> 0;
+    }
+    mark = hash.toString(36);
+    marks.set(attachment, mark);
+  }
+  return mark;
 }
 
-function indexOfItem(fieldId: string, id: string, count: number): number {
-  for (let index = 0; index < count; index += 1) {
-    if (fileItemId(fieldId, index) === id) {
-      return index;
-    }
-  }
-  return -1;
+/**
+ * An attachment's id as the adapter sees it (`FileItem.id`): the field's id and a mark of the
+ * attachment itself (with `occurrence`, the count of equal ones before it), never its place in
+ * the list, so an id names the same file however the files around it come and go.
+ */
+export function fileItemId(fieldId: string, attachment: FileAttachment, occurrence = 0): string {
+  return `${fieldId}__file_${markOf(attachment)}${occurrence > 0 ? `_${occurrence}` : ""}`;
+}
+
+/** The ids of `attachments`, in order. */
+function fileItemIds(fieldId: string, attachments: readonly FileAttachment[]): string[] {
+  const seen = new Map<string, number>();
+  return attachments.map((attachment) => {
+    const mark = markOf(attachment);
+    const occurrence = seen.get(mark) ?? 0;
+    seen.set(mark, occurrence + 1);
+    return fileItemId(fieldId, attachment, occurrence);
+  });
+}
+
+function indexOfItem(fieldId: string, id: string, attachments: readonly FileAttachment[]): number {
+  return fileItemIds(fieldId, attachments).indexOf(id);
 }
 
 /** The attachments a file field shows, as the list an adapter draws. */
 export function fileItemsOf(fieldId: string, attachments: readonly FileAttachment[]): FileItem[] {
+  const ids = fileItemIds(fieldId, attachments);
   return attachments.map((attachment, index) => ({
-    id: fileItemId(fieldId, index),
+    id: ids[index] as string,
     name: attachment.name,
     size: attachment.size,
     ...(attachment.type !== "" ? { type: attachment.type } : {}),
@@ -190,8 +226,30 @@ export function createFilesFeature(options: FilesOptions = {}): LiveFeature {
       const runtime = live.runtime;
       const path = state.valuePath;
       const key = state.key;
+      const row = node.model.row;
       const configuration: FileUploadConfiguration = { storage: file.storage, multiple: file.multiple, accept: file.accept, maxFileSize: file.maxFileSize };
-      const current = (): FileAttachment[] => readFileAttachments(ownValue(runtime.state().values, path));
+      /**
+       * Where the field's answer is now: in a row, the row this field belongs to (found by its
+       * stable key) wherever it has moved since the draw; `undefined` once that row is gone.
+       */
+      const target = (): string | undefined => {
+        const keys = row?.rowKey !== undefined ? (runtime as { entryKeys?(collectionPath: string): readonly string[] }).entryKeys?.(row.collectionPath) : undefined;
+        if (row === undefined || row.rowKey === undefined || keys === undefined) {
+          return path;
+        }
+        const at = keys.indexOf(row.rowKey);
+        const drawnAt = `${row.collectionPath}[${row.index}]`;
+        if (at < 0 || !path.startsWith(drawnAt)) {
+          return undefined;
+        }
+        return `${row.collectionPath}[${at}]${path.slice(drawnAt.length)}`;
+      };
+      const current = (at: string): FileAttachment[] => readFileAttachments(ownValue(runtime.state().values, at));
+      /** The renderer's write guard, asked again when the write lands: live, not submitting, the field neither read-only nor disabled. */
+      const writable = (): boolean => {
+        const drawn = live.field(key)?.state;
+        return live.mounted() && live.mode === "interactive" && live.busy() !== "submitting" && drawn !== undefined && !drawn.readOnly && !drawn.disabled;
+      };
 
       const files = async (picked: readonly File[]): Promise<void> => {
         const list = [...picked];
@@ -213,11 +271,19 @@ export function createFilesFeature(options: FilesOptions = {}): LiveFeature {
           live.error({ hook: "files", id: key, message: `Storing a file failed; the field is unchanged. ${thrown instanceof Error ? thrown.message : String(thrown)}` });
           return;
         }
-        // The runtime a host swapped while a large file was being read is not this one.
-        if (!live.mounted() || live.runtime !== runtime) {
+        // The runtime a host swapped while a large file was being read is not this one, and a
+        // row removed meanwhile takes its answer with it: nothing to write.
+        const at = target();
+        if (!live.mounted() || live.runtime !== runtime || at === undefined) {
           return;
         }
-        runtime.setValue(path, configuration.multiple ? [...current(), ...stored] : stored[0]);
+        // What the field took when the pick was made may not hold now: a submission started, or
+        // the field became read-only or disabled while the file was being stored.
+        if (!writable()) {
+          live.error({ hook: "files", id: key, message: `The field stopped taking answers while the file was being stored (component "${state.componentId}"); the field is unchanged.` });
+          return;
+        }
+        runtime.setValue(at, configuration.multiple ? [...current(at), ...stored] : stored[0]);
         const names = stored.map((attachment) => attachment.name);
         announce(live, key, state.words, (text) => text.plural("fileAnnounced", names.length, { names: names.join(", "), count: names.length }, { one: "fileAnnounced", other: "fileAnnouncedMany" }), true);
         // A pick is final as made: the leave-field check runs on it.
@@ -225,17 +291,18 @@ export function createFilesFeature(options: FilesOptions = {}): LiveFeature {
       };
 
       const remove = (id: string): void => {
-        const attachments = current();
-        const index = indexOfItem(state.id, id, attachments.length);
+        const at = target();
+        const attachments = at === undefined ? [] : current(at);
+        const index = indexOfItem(state.id, id, attachments);
         const removed = attachments[index];
-        if (removed === undefined) {
+        if (at === undefined || removed === undefined) {
           return;
         }
         // The Remove button goes with its row: focus that was in the field stays in it.
         const wrapper = live.wrapperOf(key);
         const hadFocus = wrapper !== undefined && live.root.activeElement !== null && wrapper.contains(live.root.activeElement);
         const remaining = attachments.filter((_, at) => at !== index);
-        runtime.setValue(path, configuration.multiple ? remaining : remaining[0]);
+        runtime.setValue(at, configuration.multiple ? remaining : remaining[0]);
         announce(live, key, state.words, (text) => text("fileRemoved", { name: removed.name }), false);
         on.commit();
         if (hadFocus) {
@@ -244,8 +311,9 @@ export function createFilesFeature(options: FilesOptions = {}): LiveFeature {
       };
 
       const download = (id: string): void => {
-        const attachments = current();
-        const attachment = attachments[indexOfItem(state.id, id, attachments.length)];
+        const at = target();
+        const attachments = at === undefined ? [] : current(at);
+        const attachment = attachments[indexOfItem(state.id, id, attachments)];
         const doc = live.root.ownerDocument;
         if (!attachment || !isBase64FileAttachment(attachment) || typeof URL.createObjectURL !== "function") {
           return;
@@ -284,8 +352,9 @@ export function createFilesFeature(options: FilesOptions = {}): LiveFeature {
         const target = event.target;
         return target instanceof Element ? target.closest<HTMLElement>(FILE_WRAPPER) : null;
       };
-      /** Whether a drop here would be taken: the form is live and the field neither read-only nor disabled. */
-      const takes = (wrapper: HTMLElement): boolean => live.mode === "interactive" && !wrapper.hasAttribute("data-readonly") && !wrapper.hasAttribute("data-disabled");
+      /** Whether a drop here would be taken: the form is live, not submitting, and the field neither read-only nor disabled. */
+      const takes = (wrapper: HTMLElement): boolean =>
+        live.mode === "interactive" && live.busy() !== "submitting" && !wrapper.hasAttribute("data-readonly") && !wrapper.hasAttribute("data-disabled");
       const carriesFiles = (event: Event): boolean => {
         const types = (event as DragEvent).dataTransfer?.types;
         // A drag of text or a link is no file; an environment that says nothing is let through.

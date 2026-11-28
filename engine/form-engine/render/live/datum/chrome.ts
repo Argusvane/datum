@@ -54,18 +54,22 @@ export const datumChrome: Readonly<Record<string, ChromeAdapter>> = {
 /** Datum's switcher: a labelled `<select>` of the form's locales. A refusal puts the select back to the current locale. */
 export function datumLanguageSwitcher(state: LanguageSwitcherState): TemplateResult {
   const labelClass = state.hideLabel ? "datum-form__language-switcher-label datum-form__visually-hidden" : "datum-form__language-switcher-label";
+  // A current locale none of the options is shows a blank, never the first language, so choosing that one is still a switch.
+  const unlisted = !state.locales.some((entry) => entry.code === state.current);
   return html`<div class="datum-form__language-switcher" data-chrome-part="language-switcher"><label class=${labelClass} for=${state.controlId}>${state.label}</label><select
       id=${state.controlId}
       class="datum-form__language-switcher-select datum-form__control datum-form__control--select"
       data-locale-switch
-      .value=${live(state.current)}
+      .value=${live(unlisted ? "" : state.current)}
       @change=${(event: Event) => {
         const control = event.currentTarget as HTMLSelectElement;
         if (!state.switchTo(control.value)) {
-          control.value = state.current;
+          control.value = unlisted ? "" : state.current;
         }
       }}
-    >${state.locales.map((entry) => html`<option value=${entry.code} lang=${entry.code} ?selected=${entry.code === state.current}>${entry.label}</option>`)}</select></div>`;
+    >${unlisted ? html`<option value="" disabled hidden selected></option>` : nothing}${state.locales.map(
+      (entry) => html`<option value=${entry.code} lang=${entry.code} ?selected=${entry.code === state.current}>${entry.label}</option>`
+    )}</select></div>`;
 }
 
 /** How a switcher drawn as links looks. */

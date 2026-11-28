@@ -38,7 +38,7 @@ a file in the pane.
 ### The render model collects; the service resolves; the kernel embeds
 `buildPdfRenderModel` gathers the files into a top-level `attachments[]` on the `PdfDocument` or
 the `PdfFillPlan`, through a `PdfAttachmentCollector` (`render/pdf/pdf-attachments.ts`): once per
-distinct file however many bindings draw it, each with the component's resolved label as its
+distinct file (the same name, size and whole content) however many bindings draw it, each with the component's resolved label as its
 description and `/AFRelationship /Supplement` — supporting material, where the submission is
 `/Data`. A plugin rendition attaches what it draws through `context.addAttachment`, the sibling of
 `addImage`.

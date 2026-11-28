@@ -10,7 +10,10 @@
  *   to the stacked panels, each headed by its tab's label;
  * - the flat view (`TabsState.flat`, a review or a print): every tab as a headed section.
  *
- * The author's classes go on the root. A tab holding blocking errors carries `data-has-errors`.
+ * The tab list is named by the container's legend (visually hidden under `hideLegend`, still its
+ * name) and described by its description. Each panel of the strip carries its tab's label
+ * (`data-tab-label`), which the print stylesheet writes over the panel, since the strip is not
+ * printed. The author's classes go on the root. A tab holding blocking errors carries `data-has-errors`.
  */
 import type { TabsAdapter, TabsState } from "../contract.js";
 import { html, ifDefined, nothing, type TemplateResult } from "../lit.js";
@@ -33,7 +36,8 @@ export function createDatumTabsAdapter(options: DatumTabsOptions = {}): TabsAdap
       if (s.flat) {
         return html`<div class=${classes("datum-form__tabs", "datum-form__tabs--stacked", ...s.classNames)}>
           ${s.tabs.map((tab) => {
-            const headingId = `${s.id}__heading-${tab.slotId}`;
+            // By instance: the same tabs drawn in each row of a grid has its own headings.
+            const headingId = `${s.key}__heading-${tab.slotId}`;
             return html`<section
               class="datum-form__panel datum-form__tabs-section"
               id=${tab.panelId}
@@ -47,10 +51,16 @@ export function createDatumTabsAdapter(options: DatumTabsOptions = {}): TabsAdap
           })}
         </div>`;
       }
-      const legend = s.legend !== undefined ? html`<p class="datum-form__tabs-legend" ?hidden=${s.hideLegend}>${s.legend}</p>` : nothing;
+      // The legend names the tab list (visually hidden under hideLegend, still its name); the hint describes it.
+      const legendId = `${s.key}__name`;
+      const legend =
+        s.legend !== undefined
+          ? html`<p id=${legendId} class=${classes("datum-form__tabs-legend", s.hideLegend && "datum-form__visually-hidden")}>${s.legend}</p>`
+          : nothing;
+      const hint = s.hint !== undefined ? html`<p id=${ifDefined(s.hintId)} class="datum-form__group-description datum-form__tabs-description">${s.hint}</p>` : nothing;
       if (s.narrow) {
         return html`<div class=${classes("datum-form__tabs", "datum-form__tabs--responsive", ...s.classNames)} data-tabs-view="contents">
-          ${legend}${heading(level, { className: "datum-form__tabs-title" }, s.words("tabsContents"))}
+          ${legend}${hint}${heading(level, { className: "datum-form__tabs-title" }, s.words("tabsContents"))}
           <ul class="datum-form__tablist">
             ${s.tabs.map(
               (tab) => html`<li class="datum-form__tab-item"><a
@@ -70,8 +80,13 @@ export function createDatumTabsAdapter(options: DatumTabsOptions = {}): TabsAdap
         </div>`;
       }
       return html`<div class=${classes("datum-form__tabs", ...s.classNames)}>
-        ${legend}
-        <div class="datum-form__tablist" role="tablist">
+        ${legend}${hint}
+        <div
+          class="datum-form__tablist"
+          role="tablist"
+          aria-labelledby=${ifDefined(s.legend !== undefined ? legendId : undefined)}
+          aria-describedby=${ifDefined(s.hint !== undefined ? s.hintId : undefined)}
+        >
           ${s.tabs.map(
             (tab) => html`<button
               type="button"
@@ -94,6 +109,7 @@ export function createDatumTabsAdapter(options: DatumTabsOptions = {}): TabsAdap
             class="datum-form__tabpanel"
             id=${tab.panelId}
             aria-labelledby=${tab.tabId}
+            data-tab-label=${tab.label}
             data-tab-panel=${tab.slotId}
             data-tab-container=${s.id}
             ?hidden=${!tab.selected}

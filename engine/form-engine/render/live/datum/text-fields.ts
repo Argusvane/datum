@@ -204,6 +204,7 @@ export function createNumberAdapter(options: DatumFieldOptions = resolveFieldOpt
         placeholder=${ifDefined(state.placeholder)}
         min=${ifDefined(asText ? undefined : state.min)}
         max=${ifDefined(asText ? undefined : state.max)}
+        step=${ifDefined(asText ? undefined : state.step)}
         autocomplete=${ifDefined(state.autocomplete)}
         inputmode=${ifDefined(state.inputMode ?? (asText ? numberInputMode(state) : undefined))}
         spellcheck=${ifDefined(spellcheckAttr(state.spellcheck ?? (asText ? false : undefined)))}

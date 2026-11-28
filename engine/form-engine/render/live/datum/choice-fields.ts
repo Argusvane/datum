@@ -257,7 +257,12 @@ export function createSelectAdapter(options: DatumFieldOptions = resolveFieldOpt
     capabilities: { notice: "drawn", workedOut: "drawn", pending: "degraded", tooltip: "drawn", hideLabel: "drawn", placeholder: "drawn" },
     template: (state, on) => {
       const aria = ariaStates(state, options);
-      const listed = options.controls.selectPlaceholder === "listed";
+      // An optional select keeps its empty option listed and choosable, so the answer can be
+      // cleared; a required one lists it (disabled) only when the design system says so.
+      const listed = !state.required || options.controls.selectPlaceholder === "listed";
+      // The caption shows whenever no option is the answer: an empty one, or a value none of the
+      // options carries (a prefill, an old draft), so choosing the first option is still a change.
+      const unmatched = !state.options.some((option) => option.checked);
       // A select's placeholder is its empty option's caption rather than an attribute.
       const select = html`<select
         id=${state.id}
@@ -272,7 +277,7 @@ export function createSelectAdapter(options: DatumFieldOptions = resolveFieldOpt
           on.commit();
         }}
       >
-        <option value="" disabled ?hidden=${!listed} .selected=${live(state.value === "")}>${state.emptyLabel}</option>
+        <option value="" ?disabled=${state.required} ?hidden=${!listed} .selected=${live(unmatched)}>${state.emptyLabel}</option>
         ${state.options.map((option) => html`<option value=${option.value} .selected=${live(option.checked)}>${option.label}</option>`)}
       </select>`;
       // A drawn chevron needs an element to sit on: a select takes no pseudo-element, so the face
