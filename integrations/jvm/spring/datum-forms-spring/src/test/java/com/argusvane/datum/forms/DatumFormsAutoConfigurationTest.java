@@ -307,13 +307,9 @@ class DatumFormsAutoConfigurationTest {
     }
 
     @Test
-    void oneProviderBeanIsUsedAsItAlwaysWas() {
+    void oneProviderBeanIsUsedAlone() {
         DataSourceProvider only = owning("a");
-        runner().withBean("only", DataSourceProvider.class, () -> only).run(context -> {
-            assertThat(providerOf(context)).isSameAs(only);
-            assertThat(context.getBeansOfType(com.argusvane.datum.core.DatumStartupCheck.class).values().stream()
-                .flatMap(check -> check.check().stream()).filter(notice -> notice.message().contains("DataSourceProvider beans"))).isEmpty();
-        });
+        runner().withBean("only", DataSourceProvider.class, () -> only).run(context -> assertThat(providerOf(context)).isSameAs(only));
     }
 
     @Test
@@ -337,14 +333,5 @@ class DatumFormsAutoConfigurationTest {
         DataSourceProvider chosen = owning("a");
         runner().withBean("chosen", DataSourceProvider.class, () -> chosen, definition -> definition.setPrimary(true))
             .withBean("other", DataSourceProvider.class, () -> owning("b")).run(context -> assertThat(providerOf(context)).isSameAs(chosen));
-    }
-
-    @Test
-    void severalProvidersWithTheDefaultExistsAreReported() {
-        DataSourceProvider careless = (id, locale, principal) -> java.util.List.of();
-        runner().withBean("careless", DataSourceProvider.class, () -> careless).withBean("careful", DataSourceProvider.class, () -> owning("b"))
-            .run(context -> assertThat(context.getBeansOfType(com.argusvane.datum.core.DatumStartupCheck.class).values().stream()
-                .flatMap(check -> check.check().stream()).map(com.argusvane.datum.core.DatumStartupCheck.Notice::message))
-                .anyMatch(message -> message.contains("does not override exists(id)")));
     }
 }

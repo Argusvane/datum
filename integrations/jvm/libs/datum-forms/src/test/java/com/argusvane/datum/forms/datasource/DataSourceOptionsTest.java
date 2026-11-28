@@ -319,6 +319,11 @@ class DataSourceOptionsTest {
             public List<OptionItem> items(String id, String locale, Principal principal) {
                 throw new DataSourceNotFoundException(id);
             }
+
+            @Override
+            public boolean exists(String id) {
+                return false;
+            }
         };
         executor = newExecutor(2);
         DataSourceOptions options = new DataSourceOptions(provider, Duration.ofSeconds(2), executor);
@@ -333,6 +338,11 @@ class DataSourceOptionsTest {
             @Override
             public List<OptionItem> items(String id, String locale, Principal principal) {
                 return provider.items(id, locale, principal);
+            }
+
+            @Override
+            public boolean exists(String id) {
+                return provider.exists(id);
             }
 
             @Override

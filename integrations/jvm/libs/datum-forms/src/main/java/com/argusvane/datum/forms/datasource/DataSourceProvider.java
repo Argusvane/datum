@@ -27,10 +27,11 @@ public interface DataSourceProvider {
      */
     List<OptionItem> items(String id, String locale, Principal principal);
 
-    /** Whether the provider has a source with this id; a source it lacks is left out of the option snapshot. */
-    default boolean exists(String id) {
-        return true;
-    }
+    /**
+     * Whether the provider has a source with this id; a source it lacks is left out of the option snapshot. With several
+     * providers ({@link CompositeDataSourceProvider}) the first that has the id answers for it.
+     */
+    boolean exists(String id);
 
     /**
      * Whether answers are held to this source's options. A source that returns false (free text with

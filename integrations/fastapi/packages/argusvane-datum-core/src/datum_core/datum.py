@@ -6,14 +6,13 @@ for about a second) and owns the reference counting of its lifespan. The start, 
 
 1. the build-id agreement of the installed resource distributions and of argusvane-datum-core itself (assets on or off);
 2. the checks: the budget clamp (`datum.W008`, `datum.E003`), the builder's shared-store rule
-   (`datum.E002`), per-process memory stores (`datum.W004`), data-source providers keeping the default `exists`
-   (`datum.W006`), routers whose every switch is off (`datum.W001`), the memory the slots may take against the
-   container's (`datum.W002`), the default logging handler, the per-process throttle and idempotency store of a
-   deployment that serves submissions (`datum.W003`, `datum.W004`), the timestamp server's serial allocator and log
-   kept in memory (`datum.E001`, or `datum.W009` once `datum.tsa.allow_memory_stores` acknowledges them), the process
-   zone (`datum.W010`), the PDF seal's key and timestamp sources (`datum.W013`, `datum.W011`, `datum.W012`,
-   `datum.I002`) and one INFO line naming the routes that are on (`datum.I001`). ERRORs are raised together;
-   the rest is logged on `datum.checks`;
+   (`datum.E002`), per-process memory stores (`datum.W004`), routers whose every switch is off (`datum.W001`), the
+   memory the slots may take against the container's (`datum.W002`), the default logging handler, the per-process
+   throttle and idempotency store of a deployment that serves submissions (`datum.W003`, `datum.W004`), the timestamp
+   server's serial allocator and log kept in memory (`datum.E001`, or `datum.W009` once
+   `datum.tsa.allow_memory_stores` acknowledges them), the process zone (`datum.W010`), the PDF seal's key and
+   timestamp sources (`datum.W013`, `datum.W011`, `datum.W012`, `datum.I002`) and one INFO line naming the routes that
+   are on (`datum.I001`). ERRORs are raised together; the rest is logged on `datum.checks`;
 3. the form repository (a bad file stops the start naming it) and, with assets on, the asset catalog;
 4. the runtime: selected by `datum.runtime.engine` from the installed engines (or the application's), the sandbox
    composed (the application's middleware outside, Datum's observation innermost), the ABI proof once, the smoke and
@@ -78,7 +77,6 @@ from datum_core.events import (
     SandboxRunInterruptedEvent,
 )
 from datum_core.forms import (
-    CompositeDataSourceProvider,
     DataSourceProvider,
     DataSourceService,
     DefinitionCustomizer,
@@ -1198,7 +1196,6 @@ class Datum:
         memory = startup_memory_check(limits, expected_workers(self.config))
         if memory is not None:
             found.append(memory)
-        found.extend(CompositeDataSourceProvider(self.data_sources).checks())
         found.extend(self._router_checks())
         zone = process_zone()
         if zone.check is not None and self.config.host.time_zone == zone.name:

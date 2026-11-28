@@ -91,7 +91,7 @@ class Repository:
 
 
 class Countries:
-    """A data-source provider that keeps the default `exists` (no method of its own)."""
+    """A data-source provider with no `exists` of its own."""
 
     def items(self, request: DataSourceRequest) -> list[dict[str, JsonValue]]:
         return [{"value": "ca"}]
@@ -139,21 +139,17 @@ def test_the_options_a_binding_passes_on_are_exactly_the_keyword_seams() -> None
 
 
 # ---- the startup checks ----------------------------------------------------------------------------------------------
-def test_a_data_source_provider_keeping_the_default_exists_is_one_w006(caplog: pytest.LogCaptureFixture) -> None:
+def test_a_data_source_provider_without_its_own_exists_stops_the_start() -> None:
     datum, _, _ = make(data_sources=[Countries(), Cities()])
-    with caplog.at_level(logging.WARNING, logger=CHECKS):
+    with pytest.raises(DatumConfigurationError, match="Countries has no exists of its own"):
         datum.start()
-    found = [r for r in ids(caplog, "datum.W006") if r.getMessage().startswith("(datum.W006)")]
-    assert len(found) == 1
-    assert "Countries" in found[0].getMessage()
-    datum.stop()
+    assert not datum.started
 
 
-def test_providers_with_their_own_exists_raise_no_w006(caplog: pytest.LogCaptureFixture) -> None:
+def test_providers_with_their_own_exists_start() -> None:
     datum, _, _ = make(data_sources=[Cities()])
-    with caplog.at_level(logging.WARNING, logger=CHECKS):
-        datum.start()
-    assert ids(caplog, "datum.W006") == []
+    datum.start()
+    assert datum.started
     datum.stop()
 
 

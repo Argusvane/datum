@@ -91,6 +91,21 @@ class SubmissionReceiverTest {
     private SubmissionHandlerDouble handlerDouble;
     private com.argusvane.datum.submissions.spi.SubmissionIdempotencyStore idempotency;
 
+    /** A data source that owns every source id and answers each with what {@code items} gives. */
+    private static DataSourceProvider source(java.util.function.Supplier<List<OptionItem>> items) {
+        return new DataSourceProvider() {
+            @Override
+            public List<OptionItem> items(String id, String locale, Principal principal) {
+                return items.get();
+            }
+
+            @Override
+            public boolean exists(String id) {
+                return true;
+            }
+        };
+    }
+
     @BeforeEach
     void setUp() {
         runtime = new TestRuntime();
@@ -968,9 +983,9 @@ class SubmissionReceiverTest {
 
         @Test
         void aDataSourceThatCannotAnswerIs503BeforeAnyRun() {
-            provider = (id, locale, principal) -> {
+            provider = source(() -> {
                 throw new IllegalStateException("upstream down");
-            };
+            });
             assertThatThrownBy(() -> receiver().submit(request(), delivered(envelope("sourced", "1", "{\"colour\":\"red\"}"))))
                 .isInstanceOf(ProgramUnavailableException.class)
                 .satisfies(e -> {
@@ -983,7 +998,7 @@ class SubmissionReceiverTest {
 
         @Test
         void theOptionSnapshotHoldsWhatTheSourceAllows() {
-            provider = (id, locale, principal) -> List.of(new OptionItem("red", null, null, null, null));
+            provider = source(() -> List.of(new OptionItem("red", null, null, null, null)));
             receiver().submit(request(), delivered(envelope("sourced", "1", "{\"colour\":\"red\"}")));
             assertThat(runtime.contexts().get(0).path("optionSnapshot").path("colours").toString()).isEqualTo("[{\"value\":\"red\"}]");
         }

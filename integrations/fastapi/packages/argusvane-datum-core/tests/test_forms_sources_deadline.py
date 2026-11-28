@@ -1,4 +1,4 @@
-"""Data sources: W006 on a default `exists`, one shared deadline, a pool for sync providers, the awaiter for async."""
+"""Data sources: `exists` required, one shared deadline, a pool for sync providers, the awaiter for async."""
 
 import asyncio
 import dataclasses
@@ -10,7 +10,6 @@ from typing import Any, TypeVar
 
 import pytest
 
-from datum_core.checks import W006
 from datum_core.forms import (
     CompositeDataSourceProvider,
     DataSourceNotFound,
@@ -20,9 +19,8 @@ from datum_core.forms import (
     DataSourceUnavailable,
     Deadline,
     Items,
-    keeps_default_exists,
 )
-from datum_sandbox.checks import CheckLevel, DatumConfigurationError
+from datum_sandbox.checks import DatumConfigurationError
 from datum_sandbox.json import JsonValue
 
 T = TypeVar("T")
@@ -38,7 +36,7 @@ class Explicit(DataSourceProvider):
 
 
 class Defaulting(DataSourceProvider):
-    """Inherits the default `exists`: it answers yes to every id."""
+    """Inherits the protocol's `exists` and has none of its own."""
 
     def items(self, request: DataSourceRequest) -> Sequence[Mapping[str, JsonValue]]:
         return ROWS
@@ -61,34 +59,26 @@ class Sleeper:
         return ROWS
 
 
-# ---- W006 -----------------------------------------------------------------------------------------------------------
-def test_a_provider_that_keeps_the_default_exists_is_a_w006_warning_naming_it() -> None:
-    checks = CompositeDataSourceProvider([Explicit(), Defaulting()]).checks()
-    assert [(c.level, c.id) for c in checks] == [(CheckLevel.WARNING, W006)]
-    assert "Defaulting" in checks[0].msg
-    assert checks[0].hint == "implement exists"
+# ---- exists is required --------------------------------------------------------------------------------------------
+def test_a_provider_without_its_own_exists_is_refused_naming_it() -> None:
+    with pytest.raises(DatumConfigurationError, match="Defaulting has no exists of its own") as refused:
+        CompositeDataSourceProvider([Explicit(), Defaulting()])  # type: ignore[abstract]  # pyright: ignore[reportAbstractUsage]
+    assert refused.value.hint.startswith("implement exists")
 
 
-def test_providers_with_their_own_exists_raise_no_check() -> None:
-    assert CompositeDataSourceProvider([Explicit()]).checks() == ()
-    assert not keeps_default_exists(Explicit())
-    assert keeps_default_exists(Defaulting())
-
-
-def test_a_provider_with_no_exists_at_all_is_taken_for_the_default_and_answers_every_id() -> None:
+def test_a_provider_with_no_exists_at_all_is_refused() -> None:
     class OnlyItems:
         def items(self, request: DataSourceRequest) -> list[dict[str, JsonValue]]:
             return ROWS
 
-    assert keeps_default_exists(OnlyItems())
-    service = DataSourceService([OnlyItems()])  # type: ignore[list-item]
-    assert isinstance(service.items(DataSourceRequest("anything")), Items)
+    with pytest.raises(DatumConfigurationError, match="OnlyItems has no exists of its own"):
+        DataSourceService([OnlyItems()])  # type: ignore[list-item]
 
 
-def test_a_default_exists_provider_hides_the_ones_after_it() -> None:
-    service = DataSourceService([Defaulting(), Explicit()])
+def test_providers_with_their_own_exists_are_asked_in_order() -> None:
+    service = DataSourceService([Explicit()])
     assert isinstance(service.items(DataSourceRequest("countries")), Items)
-    assert service.providers.checks()
+    assert isinstance(service.items(DataSourceRequest("anything")), DataSourceNotFound)
 
 
 # ---- the deadline ----------------------------------------------------------------------------------------------------

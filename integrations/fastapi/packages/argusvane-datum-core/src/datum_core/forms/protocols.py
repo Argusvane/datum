@@ -110,19 +110,20 @@ class DataSourceRequest:
 
 
 class DataSourceProvider(Protocol):
-    """Items for a data-sourced choice. Inherit it to get the default `exists`, which answers for every id.
+    """Items for a data-sourced choice: `items` answers a source, `exists` says which source ids the provider serves.
 
-    A provider that keeps the default hides every provider after it and raises `datum.W006`; implement `exists`.
-    Either method may be `async`; it then runs through the awaiter.
+    Providers are asked in order and the first whose `exists` is true answers. Both methods are required: a provider
+    whose class has no `exists` of its own stops the start (`DatumConfigurationError`). Either method may be `async`;
+    it then runs through the awaiter.
     """
 
     def items(self, request: DataSourceRequest) -> MaybeAwaitable[Sequence[Mapping[str, JsonValue]]]:
         """Return the items of the source `request.source_id`, for the form, locale and query it carries."""
         ...
 
-    def exists(self, source_id: str) -> MaybeAwaitable[bool]:  # noqa: ARG002 - the default answers every id
-        """Say whether this provider serves the id (the default says yes to every id)."""
-        return True
+    def exists(self, source_id: str) -> MaybeAwaitable[bool]:
+        """Say whether this provider serves the id."""
+        ...
 
 
 @dataclass(frozen=True, slots=True)

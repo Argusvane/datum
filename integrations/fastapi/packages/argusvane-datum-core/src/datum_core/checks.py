@@ -18,7 +18,6 @@ W002: Final = "datum.W002"  # slots times memory exceeds the container limit
 W003: Final = "datum.W003"  # the default logging submission handler is in use
 W004: Final = "datum.W004"  # a per-process store in memory
 W005: Final = "datum.W005"  # an engine over in-memory SQLite
-W006: Final = "datum.W006"  # a data-source provider keeps the default exists
 W007: Final = "datum.W007"  # an unknown DATUM_ environment key
 W009: Final = "datum.W009"  # a trust-state memory store acknowledged
 W010: Final = "datum.W010"  # the process time zone could not be read; UTC is used
@@ -38,7 +37,6 @@ CHECK_LEVELS: Final[dict[str, CheckLevel]] = {
     W003: CheckLevel.WARNING,
     W004: CheckLevel.WARNING,
     W005: CheckLevel.WARNING,
-    W006: CheckLevel.WARNING,
     W007: CheckLevel.WARNING,
     W009: CheckLevel.WARNING,
     W010: CheckLevel.WARNING,
