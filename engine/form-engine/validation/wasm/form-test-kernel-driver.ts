@@ -612,7 +612,9 @@ export function createFormTestKernelDriver(definition: FormDefinition, options: 
         byPath: { ...byPath },
         errors: shown.map((error) => ({ ...kernelFormTestServerSnapshotError(error, word(error)) })),
         rows: { ...kernelFormTestServerRowCounts(answers, index.lists) },
-        unreplayable: { ...reasons }
+        unreplayable: { ...reasons },
+        // Every page the journey has, so a page named off the path can be told from a typo.
+        pages: journey !== undefined ? [...pageOrder] : []
       };
       // The path a route condition draws over a component this side lacks is not the person's.
       const traceReason = journey !== undefined ? kernelFormTestServerMarkTrace(foldJourney, index, folded.ownership, reasons) : undefined;
@@ -628,10 +630,6 @@ export function createFormTestKernelDriver(definition: FormDefinition, options: 
       }
       if (journey !== undefined && navigation.page !== undefined) {
         snapshot.page = navigation.page;
-      }
-      if (journey !== undefined) {
-        // Every page the journey has, so a page named off the path can be told from a typo.
-        snapshot.pages = [...pageOrder];
       }
       if (outcome.trace !== undefined) {
         snapshot.trace = outcome.trace;

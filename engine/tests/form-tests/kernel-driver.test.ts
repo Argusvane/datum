@@ -674,6 +674,6 @@ describe("the kernel driver: start errors and coded refusals", () => {
     expect((await driver.snapshot()).pages).toEqual(["intro", "stop", "agent", "details"]);
     const flat = createFormTestKernelDriver(definition, { host });
     await flat.start([{ kind: "given", key: "journey", value: "none", line: 2 }]);
-    expect((await flat.snapshot()).pages).toBeUndefined();
+    expect((await flat.snapshot()).pages).toEqual([]);
   });
 });

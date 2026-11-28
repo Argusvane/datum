@@ -7733,7 +7733,8 @@ export function kernelFormTestOpSnapshot(state: FormTestOpState, builtins: strin
     byPath,
     errors,
     rows: kernelFormTestServerRowCounts(state.answers, index.lists),
-    unreplayable: reasons
+    unreplayable: reasons,
+    pages: state.journey !== undefined ? state.pageOrder.slice() : []
   };
   const traceReason = state.journey !== undefined ? kernelFormTestServerMarkTrace(state.foldJourney, index, folded.ownership, reasons) : undefined;
   if (traceReason !== undefined) {
@@ -7746,9 +7747,6 @@ export function kernelFormTestOpSnapshot(state: FormTestOpState, builtins: strin
   }
   if (state.journey !== undefined && state.navigation.page !== undefined) {
     snapshot.page = state.navigation.page;
-  }
-  if (state.journey !== undefined) {
-    snapshot.pages = state.pageOrder.slice();
   }
   if (outcome.trace !== undefined) {
     snapshot.trace = outcome.trace;

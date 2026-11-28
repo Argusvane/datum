@@ -195,11 +195,10 @@ export interface FormTestSnapshot {
   traceUnreplayable?: FormTestSkipReason;
   /**
    * The page ids of the journey the run follows, in the journey's order (not only those on the
-   * path). `expect <page> on path` and `off path` need them to tell a page that is off the path
-   * from a page the journey does not have, which is `expect.unknownPage`. Absent: the judge
-   * reads such an expectation by the path alone, as it did before the field existed.
+   * path); empty without a journey. `expect <page> on path` and `off path` need them to tell a
+   * page that is off the path from a page the journey does not have, which is `expect.unknownPage`.
    */
-  pages?: string[];
+  pages: string[];
 }
 
 export type FormTestSkipReason =

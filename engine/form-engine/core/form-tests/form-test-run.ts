@@ -498,9 +498,8 @@ function kernelFormTestJudgeJourney(statement: FormTestExpectation, snapshot: Fo
     const params = kernelRecord() as Record<string, unknown>;
     params.page = statement.page;
     // A page the journey does not have is off every path, so `expect x off path` would pass on
-    // a typo. The snapshot lists the journey's pages when the side can say (otherwise the path
-    // alone decides, as before).
-    if (snapshot.pages !== undefined && snapshot.pages.indexOf(statement.page) === -1 && !on) {
+    // a typo. The snapshot lists the journey's pages.
+    if (snapshot.pages.indexOf(statement.page) === -1 && !on) {
       return kernelFormTestJudgeFail(line, "expect.unknownPage", undefined, undefined, params);
     }
     return on === statement.on
