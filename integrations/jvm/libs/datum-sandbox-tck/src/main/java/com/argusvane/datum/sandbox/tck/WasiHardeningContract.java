@@ -39,6 +39,8 @@ import org.junit.jupiter.api.TestInstance;
  * <ul>
  *   <li>a fresh, read-only, in-memory {@code /app} per run holding exactly the run's files, as the only preopen;</li>
  *   <li>no host environment, no network, no process, stdin and argv as given;</li>
+ *   <li>no real wall clock and no real randomness: the realtime clock, the file times and {@code random_get} the same on
+ *       every run ({@code GuestIo}), the monotonic clock still running;</li>
  *   <li>the budget's time and memory limits, enforced by the engine;</li>
  *   <li>output caps that stop the run at once, even when the guest catches the write (never an {@code EIO} it can
  *       ignore);</li>
@@ -228,6 +230,45 @@ public interface WasiHardeningContract extends RuntimeUnderTest {
         assertThat(lines[2]).as("no network, no process").isEqualTo("[true,true,true]");
         assertThat(lines[3]).as("the arguments as given").isEqualTo("[\"/app/run.js\",\"one\",\"two\"]");
         assertThat(lines[4]).as("stdin as given, byte for byte").isEqualTo(stdin + "\n");
+    }
+
+    /**
+     * No real wall clock and no real randomness: a guest that imports {@code qjs:os} reads the same date, the same file times
+     * and, through QuickJS's own {@code Math.random} (seeded from the realtime clock at start), the same numbers on every run.
+     * The monotonic clock still runs, so a sleep and a timer end.
+     */
+    @Test
+    default void everyRunReadsTheSameClockFileTimesAndRandomNumbers() {
+        Map<String, byte[]> files = files(String.join("\n",
+            "import * as os from 'qjs:os';",
+            // An engine may not offer stat at all (Endive answers ENOTSUP); one that does gives the fixed time.
+            "var times = function (path) { var st = os.stat(path)[0]; return st ? [st.mtime, st.atime, st.ctime] : null; };",
+            "var fixed = [Date.now(), new Date().toISOString(), Math.random(), Math.random(), Math.random(),",
+            "  times('/app/run.js'), times('/app/data.txt')];",
+            "var start = os.now();",
+            "os.sleep(20);",
+            "os.setTimeout(function () {",
+            "  print(JSON.stringify(fixed));",
+            "  print(JSON.stringify([os.now() - start >= 20000, Date.now()]));",
+            "}, 10);") + "\n", "data.txt", "x");
+        List<String> module = List.of("qjs", "--std", "-m", "/app/run.js");
+        String first = null;
+        for (int i = 0; i < 3; i++) {
+            RunOutput output = runtime().run(GuestRun.of(files, module, new byte[0], budget(30, 32)));
+            assertThat(output.termination()).isEqualTo(Termination.EXITED);
+            assertThat(output.exitCode()).as(err(output)).isZero();
+            String[] lines = out(output).split("\n");
+            assertThat(lines).hasSize(2);
+            assertThat(lines[0]).as("the wall clock is the fixed instant").startsWith("[0,\"1970-01-01T00:00:00.000Z\",");
+            assertThat(lines[0]).as("the file times are the fixed instant, where the engine gives them")
+                .matches(".*,(null|\\[0,0,0\\]),(null|\\[0,0,0\\])\\]$");
+            assertThat(lines[1]).as("the monotonic clock ran through the sleep and the timer; the wall clock did not").isEqualTo("[true,0]");
+            if (first == null) {
+                first = lines[0];
+            } else {
+                assertThat(lines[0]).as("run %d reads what the first read", i + 1).isEqualTo(first);
+            }
+        }
     }
 
     // ------------------------------------------------------------------------------------------------- the budget

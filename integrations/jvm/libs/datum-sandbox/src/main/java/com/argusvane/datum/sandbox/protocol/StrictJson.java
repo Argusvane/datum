@@ -9,6 +9,7 @@ import java.util.Deque;
 import java.util.Map;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.StreamReadConstraints;
+import tools.jackson.core.StreamReadFeature;
 import tools.jackson.core.json.JsonFactory;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
@@ -18,10 +19,11 @@ import tools.jackson.databind.json.JsonMapper;
  * JSON in and out of a run, read and written strictly: Datum's rule, which the host kits and the security suite
  * hold every host to.
  *
- * <p>Reading refuses invalid UTF-8, an empty text, a byte order mark, trailing tokens, nesting past
- * {@link #MAX_DEPTH} (a Jackson {@code StreamReadConstraints} limit) and an unpaired UTF-16 surrogate escape,
- * where Jackson's defaults would accept some of them (an empty text reads as nothing, trailing tokens may be
- * ignored, a lone surrogate escape is a string). A key that starts with NUL is read like any other: nothing on the
+ * <p>Reading refuses invalid UTF-8, an empty text, a byte order mark, trailing tokens, a key repeated in one object,
+ * nesting past {@link #MAX_DEPTH} (a Jackson {@code StreamReadConstraints} limit) and an unpaired UTF-16 surrogate
+ * escape, where Jackson's defaults would accept some of them (an empty text reads as nothing, trailing tokens may be
+ * ignored, a repeated key keeps its last value, a lone surrogate escape is a string). A repeated key is refused
+ * because two readers of the same answer could disagree on it: one keeping the first value, another the last. A key that starts with NUL is read like any other: nothing on the
  * wire needs the refusal, and the suite's CAN-07 row for it is advisory. A refusal is "not JSON" and the run gives
  * no verdict.
  *
@@ -48,6 +50,7 @@ public final class StrictJson {
                 .maxStringLength(Integer.MAX_VALUE)
                 .maxNameLength(Integer.MAX_VALUE)
                 .build())
+            .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
             .build())
         .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
         .build();

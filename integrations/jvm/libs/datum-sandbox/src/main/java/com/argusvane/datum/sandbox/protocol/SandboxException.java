@@ -22,7 +22,7 @@ import org.jspecify.annotations.Nullable;
  * {@link com.argusvane.datum.core.DefinitionTooDeepException}.
  *
  * <p>The message is the host's own words: it never carries the guest's stderr or output,
- * which go to the log only through {@link #stderr()} and {@link #programMessage()}. Only a stop
+ * which go to the log only through {@link #stderrSummary()}, {@link #stderrLine()} and {@link #programMessage()}. Only a stop
  * the guest itself ran into (its time or memory limit after the program printed its started marker) says so
  * in {@link #guestStopped()}: the output cap or a cancelled run proves nothing about the definition, and only
  * the former lets a {@code check} blame the definition ({@code definition.tooCostly}).
@@ -156,9 +156,23 @@ public class SandboxException extends DatumException {
         return reason;
     }
 
-    /** What the run wrote to stderr, trimmed and clipped to 64 KiB: for the log, never for a response. */
+    /**
+     * What the run wrote to stderr, trimmed and clipped to 64 KiB, as it was: never for a response, and for a log only
+     * through {@link #stderrSummary()} or {@link #stderrLine()}, since a thrown message can quote a submitted value and
+     * carry line breaks or terminal escapes.
+     */
     public String stderr() {
         return stderr;
+    }
+
+    /** The start of stderr on one log line ({@link LogText#summary}): what an ERROR line carries. */
+    public String stderrSummary() {
+        return LogText.summary(stderr);
+    }
+
+    /** The whole of the kept stderr on one log line ({@link LogText#oneLine}): for DEBUG. */
+    public String stderrLine() {
+        return LogText.oneLine(stderr);
     }
 
     /** Whether the guest ran into its own time or memory limit after it started. */

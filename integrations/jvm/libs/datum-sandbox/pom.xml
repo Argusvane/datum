@@ -73,7 +73,38 @@
     </dependency>
   </dependencies>
   <build>
+    <resources>
+      <resource><directory>${basedir}/src/main/resources</directory></resource>
+      <!-- The program pins: the programs.json the asset generation wrote for datum-programs, copied into this jar as
+           META-INF/datum/sandbox/programs.json (runtime.ProgramStore.PINS), so the programs are held to sha256s this jar
+           carries, as datum-sandbox-endive holds qjs-wasi.wasm to qjs.sha256. One generation feeds both jars of a build. -->
+      <resource>
+        <directory>${datum.assets.dir}/datum-programs/programs</directory>
+        <includes><include>programs.json</include></includes>
+        <targetPath>META-INF/datum/sandbox</targetPath>
+      </resource>
+    </resources>
     <plugins>
+      <plugin>
+        <!-- Without the generated programs.json the jar would carry no pins and refuse every start: a -pl build with no
+             generation must say how to make one. Checked at process-resources, where it is used. -->
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>require-program-pins</id>
+            <phase>process-resources</phase>
+            <goals><goal>enforce</goal></goals>
+            <configuration>
+              <rules>
+                <requireFilesExist>
+                  <files><file>${datum.assets.dir}/datum-programs/programs/programs.json</file></files>
+                  <message>the generated program assets are missing (${datum.assets.dir}/datum-programs/programs/programs.json), so datum-sandbox would carry no program pins: run ./mvnw -N generate-resources in integrations/jvm (or npm run jvm:assets at the repository root), or build the whole reactor, which generates them first</message>
+                </requireFilesExist>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <!-- The helpers the submissions library and the -spring bindings share with this module's own tests (the scripted
              TestRuntime, the stand-in programs, the settings shorthand) live in datum-sandbox-test-support, which depends on this
