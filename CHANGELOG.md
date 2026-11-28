@@ -10,6 +10,41 @@ release across npm, Maven Central and PyPI. 0.1.0 is published to npm only. What
 
 ## [Unreleased]
 
+### Security
+
+- `verifyWebAuthnSubmission` no longer verifies a signature with the key embedded in it when the host's
+  `publicKeyFor` knows no key for the credential: such a signature is invalid, and each verdict says which key it was
+  checked with (`key`). Assertions and registrations also refuse `crossOrigin` and `topOrigin`, backup state without
+  backup eligibility, RSA keys under 2048 bits and ES256 keys off P-256.
+- The static HTML sanitizer writes a self-closed non-void tag (`<a …/>`) as an empty element, so it can no longer
+  stay open over what follows it in a printed document.
+- PDF attachments are refused by an executable, script or HTML file name, by markup in the XHTML namespace and by
+  XML with an internal entity subset; a stored file whose bytes exceed its declared size is left out, and the
+  attachment budget is charged again over the real bytes.
+
+### Changed
+
+- PDF ABI 4.1.0: the program accepts `attachmentPolicy` on a document or fill and `declaredSize` on a resolved
+  attachment, and prints several answers differently (see Fixed).
+- A lone checkbox is answered only when it holds `true`; `"true"` and `"false"` are stored as booleans, and a
+  checkbox group's list is stored as its record.
+- A year typed in fewer than four digits is reported as `date.year` instead of being padded, and a native date box
+  holding a partial date reports `date` with `badInput`.
+- `validate({ scope, entry })` checks one collection entry of a scope; a `steps` container in a data grid row uses
+  it, and switches its steps in place, each row its own.
+- The live form draws tabs and steps flat for the page's own print (`beforeprint` to `afterprint`); the
+  `browserPrint` mount option, or a `features` list without `print`, leaves it as on screen.
+
+### Fixed
+
+- PDF: a collection row with no answer at a key no longer prints the top-level answer at that key; hidden and
+  excluded row fields are left out of tables; the browser PDF reads the definition's `kinds`; choice answers no
+  option lists are kept; grid fields are tagged content; page breaks keep the document's margins and bands.
+- Print and Check answers keep choice values no option lists, read spaces-only text as not answered, print
+  impossible dates as stored and list a field once, under its earliest page.
+- Live form: a stored file is written only while the form allows it, to its own row; Remove removes one file;
+  focus is not taken back from the page when a submission ends; hidden steps are passed over.
+
 ## [0.1.0] - 2026-11-26
 
 The first release, 0.1.0, contains the following.
