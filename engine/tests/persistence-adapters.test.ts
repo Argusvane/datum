@@ -17,8 +17,11 @@ function draft(id: string, updatedAt: number): FormDraft {
     locale: "en-CA",
     values: { firstName: "Ada" },
     state: {
+      mode: "normal",
       touched: ["firstName"],
-      dirty: ["firstName"]
+      dirty: ["firstName"],
+      visitedSteps: [],
+      completedSteps: []
     },
     updatedAt
   };

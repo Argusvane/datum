@@ -93,7 +93,7 @@ describe("collection entry keys", () => {
       runtime: { schemaVersion: "1", rendererVersion: "0.1.0" },
       values: { "items[0].sku": "P", "items[1].sku": "Q", "items[2].sku": "R" },
       locale: "en",
-      state: { touched: [], dirty: [] },
+      state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [] },
       updatedAt: 0
     });
     const third = runtime.entryKeys("items");

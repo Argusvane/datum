@@ -410,9 +410,12 @@ describe("form runtime", () => {
       locale: "fr-CA",
       values: { firstName: "Ada" },
       state: {
+        mode: "wizard",
         currentStep: "step1",
         touched: ["firstName"],
-        dirty: ["firstName"]
+        dirty: ["firstName"],
+        visitedSteps: ["step1"],
+        completedSteps: []
       },
       updatedAt: 1
     });

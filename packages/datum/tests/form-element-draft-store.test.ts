@@ -97,7 +97,7 @@ describe("parseDraftStoreSpec", () => {
 
 describe("createUrlDraftStore", () => {
   const draft = (id: string, updatedAt: number): FormDraft =>
-    ({ id, formId: "f", formVersion: "1", runtime: { schemaVersion: "1", rendererVersion: "1" }, locale: "en", values: {}, state: { touched: [], dirty: [] }, updatedAt });
+    ({ id, formId: "f", formVersion: "1", runtime: { schemaVersion: "1", rendererVersion: "1" }, locale: "en", values: {}, state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [] }, updatedAt });
 
   it("saves with PUT, loads with GET (a 404 is not found), lists newest first, deletes with DELETE (a 404 is fine)", async () => {
     const { calls, drafts } = stubService();
@@ -171,7 +171,7 @@ describe("<datum-form draft-store>", () => {
     expect(drafts.has("k1")).toBe(false);
 
     // A fresh element restores what the service holds.
-    drafts.set("k2", { id: "k2", formId: "sample-form", formVersion: "2.0.0", runtime: { schemaVersion: "1", rendererVersion: "1.0.0" }, locale: "en", values: { fullName: "Ada" }, state: { touched: [], dirty: [] }, updatedAt: 1 });
+    drafts.set("k2", { id: "k2", formId: "sample-form", formVersion: "2.0.0", runtime: { schemaVersion: "1", rendererVersion: "1.0.0" }, locale: "en", values: { fullName: "Ada" }, state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [] }, updatedAt: 1 });
     const again = mount({ draft: "k2", "draft-store": "server:/api/drafts" });
     await painted(again.element);
     await again.element.restoreDraft();

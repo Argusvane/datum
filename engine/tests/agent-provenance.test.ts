@@ -112,7 +112,7 @@ describe("involved is sticky", () => {
       runtime: { schemaVersion: AGENT_VERSION_CONTEXT.schemaVersion, rendererVersion: AGENT_VERSION_CONTEXT.rendererVersion },
       locale: "en",
       values: { traveller: "Bea" },
-      state: { touched: [], dirty: [] },
+      state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [] },
       updatedAt: 1
     } satisfies FormDraft);
     await setup.ok("drafts", { action: "restore", replaceAnswers: true });

@@ -67,7 +67,7 @@ describe("restoreDraft with an answer the form cannot hold", () => {
       runtime: { schemaVersion: "1", rendererVersion: "1.0.0" },
       locale: "en",
       values: { name: { toString: "x" }, city: "Ottawa" } as never,
-      state: { touched: [], dirty: [] },
+      state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [] },
       updatedAt: 7
     };
     const { el, warnings } = await mounted((element) => {
@@ -92,7 +92,7 @@ describe("restoreDraft with an answer the form cannot hold", () => {
       runtime: { schemaVersion: "1", rendererVersion: "1.0.0" },
       locale: "en",
       values: { name: "Ada", city: "Ottawa" },
-      state: { touched: [], dirty: [] },
+      state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [] },
       updatedAt: 3
     };
     const { el, warnings } = await mounted((element) => {

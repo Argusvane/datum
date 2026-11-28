@@ -277,13 +277,13 @@ describe("draft lifecycle integration", () => {
       await clamped.hydrateFromDraft(ahead);
       expect(clamped.journeyView()).toMatchObject({ pageId: "who", completed: [] });
 
-      // A draft saved before the journey existed restarts it over the draft's answers.
-      const { journey: _journey, ...legacyState } = persisted.state;
-      const legacy = journeyRuntime(store);
-      legacy.setValue("name", "Grace");
-      expect((await legacy.nextPage()).pageId).toBe("reach");
-      await legacy.hydrateFromDraft({ ...persisted, state: legacyState });
-      expect(legacy.journeyView()).toMatchObject({ pageId: "who", completed: [] });
+      // A draft saved while the form had no journey (one added since) starts the journey over the draft's answers.
+      const { journey: _journey, ...pageState } = persisted.state;
+      const onePage = journeyRuntime(store);
+      onePage.setValue("name", "Grace");
+      expect((await onePage.nextPage()).pageId).toBe("reach");
+      await onePage.hydrateFromDraft({ ...persisted, state: pageState });
+      expect(onePage.journeyView()).toMatchObject({ pageId: "who", completed: [] });
     });
 
     it("does not revalidate a deferred page on resume: its errors wait for the journey's end", async () => {

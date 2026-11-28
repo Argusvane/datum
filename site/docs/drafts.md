@@ -209,7 +209,7 @@ A draft comes back only into the form it was saved from, and only at a schema ve
 | `draft.notFound` | Nothing is stored under the key |
 | `draft.formMismatch` | The draft belongs to another form |
 | `draft.incompatible` | The draft's `schemaVersion` is not the definition's |
-| `draft.malformed` | The draft is not a record, its `values` are not a record, or it has no `state` |
+| `draft.malformed` | The draft is not a record, its `values` are not a record, it has no `state`, or its `state` lacks `mode` (`normal` or `wizard`), `visitedSteps` or `completedSteps` |
 | `draft.reservedKey` | The key starts with `__`, which the browser store keeps for itself. Only the browser store raises it |
 
 The form's own version is not part of the check. A draft saved under an older version of the form restores anyway: `formVersion` is kept in the draft and listed in `list()`, and a host that wants to refuse older drafts reads it there, in its own store, or in a `load` of its own that throws `draft.incompatible`.

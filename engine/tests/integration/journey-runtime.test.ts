@@ -677,7 +677,7 @@ describe("journey runtime: a deep-linked page", () => {
       runtime: { schemaVersion: "1", rendererVersion: "0.1.0" },
       locale: "en",
       values: { age: "30", "abroad.nation": "FR" },
-      state: { touched: [], dirty: [], journey: { id: "apply", page, completed } },
+      state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [], journey: { id: "apply", page, completed } },
       updatedAt: 0
     };
   }
@@ -1338,7 +1338,7 @@ function presentationDraft(values: Record<string, unknown>, written?: Record<str
     runtime: { schemaVersion: "1.0.0", rendererVersion: "1" },
     locale: "en",
     values,
-    state: { touched: [], dirty: [], journey: { id: "apply", page: "income", completed: ["details"], ...(written !== undefined ? { written } : {}) } },
+    state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [], journey: { id: "apply", page: "income", completed: ["details"], ...(written !== undefined ? { written } : {}) } },
     updatedAt: 1
   };
 }

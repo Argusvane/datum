@@ -180,7 +180,7 @@ describe("a data grid's rows in the runtime", () => {
       runtime: { schemaVersion: "1", rendererVersion: "1" },
       locale: "en",
       values,
-      state: { touched: [], dirty: [] },
+      state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [] },
       updatedAt: 0
     });
     await rt.hydrateFromDraft(draft({ "items[0].note": "a", "items[2].note": "c" }));
@@ -262,7 +262,7 @@ describe("a data grid's rows in the runtime", () => {
       runtime: { schemaVersion: "1", rendererVersion: "1" },
       locale: "en",
       values,
-      state: { touched: [], dirty: [] },
+      state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [] },
       updatedAt: 0
     });
     await drafted.hydrateFromDraft(draft({ items: [{ note: "x" }, {}, { note: "z" }] }));

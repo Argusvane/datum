@@ -480,7 +480,7 @@ describe("FormRuntime input states", () => {
       runtime: { schemaVersion: "1.0.0", rendererVersion: "0.1.0" },
       values: { age: 4 },
       locale: "en",
-      state: { touched: [], dirty: [] },
+      state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [] },
       updatedAt: 0
     });
     expect(runtime.inputState("age")).toBeUndefined();

@@ -38,7 +38,7 @@ describe("<datum-form> a typed change still pending", () => {
       runtime: { schemaVersion: "1", rendererVersion: "t" },
       locale: "en",
       values: { fullName: "From draft" },
-      state: { touched: [], dirty: [] },
+      state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [] },
       updatedAt: 1
     } as FormDraft);
     await settle(200);

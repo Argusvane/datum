@@ -389,7 +389,7 @@ describe("writers before, own @ answers, a restored draft", () => {
       runtime: { schemaVersion: "1.0.0", rendererVersion: "agent-test" },
       locale: "en",
       values: { name: "Person" },
-      state: { touched: [], dirty: [] },
+      state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [] },
       updatedAt: 1
     } satisfies FormDraft);
     expect(setup.runtime.formValues().name).toBe("Person");

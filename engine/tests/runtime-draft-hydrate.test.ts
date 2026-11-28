@@ -62,7 +62,7 @@ function draft(over: Record<string, unknown> = {}, state: Record<string, unknown
     runtime: { schemaVersion: "1.0.0", rendererVersion: "t" },
     locale: "en-CA",
     values: { name: "From draft" },
-    state: { touched: [], dirty: [], ...state },
+    state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [], ...state },
     updatedAt: 1,
     ...over
   } as unknown as FormDraft;
@@ -100,18 +100,18 @@ describe("a draft's locale", () => {
 });
 
 describe("a draft's bookkeeping", () => {
-  it("drops a malformed touched, dirty or steps block and keeps the answers", async () => {
+  it("drops a malformed touched, dirty or current step and a list entry that is no string, and keeps the answers", async () => {
     const runtime = build();
     runtime.setValue("name", "Mine");
-    await runtime.hydrateFromDraft(
-      draft({}, { touched: 5, dirty: "name", visitedSteps: {}, completedSteps: [1, "s"], currentStep: 3, mode: "sideways" })
-    );
+    await runtime.hydrateFromDraft(draft({}, { touched: 5, dirty: "name", visitedSteps: [2], completedSteps: [1, "s"], currentStep: 3 }));
     const state = runtime.state();
     expect(runtime.formValues().name).toBe("From draft");
     expect([...state.touched]).toEqual([]);
     expect([...state.dirty]).toEqual([]);
     expect(state.navigation.mode).toBe("normal");
     expect(state.navigation.currentStepId).toBeUndefined();
+    expect([...state.navigation.visitedSteps]).toEqual([]);
+    expect([...state.navigation.completedSteps]).toEqual(["s"]);
   });
 
   for (const journey of [null, "x", { id: 5, page: null, completed: "x" }]) {
@@ -136,7 +136,11 @@ describe("a draft that is no draft", () => {
     ["values as null", { values: null }],
     ["values as a string", { values: "x" }],
     ["no state", { state: undefined }],
-    ["state as a string", { state: "x" }]
+    ["state as a string", { state: "x" }],
+    ["a state without its mode", { state: { touched: [], dirty: [], visitedSteps: [], completedSteps: [] } }],
+    ["a mode of neither kind", { state: { mode: "sideways", touched: [], dirty: [], visitedSteps: [], completedSteps: [] } }],
+    ["a state without its visited steps", { state: { mode: "wizard", currentStep: "s1", touched: [], dirty: [], completedSteps: [] } }],
+    ["completed steps that are no list", { state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: {} } }]
   ] as const) {
     it(`is refused with a DraftError before anything changes (${label})`, async () => {
       const runtime = build(bilingual);
