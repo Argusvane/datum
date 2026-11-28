@@ -300,7 +300,7 @@ function pieces(): Pieces {
       ".cm-tooltip": {
         backgroundColor: "var(--db-surface)",
         color: "var(--db-ink)",
-        border: "var(--db-border-w, 1px) solid var(--db-line-card, var(--db-line-input))"
+        border: "var(--db-border-w, 1px) solid var(--db-line-card)"
       }
     }),
     edit: Annotation.define<"undo" | "set">(),

@@ -1,12 +1,12 @@
 /**
  * A CodeMirror editor for JSON: the properties panel's JSON view, and any host page that wants
- * the same box (the web host's renderer rails do). An editor gives the text what a `<pre>`
+ * the same box. An editor gives the text what a `<pre>`
  * cannot — syntax colour, line numbers, folding for nested blocks, and wrapping that suits a
  * narrow rail.
  *
  * Read-only by default: the state is read-only and the content is not editable, so nothing
- * typed reaches anything (the Header & footer panel's and the Data workspace's JSON views, a host's
- * rails). `editable: true` makes it a box the author types in (the inspector's JSON):
+ * typed reaches anything (the Header & footer panel's and the Data workspace's JSON views, a host
+ * page's). `editable: true` makes it a box the author types in (the inspector's JSON):
  * every edit is handed to `onChange`, and the panel decides what reaches the draft. The command model is
  * not bypassed, since Apply is what writes the tree. The
  * editable box keeps its own undo (Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z or Ctrl+Y), indents a new line
@@ -16,8 +16,7 @@
  * that restyles the panels restyles this too; a page mounting it outside the panels defines
  * those tokens on an ancestor. CodeMirror injects its stylesheet into the root the editor is
  * mounted in — a shadow root or the document — as an adopted sheet, which survives a panel
- * replacing its markup. It reads the studio names first and the older ones as their fallback:
- * the web host's renderer rails map only the older names onto their own colours.
+ * replacing its markup.
  */
 import { json } from "@codemirror/lang-json";
 import { HighlightStyle, bracketMatching, foldGutter, indentOnInput, syntaxHighlighting } from "@codemirror/language";
@@ -89,7 +88,7 @@ const viewerTheme = (): Extension => EditorView.theme({
   ".cm-content": { padding: "6px 0", caretColor: "var(--db-ink)" },
   ".cm-line": { padding: "0 8px" },
   /* Keyboard focus is the studio ring, drawn inside: the editor sits edge to edge in a scroller that would clip it outside. */
-  "&.cm-focused": { outline: "2px solid var(--db-focus, var(--db-accent))", outlineOffset: "-2px" },
+  "&.cm-focused": { outline: "2px solid var(--db-focus)", outlineOffset: "-2px" },
   /* Compact gutters: the rail is narrow, and the numbers are a guide, not the content. */
   ".cm-gutters": {
     backgroundColor: "var(--db-surface)",
@@ -105,14 +104,14 @@ const viewerTheme = (): Extension => EditorView.theme({
   ".cm-tooltip": {
     backgroundColor: "var(--db-surface)",
     color: "var(--db-ink)",
-    border: "var(--db-border-w, 1px) solid var(--db-line-card, var(--db-line-input))"
+    border: "var(--db-border-w, 1px) solid var(--db-line-card)"
   },
   "&.cm-focused .cm-matchingBracket": { backgroundColor: "var(--db-accent-soft)", color: "inherit", outline: "none" },
   "&.cm-focused .cm-nonmatchingBracket": { backgroundColor: "var(--db-danger-soft, transparent)", color: "inherit" },
   ".cm-foldPlaceholder": {
     backgroundColor: "var(--db-accent-soft)",
     border: "none",
-    color: "var(--db-accent-text, var(--db-accent))",
+    color: "var(--db-accent-text)",
     borderRadius: "var(--db-radius-xs, 6px)",
     margin: "0 2px",
     padding: "0 4px"
@@ -122,7 +121,7 @@ const viewerTheme = (): Extension => EditorView.theme({
 /** JSON's five kinds of token, in the panel's palette. */
 const viewerHighlight = (): HighlightStyle =>
   HighlightStyle.define([
-    { tag: tags.propertyName, color: "var(--db-accent-text, var(--db-accent))" },
+    { tag: tags.propertyName, color: "var(--db-accent-text)" },
     { tag: tags.string, color: "var(--db-code-string)" },
     { tag: [tags.number, tags.bool, tags.null], color: "var(--db-code-literal)" },
     { tag: [tags.separator, tags.brace, tags.squareBracket], color: "var(--db-ink-muted)" }
