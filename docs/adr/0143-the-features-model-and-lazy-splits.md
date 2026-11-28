@@ -113,9 +113,12 @@ these attributes must be on the page's own origin unless the element's `allow-or
 (space-separated origins) lists the value's origin. A refused attribute reports a `datum-error`
 naming the attribute and the origin and loads nothing (`wasm`, `pdf`, `draft-store`, `validate-url`
 on `<datum-form>`; `wasm`, `pdf`, `pdf-pages` and `allow-origins` itself on `<datum-form-builder>`;
-an absent builder `pdf-pages` means the bundled chunk). The properties (`wasmValidationHost`, the
-assigned URL properties and the like) are written by script the host controls and stay
-unrestricted.
+an absent builder `pdf-pages` means the bundled chunk). A relative value is resolved against the
+page's base once, as the attribute is set: the absolute URL is what the origin check judges and what
+the element keeps and later loads, so a `<base>` added afterwards cannot move it. A `wasm` or `pdf`
+module that came from the attribute has its origin checked again right before it is imported. The
+properties (`wasmValidationHost`, the assigned URL properties and the like) are written by script
+the host controls and stay unrestricted.
 
 ## Reasoning
 

@@ -1,6 +1,7 @@
 package com.argusvane.datum.web.json;
 
 import tools.jackson.core.StreamReadConstraints;
+import tools.jackson.core.StreamReadFeature;
 import tools.jackson.core.json.JsonFactory;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.MapperFeature;
@@ -12,9 +13,11 @@ import tools.jackson.databind.json.JsonMapper;
  * <p>A bean of the plain type would switch off Spring Boot's own mapper ({@code @ConditionalOnMissingBean})
  * and change every other JSON answer of the application. Datum's endpoints read untrusted documents, so the
  * mapper carries limits Jackson's defaults do not: nesting 256, a string no longer than the
- * body cap, numbers of at most 1000 characters. It also reads strictly: trailing tokens refuse, and a
- * wrong-typed scalar is refused instead of coerced (the same switches as {@code DatumJson.mapper()} of the
- * core, so the envelope's digest still covers the bytes that arrived).
+ * body cap, numbers of at most 1000 characters. It also reads strictly: trailing tokens refuse, a key repeated in
+ * one object refuses (Jackson would keep the last value, and another reader of the same bytes, a browser or a
+ * signature verifier, may keep the first), and a wrong-typed scalar is refused instead of coerced (the same switches
+ * as {@code DatumJson.mapper()} of the core, so the envelope's digest still covers the bytes that arrived). Each
+ * refusal is a {@code JacksonException}, which the body reader answers as the 400 of any other malformed JSON.
  *
  * @param mapper the shared, thread-safe mapper
  */
@@ -36,6 +39,7 @@ public record DatumJsonMapper(JsonMapper mapper) {
                 .maxNumberLength(MAX_NUMBER_LENGTH)
                 .maxDocumentLength(Math.max(1, maxBodyBytes))
                 .build())
+            .enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION)
             .build();
         return new DatumJsonMapper(JsonMapper.builder(factory)
             .disable(MapperFeature.ALLOW_COERCION_OF_SCALARS)

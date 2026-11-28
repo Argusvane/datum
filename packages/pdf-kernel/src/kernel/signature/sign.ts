@@ -44,6 +44,7 @@ import {
 } from "./field.js";
 import { digestOverRanges, locatePlaceholder, locateUnfilled, patchByteRange, placeholderBytes, writeContents, type ByteRange } from "./placeholder.js";
 import { chainNamesIssuer, parseCertificate, signatureAlgorithmFor, type ParsedCertificate } from "./x509.js";
+import { loadPdfDocument } from "../util/parse-depth.js";
 
 export interface PreparedSignature {
   bytes: Uint8Array;
@@ -212,7 +213,7 @@ export async function prepareSignature(input: Uint8Array, spec: PdfSignatureSpec
   if (locateUnfilled(input)) {
     throw new PdfKernelError("signature", "The document carries a prepared signature no one completed; complete it before signing again");
   }
-  const pdf = await PDFDocument.load(input, { forIncrementalUpdate: true, updateMetadata: false, ignoreEncryption: true });
+  const pdf = await loadPdfDocument(input, { forIncrementalUpdate: true, updateMetadata: false, ignoreEncryption: true });
   if (pdf.isEncrypted) {
     throw new PdfKernelError("signature", "An encrypted document cannot be signed");
   }
@@ -310,7 +311,7 @@ export async function completeSignature(prepared: Uint8Array, completion: PdfSig
   if (end + tail !== prepared.length) {
     throw new PdfKernelError("signature", "The prepared signature's byte range does not reach the end of the file; the bytes changed since sign");
   }
-  const pdf = await PDFDocument.load(prepared, { updateMetadata: false, ignoreEncryption: true });
+  const pdf = await loadPdfDocument(prepared, { updateMetadata: false, ignoreEncryption: true });
   const entry = findSignatureFields(pdf).find((candidate) => candidate.state === "prepared");
   if (!entry || !entry.value) {
     throw new PdfKernelError("signature", "The document carries no prepared signature field");

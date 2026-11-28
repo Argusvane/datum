@@ -147,12 +147,17 @@ public interface SandboxHardeningContract extends RuntimeUnderTest {
         assertThatThrownBy(() -> replaced.validate(context("Ada"), List.of(), false)).isInstanceOf(ProgramUnavailableException.class);
     }
 
-    /** A rule module has no stdout, stdin, std or os. */
+    /**
+     * A rule module has no stdout, stdin, std or os, and none of the globals quickjs-ng adds beyond the page's engine
+     * (queueMicrotask, gc, navigator, argv0, execArgv, atob, btoa, DOMException): it reaches what it would reach in the
+     * browser.
+     */
     @Test
     default void aRuleModuleCannotForgeAnOutcome() {
         SandboxService service = realService(ProgramLimits.defaults());
         String probe = "(function () { var seen = []; "
-            + "['std','os','print','console','performance','scriptArgs','bjson'].forEach(function (n) { if (typeof globalThis[n] !== 'undefined') { seen.push(n); } }); "
+            + "['std','os','print','console','performance','scriptArgs','bjson','queueMicrotask','gc','navigator','argv0','execArgv',"
+            + "'atob','btoa','DOMException'].forEach(function (n) { if (n in globalThis || typeof globalThis[n] !== 'undefined') { seen.push(n); } }); "
             + "globalThis.__datum_run = function () { return JSON.stringify({ errors: [], forged: true }); }; "
             + "return { validators: [function () { return { errors: seen.map(function (n) { return { code: 'leak.' + n, componentId: 'name', message: n }; }) }; }] }; })()";
         SandboxResult result = service.validate(context("Ada"), rule("probe", probe), false);

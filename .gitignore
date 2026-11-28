@@ -11,6 +11,8 @@ CLAUDE.md
 node_modules/
 dist/
 dist-test/
+# The per-file SRI manifest the packages/datum build writes beside its dist
+packages/datum/integrity.json
 coverage/
 .DS_Store
 *.log

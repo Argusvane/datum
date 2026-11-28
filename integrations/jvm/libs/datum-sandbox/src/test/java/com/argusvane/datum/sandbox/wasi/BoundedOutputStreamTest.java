@@ -51,6 +51,49 @@ class BoundedOutputStreamTest {
         assertThat(out.toByteArray()).containsExactly(1);
     }
 
+    /** What the stream allocates never passes the cap, however the writes fall, and the bytes come back in order. */
+    @Test
+    void theBufferNeverHoldsMoreThanTheCap() {
+        for (long cap : new long[] {1, 100, BoundedOutputStream.FIRST_CHUNK, BoundedOutputStream.FIRST_CHUNK + 1,
+            3L * BoundedOutputStream.CHUNK + 5, Budget.STDERR_LIMIT}) {
+            for (int step : new int[] {1, 7, 4096, BoundedOutputStream.CHUNK + 3}) {
+                BoundedOutputStream out = new BoundedOutputStream("stdout", cap);
+                byte[] piece = new byte[step];
+                long written = 0;
+                try {
+                    while (true) {
+                        for (int i = 0; i < step; i++) {
+                            piece[i] = (byte) (written + i);
+                        }
+                        out.write(piece, 0, step);
+                        written += step;
+                        assertThat(out.allocated()).as("cap %d, step %d", cap, step).isLessThanOrEqualTo(cap)
+                            .isLessThanOrEqualTo(written + BoundedOutputStream.CHUNK);
+                    }
+                } catch (OutputCapExceededException e) {
+                    assertThat(out.allocated()).as("cap %d, step %d at the cap", cap, step).isEqualTo(cap);
+                }
+                byte[] all = out.toByteArray();
+                assertThat(all).hasSize((int) cap);
+                for (int i = 0; i < all.length; i++) {
+                    if (all[i] != (byte) i) {
+                        throw new AssertionError("cap " + cap + ", step " + step + ": byte " + i + " is " + all[i]);
+                    }
+                }
+            }
+        }
+    }
+
+    /** A run that prints a line takes one small chunk, not the cap. */
+    @Test
+    void aShortOutputTakesASmallChunk() {
+        BoundedOutputStream out = new BoundedOutputStream("stdout", Budget.STDOUT_LIMIT);
+        out.write("one line\n".getBytes(java.nio.charset.StandardCharsets.UTF_8), 0, 9);
+        assertThat(out.allocated()).isEqualTo(BoundedOutputStream.FIRST_CHUNK);
+        assertThat(out.size()).isEqualTo(9);
+        assertThat(new BoundedOutputStream("stderr", 0).toByteArray()).isEmpty();
+    }
+
     /** Unchecked, so a WASI layer that turns IOException into EIO cannot hand the guest an ignorable error. */
     @Test
     void theExceptionIsUnchecked() throws IOException {

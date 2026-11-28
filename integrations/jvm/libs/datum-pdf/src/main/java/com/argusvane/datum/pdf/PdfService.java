@@ -16,6 +16,7 @@ import com.argusvane.datum.core.hooks.HookRefusedException;
 import com.argusvane.datum.core.observation.DatumObservation;
 import com.argusvane.datum.core.observation.DatumObservationNames;
 import com.argusvane.datum.core.observation.DatumObservations;
+import com.argusvane.datum.sandbox.protocol.LogText;
 import com.argusvane.datum.sandbox.protocol.PdfKernel;
 import com.argusvane.datum.sandbox.protocol.RunSlots;
 import com.argusvane.datum.sandbox.protocol.SandboxException;
@@ -814,7 +815,9 @@ public final class PdfService {
             if (e.kernelCode() == null || "abi_mismatch".equals(e.kernelCode())) {
                 throw e;
             }
-            LOG.info("Datum PDF verify: the program refused a posted file (SHA-256 {}): {} {}", sha256, e.kernelCode(), e.kernelMessage());
+            // The program's words can quote the posted file: escaped onto one line and clipped.
+            LOG.info("Datum PDF verify: the program refused a posted file (SHA-256 {}): {} {}", sha256, LogText.oneLine(e.kernelCode()),
+                e.kernelMessage() == null ? "" : LogText.summary(e.kernelMessage()));
             throw PdfException.unreadable(e);
         }
         PdfVerification verification = verifier.complete(sha256, pdf.length, answer);
@@ -1637,7 +1640,7 @@ public final class PdfService {
                 warnings.add(entry);
                 String code = warning.path("code").asString("");
                 if (LOGGED_WARNINGS.contains(code)) {
-                    LOG.warn("Datum PDF warning {}: {}", code, warning.path("message").asString(""));
+                    LOG.warn("Datum PDF warning {}: {}", code, LogText.summary(warning.path("message").asString("")));
                 }
             }
         }

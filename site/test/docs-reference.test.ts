@@ -131,4 +131,22 @@ describe("what a reader copies from the docs", () => {
       expect(read(`docs/snippets/server/${file}`).match(/\b[0-9a-f]{64}\b/g), file).toEqual([pin.sha256]);
     }
   });
+
+  // A CDN address, a pin and a release command name the version a reader can install; nothing
+  // bumps them at a release, so they are held to the package's own version here.
+  it("names the npm package's version wherever the pages pin one", () => {
+    const { version } = JSON.parse(read("../packages/datum/package.json")) as { version: string };
+    const pages = readdirSync(new URL("../docs", import.meta.url)).filter((name) => name.endsWith(".md"));
+    const named = pages.flatMap((page) => {
+      const text = read(`docs/${page}`);
+      return [
+        ...text.matchAll(/@argusvane\/datum[\w-]*@(\d+\.\d+\.\d+)/g),
+        ...text.matchAll(/`@(\d+\.\d+\.\d+)`/g),
+        ...text.matchAll(/offline:bundle -- --version (\d+\.\d+\.\d+)/g),
+        ...text.matchAll(/\| Packages \| (\d+\.\d+\.\d+) \|/g)
+      ].map((match) => `${page}: ${match[1]}`);
+    });
+    expect(named.length).toBeGreaterThan(0);
+    expect(named.filter((entry) => !entry.endsWith(`: ${version}`))).toEqual([]);
+  });
 });
