@@ -9,7 +9,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.security.SecureRandom;
+import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.util.Locale;
 import java.util.Map;
@@ -44,8 +44,9 @@ import org.slf4j.LoggerFactory;
  *       program it hashed and proved, and {@code run.js}), its only preopen, closed when the run is answered. The guest
  *       sees it through {@link ReadOnlyFileSystem}: it can create, change or remove nothing there, so neither file content
  *       nor names (which Jimfs keeps on the heap) can grow the JVM heap. The file system's content is also capped at those
- *       files, a second fence;</li>
- *   <li>the argv and stdin of the run, and random bytes from one shared {@link SecureRandom} ({@link GuestIo});</li>
+ *       files, a second fence. Its file times are {@link GuestIo#GUEST_TIME};</li>
+ *   <li>the argv and stdin of the run, a realtime clock that reads {@link GuestIo#GUEST_TIME} and a {@code random_get}
+ *       stream that is the same for every run ({@link GuestIo}): the guest learns neither the date nor real entropy;</li>
  *   <li>stdout and stderr through {@link BoundedOutputStream}s at the budget's caps: the write past a cap
  *       throws {@link OutputCapExceededException} out of the guest's write, which ends the run at once;</li>
  *   <li>the time budget, set-up included, as a wait on the run's {@link Future}; past it the run is stopped.</li>
@@ -85,9 +86,6 @@ import org.slf4j.LoggerFactory;
 public final class RunHarness implements GuestRuntime, AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(RunHarness.class);
-
-    /** The guest's entropy, shared: {@link SecureRandom} is safe across threads. */
-    private static final SecureRandom ENTROPY = new SecureRandom();
 
     /** The block size of a run's file system. */
     private static final int BLOCK = 8192;
@@ -169,7 +167,7 @@ public final class RunHarness implements GuestRuntime, AutoCloseable {
         FileSystem workspace = workspace(run);
         try {
             GuestIo io = new GuestIo(run.argv(), run.openStdin(), out, err,
-                ReadOnlyFileSystem.over(workspace).getPath(GuestIo.GUEST_APP), ENTROPY);
+                ReadOnlyFileSystem.over(workspace).getPath(GuestIo.GUEST_APP), GuestIo.guestRandom(), GuestIo.guestClock());
             long preparing = run.timed() ? System.nanoTime() : 0;
             try (GuestEngine.Prepared prepared = engine.prepare(io, budget)) {
                 Attempt attempt = new Attempt(prepared, run.timed() ? System.nanoTime() - preparing : UNSET);
@@ -215,6 +213,8 @@ public final class RunHarness implements GuestRuntime, AutoCloseable {
             .setWorkingDirectory(GuestIo.GUEST_APP)
             .setBlockSize(BLOCK)
             .setMaxSize(blocks * BLOCK)
+            // A file's times would tell the guest when its run was made: every one is the guest's fixed time.
+            .setFileTimeSource(() -> FileTime.from(GuestIo.GUEST_TIME))
             .build());
         try {
             Path app = Files.createDirectories(fs.getPath(GuestIo.GUEST_APP));

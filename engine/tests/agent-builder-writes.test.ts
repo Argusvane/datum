@@ -75,6 +75,17 @@ describe("rename_component", () => {
     expect(controller.idError).toBeUndefined();
   });
 
+  it("refuses a rename that would put the component's answer where another component's is", async () => {
+    const builder = agentBuilder();
+    builder.controller.setProperty("email", "dataKey", "contact");
+    const refused = refusalOf(await builder.execute("rename_component", { componentId: "full_name", newId: "contact" }));
+    expect(refused).toMatchObject({ code: "data-path-conflict" });
+    expect(refused.message).toMatch(/would store their answers in one place, contact/);
+    expect(find(builder.controller.snapshot(), "full_name")).toBeDefined();
+    expect(builder.controller.dataKeyProblems()).toEqual([]);
+    expect(builder.controller.idError).toBeUndefined();
+  });
+
   it("refuses a fixed component", async () => {
     const definitions: ComponentDefinition[] = [...AGENT_BUILDER_DEFINITIONS, { type: "pdf-field", version: "1.0.0", fixed: true, capabilities: [], createDefault: () => ({ id: "pdf-field", type: "pdf-field", configuration: {} }) }];
     const root = contactRequestRoot();

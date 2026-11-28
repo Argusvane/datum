@@ -30,6 +30,7 @@ import { PdfKernelError } from "@argusvane/datum-engine/render";
 import { sha256 } from "../util/sha256.js";
 import { parseSignedData, digestFor } from "./cms.js";
 import { OID, bytesEqual, concat, fromHex, toHex } from "./der.js";
+import { guardPdfObjectNesting } from "../util/parse-depth.js";
 
 export type LaterChangeKind =
   | "signature-dictionary" // this signature's own dictionary redefined (never permitted)
@@ -211,6 +212,7 @@ class RevisionParser extends PDFObjectParser {
   }
 
   static over(data: Uint8Array, context: PDFContext, lengthOf: (value: PDFObject | undefined) => number | undefined): RevisionParser {
+    guardPdfObjectNesting();
     const base = PDFObjectParser.forBytes(data, context) as unknown as { bytes: ByteStreamOf };
     return new RevisionParser(base.bytes, context, data.length, lengthOf);
   }

@@ -405,12 +405,9 @@ describe("the PDF layouts alone: <datum-form-builder workspaces=\"pdf\">", () =>
       { pdfField: "Subscribe", source: { kind: "component", componentId: "subscribe" }, checkedValue: "Yes" }
     ]);
     expect(changes.at(-1)).toMatchObject({ reason: "edit", layout: { id: "paper-host" } });
-    // Each guess is its own edit: undo takes the last one back.
+    // Each guess is its own edit, a checkbox's source and export value together: undo takes the last one back whole.
     element.pdfMode!.controller.undo();
-    expect(paper().fields).toEqual([
-      { pdfField: "Full Name", source: { kind: "component", componentId: "fullName" } },
-      { pdfField: "Subscribe", source: { kind: "component", componentId: "subscribe" } }
-    ]);
+    expect(paper().fields).toEqual([{ pdfField: "Full Name", source: { kind: "component", componentId: "fullName" } }]);
   });
 
   it("edits a populated form's mapping as its tree: a field box selects its widget, the inspector edits it, Save lands it, undo takes it back", async () => {

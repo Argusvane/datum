@@ -149,3 +149,5 @@ The count is reset in these cases:
 - Another form is loaded.
 
 After a save of your own, call `markSaved()` or `markLocalesSaved()`. A failed save leaves the count as it was, so a retry sends the same changes again.
+
+The count starts again from the languages the save was handed, not from the languages when it finished. A language renamed or removed while the save is still running is sent with the next save. If the save fails, the next save sends both: what this one was handed and what changed while it ran.

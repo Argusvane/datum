@@ -10,21 +10,21 @@ import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.node.JsonNodeFactory;
 import tools.jackson.databind.node.ObjectNode;
 
-/** Strict reading and plain writing of a run's JSON. A key with NUL in it, and the empty key, are read. */
+/** Strict reading and plain writing of a run's JSON. A key with NUL in it, and the empty key, are read; a repeated key is not. */
 class StrictJsonTest {
 
     @ParameterizedTest
-    @ValueSource(strings = {"\"\\ud800\"", "\"\\udc00x\"", "{\"\\ud800\":1}", "\ufeff{}", "", " ", "{} x", "{}{}", "[1,]", "01", "NaN", "{'a':1}", "/*c*/{}"})
+    @ValueSource(strings = {"\"\\ud800\"", "\"\\udc00x\"", "{\"\\ud800\":1}", "\ufeff{}", "", " ", "{} x", "{}{}", "[1,]", "01", "NaN", "{'a':1}", "/*c*/{}",
+        "{\"a\":1,\"a\":2}", "{\"a\":1,\"a\":1}", "[{\"x\":{\"b\":1,\"c\":2,\"b\":3}}]", "{\"a\":{},\"\\u0061\":{}}"})
     void notStrictJson(String text) {
         assertThatThrownBy(() -> StrictJson.decode(text)).isInstanceOf(StrictJson.NotJsonException.class);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"1", "-0", "\t{}\n", "\"\\ud83d\\ude00\"", "{\"a\":1,\"a\":2}", "\"\\u0000\"", "1.0e5", "{\"x\\u0000\":1}", "{\"\":1}",
+    @ValueSource(strings = {"1", "-0", "\t{}\n", "\"\\ud83d\\ude00\"", "{\"a\":1,\"b\":{\"a\":2}}", "\"\\u0000\"", "1.0e5", "{\"x\\u0000\":1}", "{\"\":1}",
         "{\"\\u0000x\":1}", "{\"\\u0000\":1}", "[{\"a\":{\"\\u0000b\":1}}]"})
     void whatIsRead(String text) throws Exception {
         assertThat(StrictJson.decode(text)).isNotNull();
-        assertThat(StrictJson.decode("{\"a\":1,\"a\":2}").get("a").intValue()).as("last wins").isEqualTo(2);
     }
 
     @Test

@@ -35,6 +35,7 @@ import { digestOverRanges, rangeIsWellFormed, type ByteRange } from "./placehold
 import { loadRevision } from "./revision.js";
 import { analyzeLaterRevisions, type LaterChangeKind, type LaterRevisionsReport, type ReliedOnSignature } from "./revisions.js";
 import { findByIssuerSerial, findBySubjectKeyId, parseCertificate, type ParsedCertificate } from "./x509.js";
+import { loadPdfDocument } from "../util/parse-depth.js";
 
 export interface VerifiedSignatures {
   signatures: PdfSignatureReport[];
@@ -528,7 +529,7 @@ export interface VerifyOptions {
 export async function verifySignatures(bytes: Uint8Array, options: VerifyOptions = {}): Promise<VerifiedSignatures> {
   const warnings: PdfWarning[] = [];
   const known = certificatesOf(options.knownCertificates ?? [], warnings, "knownCertificates");
-  const pdf = await PDFDocument.load(bytes, { updateMetadata: false, ignoreEncryption: true });
+  const pdf = await loadPdfDocument(bytes, { updateMetadata: false, ignoreEncryption: true });
   if (pdf.isEncrypted) {
     throw new PdfKernelError("signature", "An encrypted document's signatures cannot be read");
   }

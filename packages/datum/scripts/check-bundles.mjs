@@ -142,12 +142,12 @@ for (const prefix of ["datum-binding"]) {
 const guards = await loadGuards(join(dist, "..", "scripts", "guards"));
 const BASE_BUDGETS_KB = {
   // The two entries (datum-form.js, datum-builder.js) are held to the gzip gates below, not to a size here.
-  // datum-wasm.js: measured 980.3 KB, plus 3 KB, rounded up. It carries the sandbox's security code
+  // datum-wasm.js: measured 984.4 KB, plus 3 KB, rounded up. It carries the sandbox's security code
   // (the regex reader, the structural `check` pass, the output limits), the grid normalizer mirror,
   // the row-count check, the formula bounds, the form-test parser, judge and kernel driver for the
   // `test` op, the bind-time ABI probe, the per-request size term, the prepared-definition cache,
-  // the host context read and the bounded journey walks.
-  "datum-wasm.js": 984
+  // the host context read, the bounded journey walks and the freeze's guard on the global object.
+  "datum-wasm.js": 988
 };
 const BUDGETS_KB = effectiveBudgets(BASE_BUDGETS_KB, guards, problems);
 // The validation kernel is the sandbox's: <datum-form> never runs it in-process,
@@ -161,8 +161,12 @@ for (const [name, budget] of Object.entries(BUDGETS_KB)) {
 // Each entry's initial payload, the entry plus its core chunk, gzipped at level 9 file by file
 // (Node's zlib, as here; a page fetches them as two files), is at most the recorded base pair plus
 // 4 KB. The base pairs are what CI measures on its runner, whose build comes out slightly larger
-// than a developer machine's. A gate is raised only deliberately, never to fit a measurement.
-const GZIP_BASE = { "datum-form.js": 203_468, "datum-builder.js": 516_767 };
+// than a developer machine's. A gate is raised only deliberately, never to fit a measurement. Both
+// were raised by 512 B for the origin rule's own code in the elements: an attribute's URL resolved
+// once and checked again before its module is imported, and the wasm-integrity attribute (its
+// check is a lazy chunk). The builder's was raised by 768 B more for the fixes to its drafts,
+// renames, mode switches, panels and Logic editor, which add about 760 B gzip to its eager code.
+const GZIP_BASE = { "datum-form.js": 203_980, "datum-builder.js": 518_047 };
 const GZIP_ALLOWANCE = 4 * 1024;
 const pairGzip = (name) => [name, ...coreOf(name.replace(/\.js$/, ""))].reduce((total, part) => total + gzipSync(readFileSync(join(dist, part)), { level: 9 }).length, 0);
 for (const [name, base] of Object.entries(GZIP_BASE)) {

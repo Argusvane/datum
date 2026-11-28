@@ -141,11 +141,16 @@ export const ISOLATION_VECTORS: Vector[] = [
   }),
   vector({
     id: "ISO-04",
-    title: "A validator that rebinds kernel functions or patches Array.prototype.push/some or JSON.stringify in the shared sandbox does not change the next run (the host freezes the intrinsics)",
+    title: "A validator that rebinds kernel functions or patches Array.prototype.push/some or JSON.stringify in the shared sandbox does not change the next run, and a module that redefines a global with a descriptor does not change what another module reads (the host freezes the intrinsics)",
     class: "isolation",
     severity: "S4",
     attacker: "plugin-author",
-    provenance: { tests: [{ path: TESTS.isolation, name: "a plugin cannot rebind the kernel or patch the language for the runs after it" }] },
+    provenance: {
+      tests: [
+        { path: TESTS.isolation, name: "a plugin cannot rebind the kernel or patch the language for the runs after it" },
+        { path: "packages/quickjs-wasm-host/tests/host-freeze-global-descriptors.test.ts", name: "the freeze holds a global against a redefining descriptor" }
+      ]
+    },
     fixture: {
       definition: "base",
       plugins: [
@@ -163,7 +168,38 @@ export const ISOLATION_VECTORS: Vector[] = [
         { kind: "values", values: CONTROL_VALUES["CTL-02"]() }
       ]
     },
-    expect: all(accepted(false), { op: "codes", exactly: ["required@name"] })
+    expect: all(accepted(false), { op: "codes", exactly: ["required@name"] }),
+    variants: [
+      {
+        // The first module redefines globals as it loads, by every descriptor route; the second reads them.
+        id: "global-redefined-by-a-descriptor",
+        fixture: {
+          plugins: [
+            {
+              id: "iso-04-redefine",
+              version: "1.0.0",
+              source: `(function () {
+                var fake = function () { return { test: function () { return true; } }; };
+                try { Object.defineProperty(globalThis, "RegExp", { value: fake }); } catch (e) {}
+                try { Object.defineProperties(globalThis, { RegExp: { value: fake } }); } catch (e) {}
+                try { Reflect.defineProperty(globalThis, "JSON", { value: {} }); } catch (e) {}
+                try { Object.defineProperty(globalThis, "undefined", { value: 7 }); } catch (e) {}
+                try { Object.defineProperty(new Proxy(globalThis, {}), "NaN", { value: 7 }); } catch (e) {}
+                return { validators: [] };
+              })()`
+            },
+            probeModule("iso-04-read", [
+              reporting(
+                "iso04:",
+                `[new RegExp("^[0-9]+$").test("abc") ? "regexp-replaced" : "regexp", typeof JSON.parse === "function" ? "json" : "json-replaced", String(undefined) === "undefined" ? "undefined" : "undefined-replaced", String(NaN) === "NaN" ? "nan" : "nan-replaced"]`
+              )
+            ])
+          ]
+        },
+        input: validRun(),
+        expect: found("iso04:", ["regexp", "json", "undefined", "nan"])
+      }
+    ]
   }),
   vector({
     id: "ISO-05",

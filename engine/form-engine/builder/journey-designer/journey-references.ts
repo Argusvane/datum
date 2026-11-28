@@ -148,8 +148,9 @@ export interface JourneyTreeRename {
   nodeId: string;
   /**
    * The configuration property to set — a question's `componentId`, a page's or route's
-   * `when`, an alias's `fills`, a worked-out value's `to` or `value` — or, with `rules`, the key
-   * of the rule to set.
+   * `when`, a Check answers step's `review.labels` (a dotted path, nested as `setProperties`
+   * reads it), an alias's `fills`, a worked-out value's `to` or `value` — or, with `rules`, the
+   * key of the rule to set.
    */
   property: string;
   value: unknown;
@@ -290,8 +291,14 @@ export function journeyRenameEdits(root: ComponentNode, kind: "form" | "own", fr
   for (const node of treeNodes(copy)) {
     for (const edit of renamesOf(node)) {
       changed = true;
-      const target = edit.rules ? ((node.rules ??= {}) as Record<string, unknown>) : (node.configuration = isRecord(node.configuration) ? node.configuration : {});
-      target[edit.property] = edit.value;
+      let target = edit.rules ? ((node.rules ??= {}) as Record<string, unknown>) : (node.configuration = isRecord(node.configuration) ? node.configuration : {});
+      // A dotted property (`review.labels`) is a path, as `setProperties` reads it.
+      const parts = edit.property.split(".");
+      const last = parts.pop()!;
+      for (const part of parts) {
+        target = target[part] = isRecord(target[part]) ? target[part] : {};
+      }
+      target[last] = edit.value;
     }
   }
   return changed ? [{ componentId: root.id, propertyPath: "", value: copy.children, target: "children" }] : [];

@@ -134,6 +134,9 @@ class SandboxServiceTest {
             assertThat(e.reason()).as(bad).isIn(Reason.NOT_JSON, Reason.NO_OUTCOME);
         }
         assertThat(failure(() -> service(FakeRuntime.answering("nope")).validate(context(), List.of(), true)).reason()).isEqualTo(Reason.NOT_JSON);
+        // A repeated key is not JSON the host reads: the host and another reader of the same answer could keep different values.
+        assertThat(failure(() -> service(FakeRuntime.answering("{\"errors\":[],\"errors\":[{\"path\":\"a\"}]}")).validate(context(), List.of(), true))
+            .reason()).isEqualTo(Reason.NOT_JSON);
     }
 
     /** Past 8 MiB of UTF-16 code units, nothing of the outcome is read. */

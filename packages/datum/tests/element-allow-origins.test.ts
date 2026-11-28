@@ -47,9 +47,10 @@ describe("<datum-form> URL attributes and allow-origins", () => {
   it("takes same-origin and relative URLs, and the bundle's own auto", () => {
     const { el, errors } = formWith({ wasm: "/static/datum-wasm.js", pdf: "auto", "validate-url": "/api/check", "draft-store": "server:/api/drafts" });
     expect(errors).toEqual([]);
-    expect(el.wasm).toBe("/static/datum-wasm.js");
+    // A relative URL is kept as the absolute URL it was checked as.
+    expect(el.wasm).toBe(new URL("/static/datum-wasm.js", document.baseURI).href);
     expect(el.pdf).toBe("auto");
-    expect(el.validateUrl).toBe("/api/check");
+    expect(el.validateUrl).toBe(new URL("/api/check", document.baseURI).href);
     el.setAttribute("wasm", `${location.origin}/x/datum-wasm.js`);
     expect(errors).toEqual([]);
     expect(el.wasm).toBe(`${location.origin}/x/datum-wasm.js`);
@@ -197,7 +198,7 @@ describe("<datum-form-builder> URL attributes and allow-origins", () => {
     el.setAttribute("pdf-pages", "/static/datum-pdf-pages.js");
     expect(errors).toEqual([]);
     expect(el.wasm).toBe("off");
-    expect(el.pdfPages).toBe("/static/datum-pdf-pages.js");
+    expect(el.pdfPages).toBe(new URL("/static/datum-pdf-pages.js", document.baseURI).href);
     el.setAttribute("wasm", `${OTHER}/datum-wasm.js`);
     el.setAttribute("pdf", `${OTHER}/datum-pdf.js`);
     el.setAttribute("pdf-pages", `${OTHER}/datum-pdf-pages.js`);

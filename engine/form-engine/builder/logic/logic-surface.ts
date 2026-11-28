@@ -60,7 +60,8 @@ import {
 import { printFormula } from "../formula/feel-print.js";
 import { FORMULA_EDITOR_STYLES } from "../formula/formula-editor-styles.js";
 import { loadFormulaEditor, type FormulaEditorModule } from "../formula/formula-editor-loader.js";
-import { formulaFieldsOf, type FormulaField } from "../formula/formula-fields.js";
+import { formulaFieldKind, formulaFieldsOf, type FormulaField } from "../formula/formula-fields.js";
+import { baseTypeOf } from "../../registry/kinds.js";
 import {
   formulaEditorState,
   mountFormulaTextarea,
@@ -431,6 +432,8 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
     this.ctrl?.setLeaveGuard(undefined);
     this.ctrl = value;
     this.working = undefined;
+    // A switch held behind the old copy's question goes with the copy.
+    this.heldSwitch = undefined;
     this.forgetAuthoredKinds();
     this.dropEditor();
     if (this.isConnected) {
@@ -699,21 +702,35 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
     }
   }
 
-  /** A clean copy takes the stored rule's text and run scope when they moved under it (an undo, an edit in Form). */
+  /**
+   * A clean copy takes the stored rule's text, run scope and kind, and its field's "When hidden",
+   * "On paper" and check words, when they moved under it (an undo, an edit in Form). The kind is
+   * compared on its own: a Show over `c` and a Hide over `not(c)` open with the same box text, and
+   * Apply wraps the box by the copy's kind.
+   */
   private followStored(working: Working, rule: LogicRule): void {
     if (working.route !== undefined) {
       this.followStoredRoute(working, working.route, rule);
       return;
     }
-    // What a hidden answer does is the component's key, which the inspector's "When hidden" row
-    // writes too: a clean copy shows what is stored now.
+    // What a hidden answer does, whether it prints on paper and a check's words are the
+    // component's keys, which the inspector writes too: a clean copy shows what is stored now.
+    // Apply compares "On paper" with the live `print.show`, so a stale tick would write it again.
     const hidden = rule.hiddenValueBehavior ?? this.hiddenDefaultOf(working.componentId);
     if ((working.kind === "show" || working.kind === "hide") && hidden !== working.hidden) {
       working.hidden = hidden;
       working.baseline = this.serialize(working);
     }
+    const paper = working.componentId !== undefined && this.printShowOf(working.componentId) === "always";
+    const message = typeof rule.message === "string" ? rule.message : "";
+    if (paper !== working.paper || message !== working.openedMessage) {
+      working.paper = paper;
+      working.message = message;
+      working.openedMessage = message;
+      working.baseline = this.serialize(working);
+    }
     const text = openedTextOf(rule);
-    if (text === working.openedText && rule.run === working.openedRun) {
+    if (text === working.openedText && rule.run === working.openedRun && rule.kind === working.kind) {
       return;
     }
     working.text = text;
@@ -1171,8 +1188,8 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
   }
 
   /**
-   * The problem under the box: what holds Apply, else the first unknown
-   * field, named with its span's words. This line is the one message: Apply describes itself by it
+   * The problem under the box: what holds Apply, else that Apply replaces the rule a new rule's
+   * field already has, else the first unknown field, named with its span's words. This line is the one message: Apply describes itself by it
    * and it is the one announced.
    */
   private problemLineHtml(): string {
@@ -1321,6 +1338,27 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
     return `<div class="try-row"><h3 class="card-heading" id="logic-try-title">${esc(this.text("try.title"))}</h3><div class="try card-inset" role="group" aria-labelledby="logic-try-title"><div class="try-boxes">${boxes}${today}</div><p class="try-result" role="status" data-logic-try-result>${this.tryResultHtml()}</p></div></div>`;
   }
 
+  /**
+   * A Try it answer as the form stores it: digits typed for a number field as a number; a
+   * choice's value and a text field's digits (a postal code, an id) stay text, as the form keeps them.
+   * A plugin's or a binding's type (`gcds-number`) is read as the base the form's `kinds` map gives it.
+   */
+  private tryAnswerOf(id: string, value: unknown): unknown {
+    if (typeof value !== "string" || value.trim() === "" || !Number.isFinite(Number(value))) {
+      return value;
+    }
+    const field = this.formulaFields().find((entry) => (entry.componentId ?? entry.path) === id);
+    let kind = field?.kind;
+    const controller = this.ctrl;
+    if (kind === "other" && field?.componentId !== undefined && controller) {
+      const type = findNode(controller.snapshot(), field.componentId)?.type;
+      if (type !== undefined) {
+        kind = formulaFieldKind(baseTypeOf(type, controller.definitionKinds(controller.openedKinds?.())));
+      }
+    }
+    return kind === "number" ? Number(value) : value;
+  }
+
   /** The fields a formula reads, in reading order, each once; a path into a field's value names the field. */
   private tryFields(expression: Expression): FormulaField[] {
     const fields = this.formulaFields();
@@ -1380,7 +1418,7 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
       return "";
     }
     for (const [id, value] of this.tryValues) {
-      runtime.setValue(id, coerceTry(value));
+      runtime.setValue(id, this.tryAnswerOf(id, value));
     }
     const label = this.labelOf(working.componentId);
     const state = runtime.effectiveStatesMap().get(working.componentId);
@@ -1471,7 +1509,7 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
     const reads = (id: string): boolean => asked === undefined || asked.includes(id);
     for (const [id, value] of this.tryValues) {
       if (reads(id)) {
-        runtime.setValue(id, coerceTry(value));
+        runtime.setValue(id, this.tryAnswerOf(id, value));
       }
     }
     // Taken only when the condition holds: a probe the runtime gives no state is not a yes.
@@ -1854,14 +1892,38 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
     return expression.ok ? undefined : expression.error;
   }
 
-  /** The line above Apply: the problem that holds Apply, else the first warning under the box. */
+  /**
+   * The line above Apply: the problem that holds Apply, else that Apply replaces the rule a new
+   * rule's field already has, else the first warning under the box.
+   */
   private summaryLine(): { severity: "error" | "warning"; text: string } | undefined {
     const problem = this.workingProblem();
     if (problem !== undefined) {
       return { severity: "error", text: problem };
     }
+    const replaced = this.replacedRule();
+    if (replaced !== undefined) {
+      return { severity: "warning", text: this.text("logic.problem.replaces", { field: replaced.target.label, rule: sentenceText(replaced.sentence) }) };
+    }
     const warning = this.currentState()?.problems.find((entry) => entry.kind === "unknownField");
     return warning ? { severity: "warning", text: warning.message } : undefined;
+  }
+
+  /**
+   * The stored rule a new rule's Apply writes over: its field's rule under the same key. Choosing
+   * such a field opens that rule instead while the copy has nothing else typed; once it has, the
+   * target is kept and the summary line says what Apply replaces.
+   */
+  private replacedRule(): LogicRule | undefined {
+    const working = this.working;
+    if (!working || working.route || working.ruleId !== undefined || working.componentId === undefined) {
+      return undefined;
+    }
+    return this.storedRuleOn(working.componentId, working.ruleKey);
+  }
+
+  private storedRuleOn(componentId: string, ruleKey: string): LogicRule | undefined {
+    return this.model?.rules.find((rule) => rule.id === `form:${componentId}:${ruleKey}`);
   }
 
   private workingLabel(): string {
@@ -2061,12 +2123,17 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
     this.root.querySelector<HTMLElement>(`[data-logic-move="${delta}"]:not([disabled])`)?.focus();
   }
 
-  /** Drops the open rule and its tried values without a question: the shell's way out of a workspace the host removed. */
+  /**
+   * Drops the open rule, its tried values and any switch held behind its question, without a
+   * question: the shell's way out of a workspace the host removed.
+   */
   public discardPending(): void {
     // The leave question the controller holds for the open rule goes with it (a Stay: only the held run is dropped).
     if (this.ctrl?.unsavedChangesPrompt()?.external?.id === GUARD_ID) {
       this.ctrl.answerUnsavedChangesPrompt("stay");
     }
+    // So does the surface's own switch question: left up, it would stay a modal in the hidden host.
+    this.heldSwitch = undefined;
     this.discard();
   }
 
@@ -2518,8 +2585,9 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
     }
     if (data.logicTarget !== undefined && type === "change") {
       const componentId = target.value || undefined;
-      // A target that already has this rule opens it rather than writing over it.
-      const existing = componentId ? this.model?.rules.find((rule) => rule.id === `form:${componentId}:${working.ruleKey}`) : undefined;
+      // A target that already has this rule opens it rather than writing over it; a copy with other
+      // changes keeps them and the target, and the summary line says Apply replaces that rule.
+      const existing = componentId ? this.storedRuleOn(componentId, working.ruleKey) : undefined;
       if (existing && !this.dirtyBeyondTarget()) {
         this.open(existing);
         return;
@@ -2706,14 +2774,6 @@ function findNode(root: ComponentNode, id: string): ComponentNode | undefined {
     }
   }
   return undefined;
-}
-
-/** A Try it answer as the store keeps it: numbers from a text box as numbers. */
-function coerceTry(value: unknown): unknown {
-  if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) {
-    return Number(value);
-  }
-  return value;
 }
 
 /** A worked-out value in Try it's words: a list or flags object as its items, text as is. */
