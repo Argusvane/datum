@@ -1188,8 +1188,8 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
   }
 
   /**
-   * The problem under the box: what holds Apply, else the first unknown
-   * field, named with its span's words. This line is the one message: Apply describes itself by it
+   * The problem under the box: what holds Apply, else that Apply replaces the rule a new rule's
+   * field already has, else the first unknown field, named with its span's words. This line is the one message: Apply describes itself by it
    * and it is the one announced.
    */
   private problemLineHtml(): string {
