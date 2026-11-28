@@ -478,7 +478,8 @@ export const DATUM_BUILDER_FORM_PANEL_TAG = "datum-builder-form-panel";
 /**
  * Base for the independently-usable builder panels. Assign a shared
  * {@link BuilderController} via the `controller` property; the panel re-renders on every
- * controller `change` / `selection`.
+ * controller `change` / `selection`. It stops listening while out of the document and listens
+ * again when put back, so a panel moved in the DOM keeps its controller.
  */
 export abstract class BuilderPanelElement extends HTMLElementBase {
   protected readonly root: ShadowRoot;
@@ -614,11 +615,7 @@ export abstract class BuilderPanelElement extends HTMLElementBase {
   public set controller(controller: BuilderController | undefined) {
     this.teardown();
     this.ctrl = controller;
-    if (controller) {
-      this.unsub.push(controller.on("change", (event) => this.onControllerChange(event.reason, event)));
-      this.unsub.push(controller.on("selection", () => this.onSelectionChange()));
-      this.unsub.push(controller.on("drawing", () => this.onDrawingChange()));
-    }
+    this.subscribe();
     this.paint();
   }
 
@@ -661,11 +658,27 @@ export abstract class BuilderPanelElement extends HTMLElementBase {
   }
 
   public connectedCallback(): void {
+    // Back in the document after a move: the subscriptions the disconnect dropped come back.
+    // The paint draws whatever the controller did meanwhile.
+    if (this.unsub.length === 0) {
+      this.subscribe();
+    }
     this.paint();
   }
 
   public disconnectedCallback(): void {
     this.teardown();
+  }
+
+  /** Listens to the controller on the panel, if there is one; {@link teardown} stops it. */
+  private subscribe(): void {
+    const controller = this.ctrl;
+    if (!controller) {
+      return;
+    }
+    this.unsub.push(controller.on("change", (event) => this.onControllerChange(event.reason, event)));
+    this.unsub.push(controller.on("selection", () => this.onSelectionChange()));
+    this.unsub.push(controller.on("drawing", () => this.onDrawingChange()));
   }
 
   private teardown(): void {
