@@ -64,6 +64,7 @@
   "files": [
     "dist",
     "!dist/**/*.map",
+    "integrity.json",
     "README.md",
     "LICENSE",
     "NOTICE"

@@ -11,7 +11,7 @@ import { IntegrityError, importWithIntegrity, integrityProblem, parseIntegrity }
 import { loadWasmValidationHost } from "../src/wasm-loader.js";
 
 /**
- * The package's integrity manifest (dist/integrity.json, the last build step) lists the sha384 of
+ * The package's integrity manifest (integrity.json beside dist, the last build step) lists the sha384 of
  * every file a page may load; `wasm-integrity` holds the sandbox module to a hash: its bytes are
  * fetched and checked, and only bytes that match are imported.
  */
@@ -25,7 +25,8 @@ afterEach(() => {
 
 describe("the integrity manifest", () => {
   it("lists the sha384 of each file a page loads, by its path in dist, and leaves maps and declarations out", () => {
-    const dist = mkdtempSync(join(tmpdir(), "integrity-manifest-"));
+    const dist = join(mkdtempSync(join(tmpdir(), "integrity-manifest-")), "dist");
+    mkdirSync(dist);
     writeFileSync(join(dist, "datum-form.js"), "export{};");
     writeFileSync(join(dist, "datum-form.js.map"), "{}");
     writeFileSync(join(dist, "datum-form.css"), ".a{}");
@@ -34,12 +35,12 @@ describe("the integrity manifest", () => {
     mkdirSync(join(dist, "types"));
     writeFileSync(join(dist, "types", "index.d.ts"), "export {};");
     expect(writeIntegrityManifest(dist)).toBe(3);
-    const written = JSON.parse(readFileSync(join(dist, "integrity.json"), "utf8")) as { algorithm: string; files: Record<string, string> };
+    // Beside dist, not in it: the hosts copy dist file by file.
+    const written = JSON.parse(readFileSync(join(dist, "..", "integrity.json"), "utf8")) as { algorithm: string; files: Record<string, string> };
     expect(written).toEqual({
       algorithm: "sha384",
       files: { "datum-form.css": sha("sha384", ".a{}"), "datum-form.js": sha("sha384", "export{};"), "fonts/Face.woff2": sha("sha384", "font") }
     });
-    // Written again, it does not list itself.
     expect(integrityManifest(dist)).toEqual(written);
     expect(sri(Buffer.from("x"))).toBe(sha("sha384", "x"));
   });

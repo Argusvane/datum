@@ -1,18 +1,19 @@
-// Writes `dist/integrity.json`: the Subresource Integrity (sha384) of every file a page may load from
-// the package, so a page that serves the files from a CDN can pin each one. The npm tarball and the
-// release's bundles archive carry it; the docs (site/docs/files.md) show how a page uses it:
+// Writes `integrity.json` at the package root, beside `dist`: the Subresource Integrity (sha384) of
+// every file in `dist` a page may load, so a page that serves the files from a CDN can pin each one.
+// The npm tarball carries it (package.json "files") and each release attaches it as
+// `datum-integrity-<version>.json`; the docs (site/docs/files.md) show how a page uses it:
 // `<script integrity crossorigin>` and `<link integrity crossorigin>` for the bundles and the
 // stylesheet, an import map's `integrity` for the chunks the bundles import, and `wasm-integrity` for
-// the sandbox module.
+// the sandbox module. It sits outside `dist` because the hosts copy `dist` file by file into their
+// own distributions, and this file describes the folder rather than belonging to it.
 //
 //   { "algorithm": "sha384", "files": { "datum-form.js": "sha384-...", "fonts/...": "sha384-..." } }
 //
-// Paths are relative to dist, with `/`, sorted. Source maps, the type declarations (dist/types) and the
-// manifest itself are left out: no page loads them. It is the last step of the build, and
-// release-assets.mjs writes it again after it strips the source-map comments, so the hashes are of
-// the bytes that ship.
+// Paths are relative to dist, with `/`, sorted. Source maps and the type declarations (dist/types)
+// are left out: no page loads them. It is the last step of the build, and release-assets.mjs writes
+// it again after it strips the source-map comments, so the hashes are of the bytes that ship.
 //
-//   node scripts/integrity-manifest.mjs            writes dist/integrity.json
+//   node scripts/integrity-manifest.mjs            writes integrity.json
 import { createHash } from "node:crypto";
 import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
@@ -22,7 +23,7 @@ export const MANIFEST = "integrity.json";
 
 /** Whether a page could load `path` (relative to dist, with `/`). */
 function shipped(path) {
-  return path !== MANIFEST && !path.endsWith(".map") && !path.endsWith(".d.ts") && !path.startsWith("types/");
+  return !path.endsWith(".map") && !path.endsWith(".d.ts") && !path.startsWith("types/");
 }
 
 function filesOf(dist, folder = dist) {
@@ -52,14 +53,14 @@ export function integrityManifest(dist) {
   return { algorithm: "sha384", files };
 }
 
-/** Writes `dist/integrity.json` and returns how many files it lists. */
-export function writeIntegrityManifest(dist) {
+/** Writes the manifest of `dist` to `out` (default `integrity.json` beside `dist`) and returns how many files it lists. */
+export function writeIntegrityManifest(dist, out = join(dist, "..", MANIFEST)) {
   const manifest = integrityManifest(dist);
-  writeFileSync(join(dist, MANIFEST), `${JSON.stringify(manifest, null, 2)}\n`);
+  writeFileSync(out, `${JSON.stringify(manifest, null, 2)}\n`);
   return Object.keys(manifest.files).length;
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const dist = join(fileURLToPath(new URL(".", import.meta.url)), "..", "dist");
-  console.log(`integrity-manifest: ${writeIntegrityManifest(dist)} files in dist/${MANIFEST}`);
+  console.log(`integrity-manifest: ${writeIntegrityManifest(dist)} files of dist in ${MANIFEST}`);
 }

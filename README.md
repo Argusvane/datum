@@ -103,7 +103,7 @@ The CDN is the quickest way to try it. To host the files yourself, `npm install 
 puts them in `node_modules/@argusvane/datum/dist/`, and each
 [GitHub release](https://github.com/Argusvane/datum/releases) attaches them as an archive.
 [Files you host](https://datum.argusvane.com/docs/files) says what each file is and how to serve
-them, from your own server or from a CDN. The package's `dist/integrity.json` lists the sha384 of
+them, from your own server or from a CDN. The package's `integrity.json` lists the sha384 of
 every file, so a page that loads them from a CDN can pin each one (`integrity` and `crossorigin` on
 the tags above, an import map for the chunks, `wasm-integrity` for the sandbox module); see
 [Pinning the files](https://datum.argusvane.com/docs/files#pinning-the-files).

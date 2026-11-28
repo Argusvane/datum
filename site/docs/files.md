@@ -45,7 +45,6 @@ Other builds:
 | `fonts/` | The faces the PDF module embeds: DejaVu Sans, Serif and Mono, seven files. Needed only with `pdf` | By the PDF module | about 3.4 MB |
 | `builder-fonts/` | The builder's typeface, Geist and Geist Mono, with `builder-fonts.css` and its licence text | By the builder, when it has `load-fonts` | about 156 KB |
 | `feature-files.json` | Which files each feature name loads, for a host that serves only what its `features` list needs | By your build or server | 18 KB |
-| `integrity.json` | The sha384 Subresource Integrity of every other file a page can load: see [Pinning the files](#pinning-the-files) | By you, when you write the tags | about 35 KB |
 | `types/` | TypeScript declarations for the elements, their properties and events: see [React, Vue and Angular](/frameworks#typescript) | By your build | about 350 KB |
 | `datum-form-<name>-<hash>.js` and `datum-builder-<name>-<hash>.js` | Chunks the elements split off for themselves | By the element, when it needs the part | Between 1 KB and 250 KB each |
 | `*.map` | A source map beside every script. Not in the folder unless the build was asked for them: `DATUM_SOURCE_MAPS=1 npm run datum:build` | By a browser's developer tools | about 75 MB in all |
@@ -94,7 +93,7 @@ Any CDN that serves npm packages serves the folder, at the package's version. Wi
 
 ## Pinning the files
 
-`integrity.json` in the folder lists the sha384 Subresource Integrity of every file a page can load, by its path in the folder. Each [GitHub release](https://github.com/Argusvane/datum/releases) attaches the same list as `datum-integrity-<version>.json`. Hosting the folder yourself is the stronger choice for production; on a CDN, pin each file the page loads.
+`integrity.json`, beside the folder in the npm package (`node_modules/@argusvane/datum/integrity.json`, or `@argusvane/datum@0.1.0/integrity.json` on a CDN), lists the sha384 Subresource Integrity of every file in the folder a page can load, by its path in the folder. Each [GitHub release](https://github.com/Argusvane/datum/releases) attaches the same list as `datum-integrity-<version>.json`. Hosting the folder yourself is the stronger choice for production; on a CDN, pin each file the page loads.
 
 ```json
 { "algorithm": "sha384", "files": { "datum-form.css": "sha384-…", "datum-form.js": "sha384-…", "datum-form-core-<hash>.js": "sha384-…", "datum-wasm.js": "sha384-…" } }

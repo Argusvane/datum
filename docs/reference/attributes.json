@@ -282,7 +282,7 @@
         "values": "sha256-, sha384- or sha512- digests, space-separated",
         "default": "unset",
         "category": "O",
-        "notes": "Holds the sandbox module wasm names to a hash, as script integrity does: the module is fetched, its bytes checked, and those bytes imported from a blob: URL (list blob: in script-src under a Content Security Policy). A module that does not match is never run and the submit reports the sandbox unavailable. integrity.json in the package lists every file's sha384."
+        "notes": "Holds the sandbox module wasm names to a hash, as script integrity does: the module is fetched, its bytes checked, and those bytes imported from a blob: URL (list blob: in script-src under a Content Security Policy). A module that does not match is never run and the submit reports the sandbox unavailable. integrity.json in the package, beside dist, lists every file's sha384."
       },
       {
         "attribute": "signing-scope",
