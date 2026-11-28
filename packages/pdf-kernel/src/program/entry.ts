@@ -298,7 +298,8 @@ export async function handlePdfRequest(raw: unknown): Promise<PdfKernelResponse>
             model.fill.areas ?? [],
             fillConformance(model.fill.conformance, request.options),
             model.fill.attachments,
-            { typography: model.fill.typography, colors: model.fill.colors }
+            { typography: model.fill.typography, colors: model.fill.colors },
+            model.fill.attachmentPolicy
           );
           const warnings = [...model.warnings, ...filled.warnings];
           const signed = await signProduced(filled.bytes, signatureToPrepare(model.fill.signature, request.signature, warnings), request.fonts, request.env, warnings);
@@ -368,7 +369,8 @@ export async function handlePdfRequest(raw: unknown): Promise<PdfKernelResponse>
           Array.isArray(request.areas) ? request.areas : [],
           isRecord(request.conformance) ? (request.conformance as PdfDocumentConformance) : undefined,
           Array.isArray(request.attachments) ? (request.attachments as PdfDocumentAttachment[]) : undefined,
-          { typography: isRecord(request.typography) ? request.typography : undefined, colors: isRecord(request.colors) ? request.colors : undefined }
+          { typography: isRecord(request.typography) ? request.typography : undefined, colors: isRecord(request.colors) ? request.colors : undefined },
+          isRecord(request.attachmentPolicy) ? request.attachmentPolicy : undefined
         );
         const warnings = [...filled.warnings];
         const signed = await signProduced(filled.bytes, signatureToPrepare(undefined, request.signature, warnings), request.fonts ?? [], request.env, warnings);

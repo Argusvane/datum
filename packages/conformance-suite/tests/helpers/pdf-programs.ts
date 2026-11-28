@@ -27,7 +27,16 @@ export function sizeTrustingMutant(text: string): string | undefined {
     // ...and the lie check `if(l>a*1.01+1024)` (file.sizeMismatch) is switched off too, else the program still refuses the file.
     const [, decodedVar, , , , , declaredVar] = current.exec(text) as RegExpExecArray;
     const lie = new RegExp(`if\\(${decodedVar}>${declaredVar}\\*1\\.01\\+1024\\)`);
-    return text.replace(current, "$1=$2($3)?$4($3.data):0,$5=$6").replace(lie, "if(!1)");
+    // The budget charged again over the resolved bytes is switched off too: the mismatch test
+    // `return e>n||e<n-(n*.01+1024)` and the charge `if(e&&i+d>e.budgetBytes)`, which would
+    // otherwise still leave the lying file out.
+    const resolvedLie = /return (\w+)>(\w+)\|\|\1<\2-\(\2\*\.01\+1024\)/;
+    const resolvedCharge = /if\((\w+)&&(\w+)\+(\w+)>\1\.budgetBytes\)/;
+    return text
+      .replace(current, "$1=$2($3)?$4($3.data):0,$5=$6")
+      .replace(lie, "if(!1)")
+      .replace(resolvedLie, "return!1")
+      .replace(resolvedCharge, "if(!1)");
   }
   // 3.17: `a=Nc(e)?Math.max(s,gM(e.data)):s`.
   const pattern = /(\w+)=(\w+)\((\w+)\)\?Math\.max\((\w+),(\w+)\(\3\.data\)\):\4/;

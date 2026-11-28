@@ -14,6 +14,7 @@ import {
   readPdfValueMap,
   resolvePdfAreaDraw,
   resolvePdfAreaFields,
+  type PdfAttachmentPolicy,
   type PdfMappingBinding,
   type PdfTemplateFillOptions,
   type PdfTemplateLayout,
@@ -60,6 +61,8 @@ export interface PdfFillPlan {
   conformance?: PdfDocumentConformance;
   /** Uploaded files to embed in the filled document; absent: none. */
   attachments?: PdfDocumentAttachment[];
+  /** The attachment budget in force, with `attachments`: charged again over the decoded bytes. */
+  attachmentPolicy?: PdfAttachmentPolicy;
   /** How the host is to seal the filled document; absent: the request alone says. */
   signature?: PdfSignatureSettings;
   /**

@@ -120,7 +120,7 @@ export async function renderDocument(document: PdfDocument, fonts: PdfFontResour
   });
   writeMetadata(pdf, document, env);
   // Before the PDF/A pass: it flushes the fonts, and nothing may be added to the file after that.
-  const attachments = embedAttachments(pdf, { claim: asked, conformance: document.conformance, attachments: document.attachments, env, warnings });
+  const attachments = embedAttachments(pdf, { claim: asked, conformance: document.conformance, attachments: document.attachments, attachmentPolicy: document.attachmentPolicy, env, warnings });
   const pdfa = asked ? await applyPdfA(pdf, { claim: asked, conformance: document.conformance ?? {}, env, warnings }) : undefined;
   const bytes = await pdf.save({
     useObjectStreams: options.compact === true,

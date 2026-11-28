@@ -19,7 +19,7 @@ A validation error has this shape: `{ code, componentId?, path?, severity?, para
 
 The checks below run in the page and again in the sandbox, with the same codes, parameters and order. A field gets one error at a time, the first that applies, in the order of the table:
 
-1. What the control itself knows (an unreadable number, a part-filled date).
+1. What the control itself knows (an unreadable number or date box, a part-filled date, a year typed short). Only the page knows these: the stored answer is empty, so the sandbox says `required` or nothing.
 2. `required`.
 3. The kind of the answer.
 4. Its bounds.
@@ -32,9 +32,10 @@ An answer is empty when it is absent, `null`, a text of spaces only, an empty li
 |---|---|---|---|
 | `number` | A number field holds text that is not a number, or was sent something other than a number. A box the browser could not read adds `badInput: true` | `badInput` | Enter a number |
 | `dateIncomplete` | A date was typed in part: one or two of day, month and year are filled | `missing` (the parts left, such as "month and year"), `missingKey` (such as `month-year`), `missingParts` | Enter a complete date |
+| `date.year` | A date's year was typed in fewer than four digits, such as "24". Nothing is stored | none | Enter the year in four digits |
 | `required` | A required field is empty. A field is required by `required`, or by `requiredWhen` while the rule holds | none | This field is required |
 | `text` | A text or text area was sent an answer that is not text | none | Enter text |
-| `date` | A date field's answer is not a real calendar date written `YYYY-MM-DD` | none | Enter a real date |
+| `date` | A date field's answer is not a real calendar date written `YYYY-MM-DD`. A browser's date box holding a date it could not read, such as one typed in part, adds `badInput: true` | `badInput` | Enter a real date |
 | `number.min` | A number is below `configuration.min`. The bound itself is allowed | `min` | Enter a number of {min} or more |
 | `number.max` | A number is above `configuration.max`. The bound itself is allowed | `max` | Enter a number of {max} or less |
 | `date.min` | A date is before `configuration.min`, written `YYYY-MM-DD`. The bound itself is allowed | `min` | Enter a date on or after {min} |
@@ -476,7 +477,7 @@ A PDF reply carries `warnings`, each `{ code, message, componentId?, blockId? }`
 | `attachment.skipped` | An uploaded file would take the document past its attachment budget (4 MiB by default). It was not attached |
 | `attachment.refusedType` | An executable, script or HTML file is never attached |
 | `attachment.unresolved` | An uploaded file is in a storage the program cannot fetch, and the host could not resolve it. It was not attached |
-| `file.sizeMismatch` | A file's inline bytes are well past its declared size. It was not attached |
+| `file.sizeMismatch` | A file's inline bytes are well past its declared size, or the bytes a host storage returned for it differ from its declared size. It was not attached |
 | `signature.attachment` | An embedded file in a file being verified has no stream, or could not be decoded |
 
 ### PDF/A

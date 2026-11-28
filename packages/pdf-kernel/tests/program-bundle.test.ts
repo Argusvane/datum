@@ -77,7 +77,7 @@ describe("the bundled program", () => {
     // How a host tells a program that translates answers by a mapping's value map from one that writes them as they are.
     expect(response.features).toEqual(expect.arrayContaining(["mapping-values"]));
     expect(response.features).toContain("default-font-fallback");
-    expect(response.abi).toBe("4.0.0");
+    expect(response.abi).toBe("4.1.0");
   });
 
   it("reads a rule written as a formula over today in a bare context, as the in-process modules do", async () => {

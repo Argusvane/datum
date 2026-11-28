@@ -1695,7 +1695,8 @@ export async function buildPdfRenderModel(
       delete conformance.outputIntent;
     }
     // A template has no bindings to walk: the form's own `file` components decide what is attached.
-    const collector = new PdfAttachmentCollector(resolvePdfAttachmentPolicy(declared.attachments, options.attachments), (warning) => warnings.push(warning));
+    const attachmentPolicy = resolvePdfAttachmentPolicy(declared.attachments, options.attachments);
+    const collector = new PdfAttachmentCollector(attachmentPolicy, (warning) => warnings.push(warning));
     collectFormAttachments(root, modelsById, state.values, collector);
     const attachments = collector.list();
     // A template's signature field is one of the PDF's own; whether it exists is the kernel's to say.
@@ -1713,7 +1714,7 @@ export async function buildPdfRenderModel(
         areas: resolved.areas,
         options: resolveTemplateFillOptions(declared.options),
         ...(conformance ? { conformance } : {}),
-        ...(attachments.length > 0 ? { attachments } : {}),
+        ...(attachments.length > 0 ? { attachments, attachmentPolicy } : {}),
         ...(signature ? { signature } : {}),
         // The content areas draw in the theme's type and colours unless an area says otherwise.
         typography: theme.typography,
@@ -1741,6 +1742,7 @@ export async function buildPdfRenderModel(
       pageOf: theme.texts.pageOf
     });
   const renditions = options.renditions ?? createPdfRenditionResolver();
+  const attachmentPolicy = resolvePdfAttachmentPolicy(readLayoutSetting<unknown>(layout, "attachments"), options.attachments);
   const layoutDefaults = readLayoutSetting<Record<string, string>>(layout, "renditionDefaults");
   const renderer = new LayoutRenderer(
     root,
@@ -1756,7 +1758,7 @@ export async function buildPdfRenderModel(
     textDirection,
     options.hostContext,
     options.unknownComponents ?? DEFAULT_PDF_UNKNOWN_COMPONENT_POLICY,
-    resolvePdfAttachmentPolicy(readLayoutSetting<unknown>(layout, "attachments"), options.attachments),
+    attachmentPolicy,
     options.today,
     options.functions,
     options.riskyPatterns
@@ -1830,7 +1832,7 @@ export async function buildPdfRenderModel(
     blocks: body,
     anchored: renderer.anchored,
     resources: renderer.resources(),
-    ...(attachments.length > 0 ? { attachments } : {}),
+    ...(attachments.length > 0 ? { attachments, attachmentPolicy } : {}),
     ...(signature ? { signature } : {}),
     ...(limitsSetting !== undefined ? { limits } : {})
   };

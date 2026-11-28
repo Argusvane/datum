@@ -398,7 +398,7 @@ export function buildPdfFillRequest(plan: PdfFillPlan, templateBytes: Uint8Array
     env,
     options: plan.options,
     ...(plan.conformance ? { conformance: plan.conformance } : {}),
-    ...(plan.attachments && plan.attachments.length > 0 ? { attachments: plan.attachments } : {}),
+    ...(plan.attachments && plan.attachments.length > 0 ? { attachments: plan.attachments, ...(plan.attachmentPolicy ? { attachmentPolicy: plan.attachmentPolicy } : {}) } : {}),
     ...(plan.typography ? { typography: plan.typography } : {}),
     ...(plan.colors ? { colors: plan.colors } : {}),
     ...(signature ? { signature } : {})

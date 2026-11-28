@@ -9,9 +9,9 @@
  * here reads a clock: the modification date is the host's `env.createdAt`.
  */
 import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFRef, PDFStream, PDFString } from "@cantoo/pdf-lib";
-import type { PdfAConformance } from "@argusvane/datum-engine/core";
+import type { PdfAConformance, PdfAttachmentPolicy } from "@argusvane/datum-engine/core";
 import type { PdfAttachment, PdfDocumentAttachment, PdfDocumentConformance, PdfKernelEnv, PdfWarning } from "@argusvane/datum-engine/render";
-import { attachmentMimeType, base64ToBytes, isResolvedPdfAttachment, refusedAttachmentType, sanitizeAttachmentName } from "@argusvane/datum-engine/render";
+import { attachmentMimeType, base64ToBytes, enforceAttachmentBudget, isResolvedPdfAttachment, refusedAttachmentType, sanitizeAttachmentName } from "@argusvane/datum-engine/render";
 import { pdfAPartOf } from "./pdfa.js";
 import { pdfDateString } from "./writer.js";
 
@@ -22,6 +22,11 @@ export interface EmbedAttachmentsOptions {
   conformance: PdfDocumentConformance | undefined;
   /** The uploaded files, embedded whatever the claim allows. */
   attachments: readonly PdfDocumentAttachment[] | undefined;
+  /**
+   * The budget the uploaded files are charged against, over their decoded bytes, with the
+   * declared-size check; absent, only the declared-size check applies.
+   */
+  attachmentPolicy?: PdfAttachmentPolicy | undefined;
   env: PdfKernelEnv;
   warnings: PdfWarning[];
 }
@@ -154,24 +159,29 @@ function attachFiles(pdf: PDFDocument, attachments: readonly PdfAttachment[], en
 
 /**
  * Embeds what the document carries: the conformance block's files when a level is declared,
- * the uploaded files always — unless the level is part 1 or 2, which forbid them. Returns the
+ * the uploaded files always — unless the level is part 1 or 2, which forbid them. The uploaded
+ * files are charged the budget again over their decoded bytes, and one whose bytes disagree with
+ * the size its envelope declared is left out (`enforceAttachmentBudget`), so a host's own
+ * resolution agrees with `renderFormPdf`'s. Returns the
  * names written, so the reply can say what is in the file; `undefined` when nothing was sent,
  * so a reply to a request without attachments reads as it did before.
  */
 export function embedAttachments(pdf: PDFDocument, options: EmbedAttachmentsOptions): string[] | undefined {
   const { claim, conformance, env, warnings } = options;
-  const candidates: PdfDocumentAttachment[] = [...(claim ? conformance?.attachments ?? [] : []), ...(options.attachments ?? [])];
-  if (candidates.length === 0) {
+  const submission: PdfDocumentAttachment[] = claim ? conformance?.attachments ?? [] : [];
+  const uploads = options.attachments ?? [];
+  if (submission.length + uploads.length === 0) {
     return undefined;
   }
   const resolved: PdfAttachment[] = [];
-  for (const candidate of candidates) {
+  const resolvedUploads: PdfDocumentAttachment[] = [];
+  for (const candidate of [...submission, ...uploads]) {
     const refusedWhy = isResolvedPdfAttachment(candidate) ? refusedAttachmentType(candidate.mimeType, candidate.data, candidate.name) : undefined;
     if (refusedWhy !== undefined) {
       // The kernel backs the engine's check: a host's own attachments reach it without the collector.
       warnings.push({ code: "attachment.refusedType", message: `The file "${candidate.name}" was not attached: ${refusedWhy}.`, ...(candidate.componentId !== undefined ? { componentId: candidate.componentId } : {}) });
     } else if (isResolvedPdfAttachment(candidate)) {
-      resolved.push(candidate);
+      (submission.includes(candidate) ? resolved : resolvedUploads).push(candidate);
     } else {
       warnings.push({
         code: "attachment.unresolved",
@@ -179,6 +189,10 @@ export function embedAttachments(pdf: PDFDocument, options: EmbedAttachmentsOpti
         componentId: candidate.componentId
       });
     }
+  }
+  // The submission is the document's own data, not an upload: the budget is the uploads'.
+  for (const upload of enforceAttachmentBudget(resolvedUploads, options.attachmentPolicy, (warning) => warnings.push(warning))) {
+    resolved.push(upload as PdfAttachment);
   }
   if (resolved.length === 0) {
     return [];

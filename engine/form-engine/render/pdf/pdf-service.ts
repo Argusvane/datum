@@ -6,12 +6,13 @@
  */
 import type { FormulaErrorPolicy } from "../../core/expressions/expression.js";
 import { supportedLocaleCodes } from "../../core/localization/supported-locales.js";
-import { MAX_PDF_TEMPLATE_BYTES, PDF_BUILTIN_ASSET_STORAGE, type PdfAttachmentPolicyOptions, type PdfLayoutDocument } from "../../core/schema/pdf-layout.js";
+import { MAX_PDF_TEMPLATE_BYTES, PDF_BUILTIN_ASSET_STORAGE, type PdfAttachmentPolicy, type PdfAttachmentPolicyOptions, type PdfLayoutDocument } from "../../core/schema/pdf-layout.js";
 import { buildRuntimeRenderOutput, type RenderableRuntime } from "../core/runtime-render-bridge.js";
 import { localCalendarDate } from "../../runtime/browser/form-runtime.js";
 import { FormEventType } from "../../core/events/event-types.js";
 import { PDF_ABI_VERSION, pdfAbiCompatible, PdfKernelError, type PdfAreaReport, type PdfFillReport, type PdfRenderOptions, type PdfSignatureAlgorithm, type PdfSignatureCommitment, type PdfUnknownComponentPolicy } from "./pdf-abi.js";
 import { isResolvedPdfAttachment, type PdfDocument, type PdfDocumentAttachment, type PdfDocumentConformance, type PdfWarning } from "./pdf-document.js";
+import { enforceAttachmentBudget } from "./pdf-attachments.js";
 import {
   BASE64_TEMPLATE_RESOLVER,
   DEFAULT_PDF_ENVIRONMENT,
@@ -245,9 +246,17 @@ export async function resolvePdfOutputIntent(conformance: PdfDocumentConformance
  * Swaps every uploaded file a host storage keeps for its bytes, through the host's template
  * (asset) resolver — the envelope is the one a template or an ICC profile travels in. A file
  * the resolver cannot supply is dropped with a warning: the document is never lost to one
- * attachment, and the program could not have fetched it either way.
+ * attachment, and the program could not have fetched it either way. A resolved file keeps its
+ * envelope's `size` as `declaredSize`, and the budget is then charged again over the decoded
+ * bytes (`enforceAttachmentBudget`): bytes that disagree with the declared size are left out
+ * with `file.sizeMismatch`, and a file the real sizes take past `policy` with
+ * `attachment.skipped` — or, under `fail`, either refuses the document.
  */
-export async function resolvePdfAttachments(attachments: PdfDocumentAttachment[] | undefined, templates: PdfTemplateResolver | undefined): Promise<PdfWarning[]> {
+export async function resolvePdfAttachments(
+  attachments: PdfDocumentAttachment[] | undefined,
+  templates: PdfTemplateResolver | undefined,
+  policy?: PdfAttachmentPolicy
+): Promise<PdfWarning[]> {
   const warnings: PdfWarning[] = [];
   if (!attachments) {
     return warnings;
@@ -259,8 +268,9 @@ export async function resolvePdfAttachments(attachments: PdfDocumentAttachment[]
     }
     try {
       const bytes = await (templates ?? BASE64_TEMPLATE_RESOLVER).resolve(attachment.source);
-      const { source: _source, ...rest } = attachment;
-      attachments[index] = { ...rest, data: bytesToBase64(bytes) };
+      const { source, ...rest } = attachment;
+      const declared = (source as { size?: unknown }).size;
+      attachments[index] = { ...rest, data: bytesToBase64(bytes), declaredSize: typeof declared === "number" && Number.isFinite(declared) && declared >= 0 ? declared : 0 };
     } catch (error) {
       attachments.splice(index, 1);
       warnings.push({
@@ -270,6 +280,8 @@ export async function resolvePdfAttachments(attachments: PdfDocumentAttachment[]
       });
     }
   }
+  const kept = enforceAttachmentBudget(attachments, policy, (warning) => warnings.push(warning));
+  attachments.splice(0, attachments.length, ...kept);
   return warnings;
 }
 
@@ -450,7 +462,7 @@ export async function renderFormPdf(
     if (templateBytes.length > MAX_PDF_TEMPLATE_BYTES) {
       throw new PdfKernelError("template", `The template is ${templateBytes.length} bytes, over the ${MAX_PDF_TEMPLATE_BYTES} byte (25 MiB) cap a layout fills.`);
     }
-    const attachmentWarnings = await resolvePdfAttachments(output.fill.attachments, templates);
+    const attachmentWarnings = await resolvePdfAttachments(output.fill.attachments, templates, output.fill.attachmentPolicy);
     const fontWarnings: PdfWarning[] = [];
     const fontResources = await fonts.resolve({ ...pdfFillFontNeed(output.fill), faces: output.fontFaces, themeId: output.themeId, warn: (warning) => fontWarnings.push(warning) });
     const conformance = fillConformance(output.fill.conformance, options.render);
@@ -481,7 +493,7 @@ export async function renderFormPdf(
   const document = output.document!;
   const imageWarnings = await resolvePdfImages(document, deps.images);
   const intentWarnings = await resolvePdfOutputIntent(document.conformance, deps.templates);
-  const attachmentWarnings = await resolvePdfAttachments(document.attachments, deps.templates);
+  const attachmentWarnings = await resolvePdfAttachments(document.attachments, deps.templates, document.attachmentPolicy);
   const fontWarnings: PdfWarning[] = [];
   const fontResources = await fonts.resolve({ ...pdfFontNeed(document), faces: output.fontFaces, themeId: output.themeId, warn: (warning) => fontWarnings.push(warning) });
   const spec = pdfSignatureSpec(document.signature, options.signature?.signer, options.signature?.settings);

@@ -281,11 +281,14 @@ certified revision (DocMDP diff analysis, a full validator's job); for a server'
   The model carries them as `attachments[]` on the document (or the `fill` request); a
   `base64` upload travels in the value, while a file a host storage keeps reaches the program as
   its envelope and is left out with `attachment.unresolved` — the host resolves such files
-  before the request (`renderFormPdf` does, through its template resolver). A budget over the
-  files' declared sizes — `attachments: { budgetBytes, onExceeded: "skip" | "fail" }` on the
+  before the request (`renderFormPdf` does, through its template resolver), keeping the
+  envelope's `size` as `declaredSize`. A budget — `attachments: { budgetBytes, onExceeded: "skip" | "fail" }` on the
   `document` / `build` inputs, else the layout's `attachments: { budgetMb, onExceeded }`,
   else 4 MiB and `skip` — leaves a file past it out with `attachment.skipped`, or refuses the
-  document with `attachment_budget`. The reply's `attachments` lists the names as embedded (a
+  document with `attachment_budget`. It is charged from the declared sizes before any bytes are
+  copied, and again over the decoded bytes: the model carries the policy as `attachmentPolicy`
+  and the kernel applies it to what it embeds, leaving out a resolved file whose bytes disagree
+  with its `declaredSize` (`file.sizeMismatch`). The reply's `attachments` lists the names as embedded (a
   clash earns `-2`); a program that lists `attachments` in `capabilities` understands the keys.
   In the sandbox, count on about a second and a half per megabyte of upload on top of the
   document, and keep a QuickJS host's reply under six megabytes (see the limits test).

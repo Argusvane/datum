@@ -1059,8 +1059,17 @@ the resolver cannot supply is dropped with `attachment.unresolved` (the componen
 program cannot fetch, so an unresolved envelope reaching it through the `document` op warns the
 same way.
 
-**Budget**: each layout has one, over the sum of the envelopes' declared sizes, applied before
-any bytes are copied:
+**Budget**: each layout has one, charged twice. The render model charges each file the larger
+of its envelope's declared size and its inline bytes' length, before any bytes are copied; once
+a host storage's files are resolved, `resolvePdfAttachments` charges the budget again over every
+file's decoded bytes (`enforceAttachmentBudget`), and the kernel does the same over what it
+embeds, so a submitter who under-declares a stored file's size cannot slip it past. A resolved
+file whose bytes disagree with the size its envelope declared — any byte more, or fewer by more
+than 1 % and 1 KiB — is left out with `file.sizeMismatch`, as inline bytes well past their
+declared size are. The resolved entry keeps the envelope's `size` as `declaredSize`, and the
+document model and the fill plan carry the policy in force as `attachmentPolicy`, which the
+kernel reads; a host that resolves the envelopes itself between `build` and `render` keeps both.
+The layout sets the budget:
 
 ```jsonc
 "attachments": { "budgetMb": 4, "onExceeded": "skip" }   // on the layout, or the pdf-document root's configuration
@@ -1069,7 +1078,8 @@ any bytes are copied:
 Default 4 MiB (`budgetMb` counts MiB) and `skip`: a file that would take the document past the budget is left out with
 `attachment.skipped` (the component named) and a smaller one after it may still fit;
 `onExceeded: "fail"` refuses the document with a `PdfKernelError` whose code is
-`attachment_budget`, thrown past the rendition catch the way `unknown_component` is. A host
+`attachment_budget`, thrown past the rendition catch the way `unknown_component` is, and so does
+a size mismatch under `fail`. A host
 overrides both per call, call over layout over default, each field on its own
 (`resolvePdfAttachmentPolicy`) — `renderFormPdf(runtime, deps, { attachments: { budgetBytes,
 onExceeded } })`, or `attachments` on the `document` / `build` inputs — and the designer offers

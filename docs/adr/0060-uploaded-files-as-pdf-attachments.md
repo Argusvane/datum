@@ -66,11 +66,20 @@ template that declares nothing takes them as any PDF.
 ### A budget, with a policy of ADR 0043 §14's shape
 Each layout has an `attachments: { budgetMb?, onExceeded?: "skip" | "fail" }` block; a host
 overrides both per call, call over layout over default, each field on its own
-(`resolvePdfAttachmentPolicy`). The budget is the sum of the envelopes' declared sizes, applied in
-the render model before any bytes are copied. `skip` (the default) leaves a file past it out with
+(`resolvePdfAttachmentPolicy`). The render model charges each file the larger of its envelope's
+declared size and its inline bytes' length, before any bytes are copied. A declared size is the
+submitter's word, so a file a host storage keeps is charged again once its bytes are in hand:
+`resolvePdfAttachments` checks each resolved file's decoded length against the size its envelope
+declared — any byte more, or fewer by more than 1 % and 1 KiB, is a lying envelope, left out with
+`file.sizeMismatch` as inline bytes well past their declared size are — and then charges the
+budget over the decoded bytes of every file (`enforceAttachmentBudget`). The resolved entry keeps
+the declared size as `declaredSize`, and the `PdfDocument` and the `PdfFillPlan` carry the policy
+in force as `attachmentPolicy`, so the kernel's `kernel/attachments.ts` repeats both checks over
+what it embeds and a host that resolves the envelopes itself between `build` and `render` is held
+to the same budget. `skip` (the default) leaves a file past it out with
 `attachment.skipped`, the component named, and a smaller one after it may still fit; `fail`
 refuses the document with a `PdfKernelError` whose code is `attachment_budget`, thrown past the
-rendition catch the way `unknown_component` is.
+rendition catch the way `unknown_component` is, for a budget overflow and a size mismatch alike.
 
 The default is **4 MiB**, and it comes from measurement (`quickjs-limits.test.ts` renders a
 document carrying a full default budget of incompressible files and disposes the runtime): the

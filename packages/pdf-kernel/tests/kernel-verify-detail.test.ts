@@ -649,6 +649,6 @@ describe("through the program", () => {
     expect(hostVerifyTimestamp(report.timestamp!)).toBe(true);
     const capabilities = (await handlePdfRequest({ abi: PDF_ABI_VERSION, op: "capabilities" })) as Extract<PdfKernelResponse, { op: "capabilities" }>;
     expect(capabilities.features).toContain("verify-detail");
-    expect(capabilities.abi).toBe("4.0.0");
+    expect(capabilities.abi).toBe("4.1.0");
   });
 });

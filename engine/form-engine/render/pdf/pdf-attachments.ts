@@ -3,7 +3,9 @@
  * attachment envelope — the bytes inline when its storage is `base64`, a reference
  * the host resolves otherwise. This module turns those envelopes into the document's
  * `attachments`: one entry per distinct file, the layout's budget applied from the envelope's
- * declared size or its inline bytes' length, whichever is larger, before any bytes are copied, and every decision reported as a warning a host
+ * declared size or its inline bytes' length, whichever is larger, before any bytes are copied
+ * — and again over the decoded bytes once a host storage's files are resolved
+ * ({@link enforceAttachmentBudget}) — and every decision reported as a warning a host
  * can act on — or, under the `fail` policy, as the `attachment_budget` refusal.
  */
 import {
@@ -20,7 +22,7 @@ import { collectionPathOf } from "../../core/tree/data-scope.js";
 import { kernelBase64DecodedLength, kernelStableStringify } from "../../validation/wasm/portable-kernel.js";
 import type { RenderComponentModel } from "../core/component-model.js";
 import { PdfKernelError } from "./pdf-abi.js";
-import type { PdfAttachmentRelationship, PdfDocumentAttachment, PdfWarning } from "./pdf-document.js";
+import { isResolvedPdfAttachment, type PdfAttachmentRelationship, type PdfDocumentAttachment, type PdfWarning } from "./pdf-document.js";
 import { readCollectionRows } from "./pdf-values.js";
 
 /** What an embedded file is called when the browser gave its type as nothing usable. */
@@ -434,9 +436,21 @@ export function refusedAttachmentType(claimed: unknown, data?: string, name?: un
   return markupRefusal(sniffText(bytes).replace(/^[ï»¿]{3}/, ""));
 }
 
+/** A character no unwrapped base64 string holds: whitespace, a data URL's prefix, anything else. */
+const NOT_PLAIN_BASE64 = /[^A-Za-z0-9+/=]/;
+
 /** The byte length a base64 string decodes to, without decoding it: whitespace and padding are not counted. */
 export function base64DecodedLength(data: string): number {
-  return kernelBase64DecodedLength(data);
+  // Unwrapped base64 is measured by its length less its padding, found with native searches, so
+  // a sandboxed program does not walk megabytes of upload in interpreted code to learn its size.
+  if (NOT_PLAIN_BASE64.test(data)) {
+    return kernelBase64DecodedLength(data);
+  }
+  let padding = 0;
+  for (let at = data.indexOf("="); at >= 0; at = data.indexOf("=", at + 1)) {
+    padding += 1;
+  }
+  return Math.floor(((data.length - padding) * 3) / 4);
 }
 
 /**
@@ -454,9 +468,11 @@ function dedupeKey(file: FileAttachment): { content: string; meta: string } {
 }
 
 /**
- * Gathers the uploaded files one document embeds. The budget is the sum of the envelopes'
- * declared sizes; a file that would take the total past it is skipped with a warning (a later,
- * smaller one may still fit) or, under `fail`, refuses the document.
+ * Gathers the uploaded files one document embeds. The budget charges each file the larger of its
+ * envelope's declared size and its inline bytes' length; a file that would take the total past it
+ * is skipped with a warning (a later, smaller one may still fit) or, under `fail`, refuses the
+ * document. A file a host storage keeps is charged its declared size here and its real one once
+ * its bytes are resolved ({@link enforceAttachmentBudget}).
  */
 export class PdfAttachmentCollector {
   private readonly entries: PdfDocumentAttachment[] = [];
@@ -524,6 +540,73 @@ export class PdfAttachmentCollector {
   public list(): PdfDocumentAttachment[] {
     return [...this.entries];
   }
+}
+
+/**
+ * Whether the bytes a host storage returned for an envelope are not the file it declares: any
+ * byte more than its declared `size` (the budget charged that size before the bytes were
+ * fetched), or fewer by more than 1 % and 1 KiB. A size that is not a finite, non-negative number
+ * declares nothing, so any bytes disagree with it.
+ */
+export function resolvedSizeMismatch(declared: unknown, actual: number): boolean {
+  const size = typeof declared === "number" && Number.isFinite(declared) && declared >= 0 ? declared : 0;
+  return actual > size || actual < size - (size * 0.01 + 1024);
+}
+
+/**
+ * The budget charged again over uploaded files whose bytes are in hand, in order: each resolved
+ * file is charged its decoded length. A file that carries the size its envelope declared
+ * (`declaredSize`: the bytes came from a host storage) and disagrees with it
+ * ({@link resolvedSizeMismatch}) is left out with `file.sizeMismatch`, and one that takes the
+ * total past `policy.budgetBytes` with `attachment.skipped`; under `fail` either refuses the
+ * document with the `attachment_budget` code. An entry still waiting for its bytes is kept and
+ * charged nothing (it embeds nothing). Without a policy only the size check applies, as `skip`.
+ * Returns the entries kept.
+ */
+export function enforceAttachmentBudget(
+  attachments: readonly PdfDocumentAttachment[],
+  policy: PdfAttachmentPolicy | undefined,
+  warn: (warning: PdfWarning) => void
+): PdfDocumentAttachment[] {
+  const kept: PdfDocumentAttachment[] = [];
+  const fail = policy?.onExceeded === "fail";
+  let used = 0;
+  for (const attachment of attachments) {
+    if (!isResolvedPdfAttachment(attachment)) {
+      kept.push(attachment);
+      continue;
+    }
+    const from = attachment.componentId !== undefined ? ` from "${attachment.componentId}"` : "";
+    const componentId = attachment.componentId !== undefined ? { componentId: attachment.componentId } : {};
+    const actual = base64DecodedLength(attachment.data);
+    if (attachment.declaredSize !== undefined && resolvedSizeMismatch(attachment.declaredSize, actual)) {
+      const declared = typeof attachment.declaredSize === "number" && Number.isFinite(attachment.declaredSize) ? Math.max(0, attachment.declaredSize) : 0;
+      const message = `"${attachment.name}"${from} holds ${formatFileSize(actual)} but declares ${formatFileSize(declared)} (file.sizeMismatch).`;
+      if (fail) {
+        throw new PdfKernelError("attachment_budget", message);
+      }
+      warn({ code: "file.sizeMismatch", message: message + " It was not attached.", ...componentId });
+      continue;
+    }
+    if (policy && used + actual > policy.budgetBytes) {
+      const budget = formatFileSize(policy.budgetBytes);
+      if (fail) {
+        throw new PdfKernelError(
+          "attachment_budget",
+          `Attaching "${attachment.name}" (${formatFileSize(actual)})${from} takes the document past its ${budget} attachment budget; raise attachments.budgetMb or set attachments.onExceeded to "skip".`
+        );
+      }
+      warn({
+        code: "attachment.skipped",
+        message: `"${attachment.name}" (${formatFileSize(actual)})${from} was not attached: the document's ${budget} attachment budget is used up.`,
+        ...componentId
+      });
+      continue;
+    }
+    used += actual;
+    kept.push(attachment);
+  }
+  return kept;
 }
 
 /**

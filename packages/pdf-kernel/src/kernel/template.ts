@@ -36,7 +36,7 @@ import {
 import { readEmbeddedFiles } from "./embedded-files.js";
 import * as fontkit from "fontkit";
 import { PdfKernelError, base64ToBytes } from "@argusvane/datum-engine/render";
-import type { PdfAConformance, PdfTemplateFillOptions } from "@argusvane/datum-engine/core";
+import type { PdfAConformance, PdfAttachmentPolicy, PdfTemplateFillOptions } from "@argusvane/datum-engine/core";
 import { MAX_PDF_TEMPLATE_BYTES, pdfALevel, pdfAWithLevel } from "@argusvane/datum-engine/core";
 import type {
   PdfAreaReport,
@@ -720,7 +720,8 @@ export async function fillTemplate(
   areas: readonly PdfFillArea[] = [],
   conformance?: PdfDocumentConformance,
   attachments?: readonly PdfDocumentAttachment[],
-  theme: { typography?: PdfTypography | undefined; colors?: PdfThemeColors | undefined } = {}
+  theme: { typography?: PdfTypography | undefined; colors?: PdfThemeColors | undefined } = {},
+  attachmentPolicy?: PdfAttachmentPolicy
 ): Promise<FilledTemplate> {
   const warnings: PdfWarning[] = [];
   const reports: PdfFillReport[] = [];
@@ -789,7 +790,7 @@ export async function fillTemplate(
     info.set(PDFName.of("ModDate"), PDFString.of(pdfDateString(env.createdAt)));
   }
   // Under the level the fill declares: a part-2 template raised to 3 takes them, one that declares nothing takes them as any PDF.
-  const embedded = embedAttachments(pdf, { claim, conformance, attachments, env, warnings });
+  const embedded = embedAttachments(pdf, { claim, conformance, attachments, attachmentPolicy, env, warnings });
   // The template's own output intent stays (a file declares one): a configured one is reported and not applied.
   const pdfa = claim ? await applyPdfA(pdf, { claim, conformance: conformance ?? {}, env, warnings }) : undefined;
   const bytes = await pdf.save({ useObjectStreams: false, updateFieldAppearances: false, objectsPerTick: Infinity });

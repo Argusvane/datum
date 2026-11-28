@@ -16,6 +16,7 @@ import type { EffectiveNodeState } from "../../core/state/effective-state.js";
 import type {
   PdfAClaim,
   PdfAConformance,
+  PdfAttachmentPolicy,
   PdfAttachmentPolicyOptions,
   PdfConfiguration,
   PdfLayoutChoice,
@@ -32,7 +33,7 @@ import type { PdfFillArea, PdfFillPlan, PdfFillValue } from "./pdf-template.js";
  * features (`PDF_PROGRAM_FEATURES` in `packages/pdf-kernel/src/program/entry.ts`), and
  * each operation's message shapes are the types below.
  */
-export const PDF_ABI_VERSION = "4.0.0";
+export const PDF_ABI_VERSION = "4.1.0";
 
 export type PdfKernelOp = "capabilities" | "document" | "build" | "render" | "layout" | "fill" | "inspect" | "sign" | "complete" | "timestampRequest" | "verify";
 
@@ -521,6 +522,8 @@ export type PdfKernelRequest =
       conformance?: PdfDocumentConformance;
       /** Uploaded files to embed; absent or empty, none. */
       attachments?: PdfDocumentAttachment[];
+      /** The attachment budget, charged over the files' decoded bytes; absent, none is applied. */
+      attachmentPolicy?: PdfAttachmentPolicy;
       /** Prepare a signature over the filled PDF. */
       signature?: PdfSignatureSpec;
       /** The theme the plan was built under: what a content area draws with when its `draw` says nothing. */

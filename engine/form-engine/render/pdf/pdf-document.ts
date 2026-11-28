@@ -8,7 +8,7 @@
  * kernel's answer, given fonts and measurements; the engine deliberately does not know.
  */
 import type { TextDirection } from "../../core/accessibility/accessibility-semantics.js";
-import type { PdfAClaim, PdfAssetSource, PdfBoxAnchor, ResolvedPdfPageSetup } from "../../core/schema/pdf-layout.js";
+import type { PdfAClaim, PdfAssetSource, PdfAttachmentPolicy, PdfBoxAnchor, ResolvedPdfPageSetup } from "../../core/schema/pdf-layout.js";
 import type { PdfSignatureSettings } from "./pdf-abi.js";
 import type {
   PdfBoxSettings,
@@ -404,10 +404,14 @@ export interface PdfPendingAttachment extends Omit<PdfAttachment, "data"> {
   componentId: string;
 }
 
-/** An uploaded file on its way into a document: resolved to bytes, or still to be. */
-export type PdfDocumentAttachment = (PdfAttachment & { componentId?: string }) | PdfPendingAttachment;
+/**
+ * An uploaded file on its way into a document: resolved to bytes, or still to be. A file whose
+ * bytes a host storage returned keeps its envelope's `size` as `declaredSize`, so the kernel can
+ * refuse bytes that disagree with it (`file.sizeMismatch`).
+ */
+export type PdfDocumentAttachment = (PdfAttachment & { componentId?: string; declaredSize?: number }) | PdfPendingAttachment;
 
-export function isResolvedPdfAttachment(attachment: PdfDocumentAttachment): attachment is PdfAttachment & { componentId?: string } {
+export function isResolvedPdfAttachment(attachment: PdfDocumentAttachment): attachment is PdfAttachment & { componentId?: string; declaredSize?: number } {
   return "data" in attachment && typeof attachment.data === "string";
 }
 
@@ -503,6 +507,11 @@ export interface PdfDocument {
    * carry none.
    */
   attachments?: PdfDocumentAttachment[];
+  /**
+   * The attachment budget in force, with `attachments`: the kernel charges it again over the
+   * files' decoded bytes, so a file whose envelope under-declares its size cannot pass it.
+   */
+  attachmentPolicy?: PdfAttachmentPolicy;
   /** The layout's render caps (the `render-caps` feature): `pages` the kernel enforces, `answerChars` the model applied. */
   limits?: Partial<PdfRenderLimits>;
   /** How the host is to seal the document: the layout's settings, resolved; the request adds the certificates. */

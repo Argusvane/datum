@@ -597,7 +597,7 @@ describe("renderFormPdf — attachments", () => {
     if (request.op === "render") {
       expect(request.document.attachments).toEqual([
         { name: "photo.png", mimeType: "image/png", description: "Supporting document", relationship: "Supplement", componentId: "doc", data: "iVBORw0KGgo=" },
-        { name: "big.zip", mimeType: "application/zip", description: "Archive", relationship: "Supplement", componentId: "archive", data: "AQID" }
+        { name: "big.zip", mimeType: "application/zip", description: "Archive", relationship: "Supplement", componentId: "archive", data: "AQID", declaredSize: 1024 }
       ]);
     }
   });
