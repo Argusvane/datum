@@ -161,8 +161,9 @@ describe("attachment type refusal: HTML and SVG", () => {
     }
     // A script far past the first 64 KiB, behind a long comment.
     expect(refused(wrap(`<!--${"x".repeat(200000)}--><script>alert(1)</script>`), "image/svg+xml")).toMatch(/SVG/);
-    // An svg root through a doctype with an internal subset.
-    expect(refused('<!DOCTYPE svg [ <!ENTITY a "b"> ]><svg><script>1</script></svg>', "image/svg+xml")).toMatch(/SVG/);
+    // An svg root through a doctype with an internal subset: the subset's entity is refused first.
+    expect(refused('<!DOCTYPE svg [ <!ENTITY a "b"> ]><svg><script>1</script></svg>', "image/svg+xml")).toMatch(/entities/);
+    expect(refused('<!DOCTYPE svg [ <!-- a subset --> ]><svg><script>1</script></svg>', "image/svg+xml")).toMatch(/SVG/);
     // An SVG in the SVG namespace under another root.
     expect(refused('<doc xmlns="http://www.w3.org/2000/svg"><script>1</script></doc>', "image/svg+xml")).toMatch(/SVG/);
     // Commented-out script is inert.

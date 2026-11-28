@@ -106,7 +106,9 @@ import {
   type PdfRenditionTexts
 } from "./pdf-renditions.js";
 import {
+  pdfStyleWarning,
   pdfThemeChoiceFor,
+  readPdfComponentStyle,
   resolvePdfTheme,
   selectPdfTheme,
   themeFontFaces,
@@ -120,13 +122,14 @@ import { dataGridDefaultRendition } from "../../core/schema/pdf-renditions.js";
 import { normalizeDataGrids } from "../../core/schema/data-grid.js";
 import { withBaseTypes } from "../../registry/kinds.js";
 import { STEP_COMPONENT_TYPE, STEPS_COMPONENT_TYPE } from "../../core/schema/steps.js";
-import { buildRowKeys, collectionPathOf } from "../../core/tree/data-scope.js";
-import { formatPdfValue, readCollectionRows, stripAnswerBidi, type PdfFormattedValue } from "./pdf-values.js";
+import { collectionPathOf } from "../../core/tree/data-scope.js";
+import { PdfModelIndex, formatPdfValue, isMaskedPdfAnswer, readCollectionRows, stripAnswerBidi, type PdfFormattedValue } from "./pdf-values.js";
 import { resolveFieldMappings, resolveTemplateFillOptions, type PdfFillPlan } from "./pdf-template.js";
 import {
   COLLECTION_PDF_RENDITIONS,
   GENERIC_CONTAINER_PDF_RENDITIONS,
-  GENERIC_LEAF_PDF_RENDITIONS
+  GENERIC_LEAF_PDF_RENDITIONS,
+  PDF_ANSWER_MASK
 } from "./standard-renditions.js";
 import { evaluateTemplateExpression, pdfRegexCache, renderTemplateText, templateSegmentsToRuns } from "./template-text.js";
 
@@ -338,14 +341,24 @@ export function readColor(value: unknown): string | undefined {
 
 const hasPrintableContent = pdfBlocksPrint;
 
+/** A 32-bit FNV-1a hash of a whole string: a key that finds candidates, never proof of equality. */
+function contentHash(text: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16);
+}
+
 class LayoutRenderer {
   private readonly modelsById = new Map<string, RenderComponentModel>();
-  private readonly modelsByPath = new Map<string, RenderComponentModel>();
-  /** Collection path -> the fields of its entries by key within an entry, built on first use. */
-  private readonly rowModelsByCollection = new Map<string, Map<string, RenderComponentModel>>();
+  /** The components by id, by value path and, for an entry's field, by its indexed path. */
+  private readonly modelIndex: PdfModelIndex;
   private readonly nodesById = new Map<string, ComponentNode>();
   private readonly images: Record<string, PdfImageResource> = {};
-  private readonly imageIds = new Map<string, string>();
+  /** Image resource ids by URL, or by the type, length and hash of their bytes. */
+  private readonly imageIds = new Map<string, string[]>();
   public readonly anchored: PdfAnchoredBox[] = [];
   public readonly warnings: PdfWarning[] = [];
   private counter = 0;
@@ -387,14 +400,10 @@ class LayoutRenderer {
     this.attachmentCollector = new PdfAttachmentCollector(attachmentPolicy, (warning) => this.warnings.push(warning));
     for (const model of models) {
       this.modelsById.set(model.id, model);
-      // By value path, for a binding or a placeholder that names one. A field inside a
-      // repeating section is not stored at its value path (its entries are), and the first
-      // component at a path keeps it, so a keyed field cannot shadow another by accident.
-      if (model.rowKey === undefined && !this.modelsByPath.has(model.valuePath)) {
-        this.modelsByPath.set(model.valuePath, model);
-      }
       this.nodesById.set(model.id, model.node);
     }
+    // By value path too, for a binding or a placeholder that names one (see `PdfModelIndex`).
+    this.modelIndex = new PdfModelIndex(models);
     this.texts = {
       yes: resolveLocalizedText(theme.texts.yes, locale) ?? "Yes",
       no: resolveLocalizedText(theme.texts.no, locale) ?? "No",
@@ -465,6 +474,46 @@ class LayoutRenderer {
     }
   }
 
+  /**
+   * The AcroForm fields the document's widgets make, checked for names two owners share: a
+   * field rendition's widget (named by its value path or the binding's `widgetName`) and a
+   * `pdf-signature` block's `fieldName` live in one namespace, so a name a second owner takes
+   * would make its widget part of the first's field, or fail. The first keeps the name and
+   * `layout.duplicateWidgetName` names the second. One component's own widgets sharing a name
+   * (the same component bound twice) are one field on purpose; two signature blocks are told
+   * apart where they are drawn. Returns the names of the signature fields, for the layout's
+   * signature settings to find the one they sign into.
+   */
+  public checkWidgetNames(blocks: readonly PdfBlock[]): string[] {
+    // A name's first owner: the component whose widget took it, `undefined` for a signature block.
+    const owners = new Map<string, string | undefined>();
+    const signatures: string[] = [];
+    const owner = (componentId: string | undefined): string => (componentId !== undefined ? `component "${componentId}"` : "a signature block");
+    walkPdfBlocks(blocks, (block) => {
+      if (block.kind !== "widget") {
+        return;
+      }
+      const name = block.field.name;
+      if (block.field.kind === "signature" && !signatures.includes(name)) {
+        signatures.push(name);
+      }
+      if (!owners.has(name)) {
+        owners.set(name, block.componentId);
+        return;
+      }
+      const first = owners.get(name);
+      if (first === block.componentId) {
+        return;
+      }
+      this.warn(
+        "layout.duplicateWidgetName",
+        `The PDF field name "${name}" is taken by ${owner(first)} and again by ${owner(block.componentId)}; only the first is that field.`,
+        block.componentId
+      );
+    });
+    return signatures;
+  }
+
   public resources(): PdfDocument["resources"] {
     return { images: { ...this.images } };
   }
@@ -483,15 +532,24 @@ class LayoutRenderer {
     this.warnings.push({ code, message, ...(componentId ? { componentId } : {}) });
   }
 
+  /**
+   * The image resource for a picture, one per distinct picture: a URL by its text, bytes by their
+   * whole content (a hash finds the candidates, the full data decides), so two pictures that share
+   * a header and a size are never printed as one.
+   */
   private addImage(resource: PdfImageResource): string {
-    const key = "url" in resource ? `url:${resource.url}` : `data:${resource.type}:${resource.data.slice(0, 64)}:${resource.data.length}`;
-    const existing = this.imageIds.get(key);
+    const key = "url" in resource ? `url:${resource.url}` : `data:${resource.type}:${resource.data.length}:${contentHash(resource.data)}`;
+    const candidates = this.imageIds.get(key) ?? [];
+    const existing = candidates.find((id) => {
+      const held = this.images[id];
+      return held !== undefined && ("url" in resource || ("data" in held && held.data === resource.data));
+    });
     if (existing) {
       return existing;
     }
     const id = this.nextId("img");
     this.images[id] = resource;
-    this.imageIds.set(key, id);
+    this.imageIds.set(key, [...candidates, id]);
     return id;
   }
 
@@ -517,6 +575,9 @@ class LayoutRenderer {
           : {})
     };
   }
+
+  /** The document's page setup, which a page break's own setup changes field by field. */
+  public documentPage: ResolvedPdfPageSetup | undefined = undefined;
 
   /** The most characters of one answer drawn (the layout's `limits.answerChars`); `render.truncated` warns once per component. */
   public answerChars = DEFAULT_PDF_RENDER_LIMITS.answerChars;
@@ -546,34 +607,20 @@ class LayoutRenderer {
       // `{{row.<key>}}` names a field by its key within the entry, which is its id
       // unless it carries a data key.
       const key = path.slice(4);
-      const model = this.rowModel(scope.collectionPath, key) ?? this.modelsById.get(key);
-      return model ? this.format(model, raw).text : undefined;
+      const model = this.modelIndex.rowField(scope.collectionPath, key) ?? this.modelsById.get(key);
+      return model ? this.placeholderText(model, raw) : undefined;
     }
+    // A path names a component by id or value path, or an entry's field by its indexed path
+    // (`items[0].note`): the answer is formatted and cut to `limits.answerChars` as that field's.
     const id = path.startsWith("row.") ? path.slice(4) : path.startsWith("ancestor.") ? path.split(".").pop() ?? path : path;
-    const model = this.modelsById.get(id) ?? this.modelsByPath.get(id);
-    return model ? this.format(model, raw).text : undefined;
+    const model = this.modelIndex.at(id);
+    return model ? this.placeholderText(model, raw) : undefined;
   }
 
-  /** The field of a repeating section's entries that `key` names, by the section's collection path. */
-  private rowModel(collectionPath: string, key: string): RenderComponentModel | undefined {
-    let byKey = this.rowModelsByCollection.get(collectionPath);
-    if (!byKey) {
-      byKey = new Map();
-      for (const model of this.modelsById.values()) {
-        if (collectionPathOf(model.node) !== collectionPath) {
-          continue;
-        }
-        const rowKeys = buildRowKeys({ id: "__row", type: "form", configuration: {}, children: { content: [model.node] } });
-        for (const [id, rowKey] of rowKeys) {
-          const field = this.modelsById.get(id);
-          if (field && !byKey.has(rowKey)) {
-            byKey.set(rowKey, field);
-          }
-        }
-      }
-      this.rowModelsByCollection.set(collectionPath, byKey);
-    }
-    return byKey.get(key);
+  /** A component's answer as a placeholder prints it: formatted, and masked for a type whose answer is never printed back (a password), as its rendition masks it. */
+  private placeholderText(model: RenderComponentModel, raw: unknown): string {
+    const formatted = this.format(model, raw);
+    return !formatted.empty && isMaskedPdfAnswer(model) ? PDF_ANSWER_MASK : formatted.text;
   }
 
   /** Text with placeholders resolved, as runs. */
@@ -608,13 +655,13 @@ class LayoutRenderer {
    * before visibility is consulted, so the verdict follows the schema and the layout, not the
    * answers.
    */
-  private checkKnown(model: RenderComponentModel): void {
+  private checkKnown(model: RenderComponentModel, binding: PdfBindingOptions = {}): void {
     const node = model.node;
     if (this.unknownComponents === "ignore" || this.reportedUnknown.has(model.id) || this.renditions.catalog(node.type).length > 0) {
       return;
     }
     this.reportedUnknown.add(model.id);
-    const generic = this.genericRenditionsFor(node).defaultRendition;
+    const generic = node.collection ? this.genericRenditionsFor(node).defaultRendition : this.genericRendition(node, binding).id;
     if (this.unknownComponents === "fail") {
       throw new PdfKernelError(
         "unknown_component",
@@ -640,17 +687,39 @@ class LayoutRenderer {
       if (own) {
         return own;
       }
-      const wanted = [
-        binding.rendition,
-        readComponentPdfOptions(node.configuration).rendition,
-        this.layoutDefaults?.[type],
-        this.layoutDefaults?.["*"],
-        themeChoice,
-        themeWildcard
-      ].find((candidate) => candidate !== undefined && COLLECTION_PDF_RENDITIONS.renditions.some((r) => r.id === candidate));
+      // The rungs in order; a named one (not a wildcard) that asks for a rendition no collection
+      // draws falls through with `rendition.unknown`, as a named rung does for any other component.
+      const rungs: Array<[string, string | undefined, boolean]> = [
+        ["binding", binding.rendition, true],
+        ["instance", readComponentPdfOptions(node.configuration).rendition, true],
+        ["layout", this.layoutDefaults?.[type], true],
+        ["layout", this.layoutDefaults?.["*"], false],
+        ["theme", themeChoice, true],
+        ["theme", themeWildcard, false]
+      ];
+      let wanted: string | undefined;
+      for (const [rung, candidate, named] of rungs) {
+        if (candidate === undefined || candidate === "") {
+          continue;
+        }
+        if (COLLECTION_PDF_RENDITIONS.renditions.some((r) => r.id === candidate)) {
+          wanted = candidate;
+          break;
+        }
+        if (named) {
+          this.warn(
+            "rendition.unknown",
+            `The ${rung} asks for rendition "${candidate}" on the repeating "${type}" component, which draws its rows as ${COLLECTION_PDF_RENDITIONS.renditions.map((r) => `"${r.id}"`).join(" or ")} only.`,
+            model.id
+          );
+        }
+      }
       // Nothing chose: a data grid's own layout setting does, any other collection takes the table.
       return COLLECTION_PDF_RENDITIONS.renditions.find((r) => r.id === (wanted ?? dataGridDefaultRendition(node)))!;
     }
+    // The rungs' warnings wait for the verdict: a binding's rendition the type does not offer
+    // can still be drawn by the generic set below, and then it was not passed over.
+    const pending: Array<[string, string]> = [];
     const id = resolveRenditionId(
       {
         type,
@@ -661,15 +730,30 @@ class LayoutRenderer {
         themeWildcard
       },
       this.renditions,
-      (code, message) => this.warn(code, message, model.id)
+      (code, message) => pending.push([code, message])
     );
     const declared = id !== undefined ? this.renditions.resolve(type, id) : undefined;
     if (declared) {
+      for (const [code, message] of pending) {
+        this.warn(code, message, model.id);
+      }
       return declared;
     }
     // Nothing the type offers applied: the generic rendition for what the node is.
+    const generic = this.genericRendition(node, binding);
+    // The binding's rung is the first to warn, when it named a rendition the type lacks: drawn
+    // generically after all, it is not reported as passed over.
+    const bindingDrawn = binding.rendition !== undefined && generic.id === binding.rendition && pending.length > 0;
+    for (const [code, message] of bindingDrawn ? pending.slice(1) : pending) {
+      this.warn(code, message, model.id);
+    }
+    return generic;
+  }
+
+  /** The generic rendition a node falls to: the binding's or a wildcard rung's when the generic set has it, else the set's default. */
+  private genericRendition(node: ComponentNode, binding: PdfBindingOptions) {
     const fallback = this.genericRenditionsFor(node);
-    const wanted = [binding.rendition, this.layoutDefaults?.["*"], themeWildcard].find(
+    const wanted = [binding.rendition, this.layoutDefaults?.["*"], this.theme.components["*"]?.rendition].find(
       (candidate) => candidate !== undefined && fallback.renditions.some((r) => r.id === candidate)
     );
     return fallback.renditions.find((r) => r.id === (wanted ?? fallback.defaultRendition))!;
@@ -686,14 +770,24 @@ class LayoutRenderer {
     if (readComponentPdfOptions(node.configuration).exclude) {
       return [];
     }
-    this.checkKnown(model);
+    this.checkKnown(model, binding);
     if (!model.visible) {
       return [];
     }
-    // Inside an entry, the field's answer is the entry's, under the field's key within it.
+    // Inside an entry, a field of the entries takes the entry's answer, under the field's key
+    // within it; an entry with nothing at that key has no answer. The model's own value is never
+    // read there: a collection adds no path level, so it is whatever answer sits at the same bare
+    // key outside the collection. A field outside any collection reads the entry's answer at its
+    // id when the entry has one, else its own.
     const rowKey = model.rowKey ?? model.id;
     const rowValue =
-      scope && Object.prototype.hasOwnProperty.call(scope.rowValues, rowKey) ? scope.rowValues[rowKey] : model.value;
+      scope && model.rowKey !== undefined
+        ? Object.prototype.hasOwnProperty.call(scope.rowValues, rowKey)
+          ? scope.rowValues[rowKey]
+          : undefined
+        : scope && Object.prototype.hasOwnProperty.call(scope.rowValues, rowKey)
+          ? scope.rowValues[rowKey]
+          : model.value;
     const value = this.format(model, rowValue);
     const label =
       binding.label === false
@@ -722,7 +816,12 @@ class LayoutRenderer {
     const declaration = this.chooseRendition(model, binding);
 
     const context: PdfRenditionContext = {
-      model: rowValue === model.value ? model : { ...model, value: rowValue },
+      // An entry's answer replaces the model's, its files included: a rendition reading the
+      // attachments (an image of an uploaded picture) draws the entry's, not the template's.
+      model:
+        rowValue === model.value
+          ? model
+          : { ...model, value: rowValue, file: model.file ? { ...model.file, attachments: readFileAttachments(rowValue) } : model.file },
       value,
       label,
       binding,
@@ -802,10 +901,16 @@ class LayoutRenderer {
       }
       const model = this.modelsById.get(descendant.id);
       if (model && model.type !== "button") {
-        // A row field is formatted, not drawn through a rendition, but the policy is about
-        // whether the type is known here at all.
-        if (!readComponentPdfOptions(model.node.configuration).exclude) {
-          this.checkKnown(model);
+        // A row field is formatted, not drawn through a rendition, but what it prints follows
+        // the rules a drawn field does: one the PDF excludes is left out, and the policy (about
+        // whether the type is known here at all) is consulted before visibility, which leaves
+        // out a field hidden by `hidden` or its rules.
+        if (readComponentPdfOptions(model.node.configuration).exclude) {
+          continue;
+        }
+        this.checkKnown(model);
+        if (!model.visible) {
+          continue;
         }
         out.push(model);
       }
@@ -841,7 +946,7 @@ class LayoutRenderer {
       binding.attach = config.attach;
     }
     if (isRecord(config.style)) {
-      binding.style = config.style as PdfComponentStyle;
+      binding.style = readPdfComponentStyle(config.style, (key, expected) => this.warnings.push(pdfStyleWarning(`binding "${node.id}"`, key, expected, typeof config.componentId === "string" ? config.componentId : undefined)));
     }
     return binding;
   }
@@ -851,7 +956,7 @@ class LayoutRenderer {
     switch (node.type) {
       case PDF_FIELD_COMPONENT_TYPE: {
         const componentId = typeof config.componentId === "string" ? config.componentId : "";
-        const model = this.modelsById.get(componentId) ?? this.modelsByPath.get(componentId);
+        const model = this.modelIndex.named(componentId);
         if (!model) {
           this.warn(
             "binding.unresolved",
@@ -890,8 +995,10 @@ class LayoutRenderer {
       case PDF_SIGNATURE_COMPONENT_TYPE:
         return this.renderSignature(node, scope);
       case PDF_PAGE_BREAK_COMPONENT_TYPE: {
+        // A break's own setup changes what it names; the rest (margins, the header and footer
+        // bands, the size or orientation it leaves out) stays the document's.
         const page: ResolvedPdfPageSetup | undefined =
-          config.changePage === true && isRecord(config.page) ? resolvePdfPageSetup(config.page) : undefined;
+          config.changePage === true && isRecord(config.page) ? resolvePdfPageSetup(overPageSetting(config.page, this.documentPage)) : undefined;
         return [{ id: this.nextId("break"), kind: "pageBreak", ...(page ? { page } : {}) }];
       }
       case PDF_DOCUMENT_COMPONENT_TYPE:
@@ -1231,6 +1338,35 @@ class LayoutRenderer {
   }
 }
 
+/**
+ * A page setting over another, field by field: what `over` sets wins, the rest is `under`'s, and
+ * the margins merge side by side. Either may be absent or not a record (then the other stands).
+ */
+function overPageSetting(over: unknown, under: unknown): unknown {
+  if (!isRecord(over)) {
+    return under;
+  }
+  if (!isRecord(under)) {
+    return over;
+  }
+  const merged: Record<string, unknown> = { ...under };
+  for (const [key, value] of Object.entries(over)) {
+    if (value !== undefined) {
+      merged[key] = value;
+    }
+  }
+  if (isRecord(over.margins) && isRecord(under.margins)) {
+    const margins: Record<string, unknown> = { ...under.margins };
+    for (const [side, value] of Object.entries(over.margins)) {
+      if (value !== undefined) {
+        margins[side] = value;
+      }
+    }
+    merged.margins = margins;
+  }
+  return merged;
+}
+
 function readLayoutSetting<T>(layout: PdfGeneratedLayout, key: "page" | "accessibility" | "conformance" | "attachments" | "signature" | "limits" | "renditionDefaults" | "theme" | "name"): T | undefined {
   const own = (layout as unknown as Record<string, unknown>)[key];
   if (own !== undefined) {
@@ -1381,6 +1517,33 @@ function layoutSelectionWarnings(selection: PdfLayoutSelection, layoutId: string
 }
 
 /**
+ * A component whose option source failed (or had not answered) when the PDF was built prints
+ * with no options to list: a checklist shows none of them, and a picked answer reads as its
+ * stored value rather than its label. `options.unavailable` says so, once per component the PDF
+ * does not leave out.
+ */
+function optionWarnings(components: readonly RenderComponentModel[]): PdfWarning[] {
+  const warnings: PdfWarning[] = [];
+  for (const model of components) {
+    const status = model.optionState.status;
+    if ((status !== "error" && status !== "loading") || readComponentPdfOptions(model.node.configuration).exclude) {
+      continue;
+    }
+    const source = model.optionState.sourceId !== undefined ? ` "${model.optionState.sourceId}"` : "";
+    const why =
+      status === "loading"
+        ? "had not answered"
+        : `failed${model.optionState.error !== undefined && model.optionState.error !== "" ? ` (${model.optionState.error})` : ""}`;
+    warnings.push({
+      code: "options.unavailable",
+      message: `The option source${source} of "${model.id}" ${why}; the PDF lists none of its options, and its answer prints as stored.`,
+      componentId: model.id
+    });
+  }
+  return warnings;
+}
+
+/**
  * The answers as printed: each read as the envelope's JSON carries it (`kernelJsonAnswers`), and
  * every collection holding a drawn row with no answer yet (its keys hold `undefined`, which JSON
  * leaves out) given its rows whole at its path too, `{}` for that row, so the row is
@@ -1489,7 +1652,7 @@ export async function buildPdfRenderModel(
       });
   const declared = compiled.layout ?? selection?.layout;
   const layoutChoice: PdfLayoutChoice = selection?.choice ?? "given";
-  const warnings: PdfWarning[] = [...compiled.warnings, ...(selection ? layoutSelectionWarnings(selection, options.layoutId) : [])];
+  const warnings: PdfWarning[] = [...compiled.warnings, ...(selection ? layoutSelectionWarnings(selection, options.layoutId) : []), ...optionWarnings(components)];
 
   // The theme: the call's id, the generated layout's `theme`, the host's default, the PDF theme
   // the form's binding suggests, the engine's.
@@ -1502,7 +1665,7 @@ export async function buildPdfRenderModel(
     resolveTheme: options.resolveTheme
   });
   warnings.push(...themeSelection.warnings);
-  const theme = resolvePdfTheme(themeSelection.theme);
+  const theme = resolvePdfTheme(themeSelection.theme, (warning) => warnings.push(warning));
   const texts = {
     yes: resolveLocalizedText(theme.texts.yes, locale) ?? "Yes",
     no: resolveLocalizedText(theme.texts.no, locale) ?? "No"
@@ -1608,7 +1771,10 @@ export async function buildPdfRenderModel(
       message: `The layout asks for limits.${key} of ${(limitsSetting as Record<string, unknown>)[key]}; the most a render takes is ${PDF_RENDER_LIMIT_CEILING[key]}, which applied.`
     });
   }
-  const page = resolvePdfPageSetup(readLayoutSetting<unknown>(layout, "page") ?? theme.page);
+  // Field by field: the layout's page over the theme's over the defaults, so a theme's paper
+  // size and margins reach a layout that sets only its footer band (the derived one does).
+  const page = resolvePdfPageSetup(overPageSetting(readLayoutSetting<unknown>(layout, "page"), theme.page));
+  renderer.documentPage = page;
   const accessibilitySetting = readLayoutSetting<unknown>(layout, "accessibility");
   const accessibility = resolvePdfAccessibility(accessibilitySetting);
   const taggedDeclared = isRecord(accessibilitySetting) && typeof accessibilitySetting.tagged === "boolean";
@@ -1629,7 +1795,9 @@ export async function buildPdfRenderModel(
   const header = renderer.renderSlot(layout.root, PDF_DOCUMENT_HEADER_SLOT, undefined, 6);
   const footer = renderer.renderSlot(layout.root, PDF_DOCUMENT_FOOTER_SLOT, undefined, 6);
   const attachments = renderer.attachments();
-  const signature = signatureSettings(readLayoutSetting<unknown>(layout, "signature"), layout.id, locale, sources, renderer.signatureFields, warnings);
+  // Every widget's field, the signature blocks' and a signature component's `field` rendition's alike.
+  const signatureFields = renderer.checkWidgetNames([...body, ...renderer.anchored.map((entry) => entry.box), ...header, ...footer]);
+  const signature = signatureSettings(readLayoutSetting<unknown>(layout, "signature"), layout.id, locale, sources, signatureFields, warnings);
 
   const documentTitle =
     layoutText(accessibility.title, layout.id, "accessibility.title", locale, sources) ??

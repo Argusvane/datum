@@ -25,7 +25,7 @@ A host with its own certificate can seal every PDF it issues. Turn the seal on a
 
 | Key | Meaning | Default |
 |---|---|---|
-| `field` | The name of the `pdf-signature` block, or a template's signature field, the signature lands in | A new field of its own |
+| `field` | The name of the `pdf-signature` block, of a signature component drawn as `field`, or of a template's signature field, the signature lands in | A new field of its own |
 | `certify` | `noChanges`, `formFilling` or `annotations` to certify the document, or `false` for an approval signature | `false` |
 | `reason`, `location`, `contactInfo`, `name` | What the signature says about itself. `reason` is translated per locale; `name` defaults to the certificate's common name | None |
 | `subFilter` | `ETSI.CAdES.detached` (PAdES) or `adbe.pkcs7.detached` (the older Adobe profile) | `ETSI.CAdES.detached` |

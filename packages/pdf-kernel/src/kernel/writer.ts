@@ -258,6 +258,24 @@ function lastWidget(field: { acroField: { getWidgets(): Array<{ dict: PDFDict }>
   return widget && ref ? { dict: widget.dict, ref } : undefined;
 }
 
+/**
+ * A checkbox's on-state name from its export value, as a PDF name: the value's UTF-8 bytes, each
+ * escaped where the syntax needs it. `undefined` (the default `/Yes`) for no value, or for one that
+ * would name the off state.
+ */
+function onStateName(exportValue: string | undefined): PDFName | undefined {
+  if (exportValue === undefined || exportValue === "" || exportValue === "Off") {
+    return undefined;
+  }
+  const bytes = new TextEncoder().encode(exportValue);
+  let binary = "";
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  // `PDFName.of` reads `#xx` as an escape: a literal `#` goes in escaped, and comes out as itself.
+  return PDFName.of(binary.replace(/#/g, "#23"));
+}
+
 function drawWidget(
   drawable: Extract<Drawable, { kind: "widget" }>,
   page: PDFPage,
@@ -281,8 +299,11 @@ function drawWidget(
           if (spec.kind === "multiline") {
             field.enableMultiline();
           }
+          const text = typeof spec.value === "string" && spec.value.length > 0 ? ctx.fonts.encodable(spec.value, ctx.widgetFont) : undefined;
           if (spec.maxLength !== undefined) {
-            field.setMaxLength(spec.maxLength);
+            // The limit counts UTF-16 units here: a value longer than it widens it, so the value is
+            // written whole rather than the field refused.
+            field.setMaxLength(Math.max(spec.maxLength, text?.length ?? 0));
           }
           if (spec.required) {
             field.enableRequired();
@@ -290,8 +311,8 @@ function drawWidget(
           if (spec.readOnly) {
             field.enableReadOnly();
           }
-          if (typeof spec.value === "string" && spec.value.length > 0) {
-            field.setText(ctx.fonts.encodable(spec.value, ctx.widgetFont));
+          if (text !== undefined) {
+            field.setText(text);
           }
           setTooltip(field, spec);
         }
@@ -306,9 +327,6 @@ function drawWidget(
         } else {
           field = form.createCheckBox(spec.name);
           fields.set(spec.name, field);
-          if (spec.value === true) {
-            field.check();
-          }
           if (spec.required) {
             field.enableRequired();
           }
@@ -317,8 +335,20 @@ function drawWidget(
           }
           setTooltip(field, spec);
         }
+        const checked = existing instanceof PDFCheckBox ? field.isChecked() : spec.value === true;
         field.addToPage(page, choiceOptions(rect, ctx));
-        return lastWidget(field, ctx);
+        const placed = lastWidget(field, ctx);
+        const onState = onStateName(spec.exportValue);
+        if (placed && onState !== undefined) {
+          // The widget's on state carries the export value in place of the default `/Yes`.
+          const widgets = field.acroField.getWidgets();
+          const widget = widgets[widgets.length - 1]!;
+          (field as unknown as { updateWidgetAppearance(widget: unknown, onValue: PDFName): void }).updateWidgetAppearance(widget, onState);
+        }
+        if (checked) {
+          field.check();
+        }
+        return placed;
       }
       case "radio": {
         let field: PDFRadioGroup;
@@ -349,6 +379,17 @@ function drawWidget(
           const index = (spec.options ?? []).findIndex((option) => option.value === value);
           return index >= 0 ? labels[index] : undefined;
         };
+        // A value no option lists is kept, as an option of its own.
+        const unlisted = (field: PDFDropdown | PDFOptionList, value: string): string | undefined => {
+          if (value === "") {
+            return undefined;
+          }
+          const label = ctx.fonts.encodable(value, ctx.widgetFont);
+          if (!field.getOptions().includes(label)) {
+            field.addOptions([label]);
+          }
+          return label;
+        };
         if (spec.kind === "dropdown") {
           let field: PDFDropdown;
           if (existing instanceof PDFDropdown) {
@@ -357,7 +398,7 @@ function drawWidget(
             field = form.createDropdown(spec.name);
             fields.set(spec.name, field);
             field.addOptions(labels);
-            const selected = typeof spec.value === "string" ? labelFor(spec.value) : undefined;
+            const selected = typeof spec.value === "string" ? labelFor(spec.value) ?? unlisted(field, spec.value) : undefined;
             if (selected !== undefined) {
               field.select(selected);
             }
@@ -382,7 +423,7 @@ function drawWidget(
           field.addOptions(labels);
           field.enableMultiselect();
           const values = Array.isArray(spec.value) ? spec.value : typeof spec.value === "string" ? [spec.value] : [];
-          const selected = values.map(labelFor).filter((label): label is string => label !== undefined);
+          const selected = values.map((value) => labelFor(value) ?? unlisted(field, value)).filter((label): label is string => label !== undefined);
           if (selected.length > 0) {
             field.select(selected);
           }

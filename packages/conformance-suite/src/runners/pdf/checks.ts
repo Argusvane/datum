@@ -175,19 +175,19 @@ export async function checkFilespec(ctx: CheckContext): Promise<Outcome> {
 export async function checkAttachmentNames(ctx: CheckContext): Promise<Outcome> {
   const files = [
     upload("../../etc/passwd"),
-    upload("C:\\Users\\a\\evil.exe", "application/octet-stream"),
-    upload("invoice\u202Etxt.exe", "application/octet-stream"),
+    upload("C:\\Users\\a\\evil.bin", "application/octet-stream"),
+    upload("invoice\u202Etxt.bin", "application/octet-stream"),
     upload("a\u0000b\nc\u0007.txt"),
     upload(`${"n".repeat(4000)}.txt`),
     upload(".."),
-    // (a name, not a type: an HTML claim is refused as an attachment, which OUT-15 judges)
-    upload("dup.html", "text/plain", "one"),
-    upload("dup.html", "text/plain", "two"),
-    upload("h.html", "a/b#c%2F")
+    // (names a program attaches: an HTML claim, or a program's or a page's extension, is refused as an attachment, which OUT-15 judges)
+    upload("dup.md", "text/plain", "one"),
+    upload("dup.md", "text/plain", "two"),
+    upload("h.dat", "a/b#c%2F")
   ];
   const result = await ctx.provider.document(documentRequest(fileForm, { doc: files }, ctx.fonts));
   const names = await pdfjsAttachments(result.bytes);
-  const expected = ["passwd", "evil.exe", "invoicetxt.exe", "abc.txt", "file", "dup.html", "dup-2.html"];
+  const expected = ["passwd", "evil.bin", "invoicetxt.bin", "abc.txt", "file", "dup.md", "dup-2.md"];
   const missing = expected.filter((name) => !names.includes(name));
   if (missing.length > 0) {
     return fail(`names not cleaned as the policy says: missing ${JSON.stringify(missing)} in ${JSON.stringify(names.map((n) => (n.length > 40 ? `${n.slice(0, 20)}...(${n.length})` : n)))}`);

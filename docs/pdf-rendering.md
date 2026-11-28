@@ -37,7 +37,8 @@ Every component type offers a few *renditions* and a default. The engine's own t
 | `text`, `email`, `tel`, `url`, `number`, `date`, `time`, `textarea` | `text` (label and answer), `field` (fillable in a viewer), `ruled` (blank line) |
 | `checkbox`, `boolean` | `checkmark`, `field`, `text` |
 | `checkboxes` | `checklist` (every option, chosen ones ticked), `field`, `text` |
-| `select`, `multiselect`, `radio` | `text`, `field`, `checklist`, `ruled` |
+| `select`, `multiselect`, `radio` | `text`, `field`, `checklist`, `ruled` (a stored answer no option lists — one from before the list changed, or one whose data source failed — prints after the options as a chosen item labelled by its value, in `checklist` and `field` alike) |
+| `password` (a host's or a plugin's type) | the generic set; its answer prints as `••••••••`, the review's mask, and a `field` widget is left empty |
 | `file` | `text`, `field`, `image` — and, apart from the rendition, *Attach uploaded files to the PDF* embeds the files themselves (see [Attachments](#attachments-uploaded-files)) |
 | `image` | `image` |
 | `html` | `text` |
@@ -47,9 +48,9 @@ Every component type offers a few *renditions* and a default. The engine's own t
 | `form` | `group`, `section` |
 | `container`, `panel` | `group` (default), `section`, `panel` |
 | `fieldset`, `step` | `section` (default), `group`, `panel` |
-| `tabs` | `sections`, `group` |
+| `tabs` | `sections` (a section per tab, captioned with its label; an untitled tab with a lone `tab` component's label, else "Tab 2" by its place), `group` |
 | `grid` | `table`, `group` |
-| `dataGrid`, and any component with a `collection` | `table`, `sections` (a data grid, ADR 0153, defaults to `table`; its `layout: "stacked"` defaults to `sections`) |
+| `dataGrid`, and any component with a `collection` | `table`, `sections` (a data grid, ADR 0153, defaults to `table`; its `layout: "stacked"` defaults to `sections`; each row is headed as on screen, the container's `rowLabel` with `{{n}}` filled, else "Row 2") |
 
 The vocabulary is `PDF_RENDITION_CATALOG` in `core/schema/pdf-renditions.ts`; the renderers behind
 it are in `render/pdf/standard-renditions.ts`, and a test holds the two equal. The catalog never
@@ -80,7 +81,10 @@ Which rendition wins, from the most specific:
 7. `text` for a leaf, `group` for a container
 
 A named rendition the type does not offer falls through with a `rendition.unknown` warning; the
-wildcard rungs are silent. The same component bound twice as `field` draws two widgets of one
+wildcard rungs are silent. A repeating component (a data grid, any component with a `collection`)
+draws its rows as `table` or `sections` only: a named rung asking it for another (`checklist`) falls
+through with `rendition.unknown` too. A binding's rendition a type lacks that the generic set draws
+(`field` on a type nothing knows) is drawn, and is not reported as passed over. The same component bound twice as `field` draws two widgets of one
 AcroForm field, which is what PDF means by it.
 
 A file component's `attach` switch climbs the first two rungs of the same ladder: a `pdf-field`
@@ -118,7 +122,10 @@ choice, never the default). In the engine the runtime says where renditions come
 (`RenderableRuntime.pdfRenditionSources()`: its component registry and the plugin platform's
 `pdfRenditions`), so a definition-declared rendition prints on every host path with nothing
 wired, and `renderFormPdf` builds its resolver from them unless `PdfServiceDependencies.renditions`
-is given.
+is given. A type the definition's `kinds` map names is read as its base engine type on every path
+alike: `renderFormPdf` passes the runtime's definition's map (`pdf.kinds`) as the program's
+`document` op passes its request's `kinds`, so a `gcds-checkbox` prints as the checkbox it is and is
+never an unknown component.
 
 ## Themes
 
@@ -190,7 +197,7 @@ value (or nothing, for an optional field). The source of the types is
 | `table`, `box`, `panel`, `list` | cell padding, border width, row minimum, header fill and weight, a stripe fill; a `pdf-box`'s defaults with a radius; the `panel` rendition's border, radius, padding, fill, header fill and padding; indent, gap and bullet |
 | `spacing` | `[before, after]` per block kind, over the kernel's own |
 | `texts` | `yes`, `no`, `empty`, `pageOf`, `required` (`""` draws none, as the live form reads empty wording), `stepOf` (`""` draws none), `attachmentDescription`, `signatureAlt` |
-| `components[type].style` | `spacingBefore`, `spacingAfter`, `labelArrangement`, `ruledLines`, `widgetHeight`, `width` (a narrower frame or widget for a type), `color`, `size` |
+| `components[type].style` | `spacingBefore`, `spacingAfter`, `labelArrangement`, `ruledLines`, `widgetHeight`, `width` (a narrower frame or widget for a type), `color`, `size`. A value of the wrong kind (`"12"`, a negative or infinite number, an arrangement other than `stacked` / `inline`) is dropped with a `style.invalid` warning, the rest kept (`readPdfComponentStyle`, which a `pdf-field` binding's `style` goes through too) |
 | `scale` | a multiplier over every point size and gap, applied at resolve time; ratios, counts, fractions and page margins are not scaled. A host prints a screen-scale theme smaller with `{ ...GCDS_PDF_THEME, pdf: { ...GCDS_PDF_THEME.pdf, scale: 0.8 } }` |
 
 The document model carries the resolved blocks beside `typography` and `colors`, and the blocks
@@ -269,7 +276,10 @@ Greek, Cyrillic, Arabic and Hebrew to the DejaVu pack.
 No layouts at all: the engine derives one from the form tree (`deriveDefaultPdfLayout`) — the
 title, tabs and wizard steps as sections, grids as tables, collections and data grids as row
 tables, buttons dropped, and fields a rule hides dropped at render time under the same
-effective-state policy the submission applies. A definition holds only the layouts the author
+effective-state policy the submission applies. A container whose label the author hid
+(`hideLabel`) heads no section; an untitled tab is captioned by its lone `tab` component's label,
+else by its place ("Tab 2"), never its slot id; and the form's title prints as written, a
+placeholder in it included (it is carried as a literal, never read as a template). A definition holds only the layouts the author
 made: the builder derives nothing into it, and leaves `pdf` out when the configuration has no
 layouts (`pdf: {}` and `pdf: { layouts: [] }` read back without it).
 
@@ -551,13 +561,17 @@ A layout tree of PDF-only components, edited in the designer:
 |---|---|---|
 | `pdf-document` | `body`, `header`, `footer` | the root: page size, orientation, margins, header and footer band heights, accessibility, conformance, attachments, the signature settings |
 | `pdf-section` | `content` | a heading and a group; `keepTogether` moves it whole to the next page; `skipWhenEmpty` leaves it out, heading included, when nothing in it prints |
-| `pdf-field` | — | binds a form component by id, with an optional rendition, label override, PDF field name (the AcroForm name the `field` rendition writes; empty uses the component's value path — its data key (else its id, ADR 0109), container-prefixed, and inside a repeat the entry's path and the field's key within the entry, e.g. `items[0].email`; a checkboxes component names one field per option, `<path>.<option>`; names must be unique per layout, and a name set here gets no row prefix) |
+| `pdf-field` | — | binds a form component by id, with an optional rendition, label override, PDF field name (the AcroForm name the `field` rendition writes; empty uses the component's value path — its data key (else its id, ADR 0109), container-prefixed, and inside a repeat the entry's path and the field's key within the entry, e.g. `items[0].email`; a checkboxes component names one field per option, `<path>.<option>`, the option's value written with `.` as `%2E` and `%` as `%25` so it stays one part of the name (`pets.U%2ES%2E`), its checked state exported as the option's value, and no option's box marked required (the component's required means one ticked); names must be unique per layout, and a name set here gets no row prefix) |
 | `pdf-text` | — | static text with `{{path}}` (a field's value path), `{{row.key}}` inside a repeat (the field's key within the entry: its data key, else its id), `{{page}}` / `{{pages}}`, `{{host.key}}`; or an expression |
 | `pdf-table` | `r{i}c{j}` | rows × columns of cells; `collectionPath` repeats the first non-header row per entry; `skipWhenEmpty` leaves it out when no body cell prints |
 | `pdf-repeat` | `row` | draws its row once per entry of a collection (a repeating section's or a data grid's collection path alike) |
 | `pdf-box` | `content` | a bordered / filled box; with `anchor` it is pinned to a page position instead of flowing; `skipWhenEmpty` leaves it out when nothing in it prints |
-| `pdf-rule`, `pdf-spacer`, `pdf-image`, `pdf-page-break` | — | a line, vertical space, a PNG/JPEG by URL or data URI, a break (optionally changing the page setup after it) |
+| `pdf-rule`, `pdf-spacer`, `pdf-image`, `pdf-page-break` | — | a line, vertical space, a PNG/JPEG by URL or data URI, a break (optionally changing the page setup after it: what the break's `page` sets, field by field and margin by margin, over the document's page, so its margins and header and footer bands carry on) |
 | `pdf-signature` | — | a signature block the layout places on its own (ADR 0061): a named signature field (`fieldName`) with a caption that takes `{{path}}` templates, a `width` (the column's when empty) and `height` (40 pt) — what the server signs into when the layout's signature settings name it, or what a person signs in a viewer; or, as `mode: "line"`, a ruled line for a pen |
+
+The document's page is the layout's `page` over the PDF theme's over the defaults, field by field
+(the margins side by side): a layout that sets only a footer band, as the derived one does, keeps
+the theme's paper size, orientation and margins.
 
 Content flows through `body`; explicit breaks and keep-together control pagination; the header
 and footer bands repeat on every page; anchored boxes are drawn last on the page they name.
@@ -731,7 +745,13 @@ is clipped at the widget; the fill says so with a `field.overflow` warning namin
 A mapping source of `component` names one component's value. A repeating section or a data grid,
 or a component inside one, has no single value: it prints blank and warns `mapping.collection`, naming the
 field and the component. Rows map one `path` source per cell (`items[0].sku`,
-`items[1].sku`, ...), one field for each cell the paper form has.
+`items[1].sku`, ...), one field for each cell the paper form has. A `path` source that names a
+file field (`applicant.doc`, `items[0].receipt`) writes the files' names and sizes, never the
+upload's envelope; a placeholder in a `template` source, as in a `pdf-text` block, reads a path
+through the component it names — by id, by value path, or as an entry's field at its indexed path
+(`{{items[0].pick}}`) — so it prints an option's label and a file's name, a `password`'s answer as
+the same `••••••••` mask its rendition prints, and a generated document cuts it to
+`limits.answerChars` as it cuts that field's answer.
 
 A template that carries JavaScript keeps it: a document `/OpenAction`, `/AA` additional actions
 on the document, its pages or its fields, and the `/Names` JavaScript tree pass through a fill
@@ -793,7 +813,8 @@ page prints. What must fit is the glyphs, from the first line's top to the last 
 the leading outside them is set aside for the fit and the placement both, and wrapped lines are
 spaced at the body line height of the plan's typography (1.35 times the font size when it
 carries none). The font need of a fill is computed from the values, so an Arabic or CJK answer
-asks the font provider for a face that has it. The fill reports one entry per area — `filled`, `empty` (nothing to draw),
+asks the font provider for a face that has it, and names the families of the theme's typography
+the plan carries, so a theme's own faces load for the areas as they do for a generated document. The fill reports one entry per area — `filled`, `empty` (nothing to draw),
 `overflow` (drawn, but clipped; also a warning), `missing` (a page the PDF does not have) — as
 `areas` beside the `fields` report. Areas are page content, drawn after the fields are filled
 and flattened; a PDF with neither fields nor values gains no AcroForm.
@@ -1000,8 +1021,15 @@ file component holds files. The rendition is a separate choice: a file drawn as 
 picture on the page and a file in the pane.
 
 The render model gathers the files (`render/pdf/pdf-attachments.ts`) after the exclusion and
-visibility checks, from the row value inside a repeat, once per distinct file however many
-bindings draw it; a collection drawn as a table formats its rows without rendering the fields in
+visibility checks, from the row value inside a repeat, once per distinct file (the same name,
+size and whole content: every inline byte, or the same storage reference) however many
+bindings draw it. Executable, script and HTML content is never embedded (`attachment.refusedType`,
+`refusedAttachmentType`, checked by the collector and again by the kernel): by the claimed type,
+by the file name's extension (`.exe`, `.msi`, `.bat`, `.cmd`, `.com`, `.scr`, `.ps1`, `.vbs`, `.js`,
+`.wsf`, `.hta`, `.jar`, `.sh`, `.html`, `.htm`, `.xhtml`, `.svgz` and their kin; an `.svg` is judged
+by its content) and by the bytes: an executable header, a shebang, a document opening with an HTML
+element, markup in the XHTML namespace under any prefix or root, XML whose internal DTD subset
+declares entities, an SVG carrying script — prose that merely mentions tags is kept; a collection drawn as a table formats its rows without rendering the fields in
 them, so a collection's descendants are walked when the collection itself is rendered, and the
 template path walks the form tree the same way. Each file becomes an `EmbeddedFile` stream with
 its MIME type, lower-cased, as `/Subtype` (`application/octet-stream` when the browser gave none

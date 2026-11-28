@@ -41,8 +41,8 @@ These apply to the whole generated document. Write them on the layout, or on the
 | Setting | Values | Default |
 |---|---|---|
 | `page.size` | `Letter`, `A4`, `Legal`, or `{ "width": 600, "height": 800 }` in points (each at least 36) | The PDF theme's page, else `Letter` |
-| `page.orientation` | `portrait`, `landscape` | `portrait` |
-| `page.margins` | `top`, `right`, `bottom`, `left`, in points, zero or more | 54 each (three quarters of an inch) |
+| `page.orientation` | `portrait`, `landscape` | The PDF theme's, else `portrait` |
+| `page.margins` | `top`, `right`, `bottom`, `left`, in points, zero or more | The PDF theme's, side by side, else 54 each (three quarters of an inch) |
 | `page.header.height`, `page.footer.height` | Points reserved on every page for the `header` and `footer` slots | None: no band |
 | `accessibility.tagged` | Write a structure tree. See [Accessibility of the PDF](/pdf#accessibility-of-the-pdf) | The theme's `tagged`, else `true` |
 | `accessibility.displayDocTitle` | Ask the viewer to show the title rather than the file name | `true` |
@@ -118,7 +118,7 @@ One of the form's components, placed on the page.
 | `attach` | For a file upload: embed its files in the PDF. Set, it decides either way; left out, the component's own `pdf.attach` does | Left out |
 | `widgetName` | The AcroForm field name, for the `field` rendition. Left out, the component's value path, prefixed inside a repeat by the collection path and row (`items[0].email`). A name set here is used as written, so leave it empty inside a repeat | Left out |
 
-A checkboxes component drawn as `field` gets one widget per option, named after the field and the option. Names must be unique across the layout; a repeated signature field name warns `layout.duplicateWidgetName`.
+A checkboxes component drawn as `field` gets one widget per option, named after the field and the option. Names must be unique across the layout, signature blocks' `fieldName` included; a name a second component or block takes warns `layout.duplicateWidgetName`, and only the first is that field.
 
 ### pdf-text
 
@@ -205,7 +205,7 @@ Where the document is signed.
 
 ### pdf-page-break
 
-A new page from here. With `changePage` set, the `page` setting (`size`, `orientation`, and margins as in the document settings) applies from the new page on.
+A new page from here. With `changePage` set, the `page` setting (`size`, `orientation`, and margins as in the document settings) applies from the new page on. What it leaves out stays the document's: a break that sets only `orientation` keeps the document's size, margins and header and footer bands.
 
 ## Renditions
 
@@ -317,7 +317,7 @@ A source of any other kind is skipped with `mapping.unknownSource`, a component 
 |---|---|---|
 | `text` | None | The value as it is |
 | `date` | None | The value as it is: dates are written in ISO form, `2026-11-14` |
-| `number` | The number of decimals, 0 to 20 | `1250` with pattern `2` is `1250.00`. A value that is not a number is left as it is |
+| `number` | The number of decimals, 0 to 20 | `1250` with pattern `2` is `1250.00`. A value that is not a number is left as it is, and an empty one stays empty |
 | `boolean` | Two words joined with a vertical bar, such as `Oui` and `Non` | The first when the answer is on, the second when it is off. Left out, the PDF theme's yes and no |
 
 ### Areas

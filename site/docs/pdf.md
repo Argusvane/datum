@@ -330,7 +330,7 @@ Uploads share a budget, 4 MiB by default (4 × 1,048,576 bytes), charged by the 
 
 Some files are never embedded:
 
-- Programs and active content, such as executables, scripts and HTML, whatever their bytes (`attachment.refusedType`).
+- Programs and active content, such as executables, scripts and HTML, known by their type, their file name's extension (`.exe`, `.js`, `.html` and the like) or their bytes (`attachment.refusedType`).
 - A file whose inline data is larger than the size it declared (`file.sizeMismatch`).
 
 File names are made safe: no path, no control or direction characters, at most 255 characters.

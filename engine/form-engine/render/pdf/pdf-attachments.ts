@@ -59,6 +59,15 @@ const ATTACHMENT_NAME_RESERVED_CHARS = /[:<>"|?*]/g;
 /** The device names Windows opens whatever the extension (`CON.txt`). */
 const ATTACHMENT_NAME_DEVICE = /^(?:con|prn|aux|nul|conin\$|conout\$|com[1-9\u00B9\u00B2\u00B3]|lpt[1-9\u00B9\u00B2\u00B3])$/i;
 
+/** `text` without the dots and spaces at its end, in one pass from the end. */
+function trimTrailingDotsAndSpaces(text: string): string {
+  let end = text.length;
+  while (end > 0 && (text.charCodeAt(end - 1) === 0x2e || text.charCodeAt(end - 1) === 0x20)) {
+    end -= 1;
+  }
+  return text.slice(0, end);
+}
+
 /**
  * A bare, printable file name for an embedded file: no path, no control or hiding characters and
  * no bidi controls (a right-to-left override cannot make `txt.exe` read as another type), the
@@ -70,24 +79,25 @@ const ATTACHMENT_NAME_DEVICE = /^(?:con|prn|aux|nul|conin\$|conout\$|com[1-9\u00
  */
 export function sanitizeAttachmentName(name: unknown): string {
   const raw = typeof name === "string" ? name : "";
-  let bare = (raw.split(/[\\/]/).pop() ?? "")
-    .replace(ATTACHMENT_NAME_STRIP, "")
-    .replace(ATTACHMENT_NAME_RESERVED_CHARS, "_")
-    .replace(/\.{2,}/g, ".")
-    .trim()
-    .replace(/[. ]+$/, "");
+  let bare = trimTrailingDotsAndSpaces(
+    (raw.split(/[\\/]/).pop() ?? "")
+      .replace(ATTACHMENT_NAME_STRIP, "")
+      .replace(ATTACHMENT_NAME_RESERVED_CHARS, "_")
+      .replace(/\.{2,}/g, ".")
+      .trim()
+  );
   if (bare.length > ATTACHMENT_NAME_MAX) {
     const dot = bare.lastIndexOf(".");
     const extension = dot > 0 && bare.length - dot <= 16 ? bare.slice(dot) : "";
     // The cut may end on half a pair, a dot or a space: none may be left at the end of the stem.
-    bare = bare.slice(0, ATTACHMENT_NAME_MAX - extension.length).replace(/[\uD800-\uDBFF]$/, "").replace(/[. ]+$/, "") + extension;
+    bare = trimTrailingDotsAndSpaces(bare.slice(0, ATTACHMENT_NAME_MAX - extension.length).replace(/[\uD800-\uDBFF]$/, "")) + extension;
   }
   if (bare === "") {
     return "file";
   }
   const firstDot = bare.indexOf(".");
   // Windows drops the spaces and dots before the extension, so `nul .txt` opens the device too.
-  return ATTACHMENT_NAME_DEVICE.test((firstDot < 0 ? bare : bare.slice(0, firstDot)).replace(/[. ]+$/, "")) ? "_" + bare : bare;
+  return ATTACHMENT_NAME_DEVICE.test(trimTrailingDotsAndSpaces(firstDot < 0 ? bare : bare.slice(0, firstDot))) ? "_" + bare : bare;
 }
 
 /**
@@ -117,6 +127,14 @@ export function uploadedAttachment(
 /** Types a reader opens as a program or as active content: refused whatever the bytes. */
 const REFUSED_MIME = /^(?:application\/(?:x-msdownload|x-msdos-program|x-dosexec|x-executable|x-elf|x-mach-binary|x-sharedlib|x-sh|x-shellscript|x-csh|x-bat|x-msi|x-ms-installer|vnd\.microsoft\.portable-executable|java-archive|x-java-archive|javascript|x-javascript|ecmascript|x-ecmascript|x-vbs|x-vbscript|x-msdos-batch|xhtml\+xml|hta|x-hta|x-powershell)|text\/(?:html|javascript|x-javascript|ecmascript|vbscript|x-vbscript|x-shellscript|x-sh))$/;
 
+/**
+ * File extensions a reader's system opens as a program, a script or a web page: refused whatever
+ * the claimed type and the bytes. An `.svg` is not among them: it is judged by the script it
+ * carries; a compressed `.svgz` cannot be read for script, so it is refused.
+ */
+const REFUSED_EXTENSION =
+  /\.(?:exe|dll|msi|msp|com|scr|pif|cpl|bat|cmd|ps1|psm1|psd1|vbs|vbe|js|jse|mjs|cjs|wsf|wsh|wsc|hta|lnk|reg|jar|jnlp|sh|html|htm|xhtml|xht|shtml|mht|mhtml|svgz)$/i;
+
 /** How many leading bytes the binary-header sniff reads. */
 const SNIFF_BYTES = 65536;
 /** How many bytes of a markup-looking upload the HTML / SVG scan reads (it scans the whole file up to this). */
@@ -133,7 +151,7 @@ export function claimedMediaType(claimed: unknown): string {
 
 /** HTML elements a document may open with (a lead of one of these is a page, whatever the claim). */
 const HTML_LEAD =
-  /^<(?:!doctype\s+html|(?:html|head|body|script|iframe|frame|frameset|meta|link|base|style|title|div|span|p|a|img|table|form|input|button|object|embed|applet|video|audio|source|details|marquee|center|font|h[1-6]|ul|ol|li|br|hr|b|i|u)(?=[\s/>]))/;
+  /^<(?:!doctype\s+html|(?:html|head|body|script|noscript|template|iframe|frame|frameset|noframes|meta|link|base|basefont|style|title|div|span|p|a|img|picture|table|caption|thead|tbody|tfoot|tr|td|th|colgroup|form|input|button|select|optgroup|textarea|fieldset|legend|dialog|object|embed|applet|param|canvas|video|audio|source|details|summary|marquee|blink|center|font|big|small|tt|strike|s|em|strong|code|pre|kbd|samp|var|dfn|abbr|acronym|cite|q|sub|sup|mark|ins|del|bdi|bdo|ruby|rt|rp|wbr|nobr|xmp|plaintext|listing|isindex|keygen|bgsound|blockquote|figure|figcaption|section|main|article|aside|nav|header|footer|hgroup|h[1-6]|ul|ol|li|dl|dt|dd|br|hr|b|i|u)(?=[\s/>]))/;
 const SVG_ROOT = /^<(?:[a-z][\w.-]*:)?svg(?=[\s/>])/;
 const JAVASCRIPT_URL = new RegExp("^[\\u0000-\\u0020]*" + "javascript".split("").join("[\\u0000-\\u0020]*") + "[\\u0000-\\u0020]*:");
 
@@ -272,7 +290,16 @@ function svgScript(text: string, from: number): string | undefined {
   return undefined;
 }
 
-/** Why a markup document (decoded text) must not be embedded: HTML by its opening tag, or an SVG carrying script. */
+/** The XHTML namespace: an element in it is HTML whatever its prefix, and whatever the root says. */
+const XHTML_NAMESPACE = "www.w3.org/1999/xhtml";
+/** The SVG namespace: an element in it can run script anywhere in an XML document. */
+const SVG_NAMESPACE = "w3.org/2000/svg";
+
+/**
+ * Why a markup document (decoded text) must not be embedded: HTML by its opening tag, an internal
+ * DTD subset that declares entities (an entity can hold the markup or the `javascript:` the scan
+ * would otherwise see), XHTML-namespaced markup under any prefix or root, or SVG carrying script.
+ */
 function markupRefusal(text: string): string | undefined {
   let pos = 0;
   const n = text.length;
@@ -298,6 +325,9 @@ function markupRefusal(text: string): string | undefined {
       let end = text.indexOf(">", pos);
       const bracket = text.indexOf("[", pos);
       if (bracket >= 0 && (end < 0 || bracket < end)) {
+        if (/<!(?:entity|attlist)[\s>]/i.test(text.slice(bracket))) {
+          return "its bytes are XML whose document type declares entities or attributes";
+        }
         const close = text.indexOf("]", bracket);
         end = close < 0 ? -1 : text.indexOf(">", close);
       }
@@ -316,8 +346,15 @@ function markupRefusal(text: string): string | undefined {
   if (HTML_LEAD.test(lead)) {
     return "its bytes are an HTML document";
   }
-  const rootTag = lead.slice(0, Math.max(lead.indexOf(">"), 0) || lead.length);
-  if (SVG_ROOT.test(lead) || (/^<[a-z]/.test(lead) && rootTag.indexOf("w3.org/2000/svg") >= 0)) {
+  if (!/^<[a-z_]/.test(lead)) {
+    return undefined;
+  }
+  // A namespace is an attribute value, which may be written with character references.
+  const lower = decodeReferences(text).toLowerCase();
+  if (lower.indexOf(XHTML_NAMESPACE) >= 0) {
+    return "its bytes are markup in the XHTML namespace";
+  }
+  if (SVG_ROOT.test(lead) || lower.indexOf(SVG_NAMESPACE) >= 0) {
     return svgScript(text.toLowerCase(), pos);
   }
   return undefined;
@@ -329,13 +366,21 @@ function markupRefusal(text: string): string | undefined {
  * HTML), or its bytes say so whatever it claims — a PE (MZ with the `PE\0\0` header where the DOS
  * header points), an ELF, Mach-O or Java class header, a shebang naming a path, a document that
  * opens with an HTML element (after a byte order mark, XML prolog or comments; UTF-16 read), an
- * SVG carrying script anywhere in the file. Prose that merely mentions tags is not HTML. `data` is
- * the inline base64 when there is some.
+ * SVG carrying script anywhere in the file, XML in the XHTML namespace under any prefix, XML whose
+ * internal DTD subset declares entities — or its file name ends in a program's, a script's or a web
+ * page's extension ({@link REFUSED_EXTENSION}). Prose that merely mentions tags is not HTML. `data`
+ * is the inline base64 when there is some; `name` the file name the reader would save it under.
  */
-export function refusedAttachmentType(claimed: unknown, data?: string): string | undefined {
+export function refusedAttachmentType(claimed: unknown, data?: string, name?: unknown): string | undefined {
   const type = claimedMediaType(claimed);
   if (REFUSED_MIME.test(type)) {
     return `its type ${type} is executable or active content`;
+  }
+  if (name !== undefined) {
+    const extension = REFUSED_EXTENSION.exec(sanitizeAttachmentName(name));
+    if (extension) {
+      return `its name ends in ${extension[0].toLowerCase()}, which opens as a program, a script or a web page`;
+    }
   }
   if (typeof data !== "string" || data === "") {
     return undefined;
@@ -394,13 +439,18 @@ export function base64DecodedLength(data: string): number {
   return kernelBase64DecodedLength(data);
 }
 
-/** The same file picked twice — bound twice in a layout, or once per row of an unchanged repeat — is embedded once. */
-function dedupeKey(file: FileAttachment): string {
+/**
+ * The same file picked twice — bound twice in a layout, or once per row of an unchanged repeat — is
+ * embedded once. Two keys tell files apart: the whole content (the inline base64 itself, or the
+ * storage reference), and the name and size. The content key is the string as it is, so files
+ * that differ anywhere in their bytes never meet.
+ */
+function dedupeKey(file: FileAttachment): { content: string; meta: string } {
   if (isBase64FileAttachment(file)) {
-    return `data:${file.name}:${file.size}:${file.data.slice(0, 64)}:${file.data.length}`;
+    return { content: file.data, meta: `data:${file.name}:${file.size}` };
   }
   const ref = (file as { ref?: unknown }).ref;
-  return `ref:${file.storage}:${file.name}:${file.size}:${ref === undefined ? "" : kernelStableStringify(ref)}`;
+  return { content: `ref:${file.storage}:${ref === undefined ? "" : kernelStableStringify(ref)}`, meta: `ref:${file.name}:${file.size}` };
 }
 
 /**
@@ -410,7 +460,8 @@ function dedupeKey(file: FileAttachment): string {
  */
 export class PdfAttachmentCollector {
   private readonly entries: PdfDocumentAttachment[] = [];
-  private readonly seen = new Set<string>();
+  /** Content key -> the name-and-size keys seen with it. */
+  private readonly seen = new Map<string, Set<string>>();
   private used = 0;
 
   public constructor(
@@ -420,11 +471,11 @@ export class PdfAttachmentCollector {
 
   public add(file: FileAttachment, componentId: string, description?: string, relationship?: PdfAttachmentRelationship): void {
     const key = dedupeKey(file);
-    if (this.seen.has(key)) {
+    if (this.seen.get(key.content)?.has(key.meta)) {
       return;
     }
     // Executable, script and HTML content is never embedded.
-    const refusedWhy = refusedAttachmentType(file.type, isBase64FileAttachment(file) ? file.data : undefined);
+    const refusedWhy = refusedAttachmentType(file.type, isBase64FileAttachment(file) ? file.data : undefined, file.name);
     if (refusedWhy !== undefined) {
       const message = `"${file.name}" from "${componentId}" is not attached: ${refusedWhy} (attachment.refusedType).`;
       if (this.policy.onExceeded === "fail") {
@@ -462,7 +513,9 @@ export class PdfAttachmentCollector {
       });
       return;
     }
-    this.seen.add(key);
+    const metas = this.seen.get(key.content) ?? new Set<string>();
+    metas.add(key.meta);
+    this.seen.set(key.content, metas);
     this.used += size;
     this.entries.push(uploadedAttachment(file, componentId, description, relationship));
   }

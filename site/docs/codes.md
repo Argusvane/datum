@@ -420,9 +420,10 @@ A PDF reply carries `warnings`, each `{ code, message, componentId?, blockId? }`
 | `layout.conditionInvalid`, `layout.conditionFailed` | A layout's `when` condition could not be run or evaluated. It counted as not holding | wrong layout |
 | `layout.nestedDocument` | A document inside a document was skipped | content missing |
 | `layout.unknownType` | A layout node has a type the layout does not know. Skipped | content missing |
-| `layout.duplicateWidgetName` | A signature block names a field another block uses. Only the first is a field | |
+| `layout.duplicateWidgetName` | Two owners take one PDF field name: two signature blocks, a signature block and a component's `field` rendition, or two components (a `widgetName` that repeats another's path). Only the first is that field. One component bound twice is one field on purpose and says nothing | wrong output |
 | `component.unknown` | A component has no PDF rendition here. The generic one was used. Raised under `pdf-unknown-components: "warn"` | generic look |
 | `repeat.unbound` | A repeat names no collection | content missing |
+| `options.unavailable` | A component's option source failed, or had not answered, when the PDF was built. The PDF lists none of its options and its answer prints as stored rather than as the option's label | wrong output |
 | `render.truncated` | An answer ran past `limits.answerChars` (20,000 by default) and the rest was left out | content missing |
 | `render.limitsCapped` | The layout asked for a render limit above the ceiling. The ceiling applied | |
 | `text.bidiStripped` | Bidirectional control characters typed into an answer were removed, since they can reorder the text around them | |
@@ -435,6 +436,7 @@ A PDF reply carries `warnings`, each `{ code, message, componentId?, blockId? }`
 | `formula.invalid` | A mapping or layout expression could not be read. It prints blank | content missing |
 | `theme.notFound` | A PDF theme id nobody registered. The next rung was used | |
 | `theme.notPdf` | An id names a theme that is not a PDF theme. The next rung was used | |
+| `style.invalid` | A theme's or a layout block's component style has a value of the wrong kind, such as `"12"` for a size. That value was ignored | |
 
 ### Fonts
 

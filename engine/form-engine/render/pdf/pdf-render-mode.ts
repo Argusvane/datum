@@ -15,6 +15,7 @@ export function registerPdfRenderMode(): void {
   }
   // Everything the PDF reads travels in `request.pdf`: the host's default theme (`pdf.theme`),
   // the call's `themeId`, the lookup (`pdf.resolveTheme`) and the binding's suggestion
-  // (`pdf.binding`). The request's own `theme` is the form's look, which paper never reads.
+  // (`pdf.binding`), and the definition's `kinds` map (`pdf.kinds`). The request's own `theme`
+  // is the form's look, which paper never reads.
   registerRenderModeAdapter("pdf", async (request, modelContext) => buildPdfRenderModel(request.root, request.state, request.resolver, modelContext, { ...request.pdf }));
 }
