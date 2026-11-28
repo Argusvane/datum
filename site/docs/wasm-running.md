@@ -219,7 +219,7 @@ See the [conformance suite](/conformance).
 
 The `@argusvane/datum-submissions` package is a service that registers a definition, takes an envelope and answers with a verdict. It runs the sandbox for you: see [Validating a submission on a server](/engine#validating-a-submission-on-a-server).
 
-Its Node.js entry does not start `qjs-wasi.wasm` as a command. It embeds the page's engine, Bellard's QuickJS from quickjs-emscripten, and runs it in a worker thread:
+Its Node.js entry does not start `qjs-wasi.wasm` as a command. It embeds the page's engine, the one inside `datum-wasm.js`, and runs it in a worker thread:
 
 - **A fresh sandbox for every call.** Each run gets a new WebAssembly instance with its own memory, the program and your rule modules loaded into it. It answers once and is discarded, so nothing a run did is there for the next.
 - **The next one is built ahead.** After each answer the worker builds the next sandbox, so a lone request does not wait for it. Back to back, a run costs about 70 ms on a laptop, most of it loading the program.
