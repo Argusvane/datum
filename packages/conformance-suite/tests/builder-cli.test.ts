@@ -33,7 +33,7 @@ describe("builder flags", () => {
   });
 
   it("refuses what cannot work", () => {
-    for (const argv of [["--builder-host", "php"], ["--builder-low-cookie", "x"], ["--definition-limit", "0"], ["--max-saves", "x"], ["--builder-abi", "4.0.0"]]) {
+    for (const argv of [["--builder-host", "php"], ["--builder-low-cookie", "x"], ["--definition-limit", "0"], ["--max-saves", "x"], ["--builder-abi", "1.0.0"]]) {
       expect(() => parseArgs(argv), argv.join(" ")).toThrow(UsageError);
     }
     expect(() => builderConfigFrom(parseArgs(["--builder"]), {})).toThrow(/needs --endpoint/);

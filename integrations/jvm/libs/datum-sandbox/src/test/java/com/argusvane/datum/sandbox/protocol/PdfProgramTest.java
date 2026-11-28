@@ -32,43 +32,46 @@ class PdfProgramTest {
     }
 
     private static String capabilities(String abi) {
-        return "{\"ok\":true,\"op\":\"capabilities\",\"abi\":\"" + abi + "\",\"features\":[\"formulas\",7,\"formula-functions\"]}";
+        return "{\"ok\":true,\"op\":\"capabilities\",\"abi\":\"" + abi + "\",\"kernelVersion\":\"0.1.0\"}";
     }
 
     @Test
     void speaksIsMajorOnlyAboveTheFloor() {
-        assertThat(PdfAbi.MIN).isEqualTo("4.0.0");
-        assertThat(SandboxAbi.MIN).isEqualTo("4.1.0");
-        assertThat(PdfAbi.speaks("4.0.0")).isTrue();
-        assertThat(PdfAbi.speaks("4.1.4")).isTrue();
-        assertThat(PdfAbi.speaks("3.18.0")).isFalse();
-        assertThat(PdfAbi.speaks("5.0.0")).isFalse();
-        assertThat(PdfAbi.speaks("3.99.0")).isFalse();
-        assertThat(PdfAbi.speaks("4.0")).isFalse();
+        assertThat(PdfAbi.MIN).isEqualTo("1.0.0");
+        assertThat(SandboxAbi.MIN).isEqualTo("1.0.0");
+        assertThat(PdfAbi.speaks("1.0.0")).isTrue();
+        assertThat(PdfAbi.speaks("1.1.4")).isTrue();
+        assertThat(PdfAbi.speaks("0.18.0")).isFalse();
+        assertThat(PdfAbi.speaks("2.0.0")).isFalse();
+        assertThat(PdfAbi.speaks("0.99.0")).isFalse();
+        assertThat(PdfAbi.speaks("1.0")).isFalse();
         assertThat(PdfAbi.speaks(null)).isFalse();
     }
 
     @Test
     void capabilitiesAreAskedOncePerProgram() {
-        FakeRuntime runtime = guest(capabilities("4.0.2"), call -> "{\"ok\":true,\"op\":\"document\",\"bytes\":\"JVBERi0=\"}");
+        FakeRuntime runtime = guest(capabilities("1.0.2"), call -> "{\"ok\":true,\"op\":\"document\",\"bytes\":\"JVBERi0=\"}");
         AbiProbe probe = new AbiProbe();
         PdfProgram pdf = new PdfProgram(runtime, PDF, ProgramLimits.defaults(), probe);
-        assertThat(pdf.capabilities()).containsExactly("formulas", "formula-functions");
+        assertThat(pdf.capabilities()).satisfies(answer -> {
+            assertThat(answer.abi()).isEqualTo("1.0.2");
+            assertThat(answer.kernelVersion()).isEqualTo("0.1.0");
+        });
         ObjectNode request = JsonNodeFactory.instance.objectNode().put("abi", PdfAbi.MIN).put("op", "document");
         assertThat(pdf.call(request).get("bytes").stringValue()).isEqualTo("JVBERi0=");
         assertThat(runtime.calls).hasSize(2);
         FakeRuntime.Call first = runtime.calls.get(0);
-        assertThat(first.input().toString()).isEqualTo("{\"abi\":\"4.0.0\",\"op\":\"capabilities\"}");
+        assertThat(first.input().toString()).isEqualTo("{\"abi\":\"1.0.0\",\"op\":\"capabilities\"}");
         assertThat(first.nonce()).as("no nonce frame for the PDF program").isNull();
         assertThat(first.script()).isEqualTo(RunScript.PDF);
         assertThat(first.argv()).containsExactly("qjs", "--std", "-I", "/app/datum-pdf-program.js", "/app/run.js");
         assertThat(first.budget()).isEqualTo(ProgramLimits.defaults().pdfBudget());
-        assertThat(probe.pdfFeatures(PDF)).contains(java.util.List.of("formulas", "formula-functions"));
+        assertThat(probe.pdfCapabilities(PDF)).hasValueSatisfying(answer -> assertThat(answer.kernelVersion()).isEqualTo("0.1.0"));
     }
 
     @Test
     void aProgramOfAnotherMajorOrOlderThanTheFloorIsUnavailable() {
-        for (String abi : new String[] {"5.0.0", "3.18.0", "2.99.0"}) {
+        for (String abi : new String[] {"2.0.0", "0.18.0", "0.99.0"}) {
             FakeRuntime runtime = guest(capabilities(abi), call -> "{\"ok\":true}");
             PdfProgram pdf = new PdfProgram(runtime, PDF, ProgramLimits.defaults(), new AbiProbe());
             assertThatThrownBy(() -> pdf.call(JsonNodeFactory.instance.objectNode().put("op", "document")))
@@ -78,6 +81,9 @@ class PdfProgramTest {
         FakeRuntime refusing = guest("{\"ok\":false,\"error\":{\"code\":\"abi_mismatch\",\"message\":\"x\"}}", call -> "{}");
         assertThatThrownBy(() -> new PdfProgram(refusing, PDF, ProgramLimits.defaults(), new AbiProbe()).capabilities())
             .isInstanceOf(ProgramUnavailableException.class).hasMessageContaining("abi_mismatch");
+        FakeRuntime unversioned = guest("{\"ok\":true,\"op\":\"capabilities\",\"abi\":\"1.0.0\"}", call -> "{}");
+        assertThatThrownBy(() -> new PdfProgram(unversioned, PDF, ProgramLimits.defaults(), new AbiProbe()).capabilities())
+            .as("the kernel's version is required").isInstanceOf(ProgramUnavailableException.class).hasMessageContaining("kernelVersion");
         FakeRuntime throwing = new FakeRuntime(call -> RunOutput.exited(1, null, "TypeError".getBytes(StandardCharsets.UTF_8)));
         assertThatThrownBy(() -> new PdfProgram(throwing, PDF, ProgramLimits.defaults(), new AbiProbe()).capabilities())
             .isInstanceOf(ProgramUnavailableException.class).hasMessageContaining("THREW");
@@ -85,7 +91,7 @@ class PdfProgramTest {
 
     @Test
     void aRefusalCarriesTheKernelsCodeAndBadAnswersAreRefused() {
-        FakeRuntime runtime = guest(capabilities("4.0.0"), call -> "{\"ok\":false,\"error\":{\"code\":\"template\",\"message\":\"guest words\"}}");
+        FakeRuntime runtime = guest(capabilities("1.0.0"), call -> "{\"ok\":false,\"error\":{\"code\":\"template\",\"message\":\"guest words\"}}");
         PdfProgram pdf = new PdfProgram(runtime, PDF, ProgramLimits.defaults(), new AbiProbe());
         assertThatThrownBy(() -> pdf.call(JsonNodeFactory.instance.objectNode().put("op", "fill")))
             .isInstanceOfSatisfying(SandboxException.class, e -> {
@@ -93,10 +99,10 @@ class PdfProgramTest {
                 assertThat(e.programCode()).isEqualTo("template");
                 assertThat(e.getMessage()).doesNotContain("guest words");
             });
-        PdfProgram notJson = new PdfProgram(guest(capabilities("4.0.0"), call -> "%PDF-1.7"), PDF, ProgramLimits.defaults(), new AbiProbe());
+        PdfProgram notJson = new PdfProgram(guest(capabilities("1.0.0"), call -> "%PDF-1.7"), PDF, ProgramLimits.defaults(), new AbiProbe());
         assertThatThrownBy(() -> notJson.call(JsonNodeFactory.instance.objectNode()))
             .isInstanceOfSatisfying(SandboxException.class, e -> assertThat(e.reason()).isEqualTo(Reason.NOT_JSON));
-        PdfProgram array = new PdfProgram(guest(capabilities("4.0.0"), call -> "[]"), PDF, ProgramLimits.defaults(), new AbiProbe());
+        PdfProgram array = new PdfProgram(guest(capabilities("1.0.0"), call -> "[]"), PDF, ProgramLimits.defaults(), new AbiProbe());
         assertThatThrownBy(() -> array.call(JsonNodeFactory.instance.objectNode()))
             .isInstanceOfSatisfying(SandboxException.class, e -> assertThat(e.reason()).isEqualTo(Reason.NO_OUTCOME));
     }
@@ -131,15 +137,15 @@ class PdfProgramTest {
     void aFailedCapabilitiesAnswerIsRememberedForAMinute() {
         MovingClock clock = new MovingClock();
         AbiProbe probe = new AbiProbe(clock);
-        FakeRuntime stale = guest(capabilities("3.14.0"), call -> "{\"ok\":true}");
+        FakeRuntime stale = guest(capabilities("0.14.0"), call -> "{\"ok\":true}");
         PdfProgram pdf = new PdfProgram(stale, PDF, ProgramLimits.defaults(), probe);
         ObjectNode request = JsonNodeFactory.instance.objectNode().put("op", "document");
-        assertThatThrownBy(() -> pdf.call(request)).isInstanceOf(ProgramUnavailableException.class).hasMessageContaining("3.14.0");
+        assertThatThrownBy(() -> pdf.call(request)).isInstanceOf(ProgramUnavailableException.class).hasMessageContaining("0.14.0");
         assertThat(stale.calls).hasSize(1);
         // Within the minute: refused with the same words, and nothing runs.
         clock.advance(Duration.ofSeconds(59));
         assertThatThrownBy(() -> pdf.call(request)).isInstanceOfSatisfying(ProgramUnavailableException.class, e -> {
-            assertThat(e.getMessage()).contains("3.14.0");
+            assertThat(e.getMessage()).contains("0.14.0");
             assertThat(e.httpStatus()).isEqualTo(503);
         });
         assertThatThrownBy(pdf::capabilities).isInstanceOf(ProgramUnavailableException.class);
@@ -157,8 +163,8 @@ class PdfProgramTest {
         assertThatThrownBy(failing::capabilities).isInstanceOf(ProgramUnavailableException.class).hasMessageContaining("THREW");
         assertThat(throwing.calls).hasSize(1);
         Program other = Program.of(Program.Kind.PDF, "/* other */".getBytes(StandardCharsets.UTF_8));
-        FakeRuntime good = guest(capabilities("4.0.0"), call -> "{\"ok\":true}");
-        assertThat(new PdfProgram(good, other, ProgramLimits.defaults(), probe).capabilities()).containsExactly("formulas", "formula-functions");
+        FakeRuntime good = guest(capabilities("1.0.0"), call -> "{\"ok\":true}");
+        assertThat(new PdfProgram(good, other, ProgramLimits.defaults(), probe).capabilities().abi()).isEqualTo("1.0.0");
 
         // A run the host cancelled says nothing about the program: not remembered.
         AbiProbe fresh = new AbiProbe(clock);
@@ -169,10 +175,10 @@ class PdfProgramTest {
         assertThat(cancelled.calls).hasSize(2);
         assertThat(fresh.pdfFailure(PDF)).isEmpty();
         // A later good answer clears a remembered failure.
-        FakeRuntime recovered = guest(capabilities("4.0.0"), call -> "{\"ok\":true}");
+        FakeRuntime recovered = guest(capabilities("1.0.0"), call -> "{\"ok\":true}");
         fresh.rememberPdfFailure(PDF, "earlier");
         clock.advance(Duration.ofSeconds(60));
-        assertThat(new PdfProgram(recovered, PDF, ProgramLimits.defaults(), fresh).capabilities()).hasSize(2);
+        assertThat(new PdfProgram(recovered, PDF, ProgramLimits.defaults(), fresh).capabilities().kernelVersion()).isEqualTo("0.1.0");
         assertThat(fresh.pdfFailure(PDF)).isEmpty();
     }
 

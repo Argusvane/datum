@@ -1,6 +1,6 @@
 package com.argusvane.datum.sandbox.protocol;
 
-import java.util.List;
+import com.argusvane.datum.core.contracts.PdfCapabilitiesResponse;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
@@ -20,8 +20,8 @@ public interface PdfKernel {
     /** The program this runs. */
     Program program();
 
-    /** The program's feature names, which also prove its ABI ({@link PdfProgram#capabilities()}). */
-    List<String> capabilities();
+    /** The program's capabilities answer, which proves its ABI ({@link PdfProgram#capabilities()}). */
+    PdfCapabilitiesResponse capabilities();
 
     /** Runs one request after the ABI gate ({@link PdfProgram#call(ObjectNode)}). */
     ObjectNode call(ObjectNode request);

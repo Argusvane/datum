@@ -10,6 +10,18 @@ release across npm, Maven Central and PyPI. 0.1.0 is published to npm only. What
 
 ## [Unreleased]
 
+### Changed
+
+- The sandbox ABI (`WASM_ABI_VERSION`, 4.1.0 in 0.1.0) and the PDF ABI (`PDF_ABI_VERSION`, 4.0.0 in 0.1.0) are both
+  reset to 1.0.0, and every host's floor for both programs is 1.0.0. A program built from 0.1.0 answers another major,
+  so a host of the next release refuses it at start: rebuild the programs from the same release as the host.
+
+### Removed
+
+- The PDF program's `capabilities` reply no longer lists features; it answers `abi` and `kernelVersion`. Hosts no
+  longer check a program for features, and the conformance suite runs the `OUT` class against any PDF program of
+  ABI 1.0.0 or a later version of that major.
+
 ## [0.1.0] - 2026-11-26
 
 The first release, 0.1.0, contains the following.

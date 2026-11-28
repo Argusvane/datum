@@ -174,12 +174,12 @@ describe("sandbox inspect: QuickJS and the in-process kernel answer the same byt
   });
 
   it("refuses alike: a newer version, another major, an op of no shape, a request that is not an object", async () => {
-    const newer = await both(bare, stableStringify({ abi: "4.2.0", op: "public", definition: definition() }));
+    const newer = await both(bare, stableStringify({ abi: "1.1.0", op: "public", definition: definition() }));
     expect(newer.answer).toMatchObject({ ok: false, error: { code: "abi_mismatch" } });
     // Another major either way is refused; a request of the program's own version is answered.
-    const otherMajor = await both(bare, stableStringify({ abi: "3.18.0", op: "public", definition: definition() }));
+    const otherMajor = await both(bare, stableStringify({ abi: "0.18.0", op: "public", definition: definition() }));
     expect(otherMajor.answer).toMatchObject({ ok: false, error: { code: "abi_mismatch" } });
-    const own = await both(bare, stableStringify({ abi: "4.1.0", op: "public", definition: definition() }));
+    const own = await both(bare, stableStringify({ abi: "1.0.0", op: "public", definition: definition() }));
     expect(own.answer).toMatchObject({ ok: true, op: "public" });
     const none = await both(bare, stableStringify({ op: "public", definition: definition() }));
     expect(none.answer).toMatchObject({ ok: false, error: { code: "abi_mismatch" } });
@@ -275,7 +275,7 @@ describe("sandbox inspect: the structure of a definition", () => {
   });
 
   it("serves an own __proto__ key as a key and refuses it in check, identically", async () => {
-    const text2 = '{"abi":"4.1.0","op":"check","definition":{"id":"f","version":"1","schemaVersion":"1","__proto__":{"x":1},"root":{"id":"form","type":"form","configuration":{},"children":{"content":[]}}}}';
+    const text2 = '{"abi":"1.0.0","op":"check","definition":{"id":"f","version":"1","schemaVersion":"1","__proto__":{"x":1},"root":{"id":"form","type":"form","configuration":{},"children":{"content":[]}}}}';
     const { answer } = await both(pair, text2);
     expect(tokens((answer as { structure?: Array<{ code: string; where: string }> }).structure)).toEqual(["definition.key.prototype@definition"]);
   });
@@ -294,9 +294,9 @@ describe("sandbox inspect: the structure of a definition", () => {
   });
 
   it("a request of the program's major is accepted and gets the full structure answer; another major is refused", async () => {
-    const own = await both(pair, stableStringify({ abi: "4.1.0", op: "check", definition: form([text("dup"), text("dup")]) }));
+    const own = await both(pair, stableStringify({ abi: "1.0.0", op: "check", definition: form([text("dup"), text("dup")]) }));
     expect(own.answer).toMatchObject({ ok: true, verdict: "fail", structure: [{ code: "component.id.duplicate" }, { code: "component.dataPath.duplicate" }] });
-    const newer = await both(pair, stableStringify({ abi: "5.0.0", op: "check", definition: form([text("a")]) }));
+    const newer = await both(pair, stableStringify({ abi: "2.0.0", op: "check", definition: form([text("a")]) }));
     expect(newer.answer).toMatchObject({ ok: false, error: { code: "abi_mismatch" } });
   });
 

@@ -39,7 +39,7 @@ import tools.jackson.databind.node.ObjectNode;
  * A runtime that plays the PDF program with the kernel's reply shapes ({@code pdf-abi.ts} {@code PdfKernelResponse}),
  * so the service can be tested without a WebAssembly engine.
  *
- * <p>{@code capabilities} answers ABI 4.0.0 and the feature list it is given. {@code document}, {@code render} and
+ * <p>{@code capabilities} answers ABI 1.0.0 and a kernel version. {@code document}, {@code render} and
  * {@code fill} answer a small "PDF" ({@code %PDF-1.7} and the request's digest) and, when the request carries a
  * {@code signature}, a signing handoff shaped as the kernel's ({@code sign.ts prepareSignature}): the byte range
  * {@code [0, 10, 20, length - 20]}, its SHA-256 as {@code digest}, and as {@code toBeSigned} a DER SET of signed
@@ -78,8 +78,6 @@ public final class ScriptedPdfRuntime implements GuestRuntime {
     private final List<Request> requests = Collections.synchronizedList(new ArrayList<>());
     private final Map<String, Function<ObjectNode, String>> handlers = new ConcurrentHashMap<>();
     private final Map<String, Prepared> prepared = new ConcurrentHashMap<>();
-    private volatile List<String> features = List.of("render", "layout", "document", "build", "fill", "inspect", "signature",
-        "verify-detail", "formulas");
 
     public ScriptedPdfRuntime() {
         handlers.put("document", this::produced);
@@ -101,12 +99,6 @@ public final class ScriptedPdfRuntime implements GuestRuntime {
     /** Replaces an op's answer. */
     public ScriptedPdfRuntime on(String op, Function<ObjectNode, String> answer) {
         handlers.put(op, answer);
-        return this;
-    }
-
-    /** The capabilities' feature list. */
-    public ScriptedPdfRuntime features(String... names) {
-        this.features = List.of(names);
         return this;
     }
 
@@ -159,9 +151,7 @@ public final class ScriptedPdfRuntime implements GuestRuntime {
         }
         String op = body.path("op").asString("");
         if (op.equals("capabilities")) {
-            ArrayNode list = NODES.arrayNode();
-            features.forEach(list::add);
-            return RunOutput.exited(0, ("{\"ok\":true,\"op\":\"capabilities\",\"abi\":\"4.0.0\",\"features\":" + list + "}").getBytes(StandardCharsets.UTF_8),
+            return RunOutput.exited(0, "{\"ok\":true,\"op\":\"capabilities\",\"abi\":\"1.0.0\",\"kernelVersion\":\"0.1.0\"}".getBytes(StandardCharsets.UTF_8),
                 new byte[0]);
         }
         requests.add(new Request(op, body.deepCopy()));

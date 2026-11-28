@@ -52,8 +52,8 @@ may also evaluate the program in a QuickJS runtime; JVM and .NET hosts embed Qui
 0029 envisages and call the same global. Byte-identical output across these is a tested invariant
 (a parity suite and a release gate). The program is a second portable program beside the
 validation one of ADR 0029, with an ABI of its own (`PDF_ABI_VERSION`, apart from
-`WASM_ABI_VERSION`; [`docs/reference/pdf-abi.md`](../reference/pdf-abi.md) holds the operations,
-the messages and what each version added).
+`WASM_ABI_VERSION`; [`docs/reference/pdf-abi.md`](../reference/pdf-abi.md) holds the operations
+and the messages).
 
 The program carries **two layers** so a non-JS host never needs the TypeScript engine: the
 *model builder* (engine slices bundled by esbuild that turn a form root, a layout, values and a
@@ -277,7 +277,7 @@ exception into a warning. Template layouts involve no renditions and are never c
 ### 16. Where the policy is set
 
 It is set where a host already configures a PDF: on the wire (`PdfDocumentInputs.unknownComponents`
-on `document` and `build`, announced by the `unknown-components` capability), in the engine
+on `document` and `build`), in the engine
 (`PdfRenderModelOptions`, `RenderFormPdfOptions`) and on the elements (`pdfUnknownComponents`,
 the `pdf-unknown-components` attribute), the last as the default for `renderPdf()` and
 `downloadPdf()`, which is what the toolbar's PDF button and a button's `"pdf"` action do.

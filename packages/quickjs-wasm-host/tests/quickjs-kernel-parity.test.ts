@@ -1111,9 +1111,9 @@ describe("QuickJS vs in-process kernel parity: presentations", () => {
     { ...APPLY_BELOW, "@apply.m1": 12000, "@apply.m2": 12000, "@apply.m3": 12000, m1: 1, work_email: "x", income_total: 2 }
   ];
 
-  it("runs at ABI 4.1.0, with the presentation, formula and data grid functions in the program", () => {
-    expect(WASM_ABI_VERSION).toBe("4.1.0");
-    expect(new QuickJsWasmHostAdapter().abiVersion).toBe("4.1.0");
+  it("runs at ABI 1.0.0, with the presentation, formula and data grid functions in the program", () => {
+    expect(WASM_ABI_VERSION).toBe("1.0.0");
+    expect(new QuickJsWasmHostAdapter().abiVersion).toBe("1.0.0");
     const program = buildSandboxProgram();
     for (const name of [
       "journeyOwnNodeRule",

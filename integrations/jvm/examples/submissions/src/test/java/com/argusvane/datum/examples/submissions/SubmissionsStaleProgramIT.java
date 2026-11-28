@@ -9,7 +9,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 
 /**
  * {@code abi_mismatch} over HTTP (integrations/jvm/README.md "Libraries and bindings"): started with the host test kit's stale sandbox
- * program (ABI 2.11.0, below the floor) as its override and fail-fast off, the application starts, the runtime refuses
+ * program (ABI 0.9.0, below the floor) as its override and fail-fast off, the application starts, the runtime refuses
  * the program at the ABI probe, and every submission is answered 503 (the kit's runtime-down contract), never judged by
  * an older kernel.
  */

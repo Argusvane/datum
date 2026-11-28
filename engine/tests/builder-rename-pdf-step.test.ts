@@ -29,7 +29,7 @@ function setUp() {
     fields: [{ pdfField: "Phone", source: { kind: "path", path: "phone" } }],
     when: 'phone != ""'
   } as PdfTemplateLayout;
-  const provider = { id: "fake", abiVersion: "4.0.0", inspect: async () => ({}), render: async () => ({}) } as unknown as PdfRenderProvider;
+  const provider = { id: "fake", abiVersion: "1.0.0", inspect: async () => ({}), render: async () => ({}) } as unknown as PdfRenderProvider;
   const mode = createPdfBuilderMode({ formRoot: () => structuredClone(form.snapshot()), form: () => form, runtime: () => ({}) as RenderableRuntime, pdf: { layouts: [layout], defaultLayoutId: "paper" }, support: { provider } });
   // As the shell wires it: a rename on the form's change event reaches the mode.
   form.on("change", (event) => {
@@ -70,7 +70,7 @@ describe("a data key edit's PDF follow-up", () => {
       fields: [{ pdfField: "Phone", source: { kind: "path", path: "phone" } }],
       when: 'phone != ""'
     } as PdfTemplateLayout;
-    const provider = { id: "fake", abiVersion: "4.0.0", inspect: async () => ({}), render: async () => ({}) } as unknown as PdfRenderProvider;
+    const provider = { id: "fake", abiVersion: "1.0.0", inspect: async () => ({}), render: async () => ({}) } as unknown as PdfRenderProvider;
     const mode = createPdfBuilderMode({ formRoot: () => structuredClone(form.snapshot()), form: () => form, runtime: () => ({}) as RenderableRuntime, pdf: { layouts: [layout], defaultLayoutId: "paper" }, support: { provider } });
     form.on("change", (event) => {
       // As the shell does: a mode's rewrite is a part of the step, so an Undo or a Redo already carries it.
@@ -112,7 +112,7 @@ describe("a data key edit's PDF follow-up", () => {
         { pdfField: "Fax", source: { kind: "path", path: "fax" } }
       ]
     } as PdfTemplateLayout;
-    const provider = { id: "fake", abiVersion: "4.0.0", inspect: async () => ({}), render: async () => ({}) } as unknown as PdfRenderProvider;
+    const provider = { id: "fake", abiVersion: "1.0.0", inspect: async () => ({}), render: async () => ({}) } as unknown as PdfRenderProvider;
     const mode = createPdfBuilderMode({ formRoot: () => structuredClone(form.snapshot()), form: () => form, runtime: () => ({}) as RenderableRuntime, pdf: { layouts: [layout], defaultLayoutId: "paper" }, support: { provider } });
     form.on("change", (event) => {
       // As the shell does: a mode's rewrite is a part of the step, so an Undo or a Redo already carries it.
@@ -160,7 +160,7 @@ function setUpBoth() {
     template: { storage: "base64", name: "paper.pdf", type: "application/pdf", size: 3, data: "AAA=" },
     fields: [{ pdfField: "Phone", source: { kind: "path", path: "phone" } }]
   } as PdfTemplateLayout;
-  const provider = { id: "fake", abiVersion: "4.0.0", inspect: async () => ({}), render: async () => ({}) } as unknown as PdfRenderProvider;
+  const provider = { id: "fake", abiVersion: "1.0.0", inspect: async () => ({}), render: async () => ({}) } as unknown as PdfRenderProvider;
   const mode = createPdfBuilderMode({ formRoot: () => structuredClone(form.snapshot()), form: () => form, runtime: () => ({}) as RenderableRuntime, pdf: { layouts: [layout], defaultLayoutId: "paper" }, support: { provider } });
   form.on("change", (event) => {
     if (event.renamed) {

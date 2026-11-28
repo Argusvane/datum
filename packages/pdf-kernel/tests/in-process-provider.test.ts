@@ -16,7 +16,7 @@ import {
 } from "@argusvane/datum-engine/render";
 import { MAX_PDF_TEMPLATE_BYTES } from "@argusvane/datum-engine/core";
 import { createInProcessPdfProvider } from "../src/in-process-provider.js";
-import { handlePdfRequest, handlePdfRequestJson } from "../src/program/entry.js";
+import { PDF_PROGRAM_VERSION, handlePdfRequest, handlePdfRequestJson } from "../src/program/entry.js";
 import { ENV, PDF_MAGIC, detachedTemplateBytes, document, extractText, fonts, head, paragraph, reload, widgetsShown } from "./helpers.js";
 
 function form(): ComponentNode {
@@ -92,7 +92,7 @@ describe("in-process provider", () => {
   it("answers capabilities and renders, lays out and reports through the ABI", async () => {
     const capabilities = await provider.capabilities!();
     expect(capabilities.abi).toBe(PDF_ABI_VERSION);
-    expect(capabilities.features).toContain("fill");
+    expect(capabilities.kernelVersion).toBe(PDF_PROGRAM_VERSION);
 
     const doc = document([paragraph("p", "Provider text")]);
     const rendered = await provider.render(buildPdfRenderRequest(doc, await fonts(), ENV));
@@ -215,9 +215,6 @@ describe("in-process provider", () => {
   });
 
   it("reports a component type the program has no rendition for, refuses it on request, and stops once a module registers one", async () => {
-    const capabilities = await provider.capabilities!();
-    expect(capabilities.features).toContain("unknown-components");
-
     const survey: ComponentNode = {
       id: "survey",
       type: "form",
@@ -286,7 +283,7 @@ describe("in-process provider", () => {
   });
 
   it("refuses another ABI major and a malformed request as typed failures", async () => {
-    await expect(provider.render({ abi: "5.0.0", op: "render", document: document([]), fonts: [], env: ENV })).rejects.toThrow(PdfKernelError);
+    await expect(provider.render({ abi: "2.0.0", op: "render", document: document([]), fonts: [], env: ENV })).rejects.toThrow(PdfKernelError);
     const bad = await handlePdfRequest({ abi: PDF_ABI_VERSION, op: "render", fonts: [], env: ENV });
     expect(bad).toEqual({ ok: false, error: { code: "invalid_request", message: "The request carries no document" } });
     const json = await handlePdfRequestJson("not json");

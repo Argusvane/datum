@@ -200,7 +200,7 @@ describe("the PDF mode and the definition's translations", () => {
     };
     const stand = formController({ fr: { pdf: { paper: { areas: { note: { text: entry("Bonjour", "Hello") } } } } } });
     const inspection: PdfTemplateInfo = { pageCount: 1, pages: [{ index: 1, width: 612, height: 792 }], fields: [], hasXfa: false, encrypted: false };
-    const m = mode({ layouts: [paper] }, stand, { support: { provider: { id: "fake", abiVersion: "4.0.0", inspect: async () => inspection } as unknown as PdfRenderProvider } });
+    const m = mode({ layouts: [paper] }, stand, { support: { provider: { id: "fake", abiVersion: "1.0.0", inspect: async () => inspection } as unknown as PdfRenderProvider } });
     await open(m);
     await until(() => m.ready && m.controller.snapshot().children?.[PDF_TEMPLATE_AREAS_SLOT]?.length === 1);
 

@@ -9,7 +9,7 @@ import java.util.Map;
 import tools.jackson.databind.JsonNode;
 
 /**
- * The submission context that crosses the sandbox ABI (WasmSubmissionContext, ABI 2.14): values plus the schema, never the browser-only requiredComponents, invalidComponents or inputStates.
+ * The submission context that crosses the sandbox ABI (WasmSubmissionContext): values plus the schema, never the browser-only requiredComponents, invalidComponents or inputStates.
  *
  * <p>Members the Java side does not name are kept in {@code extra} and written back, so a newer
  * program's additions round-trip (the TypeScript type is open).

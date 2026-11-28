@@ -7,6 +7,7 @@ import com.argusvane.datum.core.ProgramUnavailableException;
 import com.argusvane.datum.core.assets.HostBindings;
 import com.argusvane.datum.core.RequestTooLargeException;
 import com.argusvane.datum.core.contracts.DatumJson;
+import com.argusvane.datum.core.contracts.PdfCapabilitiesResponse;
 import com.argusvane.datum.core.contracts.PdfSigningHandoff;
 import com.argusvane.datum.sandbox.protocol.ProgramRunner;
 import com.argusvane.datum.sandbox.protocol.PdfAbi;
@@ -153,8 +154,8 @@ public final class PdfService {
         }
     }
 
-    /** The features one program file answered, remembered here so a cached answer takes no PDF slot. */
-    private record Features(String sha256, List<String> names) {
+    /** The capabilities answer of one program file, remembered here so a cached answer takes no PDF slot. */
+    private record Capabilities(String sha256, PdfCapabilitiesResponse answer) {
     }
 
     private final PdfRuntime runtime;
@@ -177,7 +178,7 @@ public final class PdfService {
     private final Clock clock;
     private final JsonMapper json = DatumJson.mapper();
     private final SecureRandom random = new SecureRandom();
-    private volatile Features features;
+    private volatile Capabilities capabilities;
 
     private PdfService(Builder b) {
         this.runtime = Objects.requireNonNull(b.runtime, "runtime");
@@ -272,25 +273,31 @@ public final class PdfService {
     // ------------------------------------------------------------------------------------------------- the ops
 
     /**
-     * The program's feature names ({@code capabilities}), asked once per program file and remembered by the ABI
-     * gate (a failed answer for 60 s). Takes a slot only when the program must be asked: a known answer is
-     * remembered here by the program's SHA-256 and returned before any slot is asked for, so a health or info probe
-     * is never answered busy while every PDF slot renders.
+     * The program's {@code capabilities} answer (its ABI and its kernel's version), asked once per program file and
+     * remembered by the ABI gate (a failed answer for 60 s). Takes a slot only when the program must be asked: a known
+     * answer is remembered here by the program's SHA-256 and returned before any slot is asked for, so a health or info
+     * probe is never answered busy while every PDF slot renders.
      *
      * @throws PdfUnavailableException when the program cannot be used
      */
-    public List<String> capabilities() {
+    public PdfCapabilitiesResponse capabilities() {
         return observed("capabilities", null, this::capabilitiesObserved);
     }
 
-    private List<String> capabilitiesObserved() {
+    private PdfCapabilitiesResponse capabilitiesObserved() {
         PdfKernel program = program();
-        List<String> known = knownFeatures(program);
+        PdfCapabilitiesResponse known = knownCapabilities(program);
         if (known != null) {
             return known;
         }
         try (RunSlots.Permit ignored = acquire(false)) {
-            return features(program);
+            known = knownCapabilities(program);
+            if (known != null) {
+                return known;
+            }
+            PdfCapabilitiesResponse answer = program.capabilities();
+            capabilities = new Capabilities(program.program().sha256(), answer);
+            return answer;
         } catch (ProgramUnavailableException e) {
             throw unavailable(e);
         }
@@ -307,21 +314,10 @@ public final class PdfService {
         program();
     }
 
-    /** The features remembered for this program file, or null. */
-    private List<String> knownFeatures(PdfKernel program) {
-        Features remembered = features;
-        return remembered != null && remembered.sha256().equals(program.program().sha256()) ? remembered.names() : null;
-    }
-
-    /** The program's features, asked of the ABI gate (a run on its first call) and remembered; the caller holds a slot. */
-    private List<String> features(PdfKernel program) {
-        List<String> known = knownFeatures(program);
-        if (known != null) {
-            return known;
-        }
-        List<String> names = List.copyOf(program.capabilities());
-        features = new Features(program.program().sha256(), names);
-        return names;
+    /** The capabilities answer remembered for this program file, or null. */
+    private PdfCapabilitiesResponse knownCapabilities(PdfKernel program) {
+        Capabilities remembered = capabilities;
+        return remembered != null && remembered.sha256().equals(program.program().sha256()) ? remembered.answer() : null;
     }
 
     /**
@@ -784,7 +780,7 @@ public final class PdfService {
 
     /**
      * Checks a PDF: the program's {@code verify} completed host-side (the signature values, the signers placed, each
-     * timestamp token checked whole; PDF ABI 3.14.0, the verify detail).
+     * timestamp token checked whole).
      *
      * @throws RequestTooLargeException (413) past {@link #verifyMaxBytes()}
      * @throws PdfException {@code pdf.notAPdf} (400) for a file that is not a PDF; {@code pdf.unreadable} (400) for
@@ -1349,12 +1345,6 @@ public final class PdfService {
     }
 
     /**
-     * Runs one request in a PDF slot and returns a successful answer.
-     *
-     * @param patient whether to wait for a slot as long as one render may take
-     * @param formulas whether to add the host's formula inputs (a program with the {@code formulas} feature)
-     */
-    /**
      * One operation of this service, observed: {@value DatumObservationNames#PDF} with its op from the
      * start and, at the end, the outcome, how the PDF was sealed and where its timestamp came from (never a byte, a digest or
      * an answer), the form's key (high-cardinality) when it is a well-formed key. Every program run, slot wait, seal and
@@ -1414,11 +1404,17 @@ public final class PdfService {
         };
     }
 
+    /**
+     * Runs one request in a PDF slot and returns a successful answer.
+     *
+     * @param patient whether to wait for a slot as long as one render may take
+     * @param formulas whether to add the host's formula inputs ({@code document} requests always get them)
+     */
     private Answered answer(ObjectNode request, boolean patient, boolean formulas) {
         PdfKernel program = program();
         try (RunSlots.Permit ignored = acquire(patient)) {
             if (formulas || "document".equals(request.path("op").asString(""))) {
-                addFormulaInputs(request, program);
+                addFormulaInputs(request);
             }
             long started = System.nanoTime();
             ObjectNode answer = program.call(request);
@@ -1435,13 +1431,9 @@ public final class PdfService {
 
     /**
      * Adds the keys the host decides to a request that has not set them: {@code today}, {@code formulaErrors},
-     * {@code riskyPatterns}, only for a program with the {@code formulas} feature. A caller's {@code today} (the day a
-     * submission was judged) is kept.
+     * {@code riskyPatterns}. A caller's {@code today} (the day a submission was judged) is kept.
      */
-    private void addFormulaInputs(ObjectNode request, PdfKernel program) {
-        if (!features(program).contains("formulas")) {
-            return;
-        }
+    private void addFormulaInputs(ObjectNode request) {
         for (Map.Entry<String, String> key : runtime.contextKeys().entrySet()) {
             JsonNode present = request.get(key.getKey());
             if (present == null || present.isNull()) {

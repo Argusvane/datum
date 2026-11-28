@@ -3,7 +3,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import type { AddressInfo } from "node:net";
 
 import fixtureText from "../../../fixtures/endpoint-fixture.definition.json?raw";
-import goldenText from "../../../golden/abi-4.1.json?raw";
+import goldenText from "../../../golden/abi-1.0.json?raw";
 import hostContextText from "../../../src/host-check/fixtures/host-context-form.json?raw";
 
 /**

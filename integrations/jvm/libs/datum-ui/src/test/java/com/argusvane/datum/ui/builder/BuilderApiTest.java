@@ -41,7 +41,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * The save decisions of {@link BuilderApi}: the kernel's verdict on a save (sandbox ABI 2.13.0: a save is checked by
+ * The save decisions of {@link BuilderApi}: the kernel's verdict on a save (a save is checked by
  * the sandbox kernel), the host's own refusals (BLD-01 to BLD-07) and the refusal order. The whole real
  * path runs: {@code DefinitionService.check} through {@code SandboxService} into {@link KernelStub}, which answers
  * the risky-pattern and duplicate-id definitions with the real kernel's captured answers. Errors are read through
@@ -147,7 +147,7 @@ class BuilderApiTest {
         assertThat(events).as("no saved event").isEmpty();
     }
 
-    // ------------------------------------------------------------------ the kernel's verdict (sandbox ABI 2.13.0 check op)
+    // ------------------------------------------------------------------ the kernel's verdict (the check op)
 
     @Nested
     class KernelVerdict {

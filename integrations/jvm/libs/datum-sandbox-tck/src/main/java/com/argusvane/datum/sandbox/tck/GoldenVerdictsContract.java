@@ -30,8 +30,8 @@ import tools.jackson.databind.node.JsonNodeFactory;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * The real program on the engine answers exactly what the security suite pins for ABI 2.14
- * ({@code packages/conformance-suite/golden/abi-4.1.json}, written by {@code scripts/write-golden.ts}; in this kit's jar as
+ * The real program on the engine answers exactly what the security suite pins for ABI 1.0
+ * ({@code packages/conformance-suite/golden/abi-1.0.json}, written by {@code scripts/write-golden.ts}; in this kit's jar as
  * {@code golden.json}): the golden case's outcome bytes (length and sha256) and the six control vectors' verdicts and
  * sanitized values. Prints the warm validation wall time with the engine's mode.
  */

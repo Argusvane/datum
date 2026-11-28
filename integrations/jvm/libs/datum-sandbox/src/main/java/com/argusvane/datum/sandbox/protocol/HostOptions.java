@@ -189,8 +189,7 @@ public final class HostOptions {
 
     /**
      * Adds the keys a PDF request has not set, keeping a caller's {@code today} (the day a submission was judged, so a
-     * document printed later shows the formulas as they were then); used only for a PDF program with the
-     * {@code formulas} feature.
+     * document printed later shows the formulas as they were then).
      */
     public void addMissing(ObjectNode request) {
         contextKeys().forEach((key, value) -> {

@@ -60,7 +60,7 @@ const TEMPLATE = { storage: "base64", name: "paper.pdf", type: "application/pdf"
 async function open(inspection: PdfTemplateInfo, fields: PdfTemplateLayout["fields"] = []) {
   const form = new BuilderController({ initialRoot: structuredClone(FORM) });
   const layout: PdfTemplateLayout = { id: "paper", kind: "template", template: TEMPLATE, fields };
-  const provider = { id: "fake", abiVersion: "4.0.0", inspect: async () => inspection, render: async () => ({}) } as unknown as PdfRenderProvider;
+  const provider = { id: "fake", abiVersion: "1.0.0", inspect: async () => inspection, render: async () => ({}) } as unknown as PdfRenderProvider;
   const mode = createPdfBuilderMode({ formRoot: () => structuredClone(form.snapshot()), form: () => form, runtime: () => ({}) as RenderableRuntime, pdf: { layouts: [layout], defaultLayoutId: "paper" }, support: { provider } });
   let surface: HTMLElement | undefined;
   const host = document.createElement("div");

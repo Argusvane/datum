@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 /**
- * The PDF program's request union (PdfKernelRequest, ABI 4.0): one record per {@code op}, the op written
+ * The PDF program's request union (PdfKernelRequest): one record per {@code op}, the op written
  * as the type id so the wire shape is the TypeScript one.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "op")

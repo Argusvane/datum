@@ -207,7 +207,7 @@ class RunWatchTest {
      */
     @Test
     void aPdfAnswerIsJudgedByItsOkAndAStaleCapabilitiesAnswerIsRefused() {
-        String fresh = "{\"ok\":true,\"op\":\"capabilities\",\"abi\":\"" + PdfAbi.MIN + "\",\"features\":[]}";
+        String fresh = "{\"ok\":true,\"op\":\"capabilities\",\"abi\":\"" + PdfAbi.MIN + "\",\"kernelVersion\":\"0.1.0\"}";
         for (String noOk : List.of("{}", "{\"error\":{\"code\":\"x\",\"message\":\"m\"}}", "{\"ok\":\"true\"}")) {
             facts.clear();
             PdfProgram program = new PdfProgram(pdfGuest(fresh, noOk), PDF, ProgramLimits.defaults(), new AbiProbe(), facts::add);
@@ -222,8 +222,8 @@ class RunWatchTest {
         catchThrowable(() -> refusing.call(render()));
         assertThat(facts.get(1).outcome()).isEqualTo("refused");
 
-        for (String stale : List.of("{\"ok\":true,\"op\":\"capabilities\",\"abi\":\"3.18.0\",\"features\":[]}",
-            "{\"ok\":false,\"error\":{\"code\":\"abi_mismatch\"}}")) {
+        for (String stale : List.of("{\"ok\":true,\"op\":\"capabilities\",\"abi\":\"0.18.0\",\"kernelVersion\":\"0.1.0\"}",
+            "{\"ok\":true,\"op\":\"capabilities\",\"abi\":\"" + PdfAbi.MIN + "\"}", "{\"ok\":false,\"error\":{\"code\":\"abi_mismatch\"}}")) {
             facts.clear();
             PdfProgram old = new PdfProgram(pdfGuest(stale, "{}"), PDF, ProgramLimits.defaults(), new AbiProbe(), facts::add);
             assertThat(catchThrowable(old::capabilities)).isInstanceOf(ProgramUnavailableException.class);
@@ -246,7 +246,7 @@ class RunWatchTest {
     void aPdfRunIsRecordedWithItsOpAndARefusalIsNotAFailure() {
         ProgramRunner pdf = (program, script, argv, stdin, budget) -> {
             String request = new String(stdin, StandardCharsets.UTF_8);
-            String answer = request.contains("capabilities") ? "{\"ok\":true,\"op\":\"capabilities\",\"abi\":\"" + PdfAbi.MIN + "\",\"features\":[]}"
+            String answer = request.contains("capabilities") ? "{\"ok\":true,\"op\":\"capabilities\",\"abi\":\"" + PdfAbi.MIN + "\",\"kernelVersion\":\"0.1.0\"}"
                 : "{\"ok\":false,\"error\":{\"code\":\"template.invalid\"}}";
             return RunOutput.exited(0, answer.getBytes(StandardCharsets.UTF_8), null);
         };

@@ -16,7 +16,7 @@ refusal the per-form step gives. A refused call costs no run. What a hook raises
 reaches the caller as raised, with two exceptions: an ordinary exception from a contributor, a
 customizer or a validator is `Unavailable` `validator_unavailable`, and one from a rules provider, the host-context
 provider or the option snapshot is `Unavailable` `server.unavailable` (a `HookRefusedError`, a `DatumError` and a
-configuration error are always raised as they are). The host context (sandbox ABI 4.1.0) is the host's own answer for
+configuration error are always raised as they are). The host context (`hostContext`) is the host's own answer for
 the call, never read from the body; one the sandbox cannot take as JSON is `server.unavailable` too, before any run.
 Events are published inside the call, after the step they report, through the guarded dispatcher; a dry run publishes
 none. The idempotency store is asked before the document is judged (a submission
@@ -889,7 +889,7 @@ def sandbox_run(
     if host:
         run_input["externalData"] = dict(host)
     if host_context is not None:
-        # sandbox ABI 4.1.0: beside `today` (the host's keys), present even when empty, so every `host.` rule is judged
+        # beside `today` (the host's keys), present even when empty, so every `host.` rule is judged
         run_input["hostContext"] = dict(host_context)
     if snapshot is not None:
         run_input["optionSnapshot"] = dict(snapshot)

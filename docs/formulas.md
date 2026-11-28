@@ -748,7 +748,7 @@ export default {
 };
 ```
 
-The PDF program's `__datum_pdf_register` accepts the same key (feature `formula-functions`), and
+The PDF program's `__datum_pdf_register` accepts the same key, and
 the in-process host takes it as `WasmPlugin.functions`; a function-backed plugin's sandbox source
 is derived from its `evaluate`. The sandbox module declares no arity of its own: the parser's
 signatures come from the built-ins and the contributions. A

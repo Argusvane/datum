@@ -386,7 +386,7 @@ describe("the formulaErrors policy in the render model", () => {
 
 describe("layouts chosen by the answers", () => {
   it("names the layout on the document reply and the build reply, never on render's", () => {
-    expect(PDF_ABI_VERSION).toBe("4.0.0");
+    expect(PDF_ABI_VERSION).toBe("1.0.0");
     type DocumentReply = Extract<PdfKernelResponse, { op: "document" }>;
     type RenderReply = Extract<PdfKernelResponse, { op: "render" }>;
     type BuildReply = Extract<PdfKernelResponse, { op: "build" }>;

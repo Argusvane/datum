@@ -66,7 +66,7 @@ class Entry(enum.StrEnum):
     RUN = "run"
     """`__datum_run`: a validation."""
     INSPECT = "inspect"
-    """`__datum_inspect`: a question about a definition (ABI 2.8.0)."""
+    """`__datum_inspect`: a question about a definition."""
 
 
 @dataclass(frozen=True, slots=True)

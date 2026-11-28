@@ -208,8 +208,7 @@ side of it under "Conditions in the builder").
 18. **Reply fields.** `layoutId`, `layoutKind` and `layoutChoice` are on the `document` reply
     only (`PdfLayoutReply`); `render`, handed a document already built, names none, and the reply
     union is split so its type says so. `build` carries `layoutChoice`. `when` travels inside
-    `pdf.layouts[]`, so there are no new request keys; the `layout-conditions` feature tells a
-    host the program chooses ([`docs/reference/pdf-abi.md`](../reference/pdf-abi.md)).
+    `pdf.layouts[]`, so there are no new request keys ([`docs/reference/pdf-abi.md`](../reference/pdf-abi.md)).
 
 ### Builder authoring
 

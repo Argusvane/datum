@@ -1,6 +1,6 @@
 // Writes integrations/shared/fixtures/canonical.json: inputs and what the engine's own
-// serializeCanonicalSubmission makes of them, the digest contract every host's canonical JSON is held to
-// (sandbox ABI 2.9.0). Each case also carries the UTF-16 code-unit ordering the sandbox program uses;
+// serializeCanonicalSubmission makes of them, the digest contract every host's canonical JSON is held to.
+// Each case also carries the UTF-16 code-unit ordering the sandbox program uses;
 // where the two differ the case is marked "divergent". The engine sorts by code
 // unit too, so none should be: a divergent case means the browser and the sandbox digest different bytes.
 // Also writes webauthn-engine.json: passkeys registered and submissions signed by the engine's own

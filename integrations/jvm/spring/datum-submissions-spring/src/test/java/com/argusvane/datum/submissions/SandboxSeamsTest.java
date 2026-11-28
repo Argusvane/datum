@@ -169,7 +169,7 @@ class SandboxSeamsTest {
                     }
 
                     @Override
-                    public List<String> capabilities() {
+                    public com.argusvane.datum.core.contracts.PdfCapabilitiesResponse capabilities() {
                         calls.add("capabilities");
                         return kernel.capabilities();
                     }

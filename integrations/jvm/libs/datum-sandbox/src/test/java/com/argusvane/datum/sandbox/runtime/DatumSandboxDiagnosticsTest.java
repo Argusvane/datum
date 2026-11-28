@@ -213,7 +213,7 @@ class DatumSandboxDiagnosticsTest {
         assertThat(lines.stream().map(line -> field(line, "program") + ":" + field(line, "op")).toList())
             .containsExactly("sandbox:abi", "pdf:capabilities", "sandbox:validate", "sandbox:validate");
         String validation = lines.get(3);
-        assertThat(field(validation, "abi")).isEqualTo("2.14.0");
+        assertThat(field(validation, "abi")).isEqualTo("1.0.0");
         assertThat(field(validation, "engine")).isEqualTo(TestRuntime.class.getName());
         assertThat(field(validation, "mode")).isEqualTo("jffi");
         assertThat(field(validation, "termination")).isEqualTo("exited");
@@ -223,7 +223,7 @@ class DatumSandboxDiagnosticsTest {
         assertThat(field(validation, "stdinBytes")).isEqualTo(String.valueOf(spy.runs.get(3).stdin().remaining()));
         assertThat(field(validation, "stdoutBytes")).isEqualTo(String.valueOf(spy.outputs.get(3).stdoutLength()));
         assertThat(field(validation, "capture")).isEqualTo("-");
-        assertThat(field(lines.get(1), "abi")).isEqualTo("4.0.0");
+        assertThat(field(lines.get(1), "abi")).isEqualTo("1.0.0");
         assertThat(field(lines.get(1), "slotWaitMs")).as("the PDF probe takes no slot").isEqualTo("-");
         assertThat(spy.runs).as("every run asks the harness for its timings").allMatch(GuestRun::timed);
     }
@@ -353,7 +353,7 @@ class DatumSandboxDiagnosticsTest {
         assertThat(text(capture.files().get("run.js"))).contains("__datum_run");
         String meta = text(capture.files().get("meta.json"));
         assertThat(meta).contains("\"capture\" : \"" + capture.id() + "\"").contains("\"outcome\" : \"trap\"")
-            .contains("\"sha256\" : \"" + Programs.packaged().store().load().sandbox().sha256() + "\"").contains("\"abi\" : \"2.14.0\"")
+            .contains("\"sha256\" : \"" + Programs.packaged().store().load().sandbox().sha256() + "\"").contains("\"abi\" : \"1.0.0\"")
             .contains(TestRuntime.class.getName()).contains("datum.runtime.diagnostics.capture.enabled").contains("\"entries\"");
         String line = lines.get(lines.size() - 1);
         assertThat(field(line, "capture")).isEqualTo(capture.id());
@@ -442,8 +442,8 @@ class DatumSandboxDiagnosticsTest {
             .contains("datum.runtime.warm-up-runs = 1 (configured)")
             .contains("datum.runtime.diagnostics.trace = off (default)")
             .contains("engine: " + TestRuntime.class.getName() + " test (jffi): A scripted test runtime.")
-            .contains("program sandbox: sha256 " + sha + ", ABI 2.14.0")
-            .contains("program pdf: sha256 ").contains("ABI 4.0.0")
+            .contains("program sandbox: sha256 " + sha + ", ABI 1.0.0")
+            .contains("program pdf: sha256 ").contains("ABI 1.0.0")
             .contains("trace: off").contains("capture: off");
     }
 
@@ -509,7 +509,7 @@ class DatumSandboxDiagnosticsTest {
         DatumSandbox capturing = sandbox(settings().captureEnabled(true).captureDirectory(directory.toString()).trace("failures").build());
         assertThat(capturing.report().programs()).allSatisfy(line -> assertThat(line.unavailable()).contains("not read yet"));
         capturing.start();
-        assertThat(capturing.report().programs()).extracting(line -> line.abi()).containsExactly("2.14.0", "4.0.0");
+        assertThat(capturing.report().programs()).extracting(line -> line.abi()).containsExactly("1.0.0", "1.0.0");
         assertThat(capturing.report().toString()).contains(directory.toString());
         assertThat(capturing.report().toJson(true).toString()).doesNotContain(directory.toString());
         assertThat(capturing.report().capture().enabled()).isTrue();
@@ -647,23 +647,23 @@ class DatumSandboxDiagnosticsTest {
         com.argusvane.datum.sandbox.protocol.Sandbox before = traced.sandbox();
         String firstSha = traced.report().programs().get(0).sha256();
 
-        programs.current = SwitchingStore.version("2.15.0", "/* sandbox program, the next one */");
+        programs.current = SwitchingStore.version("1.1.0", "/* sandbox program, the next one */");
         traced.recheck();
         assertThat(traced.status().isUp()).isTrue();
         lines.clear();
         before.validate(context("Ada"), List.of(), false);
         traced.sandbox().validate(context("Ada"), List.of(), false);
-        assertThat(lines).extracting(line -> field(line, "abi")).as("each service's own programs").containsExactly("2.14.0", "2.15.0");
+        assertThat(lines).extracting(line -> field(line, "abi")).as("each service's own programs").containsExactly("1.0.0", "1.1.0");
         String secondSha = traced.report().programs().get(0).sha256();
         assertThat(secondSha).isNotEqualTo(firstSha);
 
-        programs.current = SwitchingStore.version("2.16.0", "/* a stale sandbox program */");
+        programs.current = SwitchingStore.version("1.2.0", "/* a stale sandbox program */");
         engine.sandboxProbeFails = true;
         traced.recheck();
         assertThat(traced.status().isUp()).isFalse();
         assertThat(traced.report().programs().get(0)).as("the failed proof's programs are not published").satisfies(line -> {
             assertThat(line.sha256()).isEqualTo(secondSha);
-            assertThat(line.abi()).isEqualTo("2.15.0");
+            assertThat(line.abi()).isEqualTo("1.1.0");
         });
     }
 
@@ -735,7 +735,7 @@ class DatumSandboxDiagnosticsTest {
     /** A stale PDF program's capabilities answer is the program's refusal in the trace, not a verdict. */
     @Test
     void aStalePdfCapabilitiesAnswerIsTracedAsRefused() {
-        engine.pdfAbi = "3.18.0";
+        engine.pdfAbi = "0.18.0";
         DatumSandbox traced = sandbox(settings().trace("all").failFast(false).build());
         traced.start();
         assertThat(traced.status().isUp()).as("a stale PDF program fails the start like the sandbox program").isFalse();

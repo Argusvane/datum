@@ -19,7 +19,7 @@ class ContractsRoundTripTest {
 
     private static final ObjectMapper MAPPER = RepoFixtures.MAPPER;
     /**
-     * The kernel's structure limits as its check answers them ({@code limits}, sandbox ABI 2.13.0;
+     * The kernel's structure limits as its check answers them ({@code limits};
      * {@code kernelStructureLimits()} in engine/form-engine/core/expressions/definition-structure.ts).
      */
     private static final String KERNEL_LIMITS = "{\"depth\":32,\"components\":10000,\"optionsPerComponent\":2000,\"optionsTotal\":50000,"
@@ -100,7 +100,7 @@ class ContractsRoundTripTest {
     @Test
     void inspectRequest() {
         JsonNode definition = RepoFixtures.json("packages/conformance-suite/fixtures/endpoint-fixture.definition.json");
-        JsonNode request = MAPPER.createObjectNode().put("abi", "2.14.0").put("op", "check").put("formulaErrors", "warn")
+        JsonNode request = MAPPER.createObjectNode().put("abi", "1.0.0").put("op", "check").put("formulaErrors", "warn")
             .put("riskyPatterns", "allow").set("definition", definition);
         ((tools.jackson.databind.node.ObjectNode) request).putArray("types").add("text").add("button");
         InspectRequest read = roundTrip(InspectRequest.class, request);
@@ -163,21 +163,21 @@ class ContractsRoundTripTest {
             + " \"unknownComponents\": \"warn\", \"today\": \"2026-10-15\", \"formulaErrors\": \"fail\", \"riskyPatterns\": \"refuse\","
             + " \"title\": \"T\", \"hostContext\": {\"k\": 1}, \"attachments\": {\"mode\": \"skip\"}, \"theme\": {}, \"translations\": {}, \"formTranslations\": {}";
         return switch (op) {
-            case "capabilities" -> "{\"abi\": \"4.0.0\", \"op\": \"capabilities\"}";
-            case "document" -> "{\"abi\": \"4.0.0\", \"op\": \"document\", " + FONTS + ", " + ENV + ", \"options\": {\"compact\": true, \"tagged\": true, \"pdfa\": {\"level\": \"2b\"}},"
+            case "capabilities" -> "{\"abi\": \"1.0.0\", \"op\": \"capabilities\"}";
+            case "document" -> "{\"abi\": \"1.0.0\", \"op\": \"document\", " + FONTS + ", " + ENV + ", \"options\": {\"compact\": true, \"tagged\": true, \"pdfa\": {\"level\": \"2b\"}},"
                 + " \"template\": {\"data\": \"AAEC\"}, \"signature\": " + SIGNATURE + ", " + inputs + "}";
-            case "build" -> "{\"abi\": \"4.0.0\", \"op\": \"build\", " + inputs + "}";
-            case "render" -> "{\"abi\": \"4.0.0\", \"op\": \"render\", \"document\": " + document + ", " + FONTS + ", " + ENV + ", \"options\": {\"pdfa\": false}, \"signature\": " + SIGNATURE + "}";
-            case "layout" -> "{\"abi\": \"4.0.0\", \"op\": \"layout\", \"document\": " + document + ", " + FONTS + ", " + ENV + "}";
-            case "fill" -> "{\"abi\": \"4.0.0\", \"op\": \"fill\", \"template\": {\"data\": \"AAEC\"}, \"values\": {\"f\": \"v\", \"c\": true, \"l\": [\"a\"]},"
+            case "build" -> "{\"abi\": \"1.0.0\", \"op\": \"build\", " + inputs + "}";
+            case "render" -> "{\"abi\": \"1.0.0\", \"op\": \"render\", \"document\": " + document + ", " + FONTS + ", " + ENV + ", \"options\": {\"pdfa\": false}, \"signature\": " + SIGNATURE + "}";
+            case "layout" -> "{\"abi\": \"1.0.0\", \"op\": \"layout\", \"document\": " + document + ", " + FONTS + ", " + ENV + "}";
+            case "fill" -> "{\"abi\": \"1.0.0\", \"op\": \"fill\", \"template\": {\"data\": \"AAEC\"}, \"values\": {\"f\": \"v\", \"c\": true, \"l\": [\"a\"]},"
                 + " \"areas\": [{\"id\": \"a1\"}], " + FONTS + ", " + ENV + ", \"options\": {\"flatten\": false}, \"conformance\": {\"pdfa\": {\"level\": \"2b\"}},"
                 + " \"attachments\": [{\"name\": \"x\"}], \"signature\": " + SIGNATURE + ", \"typography\": {}, \"colors\": {}}";
-            case "inspect" -> "{\"abi\": \"4.0.0\", \"op\": \"inspect\", \"template\": {\"data\": \"AAEC\"}, \"attachments\": \"digest\"}";
-            case "sign" -> "{\"abi\": \"4.0.0\", \"op\": \"sign\", \"pdf\": {\"data\": \"AAEC\"}, \"signature\": " + SIGNATURE + ", " + FONTS + ", " + ENV + "}";
-            case "complete" -> "{\"abi\": \"4.0.0\", \"op\": \"complete\", \"pdf\": {\"data\": \"AAEC\"}, \"signing\": {\"certificates\": [\"MIIB\"], \"value\": \"c2ln\","
+            case "inspect" -> "{\"abi\": \"1.0.0\", \"op\": \"inspect\", \"template\": {\"data\": \"AAEC\"}, \"attachments\": \"digest\"}";
+            case "sign" -> "{\"abi\": \"1.0.0\", \"op\": \"sign\", \"pdf\": {\"data\": \"AAEC\"}, \"signature\": " + SIGNATURE + ", " + FONTS + ", " + ENV + "}";
+            case "complete" -> "{\"abi\": \"1.0.0\", \"op\": \"complete\", \"pdf\": {\"data\": \"AAEC\"}, \"signing\": {\"certificates\": [\"MIIB\"], \"value\": \"c2ln\","
                 + " \"toBeSignedDigest\": \"ab\", \"timestamp\": {\"token\": \"dG9r\"}, \"field\": \"Sig1\", \"required\": true}}";
-            case "timestampRequest" -> "{\"abi\": \"4.0.0\", \"op\": \"timestampRequest\", \"signature\": \"c2ln\"}";
-            case "verify" -> "{\"abi\": \"4.0.0\", \"op\": \"verify\", \"pdf\": {\"data\": \"AAEC\"}, \"knownCertificates\": [\"MIIB\"]}";
+            case "timestampRequest" -> "{\"abi\": \"1.0.0\", \"op\": \"timestampRequest\", \"signature\": \"c2ln\"}";
+            case "verify" -> "{\"abi\": \"1.0.0\", \"op\": \"verify\", \"pdf\": {\"data\": \"AAEC\"}, \"knownCertificates\": [\"MIIB\"]}";
             default -> throw new IllegalArgumentException(op);
         };
     }
@@ -194,7 +194,7 @@ class ContractsRoundTripTest {
         ops.forEach((op, type) -> {
             PdfRequest read = roundTrip(PdfRequest.class, pdfRequest(op));
             assertThat(read).isInstanceOf(type);
-            assertThat(read.abi()).isEqualTo("4.0.0");
+            assertThat(read.abi()).isEqualTo("1.0.0");
         });
     }
 
@@ -225,7 +225,7 @@ class ContractsRoundTripTest {
             + " \"signing\": {\"field\": \"Sig1\", \"byteRange\": [0, 10, 20, 30], \"digest\": \"d\", \"toBeSigned\": \"t\", \"toBeSignedDigest\": \"td\","
             + " \"signatureAlgorithm\": \"ECDSA-P256-SHA256\", \"subFilter\": \"ETSI.CAdES.detached\"}";
         Map<String, Class<? extends PdfResponse>> replies = Map.ofEntries(
-            Map.entry("{\"ok\": true, \"op\": \"capabilities\", \"abi\": \"4.0.0\", \"features\": [\"sign\"], \"kernelVersion\": \"1\"}", PdfCapabilitiesResponse.class),
+            Map.entry("{\"ok\": true, \"op\": \"capabilities\", \"abi\": \"1.0.0\", \"kernelVersion\": \"1\"}", PdfCapabilitiesResponse.class),
             Map.entry("{\"ok\": true, \"op\": \"document\", " + produced + ", \"layoutId\": \"l\", \"layoutKind\": \"derived\", \"layoutChoice\": {\"id\": \"l\"}}", PdfDocumentResponse.class),
             Map.entry("{\"ok\": true, \"op\": \"render\", " + produced + "}", PdfRenderResponse.class),
             Map.entry("{\"ok\": true, \"op\": \"build\", \"layoutId\": \"l\", \"layoutKind\": \"generated\", \"document\": {\"version\": \"1\"}, \"fill\": {\"values\": {}}, \"warnings\": []}", PdfBuildResponse.class),

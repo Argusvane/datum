@@ -38,7 +38,6 @@ var sandbox = new Sandbox("datum-sandbox-program.js", "datum-pdf-program.js");
 string[] validate = ["-I", "/app/datum-sandbox-program.js", "-e", "print(__datum_run(std.in.readAsString()));"];
 
 // The PDF program, under the document profile; __datum_pdf's promise settles before qjs exits.
-// Signing needs a program that lists "signature" in its capabilities.
 string[] render = ["-I", "/app/datum-pdf-program.js", "-e", "__datum_pdf(std.in.readAsString()).then((json) => print(json));"];
 
 // The fonts to embed: the signature's appearance is drawn with the first of them.
@@ -89,7 +88,7 @@ app.MapPost("/api/submissions/sign", async (JsonNode envelope, HttpContext http)
     }
     var prepared = Render(new Dictionary<string, object?>
     {
-        ["abi"] = "4.0.0",
+        ["abi"] = "1.0.0",
         ["op"] = "document",
         ["form"] = form["root"],
         ["pdf"] = form["pdf"],  // the sealed layout, as designed in the builder's PDF mode
@@ -117,7 +116,7 @@ app.MapPost("/api/submissions/sign", async (JsonNode envelope, HttpContext http)
     {
         signing["timestamp"] = new { token = await Timestamp(value) };
     }
-    var completed = Render(new Dictionary<string, object?> { ["abi"] = "4.0.0", ["op"] = "complete", ["pdf"] = new { data = (string)prepared["bytes"]! }, ["signing"] = signing });
+    var completed = Render(new Dictionary<string, object?> { ["abi"] = "1.0.0", ["op"] = "complete", ["pdf"] = new { data = (string)prepared["bytes"]! }, ["signing"] = signing });
     if (!(bool)completed["ok"]!)
     {
         return Results.Json(new { error = completed["error"] }, statusCode: 500);
@@ -135,7 +134,7 @@ app.MapPost("/api/submissions/verify", async (HttpRequest request) =>
 {
     using var body = new MemoryStream();
     await request.Body.CopyToAsync(body);
-    var report = Render(new Dictionary<string, object?> { ["abi"] = "4.0.0", ["op"] = "verify", ["pdf"] = new { data = Convert.ToBase64String(body.ToArray()) } });
+    var report = Render(new Dictionary<string, object?> { ["abi"] = "1.0.0", ["op"] = "verify", ["pdf"] = new { data = Convert.ToBase64String(body.ToArray()) } });
     if (!(bool)report["ok"]!)
     {
         return Results.Json(new { error = report["error"] }, statusCode: 400);
@@ -195,7 +194,7 @@ bool VerifyBytes(byte[] spki, byte[] data, byte[] value)
 
 async Task<string> Timestamp(byte[] value)
 {
-    var tsq = Render(new Dictionary<string, object?> { ["abi"] = "4.0.0", ["op"] = "timestampRequest", ["signature"] = Convert.ToBase64String(value) });
+    var tsq = Render(new Dictionary<string, object?> { ["abi"] = "1.0.0", ["op"] = "timestampRequest", ["signature"] = Convert.ToBase64String(value) });
     using var client = new HttpClient();
     var content = new ByteArrayContent(Convert.FromBase64String((string)tsq["request"]!));
     content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/timestamp-query");

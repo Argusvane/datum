@@ -372,7 +372,7 @@ def test_step_one_the_throttle_comes_first_and_a_denial_asks_nothing_else() -> N
 
 def test_step_two_pdfs_must_be_available_and_that_is_judged_after_the_throttle_and_before_the_dry_run() -> None:
     config = {"pdf": {"seal": {"enabled": False}}, "runtime": {"fail_fast": False}}
-    with started_pdf(config, abi="3.17.0") as rig:
+    with started_pdf(config, abi="0.17.0") as rig:
         outcome = rig.render(context=http_context())
         assert isinstance(outcome, Unavailable)
         assert outcome.code == "server.unavailable"

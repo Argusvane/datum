@@ -99,7 +99,7 @@ function provider(): PdfRenderProvider & { requests: PdfKernelRequest[] } {
   const requests: PdfKernelRequest[] = [];
   return {
     id: "fake",
-    abiVersion: "4.0.0",
+    abiVersion: "1.0.0",
     requests,
     render: async (request) => {
       requests.push(request);
@@ -293,14 +293,14 @@ describe("renderFormPdf", () => {
   });
 
   it("refuses a provider of another PDF ABI major, or with no usable version, before anything is built", async () => {
-    for (const abiVersion of ["3.18.0", "5.0.0", "4.0", "", undefined]) {
+    for (const abiVersion of ["0.18.0", "2.0.0", "1.0", "", undefined]) {
       const other = { ...provider(), abiVersion } as unknown as ReturnType<typeof provider>;
       const failure = await renderFormPdf(runtime(), { provider: other, environment }).catch((error: unknown) => error);
       expect(failure, String(abiVersion)).toBeInstanceOf(PdfKernelError);
       expect(failure, String(abiVersion)).toMatchObject({ code: "abi_mismatch" });
       expect(other.requests).toEqual([]);
     }
-    expect((await renderFormPdf(runtime(), { provider: { ...provider(), abiVersion: "4.7.1" }, environment })).bytes).toBe(PDF_MAGIC);
+    expect((await renderFormPdf(runtime(), { provider: { ...provider(), abiVersion: "1.7.1" }, environment })).bytes).toBe(PDF_MAGIC);
   });
 
   it("refuses a resolved template over the 25 MiB cap with the template error, before the provider is called", async () => {
@@ -652,7 +652,7 @@ describe("renderFormPdf — signatures", () => {
     const requests: PdfKernelRequest[] = [];
     const base: PdfRenderProvider & { requests: PdfKernelRequest[] } = {
       id: "fake",
-      abiVersion: "4.0.0",
+      abiVersion: "1.0.0",
       requests,
       render: async (request) => {
         requests.push(request);

@@ -14,7 +14,7 @@ import tools.jackson.databind.node.ObjectNode;
 /**
  * The kit's fixture form and the answers the kernel gives for it: the security suite's endpoint fixture
  * ({@code packages/conformance-suite/fixtures/endpoint-fixture.definition.json}, form {@value #FORM} at version
- * {@value #VERSION}) and its golden control vectors ({@code packages/conformance-suite/golden/abi-4.1.json}, CTL-01 valid,
+ * {@value #VERSION}) and its golden control vectors ({@code packages/conformance-suite/golden/abi-1.0.json}, CTL-01 valid,
  * CTL-02 to CTL-04 refused). {@code npm run jvm:assets} copies both into the jar under {@code META-INF/datum-tck/};
  * inside the monorepo the files are also read from the repository when the jar has none (a build before the assets).
  * A host under test serves the fixture form under its id, so the kernel's verdicts can be compared byte for byte.
@@ -57,7 +57,7 @@ public final class TckFixtures {
     public static final String HARDENING_RULES = RESOURCES + "hardening-rules.js";
 
     /**
-     * A sandbox program that answers for ABI 2.11.0, below every host's floor (the in-process hardening tests' fake
+     * A sandbox program that answers for ABI 0.9.0, below every host's floor (the in-process hardening tests' fake
      * program, character for character): a host started with it as its sandbox program override must refuse it at the
      * ABI probe ({@code abi_mismatch}) and answer every submission 503 ({@link RuntimeDownContract}).
      */
@@ -100,7 +100,7 @@ public final class TckFixtures {
 
     /** The answer that makes it write a forged outcome to stdout after the run's answer frame. */
     public static final String STRAY = "datum-tck-stray";
-    private static final String GOLDEN_IN_REPO = "packages/conformance-suite/golden/abi-4.1.json";
+    private static final String GOLDEN_IN_REPO = "packages/conformance-suite/golden/abi-1.0.json";
     private static final String FORM_IN_REPO = "packages/conformance-suite/fixtures/endpoint-fixture.definition.json";
 
     private static JsonNode golden;

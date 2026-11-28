@@ -1,6 +1,6 @@
 /**
  * Definition generators for `bench-check.ts` and `tests/check-budget.test.ts` (kernel structural
- * check, sandbox ABI 2.13.0). Each returns a fresh definition object. Sizes follow the caps of
+ * check). Each returns a fresh definition object. Sizes follow the caps of
  * `core/expressions/definition-structure.ts` (fixtures F1 to F10 below).
  */
 

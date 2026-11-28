@@ -78,7 +78,7 @@ class SandboxServiceTest {
         assertThat(runtime.calls).hasSize(2);
         FakeRuntime.Call probe = runtime.calls.get(0);
         assertThat(FakeRuntime.isProbe(probe)).isTrue();
-        assertThat(probe.input().get("abi").stringValue()).isEqualTo("4.1.0");
+        assertThat(probe.input().get("abi").stringValue()).isEqualTo("1.0.0");
         assertThat(probe.input().get("op").stringValue()).isEqualTo("inspect");
         assertThat(probe.script()).doesNotContain("register(evaluate(");
 
@@ -104,11 +104,11 @@ class SandboxServiceTest {
     @Test
     void aProgramThatDoesNotAnswerForTheFloorJudgesNothing() {
         FakeRuntime runtime = new FakeRuntime(call -> call.framed(
-            "{\"ok\":false,\"error\":{\"code\":\"abi_mismatch\",\"message\":\"This program answers sandbox ABI 3.0.0\"}}"));
+            "{\"ok\":false,\"error\":{\"code\":\"abi_mismatch\",\"message\":\"This program answers sandbox ABI 0.3.0\"}}"));
         SandboxService service = service(runtime);
         assertThatThrownBy(() -> service.validate(context(), List.of(), true))
             .isInstanceOfSatisfying(ProgramUnavailableException.class, e -> {
-                assertThat(e.getMessage()).contains("4.1.0").contains("(abi_mismatch)");
+                assertThat(e.getMessage()).contains("1.0.0").contains("(abi_mismatch)");
                 assertThat(e.httpStatus()).isEqualTo(503);
             });
         assertThat(runtime.calls).hasSize(1);
@@ -403,7 +403,7 @@ class SandboxServiceTest {
         ObjectNode answer = service.inspect("inspect", DefinitionDepthTest.nested(3), "warn", null, List.of());
         assertThat(answer.get("op").stringValue()).isEqualTo("inspect");
         JsonNode request = runtime.work().get(0).input();
-        assertThat(request.get("abi").stringValue()).isEqualTo("4.1.0");
+        assertThat(request.get("abi").stringValue()).isEqualTo("1.0.0");
         assertThat(request.get("op").stringValue()).isEqualTo("inspect");
         assertThat(request.get("formulaErrors").stringValue()).isEqualTo("warn");
         assertThat(request.get("definition").get("id").stringValue()).isEqualTo("f");
@@ -595,6 +595,6 @@ class SandboxServiceTest {
         assertThatThrownBy(() -> new Program(Program.Kind.SANDBOX, "abc".getBytes(StandardCharsets.UTF_8), "00".repeat(32)))
             .isInstanceOf(IllegalArgumentException.class);
         assertThat(new Program(Program.Kind.SANDBOX, "abc".getBytes(StandardCharsets.UTF_8), program.sha256().toUpperCase())).isEqualTo(program);
-        assertThat(AbiProbe.key(program, SandboxAbi.MIN)).isEqualTo(program.sha256() + "|4.1.0");
+        assertThat(AbiProbe.key(program, SandboxAbi.MIN)).isEqualTo(program.sha256() + "|1.0.0");
     }
 }

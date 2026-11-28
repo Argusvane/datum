@@ -3,15 +3,16 @@ package com.argusvane.datum.pdf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
+import com.argusvane.datum.core.contracts.PdfCapabilitiesResponse;
 import com.argusvane.datum.sandbox.wasi.EngineInfo;
 import com.argusvane.datum.sandbox.protocol.HostOptions;
+import com.argusvane.datum.sandbox.protocol.PdfAbi;
 import com.argusvane.datum.sandbox.protocol.PdfKernel;
 import com.argusvane.datum.sandbox.protocol.Program;
 import com.argusvane.datum.sandbox.protocol.ProgramLimits;
 import com.argusvane.datum.sandbox.protocol.RunSlots;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -31,8 +32,8 @@ class PdfRuntimeDecoratingTest {
         }
 
         @Override
-        public List<String> capabilities() {
-            return List.of("fill");
+        public PdfCapabilitiesResponse capabilities() {
+            return new PdfCapabilitiesResponse(PdfAbi.MIN, "0.1.0", null);
         }
 
         @Override
@@ -86,7 +87,7 @@ class PdfRuntimeDecoratingTest {
                 }
 
                 @Override
-                public List<String> capabilities() {
+                public PdfCapabilitiesResponse capabilities() {
                     return kernel.capabilities();
                 }
 

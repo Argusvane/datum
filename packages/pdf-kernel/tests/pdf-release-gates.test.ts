@@ -35,7 +35,7 @@ describe("release gates with the PDF providers", () => {
     let calls = 0;
     const drifting: PdfRenderProvider = {
       id: "drifting",
-      abiVersion: "4.0.0",
+      abiVersion: "1.0.0",
       render: async () => {
         calls += 1;
         return { bytes: new TextEncoder().encode(`%PDF-${calls}`), pageCount: 1, pages: [], warnings: [], providerId: "drifting" };

@@ -13,7 +13,7 @@ function provider(): PdfRenderProvider & { requests: PdfKernelRequest[] } {
   const requests: PdfKernelRequest[] = [];
   return {
     id: "fake",
-    abiVersion: "4.0.0",
+    abiVersion: "1.0.0",
     requests,
     render: async (request) => {
       requests.push(request);

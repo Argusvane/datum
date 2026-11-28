@@ -31,9 +31,9 @@ export function yesManProgramText(): string {
   return mustReplace(builtProgramText(), "var __datum_run = function (serializedContext) {", "var __datum_run = function () { return '{\"errors\":[]}'; };\n  var __datum_run_real = function (serializedContext) {", "yes-man entry point");
 }
 
-/** (2) The real program whose ABI answer says 2.11.0: a stale build. */
+/** (2) The real program whose ABI answer says 0.9.0: a stale build. */
 export function staleAbiProgramText(): string {
-  return mustReplace(builtProgramText(), /(function kernelInspectAbi\(\)\s*\{\s*return )"\d+\.\d+\.\d+"/, '$1"2.11.0"', "ABI rewritten to 2.11.0");
+  return mustReplace(builtProgramText(), /(function kernelInspectAbi\(\)\s*\{\s*return )"\d+\.\d+\.\d+"/, '$1"0.9.0"', "ABI rewritten to 0.9.0");
 }
 
 /** (3) The real program without its Math.random / Date hardening. */

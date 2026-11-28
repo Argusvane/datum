@@ -61,7 +61,7 @@ def test_the_golden_file_is_the_conformance_suites_by_sha256() -> None:
     repo = next((p for p in HERE.parents if (p / "packages" / "conformance-suite").is_dir()), None)
     if repo is None:
         pytest.skip("not inside the monorepo: the source golden file is not here")
-    source = repo / "packages" / "conformance-suite" / "golden" / "abi-4.1.json"
+    source = repo / "packages" / "conformance-suite" / "golden" / "abi-1.0.json"
     assert hashlib.sha256(golden.read_bytes()).hexdigest() == hashlib.sha256(source.read_bytes()).hexdigest()
     # The golden file is the current ABI's; the floor a host accepts is of the same major, no newer.
     assert fx.golden()["abi"].split(".")[0] == SANDBOX_ABI_MIN.split(".")[0]
@@ -80,11 +80,11 @@ def test_the_pdf_documents_and_hashes_are_the_pdf_kernels_by_sha256() -> None:
         if repo is not None:
             source = repo / "packages" / "pdf-kernel" / "tests" / "fixtures" / "documents-3.8" / f"{theme}.json"
             assert source.read_bytes() == fx.fixture_bytes(f"{fx.DOCUMENTS}/{theme}.json")
-    assert PDF_ABI_MIN.startswith("4.")
+    assert PDF_ABI_MIN.startswith("1.")
 
 
 def test_the_stand_in_program_for_the_stale_abi_is_the_suites_stale_program_byte_for_byte() -> None:
-    assert stand_in_program("2.11.0").data == fx.stale_program()
+    assert stand_in_program("0.9.0").data == fx.stale_program()
 
 
 def test_the_hardening_rules_and_the_endpoint_form_are_present() -> None:
@@ -181,7 +181,7 @@ def test_every_contract_case_is_red_or_a_declared_limit_on_a_fake_engine(red_run
 
 def test_a_declared_limit_is_a_strict_expected_failure(red_run: dict[str, str]) -> None:
     xfailed = {name.split("::")[1] for name, kind in red_run.items() if kind == "xfailed"}
-    assert "test_the_abi_3_8_documents_render_to_their_pinned_hashes" in xfailed, "PDF declared lacking"
+    assert "test_the_theme_documents_render_to_their_pinned_hashes" in xfailed, "PDF declared lacking"
     assert "test_a_run_past_its_memory_ends_by_itself_and_keeps_its_output" in xfailed, "memory declared lacking"
     assert "test_a_memory_bomb_stops_at_the_limit_and_the_next_run_answers" in xfailed
 

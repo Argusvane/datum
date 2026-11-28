@@ -699,7 +699,7 @@ only with values it works out itself, never with anything in the body (the envel
 `hostContext`, and a `hostContext` member beside the document is 400 `bad_document`). `Datum(host_context=...)` takes one
 provider, `(form_key, SubmissionContext) -> Mapping | None`, sync or async. It is asked once per judged call (submit,
 validate, test and the PDF routes' check), after the idempotency step, so a retried attempt keeps its first verdict and
-asks nothing. Its answer goes to the run as `hostContext` (sandbox ABI 4.1.0), to the handler as
+asks nothing. Its answer goes to the run as `hostContext`, to the handler as
 `AcceptedSubmission.host_context`, and to the PDF the call prints (`render_submission` uses the submission's own).
 
 Read the person from the context's `principal`, which your `principal` dependency answers from the request:
@@ -1085,7 +1085,7 @@ traced; every one is held by a test in the library that applies it and by the co
 | an outcome of at most 8 Mi UTF-16 units | `datum_sandbox.protocol` | the `outcome_too_large` code in the error catalog |
 | answer JSON nested at most 512 deep; component depth 32, raw definition depth 256 | `datum_sandbox.protocol` | security suite DEF-06 (`definition.tooDeep`) |
 | a 16-byte run nonce from `secrets`; the guest globals removed | `datum_sandbox.protocol` | the frame protocol (a forged outcome is refused) |
-| sandbox ABI 4.1.0 (floor 4.1.0, the first that reads `hostContext`), PDF ABI 4.0.0 (floor 4.0.0) | the programs in `argusvane-datum-programs` | the programs' ABI and the golden answers; a program that does not answer for the floor is refused at start |
+| sandbox ABI 1.0.0 (floor 1.0.0), PDF ABI 1.0.0 (floor 1.0.0) | the programs in `argusvane-datum-programs` | the programs' ABI and the golden answers; a program that does not answer for the floor is refused at start |
 | the bounds of every `datum.runtime.*` budget (time, memory, slots, wait, body) | `SandboxSettings.build` (the bounded record is `ProgramLimits`) | the documented clamps (a validation run is at most 60 s, a PDF run 300 s, 64 slots, a wait of 0 to 10 s) |
 | SHA-256 for the canonical digest | `datum_core.canonical` | the digest contract (`canonical.json`, the JCS vectors) |
 | JSON bodies nested at most 256 deep, numbers at most 1000 characters, only `application/json` | `datum_sandbox.json`, `datum_core.http` | the wire hardening vectors of the security suite (SEC-*) |
@@ -1246,7 +1246,7 @@ Three tools, none able to change a run's answer, all framework-free (`datum_sand
 the logger `datum.sandbox.trace`:
 
 ```text
-run=5c1f0e9a2b3d program=sandbox op=validate abi=4.1.0 engine=wasmtime mode=cranelift slotWaitMs=0.0 prepareMs=0.4 instantiateMs=1.9 startMs=6.2 totalMs=9.1 termination=clean exit=- outcome=verdict stdinBytes=812 stdoutBytes=301 stderrBytes=0 capture=-
+run=5c1f0e9a2b3d program=sandbox op=validate abi=1.0.0 engine=wasmtime mode=cranelift slotWaitMs=0.0 prepareMs=0.4 instantiateMs=1.9 startMs=6.2 totalMs=9.1 termination=clean exit=- outcome=verdict stdinBytes=812 stdoutBytes=301 stderrBytes=0 capture=-
 ```
 
 The fields keep that order; every text value is reduced to letters, digits, `.`, `_` and `-`. A line carries lengths,

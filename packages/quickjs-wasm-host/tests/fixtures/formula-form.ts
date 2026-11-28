@@ -1,7 +1,7 @@
 import type { ComponentNode, Journey, WasmPlugin } from "@argusvane/datum-engine";
 
 /**
- * A form written in formulas, for the QuickJS vs in-process parity suite (sandbox ABI 2.8.0).
+ * A form written in formulas, for the QuickJS vs in-process parity suite.
  *
  * Every rule is a FEEL-subset string or the `{ formula, run }` object, and every built-in in
  * the function table is called at least once across the rules (the comment on each field names

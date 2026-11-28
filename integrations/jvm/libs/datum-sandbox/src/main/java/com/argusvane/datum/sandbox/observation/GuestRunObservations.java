@@ -1,5 +1,6 @@
 package com.argusvane.datum.sandbox.observation;
 
+import com.argusvane.datum.core.contracts.PdfCapabilitiesResponse;
 import com.argusvane.datum.core.observation.DatumObservation;
 import com.argusvane.datum.core.observation.DatumObservationNames;
 import com.argusvane.datum.core.observation.DatumObservations;
@@ -136,7 +137,7 @@ public final class GuestRunObservations {
         }
 
         @Override
-        public List<String> capabilities() {
+        public PdfCapabilitiesResponse capabilities() {
             return observe(observations, DatumObservationNames.PDF_RUN, "capabilities", engineMode, delegate::capabilities);
         }
 

@@ -633,7 +633,7 @@ describe("a form rename the open PDF layouts followed", () => {
     const bytes = (text: string): Uint8Array => new TextEncoder().encode(text);
     return {
       id: "fake",
-      abiVersion: "4.0.0",
+      abiVersion: "1.0.0",
       render: async () => ({ bytes: bytes("%PDF-fake"), pageCount: 1, pages: [], warnings: [], providerId: "fake" }),
       inspect: async () => ({
         pageCount: 1,

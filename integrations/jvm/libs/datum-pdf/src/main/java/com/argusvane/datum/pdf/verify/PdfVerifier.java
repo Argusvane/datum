@@ -33,8 +33,7 @@ import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * The host's half of verifying a PDF (PDF ABI 3.14), over the program's
- * {@code verify} answer.
+ * The host's half of verifying a PDF, over the program's {@code verify} answer.
  *
  * <p>The program reads each signature: its byte range, whether the digest over it matches, whether the signer's
  * certificate is the one the signature names, the signed revision's details and what later revisions changed. The
@@ -78,7 +77,7 @@ public class PdfVerifier {
     /** A timestamp SignerInfo's digest algorithms checked here: SHA-256, SHA-384, SHA-512. */
     static final Set<String> TIMESTAMP_DIGESTS = Set.of("2.16.840.1.101.3.4.2.1", "2.16.840.1.101.3.4.2.2", "2.16.840.1.101.3.4.2.3");
 
-    /** The most certificates the program takes in {@code knownCertificates}, and the largest (ABI 3.14). */
+    /** The most certificates the program takes in {@code knownCertificates}, and the largest. */
     static final int MAX_KNOWN = 64;
     static final int MAX_KNOWN_BYTES = 16 * 1024;
 
@@ -310,7 +309,7 @@ public class PdfVerifier {
             text(entries.get("signingTime")), text(entries.path("certification").get("permissions")));
     }
 
-    /** What the program found the incremental updates after a signature changed (PDF ABI 3.14 {@code laterRevisions}). */
+    /** What the program found the incremental updates after a signature changed ({@code laterRevisions}). */
     static SignatureVerdict.LaterRevisions laterRevisions(JsonNode report) {
         if (report == null || !report.isObject() || !isInt(report.get("revisions"))) {
             return null;

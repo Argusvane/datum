@@ -10,7 +10,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * The server supplies the host context (sandbox ABI 4.1.0): a host judges the rules that read {@code host.} with
+ * The server supplies the host context: a host judges the rules that read {@code host.} with
  * values it works out itself from the request, and never with values a client sends. The deployment under test serves the
  * kit's host context fixture ({@link TckFixtures#HOST_CONTEXT_FORM}: {@code name} required, {@code admin_note} required
  * and shown only when {@code host.role = "admin"}), has the dry-run route on, and wires a TEST-ONLY host context provider

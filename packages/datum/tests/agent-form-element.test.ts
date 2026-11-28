@@ -690,7 +690,7 @@ function fakePdfSupport(seen: unknown[]): import("../src/pdf.js").DatumPdfSuppor
   return {
     provider: {
       id: "fake",
-      abiVersion: "4.0.0",
+      abiVersion: "1.0.0",
       render: async (request: unknown) => {
         seen.push(request);
         return { bytes: new TextEncoder().encode("%PDF-fake"), pageCount: 1, pages: [], warnings: [], providerId: "fake" };

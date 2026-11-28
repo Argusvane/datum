@@ -35,12 +35,12 @@ const file = (name: string, text: string): string => {
 
 describe("argument parsing", () => {
   it("reads values, repeated flags, equals spellings and lists", () => {
-    const options = parseArgs(["--program", "p.js", "--only", "CTL-01,ISO", "--skip=abi", "--plugins", "a.js", "--plugins", "b.js", "--format", "json,md", "--gate", "full", "--fail-on", "warn", "--heavy", "--quiet", "--abi-floor", "4.1.0", "--budget-profile", "browser"]);
-    expect(options).toMatchObject({ program: "p.js", only: ["CTL-01", "ISO"], skip: ["abi"], plugins: ["a.js", "b.js"], formats: ["json", "md"], gate: "full", failOn: "warn", heavy: true, quiet: true, abiFloor: "4.1.0", budgetProfile: "browser" });
+    const options = parseArgs(["--program", "p.js", "--only", "CTL-01,ISO", "--skip=abi", "--plugins", "a.js", "--plugins", "b.js", "--format", "json,md", "--gate", "full", "--fail-on", "warn", "--heavy", "--quiet", "--abi-floor", "1.1.0", "--budget-profile", "browser"]);
+    expect(options).toMatchObject({ program: "p.js", only: ["CTL-01", "ISO"], skip: ["abi"], plugins: ["a.js", "b.js"], formats: ["json", "md"], gate: "full", failOn: "warn", heavy: true, quiet: true, abiFloor: "1.1.0", budgetProfile: "browser" });
   });
 
   it("refuses what it does not understand", () => {
-    for (const argv of [["--nope"], ["--program"], ["--abi-floor", "4.0"], ["--abi-floor", "3.18.0"], ["--abi-floor", "5.0.0"], ["--budget-profile", "gpu"], ["--gate", "x"], ["--fail-on", "x"], ["--format", "pdf"], ["stray"], ["--heavy=1"], ["explain"]]) {
+    for (const argv of [["--nope"], ["--program"], ["--abi-floor", "1.0"], ["--abi-floor", "0.18.0"], ["--abi-floor", "2.0.0"], ["--budget-profile", "gpu"], ["--gate", "x"], ["--fail-on", "x"], ["--format", "pdf"], ["stray"], ["--heavy=1"], ["explain"]]) {
       expect(() => parseArgs(argv), argv.join(" ")).toThrow(UsageError);
     }
   });
@@ -169,7 +169,7 @@ describe("the command line in process", () => {
   });
 
   it("honours --fail-on warn, --out - and --format", async () => {
-    const lying = file("lying.js", `/* Datum sandbox program (ABI 2.9.0). */\n${builtProgramText()}`);
+    const lying = file("lying.js", `/* Datum sandbox program (ABI 0.8.0). */\n${builtProgramText()}`);
     expect(await runCli(["--program", lying, "--only", "ABI-02", "--quiet"], capture().io)).toBe(EXIT.pass);
     expect(await runCli(["--program", lying, "--only", "ABI-02", "--quiet", "--fail-on", "warn"], capture().io)).toBe(EXIT.fail);
     const json = capture();

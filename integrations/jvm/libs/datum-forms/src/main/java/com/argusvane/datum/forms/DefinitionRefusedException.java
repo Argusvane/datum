@@ -4,7 +4,7 @@ import com.argusvane.datum.core.DatumException;
 import java.util.List;
 
 /**
- * The kernel's {@code check} refused a definition (ABI 2.13.0): a structure problem, or a formula problem
+ * The kernel's {@code check} refused a definition: a structure problem, or a formula problem
  * under the {@code fail} policy. Maps to 422; {@link #errors()} is the save route's 422 {@code kernel} list (code,
  * where, limit; endpoint catalog {@code saveForm}) with the message of each finding beside it, in the kernel's order.
  */

@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.argusvane.datum.core.DatumEventPublisher;
 import com.argusvane.datum.core.ProgramUnavailableException;
 import com.argusvane.datum.core.RequestTooLargeException;
+import com.argusvane.datum.core.contracts.PdfCapabilitiesResponse;
 import com.argusvane.datum.sandbox.wasi.EngineInfo;
 import com.argusvane.datum.sandbox.protocol.HostOptions;
 import com.argusvane.datum.sandbox.protocol.PdfAbi;
@@ -173,7 +174,7 @@ class PdfServiceTest {
     }
 
     @Test
-    void theFormulaInputsGoOnlyToAProgramWithTheFormulasFeatureAndKeepTheCallersDay() {
+    void theFormulaInputsGoWithEveryDocumentAndKeepTheCallersDay() {
         ScriptedPdfRuntime runtime = new ScriptedPdfRuntime();
         PdfService pdf = service(runtime);
         ObjectNode request = definition("{\"form\":{\"id\":\"root\",\"type\":\"form\"},\"values\":{},\"locale\":\"en\",\"today\":\"2026-01-01\"}");
@@ -182,13 +183,6 @@ class PdfServiceTest {
         assertThat(sent.path("today").asString()).isEqualTo("2026-01-01");
         assertThat(sent.path("formulaErrors").asString()).isEqualTo("fail");
         assertThat(sent.path("riskyPatterns").asString()).isEqualTo("refuse");
-
-        ScriptedPdfRuntime older = new ScriptedPdfRuntime().features("render", "document");
-        service(older).document(definition("{\"form\":{\"id\":\"root\",\"type\":\"form\"},\"values\":{},\"locale\":\"en\"}"), PdfOptions.defaults());
-        JsonNode plain = older.requests("document").get(0);
-        assertThat(plain.has("today")).isFalse();
-        assertThat(plain.has("formulaErrors")).isFalse();
-        assertThat(plain.has("riskyPatterns")).isFalse();
     }
 
     @Test
@@ -538,8 +532,10 @@ class PdfServiceTest {
     }
 
     @Test
-    void capabilitiesAreTheProgramsFeatures() {
-        assertThat(service(new ScriptedPdfRuntime()).capabilities()).contains("signature", "formulas");
+    void capabilitiesAreTheProgramsAbiAndKernelVersion() {
+        PdfCapabilitiesResponse capabilities = service(new ScriptedPdfRuntime()).capabilities();
+        assertThat(capabilities.abi()).isEqualTo(PdfAbi.MIN);
+        assertThat(capabilities.kernelVersion()).isEqualTo("0.1.0");
     }
 
     @Test
@@ -552,9 +548,9 @@ class PdfServiceTest {
             assertThatThrownBy(pdf::capabilities).isInstanceOf(SandboxException.class)
                 .satisfies(e -> assertThat(((SandboxException) e).code()).isEqualTo("server.busy"));
         }
-        assertThat(pdf.capabilities()).contains("signature");
+        assertThat(pdf.capabilities().abi()).isEqualTo(PdfAbi.MIN);
         try (RunSlots.Permit one = pdfRuntime.slots().acquire(); RunSlots.Permit two = pdfRuntime.slots().acquire()) {
-            assertThat(pdf.capabilities()).as("remembered: no slot").contains("signature", "formulas");
+            assertThat(pdf.capabilities().kernelVersion()).as("remembered: no slot").isEqualTo("0.1.0");
         }
         // A bytecode runner is still refused first, whatever is remembered.
         assertThatThrownBy(PdfService.builder().runtime(runtime.pdfRuntime("bytecode", 1)).build()::capabilities)
@@ -580,7 +576,7 @@ class PdfServiceTest {
         assertThatThrownBy(() -> service(junk).verify("%PDF-1.7 junk".getBytes(StandardCharsets.US_ASCII)))
             .isInstanceOf(PdfException.class).satisfies(e -> assertThat(((PdfException) e).httpStatus()).isEqualTo(400));
         // An ABI mismatch is the server's fault, not the file's.
-        ScriptedPdfRuntime stale = new ScriptedPdfRuntime().on("verify", body -> ScriptedPdfRuntime.failure("abi_mismatch", "3.1.0"));
+        ScriptedPdfRuntime stale = new ScriptedPdfRuntime().on("verify", body -> ScriptedPdfRuntime.failure("abi_mismatch", "0.1.0"));
         assertThatThrownBy(() -> service(stale).verify("%PDF-1.7".getBytes(StandardCharsets.US_ASCII)))
             .isInstanceOf(PdfException.class).satisfies(e -> assertThat(((PdfException) e).httpStatus()).isEqualTo(500));
         // verifyRaw stays the program's own answer, refusals as they are.

@@ -769,7 +769,7 @@ describe("journey kernel: ids named after Object.prototype members", () => {
 
 describe("journey kernel: the ABI", () => {
   it("is 4.1.0, and carries the journey through the serialized context", () => {
-    expect(WASM_ABI_VERSION).toBe("4.1.0");
+    expect(WASM_ABI_VERSION).toBe("1.0.0");
     const abi = new JsonWasmAbi();
     const instance = new InProcessWasmHostAdapter().instantiate([], abi);
     const payload = abi.serializeContext(

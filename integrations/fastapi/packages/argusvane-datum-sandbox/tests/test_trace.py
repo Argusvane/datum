@@ -112,7 +112,7 @@ def test_word_keeps_a_field_on_one_line() -> None:
     assert word("a b\nc=d\te") == "abcde"
     assert word("") == "-"
     assert word("x" * 100) == "x" * 64
-    hostile = TraceRecord("r", "sandbox", "validate\nrun=forged", "4.1.0", "fake engine", "m=x", 0, 0, 0, 0, 0,
+    hostile = TraceRecord("r", "sandbox", "validate\nrun=forged", "1.0.0", "fake engine", "m=x", 0, 0, 0, 0, 0,
                           "clean", None, "verdict", 1, 2, 3)  # fmt: skip
     assert hostile.line().count("run=") == 1
     assert "\n" not in hostile.line()

@@ -16,7 +16,7 @@ class TraceRecordTest {
         "startMs", "totalMs", "termination", "exit", "outcome", "stdinBytes", "stdoutBytes", "stderrBytes", "capture");
 
     private static TraceRecord record(String engine) {
-        return new TraceRecord("0123456789ab", "sandbox", "validate", "2.16.0", engine, "panama", 1_250_000, 400_000, 2_000_000,
+        return new TraceRecord("0123456789ab", "sandbox", "validate", "1.2.0", engine, "panama", 1_250_000, 400_000, 2_000_000,
             31_000_000, 40_000_000, "exited", 0, "verdict", 120, 300, 0, null, false);
     }
 
@@ -33,7 +33,7 @@ class TraceRecordTest {
     void theLineHasEveryFieldInItsFixedOrder() {
         String line = record("endive").line();
         assertThat(keys(line)).containsExactlyElementsOf(FIELDS);
-        assertThat(line).isEqualTo("run=0123456789ab program=sandbox op=validate abi=2.16.0 engine=endive mode=panama slotWaitMs=1.3 "
+        assertThat(line).isEqualTo("run=0123456789ab program=sandbox op=validate abi=1.2.0 engine=endive mode=panama slotWaitMs=1.3 "
             + "prepareMs=0.4 instantiateMs=2.0 startMs=31.0 totalMs=40.0 termination=exited exit=0 outcome=verdict stdinBytes=120 "
             + "stdoutBytes=300 stderrBytes=0 capture=-");
         assertThat(record("endive").fields().keySet()).containsExactlyElementsOf(FIELDS);

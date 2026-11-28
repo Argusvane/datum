@@ -2,7 +2,7 @@
 
 Run before any hook or guest, and again on what the customizers left. A value that is not an object is refused; then
 the raw and component depth (`assert_shallow`, iterative); then the version's length, the root, every component's id and
-type, and the floors of ABI 2.13: 10,000 components, 2000 options a component and 50,000 in all. At most 200 problems
+type, and the sandbox ABI's floors: 10,000 components, 2000 options a component and 50,000 in all. At most 200 problems
 are reported. The walk is iterative and stops once a floor is passed, so a hostile tree costs one bounded pass.
 
 A problem's message is fixed words; its field is where it is (`definition`, `root`, or `root > slot > id` as the kernel

@@ -137,7 +137,7 @@ def test_the_records_are_frozen_and_slotted() -> None:
         draft(),
         candidate(),
         PdfTrustVerdict("site"),
-        PdfCapabilities("4.0.0", ("signature",)),
+        PdfCapabilities("1.0.0", "0.1.0"),
         PdfProduced(SECRET, 1),
         PdfCompleted(SECRET, "Sig1", b"cms", True),
     ]

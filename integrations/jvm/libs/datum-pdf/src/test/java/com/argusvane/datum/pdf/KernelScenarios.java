@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import com.argusvane.datum.sandbox.protocol.AbiProbe;
 import com.argusvane.datum.sandbox.protocol.HostOptions;
+import com.argusvane.datum.sandbox.protocol.PdfAbi;
 import com.argusvane.datum.sandbox.protocol.PdfProgram;
 import com.argusvane.datum.sandbox.protocol.Program;
 import com.argusvane.datum.sandbox.protocol.ProgramRunner;
@@ -91,11 +92,12 @@ abstract class KernelScenarios {
     @Test
     void theProgramProvesItsAbiAndCanSign() {
         PdfService pdf = PdfService.builder().runtime(runtime).build();
-        assertThat(pdf.capabilities()).contains("document", "signature", "verify-detail", "formulas");
+        assertThat(pdf.capabilities().abi()).isEqualTo(PdfAbi.MIN);
+        assertThat(pdf.capabilities().kernelVersion()).isNotEmpty();
     }
 
     @Test
-    void theAbi38DocumentsRenderToTheirPinnedHashesThroughTheService() {
+    void theParityDocumentsRenderToTheirPinnedHashesThroughTheService() {
         // The fixed env of kernel-compat.test.ts; the producer through a customizer (the service's env carries none).
         PdfRequestCustomizer producer = draft -> {
             ObjectNode env = (ObjectNode) draft.env().deepCopy();

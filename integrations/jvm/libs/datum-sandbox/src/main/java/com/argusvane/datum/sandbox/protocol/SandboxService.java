@@ -146,7 +146,7 @@ public final class SandboxService implements Sandbox {
      * Runs one validation.
      *
      * @param context the WasmSubmissionContext: formId, form, values, locale, unknownFields, logLevel,
-     *     externalData, journey, page; document and optionSnapshot (ABI 2.9.0). Not changed: the run reads a
+     *     externalData, journey, page; document and optionSnapshot. Not changed: the run reads a
      *     copy with the host's {@code today}, {@code formulaErrors} and {@code riskyPatterns} set over it.
      * @param rules rule modules, registered in this order before the run
      * @param real whether this is a real submission, whose run log is relayed to {@link RunLog}.
@@ -183,11 +183,11 @@ public final class SandboxService implements Sandbox {
     }
 
     /**
-     * Asks the program about a definition: {@code __datum_inspect} (ABI 2.8.0).
+     * Asks the program about a definition: {@code __datum_inspect}.
      *
      * <p>The request is {@code {abi, op, definition, formulaErrors?}} with the host's floor
      * ({@link SandboxAbi#MIN}), so a program too old to answer refuses it ({@code abi_mismatch}); the members
-     * of {@code extra} are set over it (ABI 2.13.0: {@code types}, {@code riskyPatterns} for a check).
+     * of {@code extra} are set over it ({@code types}, {@code riskyPatterns} for a check).
      *
      * @param op "public", "check" or "inspect"
      * @param definition the form definition
@@ -263,14 +263,14 @@ public final class SandboxService implements Sandbox {
     }
 
     /**
-     * Asks the program whether a definition may be saved: the {@code check} op (ABI 2.13.0); a cache of its
+     * Asks the program whether a definition may be saved: the {@code check} op; a cache of its
      * answers is the caller's.
      *
      * <p>A check that gave no verdict is never read as "no problems" and never blamed on the definition unless
      * the definition caused it: the builder's save routes (endpoint catalog {@code saveForm}, {@code createForm})
      * answer {@code definition.tooDeep} and {@code definition.tooCostly} with a 422 and every other failure with 503
      * {@code server.unavailable}, so a runtime outage refuses the save rather than letting an unchecked form be
-     * stored (sandbox ABI 2.13.0, "a save is checked by the sandbox kernel"; BLD-04). The mapping is made here,
+     * stored ("a save is checked by the sandbox kernel"; BLD-04). The mapping is made here,
      * not in a controller, because the error mapper answers by the exception's own code; the original failure is
      * the {@link ProgramUnavailableException}'s cause, for the log.
      *

@@ -11,7 +11,7 @@ import tools.jackson.databind.node.ObjectNode;
  * A submission every check accepted, as the {@link SubmissionHandler} stores it (rule-check fields and client facts; what the application keeps of them, the
  * address included, is its decision).
  *
- * <p>What a record is stored and signed under comes from the sandbox program (ABI 2.9.0): the canonical text
+ * <p>What a record is stored and signed under comes from the sandbox program: the canonical text
  * of the delivered document, its digest (checked against the host's own canonical form) and the value index.
  *
  * @param formKey the form
@@ -22,10 +22,10 @@ import tools.jackson.databind.node.ObjectNode;
  * @param values the sanitized values the sandbox kept
  * @param warnings the findings that did not block, the sandbox's then the validators'
  * @param runLog the run's log entries, as the program gave them
- * @param clockDependent components whose rules read the day (ABI 2.8.0)
+ * @param clockDependent components whose rules read the day
  * @param serverRules components a server-only rule applied to
- * @param visibilitySkipped components whose own visibleWhen the server could not replay (ABI 2.10.0)
- * @param clientDerived value paths of answers worked out in the browser and kept as sent (ABI 2.7.0)
+ * @param visibilitySkipped components whose own visibleWhen the server could not replay
+ * @param clientDerived value paths of answers worked out in the browser and kept as sent
  * @param remoteAddress the client address, or null: always there for the HTTP routes (the address after the
  *     application's forwarded-header handling), optional for another channel
  * @param userAgent the User-Agent, or null: the HTTP request's header, optional for another channel

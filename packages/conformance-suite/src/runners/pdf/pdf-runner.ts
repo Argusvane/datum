@@ -31,9 +31,8 @@ import {
 import { findVeraPdf } from "./inspect.js";
 import { loadFonts, loadPdfLib, loadPdfjs } from "./libs.js";
 
-/** The PDF ABI and feature the OUT class needs: a program of this major, at this version or later. */
-export const OUTPUT_SAFETY_ABI = "4.0.0";
-export const OUTPUT_SAFETY_FEATURE = "output-safety";
+/** The PDF ABI the OUT class needs: a program of this major, at this version or later. */
+export const OUTPUT_SAFETY_ABI = "1.0.0";
 
 const CHECKS: Record<string, (ctx: CheckContext) => Promise<Outcome>> = {
   "OUT-01": checkTextIntegrity,
@@ -65,7 +64,7 @@ export interface PdfRunOptions {
   program: PdfProgramInput;
   /** Replaces the QuickJS provider (tests run the in-process kernel as a positive control). */
   provider?: PdfProvider;
-  /** False runs the checks against a program that lacks the output-safety feature instead of reporting the class pending (the mutation tests). Default true. */
+  /** False runs the checks against a program of another PDF ABI instead of reporting the class pending (the mutation tests). Default true. */
   enforceAbi?: boolean;
   catalogue: readonly Vector[];
   gate?: "release" | "full";
@@ -93,15 +92,12 @@ async function tool(load: () => Promise<unknown>): Promise<boolean> {
 }
 
 /** Why a program cannot answer the OUT class, or null when it can. */
-export function pendingReason(abi: string | null, features: readonly string[]): string | null {
+export function pendingReason(abi: string | null): string | null {
   if (abi === null || !/^\d+\.\d+\.\d+$/.test(abi)) {
     return "the program did not answer a PDF ABI";
   }
   if (abi.split(".")[0] !== OUTPUT_SAFETY_ABI.split(".")[0] || compareAbi(abi, OUTPUT_SAFETY_ABI) < 0) {
     return `the program answers PDF ABI ${abi}; the OUT class needs ${OUTPUT_SAFETY_ABI} or a later version of its major (rebuild it from the current kernel)`;
-  }
-  if (!features.includes(OUTPUT_SAFETY_FEATURE)) {
-    return `the program answers PDF ABI ${abi} without the ${OUTPUT_SAFETY_FEATURE} feature`;
   }
   return null;
 }
@@ -125,7 +121,6 @@ export async function runPdfVectors(options: PdfRunOptions): Promise<PdfRunOutpu
     bytes: Buffer.byteLength(options.program.text),
     sha256: createHash("sha256").update(options.program.text).digest("hex"),
     abi: null,
-    features: [],
     pending: null,
     tools
   };
@@ -157,9 +152,8 @@ export async function runPdfVectors(options: PdfRunOptions): Promise<PdfRunOutpu
     }
     const capabilities = await provider.capabilities();
     report.abi = capabilities.abi;
-    report.features = capabilities.features;
     if (options.enforceAbi !== false) {
-      report.pending = pendingReason(capabilities.abi, capabilities.features);
+      report.pending = pendingReason(capabilities.abi);
     }
   } catch (error) {
     startupError = error instanceof Error ? error.message : String(error);
@@ -179,7 +173,7 @@ export async function runPdfVectors(options: PdfRunOptions): Promise<PdfRunOutpu
     return { results, report };
   }
 
-  const capabilities = { abi: report.abi ?? "", features: report.features };
+  const capabilities = { abi: report.abi ?? "", kernelVersion: "" };
   const context: CheckContext = { provider, fonts, capabilities };
   try {
     for (const vector of selected) {

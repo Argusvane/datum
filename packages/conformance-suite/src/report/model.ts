@@ -114,8 +114,7 @@ export interface PdfReport {
   bytes: number;
   sha256: string;
   abi: string | null;
-  features: string[];
-  /** Set when the OUT class is pending: the program is not of PDF ABI 4 at the floor or later, or lacks the output-safety feature. */
+  /** Set when the OUT class is pending: the program is not of PDF ABI 1 at the floor or later. */
   pending: string | null;
   /** What the inspection used: fonts, pdf.js, pdf-lib, veraPDF, openssl. */
   tools: { fonts: string; pdfjs: boolean; pdfLib: boolean; verapdf: boolean; openssl: boolean };

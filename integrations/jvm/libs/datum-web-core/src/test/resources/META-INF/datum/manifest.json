@@ -3,6 +3,6 @@
   "buildId": "testbuild1",
   "source": "test",
   "engineVersion": "1.2.3",
-  "sandboxAbi": "2.14.0",
-  "pdfAbi": "4.0.0"
+  "sandboxAbi": "1.0.0",
+  "pdfAbi": "1.0.0"
 }

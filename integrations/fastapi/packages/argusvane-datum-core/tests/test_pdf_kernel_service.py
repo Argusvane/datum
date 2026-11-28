@@ -1,17 +1,16 @@
 """`PdfKernelService` and the PDF ABI gate.
 
 The PDF program runs on the same engine as the sandbox, one `run()` per call in the PDF pool
-(`ProgramLimits.pdf_budget()`, the script `PDF_RUN_SCRIPT`). The service stamps `abi` (the floor, 4.0.0) and `op` onto
+(`ProgramLimits.pdf_budget()`, the script `PDF_RUN_SCRIPT`). The service stamps `abi` (the floor, 1.0.0) and `op` onto
 the caller's request, so a caller, a customizer or a middleware never chooses either, reads the answer strictly (`ok` is
 the boolean `true`) into the records of `datum_sandbox.protocol._pdf`, and raises `PdfKernelError` (the program's `code`
 and
 `message`) for a refusal of the program. The program accepts any request of its own major, so the GATE reads the
-`capabilities` reply: its `abi` at least the floor by semver (numeric, never as strings) in the same major, and the five
-features the host needs (`signature`, `verify-detail`, `output-safety`, `render-caps`, `attachment-types`); a program
-that fails it is refused with the rebuild hint, a proof is kept per program SHA-256 and a refusal never is. A run that
-gives no answer is a `SandboxError` of the sandbox's reasons; a runtime that cannot start one is
-`ProgramUnavailableError`. The last section holds the `datum.pdf.run` span (`ObservedPdfKernel`, the innermost layer
-Datum composes). The rows marked `runtime` run the real program.
+`capabilities` reply: its `abi` at least the floor by semver (numeric, never as strings) in the same major, and its
+`kernelVersion` text; a program that fails it is refused with the rebuild hint, a proof is kept per program SHA-256
+and a refusal never is. A run that gives no answer is a `SandboxError` of the sandbox's reasons; a runtime that cannot
+start one is `ProgramUnavailableError`. The last section holds the `datum.pdf.run` span (`ObservedPdfKernel`, the
+innermost layer Datum composes). The rows marked `runtime` run the real program.
 """
 
 import base64
@@ -25,7 +24,7 @@ import pytest
 from observe_support import attrs, telemetry
 from opentelemetry import trace
 from opentelemetry.trace import StatusCode
-from pdf_support import ABI, FEATURES, ScriptedPdfRuntime, b64, fake_pdf
+from pdf_support import ABI, ScriptedPdfRuntime, b64, fake_pdf
 
 from datum_core.observe import ObservedPdfKernel
 from datum_core.testing.pdf_handoff import signing_handoff
@@ -52,7 +51,7 @@ from datum_sandbox.protocol._pdf import PdfCapabilities, PdfCompleted, PdfInspec
 from datum_sandbox.testing.runtime_support import program_parts
 from datum_sandbox.wasi import EngineBusyError, EngineClosedError, EngineStrayBoundError, GuestRun, RunEnd, RunResult
 
-REQUIRED = ("signature", "verify-detail", "output-safety", "render-caps", "attachment-types")
+KERNEL = "0.1.0"
 PROGRAM = Program(ProgramKind.PDF, b"scripted pdf program")
 
 
@@ -181,10 +180,10 @@ def test_the_reply_is_read_into_a_record() -> None:
     answer = kernel.capabilities()
     assert isinstance(answer, PdfCapabilities)
     assert answer.abi == ABI
-    assert set(FEATURES) <= set(answer.features)
+    assert answer.kernel_version == KERNEL
 
 
-@pytest.mark.parametrize("abi", ["3.17.0", "3.17.99", "3.9.0", "3.0.0", "2.99.0"])
+@pytest.mark.parametrize("abi", ["0.17.0", "0.17.99", "0.9.0", "0.0.0", "0.99.0"])
 def test_a_program_older_than_the_floor_is_refused_with_the_rebuild_hint_even_if_it_answers_the_request(
     abi: str,
 ) -> None:
@@ -196,32 +195,16 @@ def test_a_program_older_than_the_floor_is_refused_with_the_rebuild_hint_even_if
     assert runtime.requests("document") == [], "an older program never runs a request"
 
 
-@pytest.mark.parametrize("abi", ["4.0.0", "4.0.1", "4.1.0", "4.100.0"])
+@pytest.mark.parametrize("abi", ["1.0.0", "1.0.1", "1.1.0", "1.100.0"])
 def test_a_program_at_or_above_the_floor_in_the_same_major_passes_compared_by_number_not_by_text(abi: str) -> None:
     kernel, runtime = service(ScriptedPdfRuntime(abi=abi))
     kernel.document({"values": {}})
     assert runtime.ops() == ["capabilities", "document"]
 
 
-@pytest.mark.parametrize("feature", REQUIRED)
-def test_a_program_missing_a_feature_the_host_needs_is_refused_naming_it(feature: str) -> None:
-    features = [item for item in FEATURES if item != feature]
-    kernel, runtime = service(ScriptedPdfRuntime(features=features))
-    with pytest.raises(ProgramUnavailableError) as raised:
-        kernel.document({"values": {}})
-    assert feature in str(raised.value)
-    assert runtime.requests("document") == []
-
-
-def test_features_the_host_does_not_need_may_be_missing() -> None:
-    kernel, runtime = service(ScriptedPdfRuntime(features=REQUIRED))
-    kernel.document({"values": {}})
-    assert "document" in runtime.ops()
-
-
 def test_a_refusal_is_never_kept_so_the_next_call_proves_a_repaired_program() -> None:
     probe = AbiProbe()
-    runtime = ScriptedPdfRuntime(abi="3.17.0")
+    runtime = ScriptedPdfRuntime(abi="0.17.0")
     kernel, _ = service(runtime, probe=probe)
     for _ in range(2):
         with pytest.raises(ProgramUnavailableError):
@@ -237,17 +220,18 @@ def test_a_refusal_is_never_kept_so_the_next_call_proves_a_repaired_program() ->
     "answer",
     [
         {"ok": False, "error": {"code": "abi_mismatch", "message": "x"}},
-        {"ok": "true", "abi": ABI, "features": list(FEATURES)},
-        {"ok": 1, "abi": ABI, "features": list(FEATURES)},
-        {"abi": ABI, "features": list(FEATURES)},
-        {"ok": True, "features": list(FEATURES)},
-        {"ok": True, "abi": ABI},
-        {"ok": True, "abi": 3, "features": list(FEATURES)},
-        {"ok": True, "abi": ABI, "features": "signature"},
-        {"ok": True, "abi": ABI, "features": [1, 2]},
-        {"ok": True, "abi": "three", "features": list(FEATURES)},
-        {"ok": True, "op": "verify", "abi": ABI, "features": list(FEATURES)},
-        {"ok": True, "op": 5, "abi": ABI, "features": list(FEATURES)},
+        {"ok": "true", "op": "capabilities", "abi": ABI, "kernelVersion": KERNEL},
+        {"ok": 1, "op": "capabilities", "abi": ABI, "kernelVersion": KERNEL},
+        {"op": "capabilities", "abi": ABI, "kernelVersion": KERNEL},
+        {"ok": True, "op": "capabilities", "kernelVersion": KERNEL},
+        {"ok": True, "op": "capabilities", "abi": ABI},
+        {"ok": True, "op": "capabilities", "abi": ABI, "kernelVersion": None},
+        {"ok": True, "op": "capabilities", "abi": ABI, "kernelVersion": 1},
+        {"ok": True, "op": "capabilities", "abi": 3, "kernelVersion": KERNEL},
+        {"ok": True, "op": "capabilities", "abi": "three", "kernelVersion": KERNEL},
+        {"ok": True, "op": "verify", "abi": ABI, "kernelVersion": KERNEL},
+        {"ok": True, "op": 5, "abi": ABI, "kernelVersion": KERNEL},
+        {"ok": True, "abi": ABI, "kernelVersion": KERNEL},
     ],
 )
 def test_a_reply_that_is_not_strictly_a_capabilities_answer_fails_the_gate(answer: dict[str, Any]) -> None:
@@ -365,13 +349,13 @@ def test_a_full_stray_bound_is_not_counted_busy_and_is_an_error_span() -> None:
 
 
 def test_require_pdf_capabilities_is_the_pure_judge_of_a_reply() -> None:
-    require_pdf_capabilities({"ok": True, "op": "capabilities", "abi": ABI, "features": list(FEATURES)})
+    require_pdf_capabilities({"ok": True, "op": "capabilities", "abi": ABI, "kernelVersion": KERNEL})
     with pytest.raises(ProgramUnavailableError):
-        require_pdf_capabilities({"ok": True, "op": "verify", "abi": ABI, "features": list(FEATURES)})
+        require_pdf_capabilities({"ok": True, "op": "verify", "abi": ABI, "kernelVersion": KERNEL})
     with pytest.raises(ProgramUnavailableError):
-        require_pdf_capabilities({"ok": True, "abi": "3.17.0", "features": list(FEATURES)})
+        require_pdf_capabilities({"ok": True, "op": "capabilities", "abi": "0.17.0", "kernelVersion": KERNEL})
     with pytest.raises(ProgramUnavailableError):
-        require_pdf_capabilities({"ok": True, "abi": ABI, "features": []})
+        require_pdf_capabilities({"ok": True, "op": "capabilities", "abi": ABI})
     with pytest.raises(ProgramUnavailableError):
         require_pdf_capabilities(None)
 
@@ -717,8 +701,8 @@ def test_the_real_program_passes_the_gate_and_prints_and_verifies() -> None:
     with pdf_kernel.pdf_session() as session:
         kernel = PdfKernelService(session.runtime, pdf_program(), limits=ProgramLimits(pdf_time_limit=120))
         capabilities = kernel.capabilities()
-        assert capabilities.abi == "4.0.0"
-        assert set(REQUIRED) <= set(capabilities.features)
+        assert capabilities.abi == "1.0.0"
+        assert capabilities.kernel_version
         request = pdf_kernel.document_request()
         del request["abi"], request["op"]
         produced = kernel.document(request)
@@ -736,14 +720,14 @@ def test_the_real_program_accepts_any_request_of_its_major_so_only_the_gate_can_
     import pdf_kernel  # noqa: PLC0415 - runtime rows only
 
     with pdf_kernel.pdf_session() as session:
-        answer = session.call({"abi": "4.99.0", "op": "capabilities"})
+        answer = session.call({"abi": "1.99.0", "op": "capabilities"})
     assert answer["ok"] is True
-    assert PDF_ABI_MIN == "4.0.0"
+    assert PDF_ABI_MIN == "1.0.0"
 
 
 # -- more of the strict reading and the gate ----------------------------------------------------------------------
 @pytest.mark.parametrize(
-    "abi", ["5.0.0", "3.18.0", "3.100.0", "4.0", "4.0.0-rc1", "4.0.0.1", "v4.0.0", "4.-1.0", " 4.0.0"]
+    "abi", ["2.0.0", "0.18.0", "0.100.0", "1.0", "1.0.0-rc1", "1.0.0.1", "v1.0.0", "1.-1.0", " 1.0.0"]
 )
 def test_a_reply_that_is_another_major_or_not_exactly_three_numbers_is_refused(abi: str) -> None:
     kernel, runtime = service(ScriptedPdfRuntime(abi=abi))
@@ -753,7 +737,7 @@ def test_a_reply_that_is_another_major_or_not_exactly_three_numbers_is_refused(a
 
 
 def test_a_reported_abi_that_is_not_a_version_is_not_echoed_into_the_message() -> None:
-    hostile = "3.x " + "A" * 5000 + " /secret/path"
+    hostile = "1.x " + "A" * 5000 + " /secret/path"
     kernel, _ = service(ScriptedPdfRuntime(abi=hostile))
     with pytest.raises(ProgramUnavailableError) as raised:
         kernel.document({"values": {}})

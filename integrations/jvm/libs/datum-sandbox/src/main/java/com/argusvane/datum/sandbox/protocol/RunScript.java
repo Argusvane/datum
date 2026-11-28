@@ -64,7 +64,7 @@ public final class RunScript {
     public enum Entry {
         /** {@code __datum_run}: a validation. */
         RUN("run"),
-        /** {@code __datum_inspect}: a question about a definition (ABI 2.8.0). */
+        /** {@code __datum_inspect}: a question about a definition. */
         INSPECT("inspect");
 
         private final String word;

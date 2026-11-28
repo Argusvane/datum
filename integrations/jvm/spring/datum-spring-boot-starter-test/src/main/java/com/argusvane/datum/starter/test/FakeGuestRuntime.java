@@ -32,7 +32,7 @@ import tools.jackson.databind.node.ObjectNode;
  * the PDF capabilities probe.
  *
  * <p>Validation runs are answered by {@link #outcome(Function)}; the default accepts every document and keeps its
- * values, with the canonical text and digest the ABI 2.9.0 answer carries. {@code public} removes every rule whose
+ * values, with the canonical text and digest the program's answer carries. {@code public} removes every rule whose
  * {@code run} is {@code server-secret}, as the kernel does, and {@code check} says "ok" with no findings. Other
  * inspect ops are answered with {@link #on(String, Function)}; an op nobody answers is an {@link AssertionError},
  * so a test never passes on a silent default.
@@ -49,7 +49,7 @@ public final class FakeGuestRuntime implements GuestRuntime {
 
     private static final String PROBE_OK = "{\"ok\":true,\"op\":\"inspect\",\"rules\":[],\"functionsUsed\":[],\"pluginsNeeded\":[],\"paths\":[]}";
     private static final String PROBE_REFUSED = "{\"ok\":false,\"error\":{\"code\":\"abi_mismatch\",\"message\":\"old\"}}";
-    private static final String PDF_PROBE_OK = "{\"ok\":true,\"op\":\"capabilities\",\"abi\":\"4.0.0\",\"features\":[\"formulas\"]}";
+    private static final String PDF_PROBE_OK = "{\"ok\":true,\"op\":\"capabilities\",\"abi\":\"1.0.0\",\"kernelVersion\":\"0.1.0\"}";
 
     /** One inspect request the runtime received (probes excluded). */
     public record Request(String op, ObjectNode body) {

@@ -20,7 +20,7 @@ import tools.jackson.databind.json.JsonMapper;
  *
  * <p>Programs, fonts and the freeze snippet come from datum-programs on the class path ({@code META-INF/datum/programs/}).
  * The fixtures travel in this kit's jar ({@code META-INF/datum-sandbox-tck/}, written by the asset generation from the
- * conformance suite's golden file and fixture form and the PDF kernel's ABI 3.8 documents), so an engine outside this
+ * conformance suite's golden file and fixture form and the PDF kernel's parity documents), so an engine outside this
  * repository is judged by the very bytes the TypeScript side checks. Inside the repository an IDE run without processed
  * resources falls back to those source files.
  */
@@ -36,7 +36,7 @@ public final class RuntimeTckAssets {
 
     /** Where each fixture is in the repository, for the fallback. */
     private static final Map<String, String> REPO_FIXTURES = Map.of(
-        "golden.json", "packages/conformance-suite/golden/abi-4.1.json",
+        "golden.json", "packages/conformance-suite/golden/abi-1.0.json",
         "fixture-form.json", "packages/conformance-suite/fixtures/endpoint-fixture.definition.json");
 
     private RuntimeTckAssets() {

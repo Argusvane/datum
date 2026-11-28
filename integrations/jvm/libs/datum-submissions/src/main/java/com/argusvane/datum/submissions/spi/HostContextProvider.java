@@ -5,15 +5,14 @@ import java.util.Optional;
 
 /**
  * Supplies the values a form's {@code host.} names read ({@code host.role}, {@code host.region}) for one sandbox run, as
- * the run context's {@code hostContext} (sandbox ABI 4.1.0). The application works them out from what it knows
+ * the run context's {@code hostContext}. The application works them out from what it knows
  * of the request: the signed-in principal, a header its own gateway set, the site the request came through. It never takes
  * them from the request body or the browser: the page's own {@code hostContext} is for display, a client can set it to
  * anything, and the envelope does not carry it. One per application (the Spring binding takes a single bean); with none,
  * no run carries a context.
  *
- * <p>Empty is "no context": the kernel judges exactly as it did before the key existed (a rule reading {@code host.} is
- * left unevaluated, a field the host shows is not required and is listed in {@code visibilitySkipped}, a calculation keeps
- * the value sent). A map, even an empty one, is a context: every rule reading {@code host.} is judged against it, and a
+ * <p>Empty is "no context": the kernel judges leniently (a rule reading {@code host.} is left unevaluated, a field the
+ * host shows is not required and is listed in {@code visibilitySkipped}, a calculation keeps the value sent). A map, even an empty one, is a context: every rule reading {@code host.} is judged against it, and a
  * key it lacks reads as no answer, as in the browser. Nested maps are read by dotted name ({@code host.user.role}).
  *
  * <p>Asked once per call that runs the sandbox: a delivery ({@code POST /submissions}), a journey's page or whole-journey
@@ -41,6 +40,6 @@ public interface HostContextProvider {
      */
     Optional<? extends Map<String, ?>> hostContext(HostContextRequest request);
 
-    /** No context for any run: the lenient reading every host had before ABI 4.1.0. */
+    /** No context for any run: the lenient reading above. */
     HostContextProvider NONE = request -> Optional.empty();
 }

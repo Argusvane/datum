@@ -42,7 +42,7 @@ function designedLayout(): PdfGeneratedLayout {
 function fakeProvider(renders: unknown[]): PdfRenderProvider {
   return {
     id: "fake",
-    abiVersion: "4.0.0",
+    abiVersion: "1.0.0",
     render: async (request: unknown) => {
       renders.push(request);
       return { bytes: new TextEncoder().encode("%PDF-fake"), pageCount: 1, pages: [], warnings: [], providerId: "fake" };

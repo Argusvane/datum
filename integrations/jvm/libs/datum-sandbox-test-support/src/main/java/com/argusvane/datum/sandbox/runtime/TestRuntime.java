@@ -63,7 +63,7 @@ public final class TestRuntime implements GuestRuntime {
     public volatile boolean sandboxProbeFails;
     public volatile boolean pdfProbeFails;
     /** The ABI the PDF program's capabilities answer names: an older one is a stale program the gate refuses. */
-    public volatile String pdfAbi = "4.0.0";
+    public volatile String pdfAbi = "1.0.0";
     public volatile boolean smokeWrong;
     public volatile String mode = "jffi";
     /** When set, validation runs (not probes or smokes) end with this termination instead of an answer. */
@@ -121,7 +121,7 @@ public final class TestRuntime implements GuestRuntime {
         return outcome;
     }
 
-    /** Adds canonical and digest of the context's document, as ABI 2.9.0 answers. */
+    /** Adds canonical and digest of the context's document, as the program answers. */
     public static ObjectNode described(ObjectNode outcome, ObjectNode context) {
         JsonNode document = context.get("document");
         if (document != null) {
@@ -147,7 +147,7 @@ public final class TestRuntime implements GuestRuntime {
         if (Program.Kind.of(run) == Program.Kind.PDF) {
             pdfProbes.incrementAndGet();
             String answer = pdfProbeFails ? "{\"ok\":false,\"error\":{\"code\":\"abi_mismatch\",\"message\":\"old\"}}"
-                : "{\"ok\":true,\"op\":\"capabilities\",\"abi\":\"" + pdfAbi + "\",\"features\":[\"formulas\"]}";
+                : "{\"ok\":true,\"op\":\"capabilities\",\"abi\":\"" + pdfAbi + "\",\"kernelVersion\":\"0.1.0\"}";
             return RunOutput.exited(0, answer.getBytes(StandardCharsets.UTF_8), null);
         }
         String nonce = text.substring(0, 32);

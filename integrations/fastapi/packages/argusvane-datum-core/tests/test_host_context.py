@@ -1,4 +1,4 @@
-"""The host context (sandbox ABI 4.1.0): the values a form's `host.` paths read, worked out by the host, never sent.
+"""The host context (`hostContext`): the values a form's `host.` paths read, worked out by the host, never sent.
 
 `Datum(host_context=...)` is asked once per judged call, after the definition, the idempotency step and the journey,
 with the form key and the call's `SubmissionContext`. Its answer rides the run context as `hostContext` beside `today`

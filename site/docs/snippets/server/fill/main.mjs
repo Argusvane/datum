@@ -128,7 +128,7 @@ app.post("/api/submissions/fill", async (req, res) => {
     return res.status(422).json({ errors });
   }
   const response = await render({
-    abi: "4.0.0",
+    abi: "1.0.0",
     op: "document",
     form: FORM.root,
     // The template layout, inline, with this server's fill options: this server's choice, so no

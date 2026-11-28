@@ -8,7 +8,7 @@
 // author gets as far as typing. Neither chunk is in the builder's module or ever in the renderer's.
 // The sentinel is markup only the panel's module writes: its Run all button's attribute.
 //
-// Two more sentinels hold the sandbox's `test` op (ABI 2.16) and the form-test judge out of both
+// Two more sentinels hold the sandbox's `test` op and the form-test judge out of both
 // eager entries: the op belongs in datum-wasm.js (the sandbox
 // program) and the judge in the Tests chunk. They could leak through the Tests runner's full
 // in-process host, whose `inspect` names `runInspect`: the kernel module is already in the entry,

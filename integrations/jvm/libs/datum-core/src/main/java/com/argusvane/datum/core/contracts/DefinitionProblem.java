@@ -8,7 +8,7 @@ import java.util.Map;
 import tools.jackson.databind.JsonNode;
 
 /**
- * A structure problem the check reports (ABI 2.13).
+ * A structure problem the check reports.
  *
  * <p>Members the Java side does not name are kept in {@code extra} and written back, so a newer
  * program's additions round-trip (the TypeScript type is open).

@@ -271,7 +271,7 @@ describe("signing a rendered record", () => {
     const who = identity("rsa2048");
     const prepared = await prepareSignature(input, { certificates: who.certificates, timestamp: true }, await fonts(), ENV);
     const value = hostSign(who, prepared.signing.toBeSigned);
-    const request = await handlePdfRequest({ abi: "4.0.0", op: "timestampRequest", signature: value });
+    const request = await handlePdfRequest({ abi: "1.0.0", op: "timestampRequest", signature: value });
     expect(request).toMatchObject({ ok: true, op: "timestampRequest" });
     const token = opensslTimestamp((request as { request: string }).request);
     const completed = await completeSignature(prepared.bytes, { certificates: who.certificates, value, timestamp: { token } });
@@ -343,26 +343,24 @@ describe("through the program", () => {
   it("prepares on document, completes and verifies through the ops, and inspect reports the field", async () => {
     const who = identity("rsa2048");
     const rendered = await renderDocument(document([paragraph("p1", "Hello")]), await fonts(), ENV);
-    const sign = (await handlePdfRequest({ abi: "4.0.0", op: "sign", pdf: { data: bytesToBase64(rendered.bytes) }, signature: { certificates: who.certificates, certify: "noChanges" }, env: ENV })) as Extract<PdfKernelResponse, { op: "sign" }>;
+    const sign = (await handlePdfRequest({ abi: "1.0.0", op: "sign", pdf: { data: bytesToBase64(rendered.bytes) }, signature: { certificates: who.certificates, certify: "noChanges" }, env: ENV })) as Extract<PdfKernelResponse, { op: "sign" }>;
     expect(sign.ok).toBe(true);
     const value = hostSign(who, sign.signing.toBeSigned);
-    const complete = (await handlePdfRequest({ abi: "4.0.0", op: "complete", pdf: { data: sign.bytes }, signing: { certificates: who.certificates, certify: "noChanges", value } })) as Extract<PdfKernelResponse, { op: "complete" }>;
+    const complete = (await handlePdfRequest({ abi: "1.0.0", op: "complete", pdf: { data: sign.bytes }, signing: { certificates: who.certificates, certify: "noChanges", value } })) as Extract<PdfKernelResponse, { op: "complete" }>;
     expect(complete).toMatchObject({ ok: true, field: "Signature1", timestamped: false });
-    const verify = (await handlePdfRequest({ abi: "4.0.0", op: "verify", pdf: { data: complete.bytes } })) as Extract<PdfKernelResponse, { op: "verify" }>;
+    const verify = (await handlePdfRequest({ abi: "1.0.0", op: "verify", pdf: { data: complete.bytes } })) as Extract<PdfKernelResponse, { op: "verify" }>;
     expect(verify.signatures).toHaveLength(1);
     expect(verify.signatures[0]).toMatchObject({ digestMatches: true, certification: { permissions: "noChanges" } });
     expect(hostVerify(verify.signatures[0] as PdfSignatureReport)).toBe(true);
-    const inspect = (await handlePdfRequest({ abi: "4.0.0", op: "inspect", template: { data: complete.bytes } })) as Extract<PdfKernelResponse, { op: "inspect" }>;
+    const inspect = (await handlePdfRequest({ abi: "1.0.0", op: "inspect", template: { data: complete.bytes } })) as Extract<PdfKernelResponse, { op: "inspect" }>;
     expect(inspect.info.signatures).toBe(1);
     expect(inspect.info.fields.find((field) => field.name === "Signature1")).toMatchObject({ kind: "signature", signed: true });
-    const capabilities = (await handlePdfRequest({ abi: "4.0.0", op: "capabilities" })) as Extract<PdfKernelResponse, { op: "capabilities" }>;
-    expect(capabilities.features).toContain("signature");
   });
 
   it("answers invalid requests with codes", async () => {
-    expect(await handlePdfRequest({ abi: "4.0.0", op: "sign", pdf: {}, signature: {}, env: ENV })).toMatchObject({ ok: false, error: { code: "invalid_request" } });
-    expect(await handlePdfRequest({ abi: "4.0.0", op: "complete", pdf: { data: "AA==" } })).toMatchObject({ ok: false, error: { code: "invalid_request" } });
-    expect(await handlePdfRequest({ abi: "4.0.0", op: "timestampRequest", signature: "" })).toMatchObject({ ok: false, error: { code: "invalid_request" } });
-    expect(await handlePdfRequest({ abi: "4.0.0", op: "verify", pdf: { data: bytesToBase64(new Uint8Array([1, 2, 3])) } })).toMatchObject({ ok: false });
+    expect(await handlePdfRequest({ abi: "1.0.0", op: "sign", pdf: {}, signature: {}, env: ENV })).toMatchObject({ ok: false, error: { code: "invalid_request" } });
+    expect(await handlePdfRequest({ abi: "1.0.0", op: "complete", pdf: { data: "AA==" } })).toMatchObject({ ok: false, error: { code: "invalid_request" } });
+    expect(await handlePdfRequest({ abi: "1.0.0", op: "timestampRequest", signature: "" })).toMatchObject({ ok: false, error: { code: "invalid_request" } });
+    expect(await handlePdfRequest({ abi: "1.0.0", op: "verify", pdf: { data: bytesToBase64(new Uint8Array([1, 2, 3])) } })).toMatchObject({ ok: false });
   });
 });

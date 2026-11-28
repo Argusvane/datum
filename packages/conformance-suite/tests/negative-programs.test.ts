@@ -29,15 +29,15 @@ describe("a yes-man program (__datum_run answers { errors: [] } to everything)",
   }, 180_000);
 });
 
-describe("a program whose ABI text says 2.11.0", () => {
+describe("a program whose ABI text says 0.9.0", () => {
   it("fails ABI-01 and ABI-02, names the version it answers, and is judged against the golden file with a warning", async () => {
     const report = await runSuite({ program: programFromText(staleAbiProgramText(), "stale.js", "file"), only: ["ABI"] });
     expect(statusOf(report, "ABI-01")).toBe("FAIL");
     expect(statusOf(report, "ABI-02")).toBe("FAIL");
-    expect(report.results.find((result) => result.id === "ABI-02")?.notes).toMatch(/answers ABI 2\.11\.0, not the floor 4\.0\.0/);
-    expect(report.program?.detectedAbi).toBe("2.11.0");
+    expect(report.results.find((result) => result.id === "ABI-02")?.notes).toMatch(/answers ABI 0\.9\.0, not the floor 1\.0\.0/);
+    expect(report.program?.detectedAbi).toBe("0.9.0");
     expect(report.program?.abiOk).toBe(false);
-    expect(report.program?.golden?.note).toMatch(/answers ABI 2\.11\.0/);
+    expect(report.program?.golden?.note).toMatch(/answers ABI 0\.9\.0/);
     expect(report.verdict).toBe("FAIL");
   });
 });

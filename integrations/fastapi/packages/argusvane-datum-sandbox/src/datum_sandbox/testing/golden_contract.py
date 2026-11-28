@@ -1,4 +1,4 @@
-"""`GoldenVerdictsContract`: the real program answers what the security suite pins for the sandbox ABI 2.14.
+"""`GoldenVerdictsContract`: the real program answers what the security suite pins for the sandbox ABI.
 
 The golden case's outcome bytes (UTF-16 length and SHA-256), sent as a host serialises it (keys sorted, no host options
 merged, so the program sees what the golden writer's kernel saw), and the six control vectors CTL-01 to CTL-06 through
@@ -50,7 +50,7 @@ class GoldenVerdictsContract(ContractBase):
     """The golden contract: byte-for-byte pinned outcomes and the control verdicts."""
 
     def test_the_golden_case_outcome_is_byte_for_byte_pinned(self, runtime: GuestRuntime) -> None:
-        """The outcome's UTF-16 length and SHA-256 equal the golden file's (ABI 2.14)."""
+        """The outcome's UTF-16 length and SHA-256 equal the golden file's."""
         pinned: dict[str, Any] = golden()["goldenCase"]
         nonce = new_nonce()
         run_budget = budget(30, 64)

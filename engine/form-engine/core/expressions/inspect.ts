@@ -196,7 +196,7 @@ export type DefinitionInspectResponse =
  * two to the same string, so a bump changes both.
  */
 export function kernelInspectAbi(): string {
-  return "4.1.0";
+  return "1.0.0";
 }
 
 /**

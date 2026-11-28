@@ -13,7 +13,7 @@ import tools.jackson.databind.node.ObjectNode;
  * @param compact object streams and a compressed cross-reference ({@code options.compact})
  * @param tagged overrides the document's own tagging ({@code options.tagged})
  * @param pdfa a PDF/A claim object, or a JSON {@code false} for an ordinary PDF whatever the layout says
- *     ({@code options.pdfa}, ABI 3.4)
+ *     ({@code options.pdfa})
  * @param formKey the form the PDF is of, for {@link PdfRenderedEvent} and the request customizers; may be null
  * @param translations the form's host translation catalog ({@code translations}), or null; the
  *     definition's own map is not an option: {@link PdfService#renderSubmission} sends it as {@code formTranslations}

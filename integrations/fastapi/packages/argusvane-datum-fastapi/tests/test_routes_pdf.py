@@ -844,7 +844,7 @@ def test_an_engine_that_cannot_run_the_pdf_program_is_503_server_unavailable_wit
 ) -> None:
     from pdf_fakes import ScriptedProgram  # noqa: PLC0415 - one use
 
-    parts = Parts(program=ScriptedProgram(abi="3.17.0"))
+    parts = Parts(program=ScriptedProgram(abi="0.17.0"))
     datum, _ = make_datum(config(runtime={"fail_fast": False}, pdf={"seal": {"enabled": False}}), parts)
     with TestClient(build_app(datum)) as client:
         reply = render(client)

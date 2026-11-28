@@ -3,7 +3,7 @@
 - `build-assets.mjs` (`npm run jvm:assets [-- --allow-stale] [-- --omit-features=a,b] [-- --dry-run] [-- --out <dir>]`): turns `packages/datum/dist` into
   `<out>/datum-programs/`, `<out>/datum-ui/` and `<out>/datum-pdf/` (each with `manifest.json` and `NOTICE`), a `NOTICE` in every
   other published module's `<out>/<module>/` (libraries, Spring bindings and starters, the two test kits), the host kit's fixtures
-  in `<out>/datum-host-tck/`, the engine kit's golden answers, fixture form and ABI 3.8 documents in `<out>/datum-sandbox-tck/`
+  in `<out>/datum-host-tck/`, the engine kit's golden answers, fixture form and parity documents in `<out>/datum-sandbox-tck/`
  , `<out>/assets.properties`, and the test fixtures under `<out>/<module>/test-fixtures/` (on the test class path
   as `datum-fixtures/`: copies of the conformance suite's goldens, the PDF kernel's documents, the engine's JCS vectors and
   `integrations/shared/fixtures`). `<out>` is `integrations/jvm/target/datum-assets` by default. The reactor's

@@ -206,7 +206,6 @@ gain what the renditions decide (`hint`, `labelSuffix`, `prefix`, `suffix`, `fra
 or `radio`), `hint`, `labelSuffix` on a checklist; `tag`, `number`,
 `band`, `rule` on a heading; a `list` block; `header` and `radius` on a box; `weight`, `link` and
 `transform` on a run), all optional, so `PDF_DOCUMENT_MODEL_VERSION` stays `1`.
-[`reference/pdf-abi.md`](reference/pdf-abi.md) lists the `theme-controls` feature.
 
 Two layers of defaults are kept apart. The kernel's fallbacks (`PDF_KERNEL_FALLBACKS`, read by
 `kernel/settings.ts`) are the constants it draws with when a document carries no setting;
@@ -449,13 +448,11 @@ host that keeps template PDFs outside the definition calls `build` first and sen
 code, bytes sent without a layout id when a condition chose a template layout other than the
 one printed when none holds — they were resolved for another layout, and its fill plan would
 fill the wrong PDF. Bytes sent for the very layout a condition chose, and bytes beside a
-generated layout a condition chose (which takes none), are not refused. The `layout-conditions`
-feature tells a host the program chooses.
+generated layout a condition chose (which takes none), are not refused.
 
 **Formulas in the program.** The program reads a layout's `when` and a field or area
-`expression` written as formula strings (feature `formulas`), calls the plugin functions it was
-registered with (feature `formula-functions`), and accepts `conditional-expressions` (the `if`
-node). The request may carry `today` and `formulaErrors` (default `fail`, `warn` is the opt-in, ADR 0139 decision 6).
+`expression` written as formula strings, calls the plugin functions it was
+registered with, and accepts the `if` node. The request may carry `today` and `formulaErrors` (default `fail`, `warn` is the opt-in, ADR 0139 decision 6).
 
 ### Conditions in the builder
 
@@ -658,7 +655,7 @@ booleans never warn (a map with only a `"true"` key is a complete statement for 
 neither does a map on a field the form hides. A map with no usable entry (`values` that is not an object of
 strings, or an entry that is not a string) reads as none (`readPdfValueMap` is the one reader; the
 layout validator does not reject a layout for a bad `values`, as it does not for a bad `format`),
-and a layout without `values` writes each answer as it is. The `mapping-values` feature tells a host the program translates.
+and a layout without `values` writes each answer as it is.
 
 In the designer, a widget for a radio group, dropdown or list that is filled from a component with
 answers to list — a checkbox (Yes / No) or one with inline options — gets a **Values** section
@@ -729,8 +726,7 @@ streams stored in the clear alone (a stream whose filters name `/Crypt` with the
 filter, and every `/Type /Metadata` stream of a file with `/EncryptMetadata false` unless it
 names a real crypt filter); the
 cross-reference streams and the `/Encrypt` dictionary are dropped, so the output does not read as
-encrypted. The `template-decryption`
-feature tells a host the program does this.
+encrypted.
 
 A template is refused with the `template` error when it is larger than 25 MiB
 (`MAX_PDF_TEMPLATE_BYTES`, the same cap "Load a PDF" holds; the message names the size and the
@@ -1294,7 +1290,7 @@ crypto and decides trust — for its own records, by comparing `signer.certifica
 A PDF/A file stays PDF/A through a signature (the widget gets an appearance with an embedded
 font, the DocMDP reference carries no `DigestMethod`), which veraPDF confirms in
 `tests/verapdf.test.ts`. The pieces of the report follow; the wire is in
-[pdf-abi.md](reference/pdf-abi.md) (`verify-detail`).
+[pdf-abi.md](reference/pdf-abi.md).
 
 **The signature.** The kernel checks that the range is the ISO / PAdES shape and frames the
 `/Contents` it names (else the warning `signature.byteRange`), `coversDocument` (the range reaches
@@ -1620,8 +1616,7 @@ section's fields as an entry sees them (`{{row.qty}}`, with `{{rowNumber}}`, `{{
 Form side the same panel lists the Rules tab's paths instead. A field with a data key (ADR 0109)
 is listed by it: `{{billing.street}}` for a field `billing_street` keyed `street` inside a
 container keyed `billing`, and `{{row.name}}` for an entry's field keyed `name`. The PDF program
-reads an entry's cells, names its AcroForm fields and attaches its files by the same keys
-(`data-keys`).
+reads an entry's cells, names its AcroForm fields and attaches its files by the same keys.
 
 A populated-form layout (ADR 0057): the PDF's pages are the canvas, and the layout is a tree
 the ordinary panels edit. The root holds the PDF (uploaded, or one the host provides — choosing
@@ -1687,9 +1682,9 @@ format (a field formatted with an AcroForm action such as `AFDate_FormatEx` beco
 field), makes a multi-select list box a single-choice select, treats a calculated field as an
 ordinary one and does not group the fields into steps or sections by PDF page; the fields are
 built without a review step. The kernel reads a field's
-tooltip (`/TU`) into `PdfTemplateFieldInfo.tooltip` on `inspect` (feature `field-tooltips`), since
-in many fillable PDFs it is the only readable name a field has; a program that sends none leaves
-the labels to come from the field names. The button shows once the template's fields have been
+tooltip (`/TU`) into `PdfTemplateFieldInfo.tooltip` on `inspect`, since
+in many fillable PDFs it is the only readable name a field has; a field without one is labelled
+from its field name. The button shows once the template's fields have been
 read, and only when the host gives the mode the form's own controller (the `form?()` option of
 `PdfBuilderModeOptions`; `<datum-form-builder>` passes `builder.controller`, and the Journeys mode
 is handed it the same way); the mode's `createFormFields()` does the same from code and returns

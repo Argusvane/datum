@@ -57,7 +57,7 @@ async function open(inspection: PdfTemplateInfo = INSPECTION) {
     template: TEMPLATE,
     fields: [{ pdfField: "Since", source: { kind: "component", componentId: "change" }, values: { improved: "1", unchanged: "2", worsened: "3" } }]
   };
-  const provider = { id: "fake", abiVersion: "4.0.0", inspect: async () => inspection, render: async () => ({}) } as unknown as PdfRenderProvider;
+  const provider = { id: "fake", abiVersion: "1.0.0", inspect: async () => inspection, render: async () => ({}) } as unknown as PdfRenderProvider;
   const mode = createPdfBuilderMode({ formRoot: () => structuredClone(form.snapshot()), form: () => form, runtime: () => ({}) as RenderableRuntime, pdf: { layouts: [layout], defaultLayoutId: "paper" }, support: { provider } });
   let surface: HTMLElement | undefined;
   const host = document.createElement("div");

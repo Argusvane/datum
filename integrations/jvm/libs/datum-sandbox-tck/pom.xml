@@ -51,7 +51,7 @@
   <build>
     <resources>
       <resource><directory>${basedir}/src/main/resources</directory></resource>
-      <!-- The golden answers, the fixture form and the ABI 3.8 documents the asset generation writes to
+      <!-- The golden answers, the fixture form and the parity documents the asset generation writes to
            target/datum-assets/<artifactId> land under META-INF/datum-sandbox-tck/; NOTICE (and LICENSE) reach META-INF/
            through the parent pom's copy-legal execution. -->
       <resource>

@@ -250,7 +250,7 @@ public class Application {
         var layout = LAYOUT.deepCopy();
         layout.set("options", JSON.valueToTree(Map.of("flatten", FIELDS.equals("flatten"), "readOnly", FIELDS.equals("readonly"), "appearances", "regenerate")));
         var response = render(JSON.createObjectNode()
-                .put("abi", "4.0.0")
+                .put("abi", "1.0.0")
                 .put("op", "document")
                 .set("form", FORM.path("root"))
                 .set("layout", layout)

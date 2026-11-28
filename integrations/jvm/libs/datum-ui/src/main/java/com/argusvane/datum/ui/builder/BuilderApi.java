@@ -32,7 +32,7 @@ import tools.jackson.databind.node.ObjectNode;
 /**
  * The builder's write endpoints, decided once for every web stack: the MVC controller and
  * the WebFlux handlers only move bytes in and out. The writes themselves are the transport-neutral
- * {@link BuilderService} (the kernel's {@code check}, sandbox ABI 2.13.0, as the judge: an unchecked or refused definition
+ * {@link BuilderService} (the kernel's {@code check} as the judge: an unchecked or refused definition
  * is never stored); this class keeps what is HTTP: the body cap, the {@code If-Match} precondition, the JSON reading, the
  * {@code X-Datum-Locale-Changes} header, and the outcome as the status, the {@code ETag}, the removed-locales header, the
  * {@code Location} of a create and the body.

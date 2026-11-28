@@ -68,7 +68,7 @@ describe("the kit's fixtures (KitTest.theFixturesAreTheSuitesControlVectors, the
       // It fits the fixture's name (maxLength 40).
       expect(trigger.length).toBeLessThanOrEqual(40);
     }
-    expect(fixtures.staleProgram()).toContain('"2.11.0"');
+    expect(fixtures.staleProgram()).toContain('"0.9.0"');
     expect(capabilityOf("hardening")).toBe("hardening");
   });
 
@@ -82,7 +82,7 @@ describe("the kit's fixtures (KitTest.theFixturesAreTheSuitesControlVectors, the
       const second = JSON.parse(readFileSync(join(out, "fixture-form-b.json"), "utf8")) as Record<string, unknown>;
       expect(second["id"]).toBe(fixtures.FORM_B);
       expect({ ...second, id: fixtures.FORM }).toEqual(fixtures.form());
-      expect(readFileSync(join(out, "golden.json")).equals(readFileSync(join(PACKAGE_ROOT, "golden/abi-4.1.json")))).toBe(true);
+      expect(readFileSync(join(out, "golden.json")).equals(readFileSync(join(PACKAGE_ROOT, "golden/abi-1.0.json")))).toBe(true);
       expect(readFileSync(join(out, "hardening-rules.js")).equals(readFileSync(join(OWN, "hardening-rules.js")))).toBe(true);
       expect(readFileSync(join(out, "stale-program.js")).equals(readFileSync(join(OWN, "stale-program.js")))).toBe(true);
       expect(readFileSync(join(out, "fixture-pdf-theme.json")).equals(readFileSync(join(OWN, "fixture-pdf-theme.json")))).toBe(true);

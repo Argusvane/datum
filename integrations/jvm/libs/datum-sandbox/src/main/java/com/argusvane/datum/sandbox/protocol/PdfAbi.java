@@ -4,14 +4,13 @@ package com.argusvane.datum.sandbox.protocol;
  * The PDF program ABI this host needs.
  *
  * <p>A program of the same major version answers ({@code pdfAbiCompatible} in
- * {@code engine/form-engine/render/pdf/pdf-abi.ts}); the host also needs at least {@link #MIN}, since the requests
- * it sends read what that version added. This host starts at 4.0.0, the ABI of the program it ships (the design-system
- * bindings major, which no 3.x program speaks).
+ * {@code engine/form-engine/render/pdf/pdf-abi.ts}); the host also needs at least {@link #MIN}, the ABI of the
+ * program it ships.
  */
 public final class PdfAbi {
 
     /** The ABI the host's requests name, and the oldest program it works with. */
-    public static final String MIN = "4.0.0";
+    public static final String MIN = "1.0.0";
 
     private PdfAbi() {
     }

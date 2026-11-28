@@ -15,7 +15,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * The fixtures the tests read: the PDF kernel's signing fixtures and ABI 3.8 documents
+ * The fixtures the tests read: the PDF kernel's signing fixtures and parity documents
  * ({@code packages/pdf-kernel/tests/fixtures/}, read from the repository: datum-pdf has no generated
  * {@code datum-fixtures/} rows), and the PDF program and fonts from
  * datum-programs on the class path.

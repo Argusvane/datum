@@ -149,7 +149,7 @@ The same request gives the same bytes on every host.
 
 ```json
 {
-  "abi": "4.0.0",
+  "abi": "1.0.0",
   "op": "document",
   "form": { "…": "the form's root component" },
   "values": { "fullName": "Ada" },
@@ -163,7 +163,7 @@ A reply is `{ "ok": true, "op": "...", ... }` or `{ "ok": false, "error": { "cod
 
 | `op` | What it does | Request keys (besides `abi`, `op`) | Reply keys (besides `ok`, `op`) |
 |---|---|---|---|
-| `capabilities` | Probe: the version and the features. | none | `abi`, `features`, `kernelVersion` |
+| `capabilities` | Probe: the version. | none | `abi`, `kernelVersion` |
 | `document` | Choose a layout from the answers (or the one named) and produce the PDF. | `form`, `values`, `locale`, `fonts`, `env`; optional `layoutId` or `layout`, `pdf`, `translations`, `formTranslations`, `kinds`, `optionSnapshot`, `effectiveStates`, `theme`, `title`, `hostContext`, `unknownComponents`, `attachments`, `today`, `formulaErrors`, `riskyPatterns`, `options`, `template`, `signature` | `bytes` (base64), `pageCount`, `pages`, `warnings`, `fields`, `areas`, `pdfa`, `attachments`, `signing`, `layoutId`, `layoutKind`, `layoutChoice` |
 | `build` | The layout choice and the document model, without bytes. | The inputs of `document`, without `fonts` and `env` | `layoutId`, `layoutKind`, `layoutChoice`, `document`, `fill`, `warnings` |
 | `render` | Produce a PDF from a document `build` made. | `document`, `fonts`, `env`; optional `options`, `signature` | As `document`, without the layout keys |
@@ -265,21 +265,20 @@ Each program states the interface version it speaks, and a host refuses a progra
 
 | Program | Current version |
 |---|---|
-| Sandbox | 4.1.0 |
-| PDF | 4.0.0 |
+| Sandbox | 1.0.0 |
+| PDF | 1.0.0 |
 
 The major number changes when a payload's shape breaks, and the minor number when the program judges or prints something differently or accepts an optional key. The sandbox program answers a request of its own major that is no newer than itself, the PDF program any request of its own major, and each refuses any other as `abi_mismatch`.
 
 At start, probe the program:
 
 - **Sandbox.** Send `__datum_inspect` a request with an `abi` and the op `public`; the program answers it, or refuses it as `abi_mismatch`.
-- **PDF program.** Send `__datum_pdf` the op `capabilities`, which also lists its features.
+- **PDF program.** Send `__datum_pdf` the op `capabilities`.
 
 Refuse to serve a program that:
 
 - Reports another major.
 - Reports a lower version than your floor.
-- Lacks a feature you need.
 
 Build the programs from the release you deploy, and deploy them to servers first or together with the browser bundle, so a server is never more lenient than the page in front of it.
 

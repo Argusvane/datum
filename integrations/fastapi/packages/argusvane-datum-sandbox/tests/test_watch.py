@@ -83,8 +83,8 @@ def test_a_pdf_answer_with_no_boolean_ok_is_no_outcome_and_a_refusal_is_refused(
     capabilities = {
         "ok": True,
         "op": "capabilities",
-        "abi": "4.0.0",
-        "features": ["signature", "verify-detail", "output-safety", "render-caps", "attachment-types"],
+        "abi": "1.0.0",
+        "kernelVersion": "0.1.0",
     }
     records: list[RunRecord] = []
     runtime = Answering(pdf=capabilities)
@@ -103,7 +103,7 @@ def test_a_pdf_answer_with_no_boolean_ok_is_no_outcome_and_a_refusal_is_refused(
 
 def test_a_stale_pdf_abi_is_refused_not_a_verdict() -> None:
     records: list[RunRecord] = []
-    stale = {"ok": True, "op": "capabilities", "abi": "3.0.0", "features": []}
+    stale = {"ok": True, "op": "capabilities", "abi": "0.0.0", "kernelVersion": "0.1.0"}
     kernel = PdfKernelService(Answering(pdf=stale), pdf_program(), recorder=records.append)
     with pytest.raises(ProgramUnavailableError):
         kernel.prove_abi()

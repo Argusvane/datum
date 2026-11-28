@@ -40,7 +40,7 @@ function runtimeWith(pdf: () => PdfBlock): FormRuntime {
   return new FormRuntime(form, { submissionModes: modes, validationPipeline: new ValidationPipeline([]), pdfConfiguration: pdf as never });
 }
 
-const FAKE_PROVIDER = { id: "fake", abiVersion: "4.0.0", render: async () => ({}) } as unknown as NonNullable<DatumFormHostElement["pdfProvider"]>;
+const FAKE_PROVIDER = { id: "fake", abiVersion: "1.0.0", render: async () => ({}) } as unknown as NonNullable<DatumFormHostElement["pdfProvider"]>;
 
 function newHost(): DatumFormHostElement {
   defineDatumFormHostElement();

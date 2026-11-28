@@ -182,7 +182,7 @@ describe("a PDF and a printed copy do not show an answer the submission leaves o
     const requests: PdfKernelRequest[] = [];
     return {
       id: "fake",
-      abiVersion: "4.0.0",
+      abiVersion: "1.0.0",
       requests,
       render: async (request) => {
         requests.push(request);

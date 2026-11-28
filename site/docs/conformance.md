@@ -66,7 +66,7 @@ Endpoint mode needs one fixture form installed on the server. `datum-security-ch
 |---|---|
 | `--program <file>` | Check this sandbox program |
 | `--manifest <file>` | Check the program against its release `manifest.json` |
-| `--abi-floor <x.y.z>` | Require a later sandbox interface version within the suite's major (4.0.0 is the floor) |
+| `--abi-floor <x.y.z>` | Require a later sandbox interface version within the suite's major (1.0.0 is the floor) |
 | `--budget-profile node\|browser` | The nominal evaluation budget the time bounds are multiples of: `node` (the default) or `browser` |
 | `--golden <file>` | Judge against this golden file instead of the bundled one |
 | `--plugins <module.js>` | Register this rule module in every sandbox. Repeatable. Use it to attack a host with the modules it really registers |

@@ -1,4 +1,4 @@
-"""`PdfRenderContract`: the PDF program renders the ABI 3.8 documents to their pinned hashes.
+"""`PdfRenderContract`: the PDF program renders the theme documents to their pinned hashes.
 
 Only a PDF-capable engine implements it.
 
@@ -61,7 +61,7 @@ class PdfRenderContract(ContractBase):
     """The PDF contract; implement it only for a runtime that says it is PDF-capable."""
 
     @requires(Capability.PDF)
-    def test_the_abi_3_8_documents_render_to_their_pinned_hashes(self, runtime: GuestRuntime) -> None:
+    def test_the_theme_documents_render_to_their_pinned_hashes(self, runtime: GuestRuntime) -> None:
         """Each theme renders to the PDF whose SHA-256 `hashes.json` pins."""
         # A parity test, not a speed test: 60 s per render rather than the production 15 s, so a loaded runner
         # cannot fail it with a budget stop; the budget itself is proved by the budget cases.

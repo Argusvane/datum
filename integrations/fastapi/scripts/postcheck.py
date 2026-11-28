@@ -28,7 +28,7 @@ RESOURCE = {
     "argusvane-datum-assets-ui",
     "argusvane-datum-assets-pdf",
 }
-ABI_FLOORS = {"sandboxAbi": (3, 0, 0), "pdfAbi": (4, 0, 0)}
+ABI_FLOORS = {"sandboxAbi": (1, 0, 0), "pdfAbi": (1, 0, 0)}
 LICENCE_FILES = ("LICENSE", "NOTICE")
 ARGUMENTS = 3
 

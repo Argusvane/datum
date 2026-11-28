@@ -109,22 +109,22 @@ describe("inspect: the ABI gate", () => {
   });
 
   it("accepts the program's own major up to its own version, refuses a newer one, another major and a malformed version", () => {
-    expect(kernelInspectAbiAccepts("4.2.0", "4.2.0")).toBe(true);
-    expect(kernelInspectAbiAccepts("4.0.0", "4.2.0")).toBe(true);
-    expect(kernelInspectAbiAccepts("4.2.9", "4.2.0")).toBe(true);
-    expect(kernelInspectAbiAccepts("4.3.0", "4.2.0")).toBe(false);
-    expect(kernelInspectAbiAccepts("5.0.0", "4.2.0")).toBe(false);
-    expect(kernelInspectAbiAccepts("3.9.0", "4.2.0")).toBe(false);
-    expect(kernelInspectAbiAccepts("4.2", "4.2.0")).toBe(false);
-    expect(kernelInspectAbiAccepts(undefined, "4.2.0")).toBe(false);
-    expect(kernelInspectAbiAccepts(4.2, "4.2.0")).toBe(false);
+    expect(kernelInspectAbiAccepts("1.2.0", "1.2.0")).toBe(true);
+    expect(kernelInspectAbiAccepts("1.0.0", "1.2.0")).toBe(true);
+    expect(kernelInspectAbiAccepts("1.2.9", "1.2.0")).toBe(true);
+    expect(kernelInspectAbiAccepts("1.3.0", "1.2.0")).toBe(false);
+    expect(kernelInspectAbiAccepts("2.0.0", "1.2.0")).toBe(false);
+    expect(kernelInspectAbiAccepts("0.9.0", "1.2.0")).toBe(false);
+    expect(kernelInspectAbiAccepts("1.2", "1.2.0")).toBe(false);
+    expect(kernelInspectAbiAccepts(undefined, "1.2.0")).toBe(false);
+    expect(kernelInspectAbiAccepts(1.2, "1.2.0")).toBe(false);
   });
 
   it("answers abi_mismatch before reading anything else", () => {
     const missing = kernelInspectDefinition({ op: "public", definition: definition() }, parse, signatures, builtins);
     expect(missing).toEqual({ ok: false, error: { code: "abi_mismatch", message: expect.stringContaining("no ABI") } });
-    const newer = kernelInspectDefinition({ abi: "4.2.0", op: "nope" }, parse, signatures, builtins);
-    expect(newer).toMatchObject({ ok: false, error: { code: "abi_mismatch", message: expect.stringContaining("4.2.0") } });
+    const newer = kernelInspectDefinition({ abi: "1.2.0", op: "nope" }, parse, signatures, builtins);
+    expect(newer).toMatchObject({ ok: false, error: { code: "abi_mismatch", message: expect.stringContaining("1.2.0") } });
   });
 });
 

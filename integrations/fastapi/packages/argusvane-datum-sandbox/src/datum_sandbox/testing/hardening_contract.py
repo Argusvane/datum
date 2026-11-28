@@ -86,9 +86,9 @@ class SandboxHardeningContract(ContractBase):
     # -- the ABI gate --------------------------------------------------------------------------------------------------
 
     def test_a_program_below_the_floor_is_refused_every_time_and_never_remembered(self, runtime: GuestRuntime) -> None:
-        """The stale program (ABI 2.11.0) is a 503 for the submitter, twice over, through validate and inspect."""
+        """The stale program (ABI 0.9.0) is a 503 for the submitter, twice over, through validate and inspect."""
         probe = AbiProbe()
-        program = stand_in_program("2.11.0")
+        program = stand_in_program("0.9.0")
         assert program.data == stale_program(), "the stand-in is the security suite's stale program"
         stale = service(runtime, program=program, probe=probe)
         for _ in range(2):
@@ -107,7 +107,7 @@ class SandboxHardeningContract(ContractBase):
         assert _codes(current.validate(context(), real=False)) == []
         assert probe.proved(good.sha256) is True
         assert _codes(current.validate(context(), real=False)) == []
-        replaced = service(runtime, program=stand_in_program("2.11.0"), probe=probe)
+        replaced = service(runtime, program=stand_in_program("0.9.0"), probe=probe)
         with pytest.raises(ProgramUnavailableError):
             replaced.validate(context(), real=False)
 

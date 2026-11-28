@@ -12,7 +12,7 @@ import tools.jackson.databind.ObjectMapper;
 /**
  * The generated programs.json (npm run jvm:assets) travels in the jar and names the two
  * programs' ABIs: a stale or hand-built jar would fail here before a runtime loads a program the
- * host's wire contract does not match (sandbox ABI 4.0.0 is the floor, the PDF program is ABI 4).
+ * host's wire contract does not match (both programs are ABI 1).
  */
 class ProgramsManifestTest {
 
@@ -29,14 +29,14 @@ class ProgramsManifestTest {
   }
 
   @Test
-  void sandboxAbiIsMajorFour() throws Exception {
+  void sandboxAbiIsMajorOne() throws Exception {
     int[] abi = parts(read().get("sandboxAbi").asString());
-    assertThat(abi[0]).as("sandboxAbi is major 4").isEqualTo(4);
+    assertThat(abi[0]).as("sandboxAbi is major 1").isEqualTo(1);
   }
 
   @Test
-  void pdfAbiIsMajorFour() throws Exception {
-    assertThat(parts(read().get("pdfAbi").asString())[0]).isEqualTo(4);
+  void pdfAbiIsMajorOne() throws Exception {
+    assertThat(parts(read().get("pdfAbi").asString())[0]).isEqualTo(1);
   }
 
   @Test

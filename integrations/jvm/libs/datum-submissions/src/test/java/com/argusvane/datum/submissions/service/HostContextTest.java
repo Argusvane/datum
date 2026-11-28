@@ -41,7 +41,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * The server supplies the values {@code host.} reads (sandbox ABI 4.1.0), as {@code @argusvane/datum-submissions}'
+ * The server supplies the values {@code host.} reads, as {@code @argusvane/datum-submissions}'
  * {@code JudgeOptions.hostContext} does on {@code receive} and {@code validate} ({@code service-host-context.test.ts}): the
  * provider's context rides in every run of a delivery, a journey's check (page and journey scope) and a dry run; with
  * none the key is left out and the run is the lenient one; nothing of the request body or the document is

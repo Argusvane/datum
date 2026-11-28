@@ -374,8 +374,8 @@ class DatumAutoConfigurationTest {
             context.getBean(DatumInfoContributor.class).contribute(builder);
             @SuppressWarnings("unchecked")
             Map<String, Object> datum = (Map<String, Object>) builder.build().get("datum");
-            assertThat(datum).containsEntry("engineVersion", "1.2.3").containsEntry("sandboxAbi", "2.14.0")
-                .containsEntry("pdfAbi", "4.0.0").containsEntry("buildId", "testbuild1").containsEntry("engine", "endive")
+            assertThat(datum).containsEntry("engineVersion", "1.2.3").containsEntry("sandboxAbi", "1.0.0")
+                .containsEntry("pdfAbi", "1.0.0").containsEntry("buildId", "testbuild1").containsEntry("engine", "endive")
                 .doesNotContainKey("nativeProvider");
             assertThat(datum.get("capabilities").toString()).isEqualTo("[forms, submissions]");
         });

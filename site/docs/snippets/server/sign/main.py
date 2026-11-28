@@ -122,7 +122,6 @@ def qjs(argv: list, request: str, seconds: float, memory: int) -> str:
 VALIDATE = ["-I", "/app/datum-sandbox-program.js", "-e", "print(__datum_run(std.in.readAsString()));"]
 
 # The PDF program, under the document profile; __datum_pdf's promise settles before qjs exits.
-# Signing needs a program that lists "signature" in its capabilities.
 RENDER = ["-I", "/app/datum-pdf-program.js", "-e", "__datum_pdf(std.in.readAsString()).then((json) => print(json));"]
 
 
@@ -191,7 +190,7 @@ def submit(envelope: dict):
     if CERTIFY is not None:
         signature["certify"] = CERTIFY
     prepared = render({
-        "abi": "4.0.0",
+        "abi": "1.0.0",
         "op": "document",
         "form": FORM["root"],
         "pdf": FORM["pdf"],  # the sealed layout, as designed in the builder's PDF mode
@@ -210,7 +209,7 @@ def submit(envelope: dict):
     signing = {"certificates": CERTIFICATES, "value": base64.b64encode(value).decode("ascii"), "toBeSignedDigest": handoff["toBeSignedDigest"]}
     if TSA_URL:
         signing["timestamp"] = {"token": timestamp(value)}
-    completed = render({"abi": "4.0.0", "op": "complete", "pdf": {"data": prepared["bytes"]}, "signing": signing})
+    completed = render({"abi": "1.0.0", "op": "complete", "pdf": {"data": prepared["bytes"]}, "signing": signing})
     if not completed["ok"]:
         return JSONResponse(status_code=500, content={"error": completed["error"]})
     return Response(
@@ -231,7 +230,7 @@ def submit(envelope: dict):
 @app.post("/api/submissions/verify")
 async def verify(request: Request):
     pdf = base64.b64encode(await request.body()).decode("ascii")
-    report = render({"abi": "4.0.0", "op": "verify", "pdf": {"data": pdf}})
+    report = render({"abi": "1.0.0", "op": "verify", "pdf": {"data": pdf}})
     if not report["ok"]:
         return JSONResponse(status_code=400, content={"error": report["error"]})
     verdicts = []
@@ -255,7 +254,7 @@ async def verify(request: Request):
 
 
 def timestamp(value: bytes) -> str:
-    tsq = render({"abi": "4.0.0", "op": "timestampRequest", "signature": base64.b64encode(value).decode("ascii")})["request"]
+    tsq = render({"abi": "1.0.0", "op": "timestampRequest", "signature": base64.b64encode(value).decode("ascii")})["request"]
     request = urllib.request.Request(TSA_URL, data=base64.b64decode(tsq), headers={"Content-Type": "application/timestamp-query"})
     with urllib.request.urlopen(request, timeout=10) as response:
         return base64.b64encode(response.read()).decode("ascii")

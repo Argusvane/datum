@@ -71,8 +71,8 @@ def test_from_config() -> None:
 
 
 def test_abi_floors() -> None:
-    assert SANDBOX_ABI_MIN == "4.1.0"  # the first ABI that reads hostContext
-    assert PDF_ABI_MIN == "4.0.0"
+    assert SANDBOX_ABI_MIN == "1.0.0"
+    assert PDF_ABI_MIN == "1.0.0"
 
 
 def test_probe_request() -> None:
@@ -108,7 +108,7 @@ def test_probe_memory_by_sha_and_floor() -> None:
     probe.remember("a")
     assert probe.proved("a")
     assert probe.proved("a", SANDBOX_ABI_MIN)
-    assert not probe.proved("a", "2.15.0")
+    assert not probe.proved("a", "0.15.0")
     assert not probe.proved("b")
     probe.remember("b")
     probe.forget("a")

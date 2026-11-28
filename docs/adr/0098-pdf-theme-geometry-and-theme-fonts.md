@@ -43,8 +43,7 @@ lists, spacing per block kind, two texts, seven optional type roles and a `scale
 optional. A role a theme leaves out is drawn as the kernel derives it, `null` takes a role away,
 and `scale` multiplies point sizes and gaps at resolve time, so a host prints a screen-scale
 theme smaller without redrawing it. The document model carries the resolved blocks, and every
-addition is optional, so `PDF_DOCUMENT_MODEL_VERSION` stays `1`; the program's `theme-controls`
-feature tells a host it reads them ([`docs/reference/pdf-abi.md`](../reference/pdf-abi.md)). The
+addition is optional, so `PDF_DOCUMENT_MODEL_VERSION` stays `1` ([`docs/reference/pdf-abi.md`](../reference/pdf-abi.md)). The
 keys are listed in the guide.
 
 ### 2. Two layers of defaults, kept apart
