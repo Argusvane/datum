@@ -23,6 +23,7 @@ def datum_limits(
     pdf_memory: int = 256 << 20,
     qjs_path: Path | None = None,
     qjs_sha256: str | None = None,
+    allow_unguarded_stack: bool = False,
 ) -> EngineLimits:
     """Return the engine limits of a Datum host: the validation and PDF pools and their two memory sizes."""
     return EngineLimits(
@@ -33,6 +34,7 @@ def datum_limits(
         max_memory_bytes=pdf_memory,
         module_path=qjs_path,
         module_sha256=qjs_sha256,
+        allow_unguarded_stack=allow_unguarded_stack,
     )
 
 

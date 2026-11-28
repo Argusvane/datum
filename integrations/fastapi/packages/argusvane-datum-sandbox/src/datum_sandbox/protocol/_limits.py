@@ -164,13 +164,15 @@ class ProgramLimits:
         *,
         qjs_path: str | None = None,
         qjs_sha256: str | None = None,
+        allow_unguarded_stack: bool = False,
     ) -> EngineLimits:
         """Return what a provider builds a runtime from: the two pools' slots and the two memory caps.
 
         `qjs_path` and `qjs_sha256` are `datum.runtime.qjs_path` and `qjs_sha256` (the guest's location is no budget,
-        so it is not a field of the limits); the engine verifies the digest. The runtime builds it once with the clamped
-        settings, so the engine sizes itself (wasmtime's address-space reservation) for exactly the caps its runs get:
-        the validation memory is the common size, the PDF memory the largest.
+        so it is not a field of the limits); the engine verifies the digest. `allow_unguarded_stack` is
+        `datum.runtime.allow_unguarded_stack`: run a module the engine cannot guard. The runtime builds it once with
+        the clamped settings, so the engine sizes itself (wasmtime's address-space reservation) for exactly the caps
+        its runs get: the validation memory is the common size, the PDF memory the largest.
         """
         return EngineLimits(
             pools={PoolKind.VALIDATION: self.validation_slots(), PoolKind.PDF: self.pdf_slots()},
@@ -180,6 +182,7 @@ class ProgramLimits:
             max_memory_bytes=self.pdf_memory,
             module_path=None if qjs_path is None else Path(qjs_path),
             module_sha256=qjs_sha256,
+            allow_unguarded_stack=allow_unguarded_stack,
         )
 
 

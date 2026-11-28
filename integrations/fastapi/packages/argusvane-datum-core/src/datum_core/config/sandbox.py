@@ -46,6 +46,7 @@ def sandbox_settings(config: DatumConfig) -> SandboxSettings:
                 "work_dir": "work_dir",
                 "qjs_path": "qjs_path",
                 "qjs_sha256": "qjs_sha256",
+                "allow_unguarded_stack": "allow_unguarded_stack",
                 "fail_fast": "fail_fast",
                 "warm_up_runs": "warm_up_runs",
                 "startup_budget": "startup_budget",

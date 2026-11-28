@@ -21,6 +21,7 @@ SHIM = """(module
 IN, OUT, RESULT = 0, 4096, 8192
 REALTIME, MONOTONIC = 0, 1
 FAR = 3600.0
+SECOND = 1_000_000_000
 
 
 class Shim:
@@ -82,7 +83,7 @@ def window(seconds: float, *, expired: bool = True) -> Iterator[threading.Event]
 def test_a_clock_past_the_wall_budget_is_cut_to_it() -> None:
     with window(0.2):
         began = time.monotonic()
-        fired = _poll._wait([(7, 5.0)])
+        fired = _poll._wait([(7, SECOND * 5)])
     assert fired == [(7, 0, 0)]
     assert 0.15 <= time.monotonic() - began < 1.0, "cut to the wall budget, not slept for 5 s"
 
@@ -90,7 +91,7 @@ def test_a_clock_past_the_wall_budget_is_cut_to_it() -> None:
 def test_only_the_clocks_that_elapsed_fire_inside_the_budget() -> None:
     with window(FAR):
         began = time.monotonic()
-        fired = _poll._wait([(1, 0.05), (2, 5.0)])
+        fired = _poll._wait([(1, SECOND // 20), (2, SECOND * 5)])
     assert fired == [(1, 0, 0)]
     assert 0.04 <= time.monotonic() - began < 1.0
 
@@ -98,7 +99,7 @@ def test_only_the_clocks_that_elapsed_fire_inside_the_budget() -> None:
 def test_a_wall_budget_already_past_returns_at_once() -> None:
     with window(-1.0):
         began = time.monotonic()
-        fired = _poll._wait([(3, 5.0)])
+        fired = _poll._wait([(3, SECOND * 5)])
     assert fired == [(3, 0, 0)]
     assert time.monotonic() - began < 0.5
 
@@ -107,13 +108,13 @@ def test_a_stop_wakes_the_wait_at_once() -> None:
     with window(FAR) as stop:
         stop.set()
         began = time.monotonic()
-        assert _poll._wait([(4, 5.0)]) == [(4, 0, 0)]
+        assert _poll._wait([(4, SECOND * 5)]) == [(4, 0, 0)]
     assert time.monotonic() - began < 0.5
 
 
 def test_no_window_waits_for_nothing() -> None:
     began = time.monotonic()
-    assert _poll._wait([(5, 5.0)]) == [(5, 0, 0)]
+    assert _poll._wait([(5, SECOND * 5)]) == [(5, 0, 0)]
     assert time.monotonic() - began < 0.5
 
 

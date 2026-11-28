@@ -56,6 +56,7 @@ from datum_sandbox_wasmtime import _runtime as runtime_module
 from datum_sandbox_wasmtime._clock import THREAD_NAME, deadline_ticks
 from datum_sandbox_wasmtime._memory import PAGE, reservation
 from datum_sandbox_wasmtime._qjs import load_qjs
+from datum_sandbox_wasmtime._runtime import TABLE_ELEMENTS
 
 pytestmark = pytest.mark.runtime
 
@@ -340,7 +341,9 @@ def test_the_engine_settings_and_the_store_limits_are_the_ruled_ones(
         assert recorded["memory_reservation_for_growth"] == growth
         limits.clear()
         assert run_raw(own, "print(1);", budget(5, 32)).end is RunEnd.CLEAN
-        assert limits == [{"memory_size": 32 * MIB, "instances": 1, "memories": 1, "tables": 1}]
+        assert limits == [
+            {"memory_size": 32 * MIB, "table_elements": TABLE_ELEMENTS, "instances": 1, "memories": 1, "tables": 1}
+        ]
     finally:
         own.close()
 
@@ -514,7 +517,7 @@ def test_shutdown_wakes_a_sleeping_guest_at_once_as_interrupted(tmp_path: Path) 
     assert ends == [RunEnd.INTERRUPTED]
 
 
-def test_poll_oneoff_is_the_one_shadowed_import_with_the_wasi_preview1_signature(
+def test_poll_oneoff_is_shadowed_with_the_wasi_preview1_signature(
     runtime: WasmtimeGuestRuntime,
 ) -> None:
     from datum_sandbox_wasmtime import _poll  # noqa: PLC0415 - the shadow's own module

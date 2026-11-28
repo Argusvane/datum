@@ -6,17 +6,20 @@ interrupted until the call returns. Of the WASI preview1 imports the pinned Quic
 `os.sleep` (wasi-libc `nanosleep`) and the `os.setTimeout` event loop (wasi-libc `poll`) sleep, and a rule module can
 reach both through `import('qjs:os')`. Every other import returns without waiting: stdin is a regular file, the
 preopened `/app` holds only the run's regular files, the two output streams are the harness's bounded sinks that never
-block, and `proc_exit` ends the guest. So the runtime shadows exactly this one import (`Linker.allow_shadowing` and
-`Linker.define_func`) with the signature WASI preview1 gives it:
+block, `clock_time_get` reads the run's own clock (`_determinism`) and `proc_exit` ends the guest. So the runtime
+shadows this import (`Linker.allow_shadowing` and `Linker.define_func`), beside the clock and `random_get`, with the
+signature WASI preview1 gives it:
 
     poll_oneoff(in: i32 (const subscription*), out: i32 (event*), nsubscriptions: i32, nevents: i32 (size*)) -> errno
 
 answered here rather than by wasmtime's own (a WASI function taken from another linker cannot be called from a host
 function: it finds no caller memory):
 
-- clock subscriptions (realtime or monotonic, relative; realtime absolute against the wall clock) wait for the earliest
-  timeout, cut to the run's remaining wall budget, on the run's stop event, so the harness's stop and the shutdown stop
-  wake the wait at once. The clocks that elapsed fire. A wait cut short (by the wall budget or a stop) is held until
+- clock subscriptions (realtime or monotonic, relative; realtime absolute against the run's own clock) wait for the
+  earliest timeout, cut to the run's remaining wall budget, on the run's stop event, so the harness's stop and the
+  shutdown stop wake the wait at once. A wait that ran its course fires the clocks due by the earliest timeout and moves
+  the run's clock by exactly that timeout, so what the guest reads after a sleep is the same on every run. A wait cut
+  short (by the wall budget or a stop) is held until
   the store's epoch deadline has passed (at most a tick or two past the wall budget, or at once after the shutdown
   advance), then fires the earliest clock: the guest meets its deadline at its very next check (`RunEnd.BUDGET`, or
   `INTERRUPTED` at shutdown) and never gets the rest of a sleep, nor time to finish, after its budget. A monotonic
@@ -38,6 +41,8 @@ from dataclasses import dataclass
 from typing import Final
 
 import wasmtime
+
+from datum_sandbox_wasmtime import _determinism
 
 WASI_MODULE: Final = "wasi_snapshot_preview1"
 NAME: Final = "poll_oneoff"
@@ -120,7 +125,7 @@ def _answer(
         return _FAULT
     raw = bytes(memory.read(caller, in_ptr, in_ptr + count * _SUBSCRIPTION))
     events: list[tuple[int, int, int]] = []
-    clocks: list[tuple[int, float]] = []
+    clocks: list[tuple[int, int]] = []
     for index in range(count):
         base = index * _SUBSCRIPTION
         userdata, tag = _HEAD.unpack_from(raw, base)
@@ -131,8 +136,8 @@ def _answer(
             elif flags & _ABSTIME and clock != _REALTIME:
                 events.append((userdata, _NOTSUP, _CLOCK))
             else:
-                nanoseconds = timeout - time.time_ns() if flags & _ABSTIME else timeout
-                clocks.append((userdata, max(0, nanoseconds) / 1e9))
+                nanoseconds = timeout - _guest_realtime() if flags & _ABSTIME else timeout
+                clocks.append((userdata, max(0, nanoseconds)))
         elif tag in {_FD_READ, _FD_WRITE}:
             events.append((userdata, _SUCCESS, tag))
         else:
@@ -146,21 +151,31 @@ def _answer(
     return _SUCCESS
 
 
-def _wait(clocks: list[tuple[int, float]]) -> list[tuple[int, int, int]]:
-    """Wait for the earliest clock, cut to the run's remaining wall budget and woken by its stop; return the events."""
+def _guest_realtime() -> int:
+    """Return what the run's realtime clock reads now; the host's own with no run on this thread."""
+    clock = _determinism.current()
+    return time.time_ns() if clock is None else _determinism.REALTIME_EPOCH + clock.elapsed
+
+
+def _wait(clocks: list[tuple[int, int]]) -> list[tuple[int, int, int]]:
+    """Wait for the earliest clock (timeouts in ns), cut to the run's wall budget and woken by its stop; return events.
+
+    A wait that ran its course fires every clock due by the earliest timeout and moves the run's clock by that timeout.
+    """
     earliest_userdata, earliest = min(clocks, key=lambda item: item[1])
     window: RunWindow | None = getattr(_STATE, "window", None)
     if window is None:
         return [(earliest_userdata, _SUCCESS, _CLOCK)]
-    began = time.monotonic()
-    remaining = window.deadline - began
-    stopped = window.stop.wait(max(0.0, min(earliest, remaining)))
-    if stopped or earliest > remaining:
+    seconds = earliest / 1e9
+    remaining = window.deadline - time.monotonic()
+    stopped = window.stop.wait(max(0.0, min(seconds, remaining)))
+    if stopped or seconds > remaining:
         _hold_until_expired(window)
         return [(earliest_userdata, _SUCCESS, _CLOCK)]
-    waited = time.monotonic() - began
-    fired = [(userdata, _SUCCESS, _CLOCK) for userdata, delay in clocks if delay <= waited]
-    return fired or [(earliest_userdata, _SUCCESS, _CLOCK)]
+    clock = _determinism.current()
+    if clock is not None:
+        clock.advance(earliest)
+    return [(userdata, _SUCCESS, _CLOCK) for userdata, delay in clocks if delay <= earliest]
 
 
 def _hold_until_expired(window: RunWindow) -> None:

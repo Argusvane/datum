@@ -5,17 +5,22 @@ It is a `GuestEngine` under argusvane-datum-sandbox's `RunHarness` (the WASI lay
 The harness owns everything engine-neutral (the worker thread per run, the slots, the private run directory, the
 bounded `OutputSink` streams, the stop grace, the strays); this module owns what is wasmtime's:
 
-- at start, once: the wasmtime import (refused naming the platform), the guest bytes re-hashed, one `Engine` with
-  epoch interruption on, fuel off, `memory_guard_size=0` and the reservation of `_memory`, one compiled `Module`, one
-  `InstancePre` with WASI linked and its `poll_oneoff` shadowed (`_poll`: a guest's sleep is cut to its run's wall
-  budget and woken by its stop), a throwaway store that turns an address-space refusal into a start-up error, and one
-  epoch clock thread;
-- per run, on the run's worker thread only: a `Store` with `set_limits(memory_size=<budget>, instances=1, memories=1,
-  tables=1)` and an epoch deadline of `ceil(wall / tick) + 1` ticks, a `WasiConfig` with the run's argv, its stdin
-  file, the read-only preopen of its `app/` as `/app` and the two sinks as custom outputs, all closed by the run's
-  `ExitStack`, never by a finalizer, before the harness removes the directory;
-- the shadow stack guard (`_stack`): a canary over the stack's floor before `_start`, and after it the canary and the
-  module's `.rodata` compared, so a run whose C stack overran its statics is a trap whatever it printed;
+- at start, once: the wasmtime import (refused naming the platform), the guest bytes re-hashed, the shadow stack guard
+  read and the module's code rewritten so that every stack pointer write is checked (`_stack`; a module the guard
+  cannot read refuses the start unless `EngineLimits.allow_unguarded_stack`, which is logged at WARNING), one `Engine`
+  with epoch interruption on, fuel off, `memory_guard_size=0` and the reservation of `_memory`, one compiled `Module`,
+  one `InstancePre` with WASI linked and three imports shadowed: `poll_oneoff` (`_poll`: a guest's sleep is cut to its
+  run's wall budget and woken by its stop), `clock_time_get` and `random_get` (`_determinism`: the run's own clock and
+  a fixed stream, the same on every run), a throwaway store that turns an address-space refusal into a start-up error,
+  and one epoch clock thread;
+- per run, on the run's worker thread only: a `Store` with `set_limits(memory_size=<budget>,
+  table_elements=TABLE_ELEMENTS, instances=1, memories=1, tables=1)` and an epoch deadline of `ceil(wall / tick) + 1`
+  ticks, a `WasiConfig` with the run's argv, its stdin file, the read-only preopen of its `app/` as `/app` and the two
+  sinks as custom outputs, all closed by the run's `ExitStack`, never by a finalizer, before the harness removes the
+  directory;
+- the shadow stack guard (`_stack`): a stack pointer write below the stack's floor traps, a canary over the floor is
+  written before `_start`, and after it the canary and the module's `.rodata` are compared, so a run whose C stack
+  reached its floor is a trap whatever it printed;
 - the reading of how `_start` ended: a stack overrun, then `ExitTrap` (exit code), then `Trap` by `trap_code`
   (`INTERRUPT` is the budget), then `WasmtimeError`; the cap flags are read after, by the harness;
 - shutdown: the harness marks every run in flight as interrupted, the clock advances the epoch past every deadline,
@@ -76,7 +81,7 @@ from datum_sandbox_wasmtime._stack import StackGuard, StackOverrunError, describ
 load_wasmtime()  # refuses with the platform named before the plain import below can fail with a bare OSError
 import wasmtime  # noqa: E402 - after the guarded load on purpose
 
-from datum_sandbox_wasmtime import _poll  # noqa: E402 - imports wasmtime
+from datum_sandbox_wasmtime import _determinism, _poll  # noqa: E402 - imports wasmtime
 
 logger = logging.getLogger(LOGGER_NAME)
 
@@ -84,13 +89,16 @@ GUEST_APP: Final = "/app"
 _BEYOND_RESERVATION: Final = threading.Event()
 _BEYOND_RESERVATION_LOCK: Final = threading.Lock()
 _PROBE_TICKS: Final = 1 << 32
+TABLE_ELEMENTS: Final = 4096
+"""The most elements a run's table may hold: the pinned guest's one table has 593, and cannot grow."""
+UNGUARDED_SETTING: Final = "datum.runtime.allow_unguarded_stack"
 DEFAULT_SWEEP_AGE: Final = 300.0 + 60.0
 """Leftover run directories older than this are swept at start: the longest budget (300 s) plus a minute."""
 
 
 @dataclass(frozen=True, slots=True)
 class StartupTimings:
-    """What the start cost, in seconds: reading and hashing the guest, compiling it, and the throwaway store."""
+    """What the start cost, in seconds: reading and hashing the guest, guarding and compiling it, a throwaway store."""
 
     load: float
     compile: float
@@ -127,6 +135,7 @@ class WasmtimeInstance:
         self._guard = guard if memory is not None else None
         self._stop = threading.Event()
         self._window = _poll.RunWindow(deadline, self._stop, expired, tick)
+        self._clock = _determinism.GuestClock()
 
     def start(self) -> None:
         """Call `_start` on this (the owning) thread; a stop asked before it ends the guest at its first check.
@@ -138,7 +147,7 @@ class WasmtimeInstance:
         if self._stop.is_set():
             self._store.set_epoch_deadline(0)
         try:
-            with _poll.run_window(self._window):
+            with _poll.run_window(self._window), _determinism.running(self._clock):
                 self._start(self._store)
         except Exception as error:
             if self._overran():
@@ -236,16 +245,19 @@ class WasmtimeGuestRuntime:
         config.memory_guard_size = 0
         config.memory_reservation = reserved
         config.memory_reservation_for_growth = growth
+        self._guard = _guarded(qjs, allow_unguarded=limits.allow_unguarded_stack)
         self._engine = wasmtime.Engine(config)
-        self._module = wasmtime.Module(self._engine, qjs.data)
+        self._module = wasmtime.Module(self._engine, qjs.data if self._guard is None else self._guard.module)
         compiled = time.perf_counter()
-        self._guard = stack_guard(qjs.data)
         linker = wasmtime.Linker(self._engine)
         linker.define_wasi()
         linker.allow_shadowing = True
-        linker.define_func(
-            _poll.WASI_MODULE, _poll.NAME, _poll.poll_oneoff_type(), _poll.poll_oneoff, access_caller=True
-        )
+        for name, kind, shadow in (
+            (_poll.NAME, _poll.poll_oneoff_type(), _poll.poll_oneoff),
+            (_determinism.CLOCK_TIME_GET, _determinism.clock_time_get_type(), _determinism.clock_time_get),
+            (_determinism.RANDOM_GET, _determinism.random_get_type(), _determinism.random_get),
+        ):
+            linker.define_func(_poll.WASI_MODULE, name, kind, shadow, access_caller=True)
         linker.allow_shadowing = False
         self._pre = linker.instantiate_pre(self._module)
         self._floor = _memory_floor(self._module)
@@ -340,7 +352,9 @@ class WasmtimeGuestRuntime:
         try:
             store = wasmtime.Store(self._engine)
             resources.callback(store.close)
-            store.set_limits(memory_size=budget.memory_bytes, instances=1, memories=1, tables=1)
+            store.set_limits(
+                memory_size=budget.memory_bytes, table_elements=TABLE_ELEMENTS, instances=1, memories=1, tables=1
+            )
             deadline = time.monotonic() + budget.wall_seconds
             token = self._clock.arm(store, budget.wall_seconds)
             resources.callback(self._clock.disarm, token)
@@ -388,7 +402,9 @@ class WasmtimeGuestRuntime:
         with ExitStack() as stack:
             store = wasmtime.Store(self._engine)
             stack.callback(store.close)
-            store.set_limits(memory_size=reserved + growth, instances=1, memories=1, tables=1)
+            store.set_limits(
+                memory_size=reserved + growth, table_elements=TABLE_ELEMENTS, instances=1, memories=1, tables=1
+            )
             store.set_epoch_deadline(_PROBE_TICKS)  # the clock has not started: no tick can reach it
             wasi = wasmtime.WasiConfig()
             stack.callback(wasi.close)
@@ -428,6 +444,27 @@ def _warn_beyond_reservation(asked: int, room: int) -> None:
     )
 
 
+def _guarded(qjs: QjsBinary, *, allow_unguarded: bool) -> StackGuard | None:
+    """Return the module's shadow stack guard; refuse a module without one unless running unguarded is allowed."""
+    guard = stack_guard(qjs.data)
+    if guard is not None:
+        return guard
+    if not allow_unguarded:
+        raise EngineConfigurationError(
+            f"{qjs.source} cannot be given the shadow stack guard: it does not name a stack pointer and a stack above "
+            "its data, or its code cannot be read",
+            hint=f"use the packaged, pinned qjs-wasi.wasm, or set {UNGUARDED_SETTING} to run this module without the "
+            "guard (a run whose C stack overruns its statics is then not detected)",
+        )
+    logger.warning(
+        "%s runs without the shadow stack guard (%s is set): a run whose C stack overruns the module's statics is not "
+        "detected",
+        qjs.source,
+        UNGUARDED_SETTING,
+    )
+    return None
+
+
 def _memory_floor(module: wasmtime.Module) -> int:
     """Return the module's exported memory's initial pages times 64 KiB (0 when it exports none)."""
     for export in module.exports:
@@ -448,6 +485,11 @@ def _engine_info(
         notes=(
             f"guest: QuickJS-ng {qjs.version} qjs-wasi.wasm sha256 {qjs.sha256} ({qjs.source})",
             f"epoch interruption every {tick * 1000:g} ms; fuel off; WASI poll_oneoff cut to the run's wall budget",
+            (
+                "WASI clock_time_get from the run's own clock (zero at start, moved only by the guest's completed "
+                "waits); random_get a fixed stream"
+            ),
+            f"store limits: {TABLE_ELEMENTS} table elements, one instance, memory and table",
             f"memory: reservation {reserved} bytes, growth {growth} bytes, guard 0",
             guard.describe() if guard is not None else describe_unguarded(),
         ),
