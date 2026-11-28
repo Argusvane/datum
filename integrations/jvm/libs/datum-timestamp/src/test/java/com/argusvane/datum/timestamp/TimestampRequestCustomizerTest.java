@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.argusvane.datum.core.hooks.HookRefusedException;
+import com.argusvane.datum.core.observation.DatumObservations;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +25,7 @@ class TimestampRequestCustomizerTest {
 
     private static TimestampAuthority authority(AtomicInteger serials, List<TimestampRequestCustomizer> customizers) {
         return new TimestampAuthority(TsaKeyMaterial.of(Fixtures.key("tsa")), null, Duration.ofSeconds(1),
-            TsaTimeSource.of(Fixtures.clock(Fixtures.OCT_5)), entry -> serials.incrementAndGet(), List.of(OTHER), customizers);
+            TsaTimeSource.of(Fixtures.clock(Fixtures.OCT_5)), entry -> serials.incrementAndGet(), List.of(OTHER), customizers, DatumObservations.none());
     }
 
     private static TimeStampTokenInfo info(TimestampReply reply) throws Exception {

@@ -49,7 +49,7 @@ class DefinitionServiceTest {
 
     private final FakeGuestRuntime runtime = new FakeGuestRuntime();
     private final MapRepository repository = new MapRepository();
-    private final InMemoryDefinitionSnapshotStore snapshots = new InMemoryDefinitionSnapshotStore(50, message -> { });
+    private final InMemoryDefinitionSnapshotStore snapshots = new InMemoryDefinitionSnapshotStore(50);
     private final List<Object> events = new ArrayList<>();
     private DefinitionService service;
 
@@ -143,7 +143,7 @@ class DefinitionServiceTest {
                 "/* program */".getBytes(java.nio.charset.StandardCharsets.UTF_8)),
             new com.argusvane.datum.sandbox.protocol.RunScript("/* freeze */"), com.argusvane.datum.sandbox.protocol.ProgramLimits.defaults(),
             com.argusvane.datum.sandbox.protocol.HostOptions.defaults(), slots, new com.argusvane.datum.sandbox.protocol.AbiProbe(),
-            com.argusvane.datum.sandbox.protocol.RunLog.slf4j());
+            com.argusvane.datum.sandbox.protocol.RunLog.slf4j(), null);
         DefinitionService busy = DefinitionService.builder().repository(repository).snapshots(snapshots).sandbox(() -> bounded)
             .events(events::add).publicCacheSize(8).build();
         try (com.argusvane.datum.sandbox.protocol.RunSlots.Permit held = slots.acquire()) {
@@ -249,7 +249,7 @@ class DefinitionServiceTest {
     @Test
     void aSavedListenerThatThrowsIsLoggedAndTheSaveIsRecorded() {
         for (Throwable failure : List.of(new IllegalStateException("listener failed"), new AssertionError("listener invariant"))) {
-            InMemoryDefinitionSnapshotStore store = new InMemoryDefinitionSnapshotStore(50, message -> { });
+            InMemoryDefinitionSnapshotStore store = new InMemoryDefinitionSnapshotStore(50);
             // The host's default publisher is the guarded one.
             DefinitionService throwing = DefinitionService.builder().repository(repository).snapshots(store).sandbox(runtime::service).events(com.argusvane.datum.core
                 .DatumEventPublisher.guarded(event -> {
@@ -274,7 +274,7 @@ class DefinitionServiceTest {
      */
     @Test
     void anApplicationsOwnPublisherThatThrowsReachesTheCallerAfterTheSnapshot() {
-        InMemoryDefinitionSnapshotStore store = new InMemoryDefinitionSnapshotStore(50, message -> { });
+        InMemoryDefinitionSnapshotStore store = new InMemoryDefinitionSnapshotStore(50);
         DefinitionService outbox = DefinitionService.builder().repository(repository).snapshots(store).sandbox(runtime::service).events(event -> {
             throw new IllegalStateException("outbox down");
         }).publicCacheSize(8).build();
@@ -296,7 +296,7 @@ class DefinitionServiceTest {
     @Test
     void aSnapshotStoreThatFailsIsSnapshotNotRecordedAndNoEventIsPublished() {
         java.util.concurrent.atomic.AtomicBoolean readOnly = new java.util.concurrent.atomic.AtomicBoolean();
-        InMemoryDefinitionSnapshotStore memory = new InMemoryDefinitionSnapshotStore(50, message -> { });
+        InMemoryDefinitionSnapshotStore memory = new InMemoryDefinitionSnapshotStore(50);
         com.argusvane.datum.forms.snapshot.DefinitionSnapshotStore flaky = new com.argusvane.datum.forms.snapshot.DefinitionSnapshotStore() {
             @Override
             public void record(String key, String sha256, ObjectNode definition) {
@@ -425,7 +425,7 @@ class DefinitionServiceTest {
     // ---- the builder
 
     @Test
-    void theBuilderMakesAServiceThatReadsAndSnapshotsLikeTheDeprecatedConstructors() {
+    void theBuilderMakesAServiceThatReadsAndSnapshotsTheCurrentDefinition() {
         DefinitionService built = DefinitionService.builder().repository(repository).snapshots(snapshots).sandbox(runtime::service)
             .events(events::add).build();
         ObjectNode fixture = Fixtures.endpointFixture();

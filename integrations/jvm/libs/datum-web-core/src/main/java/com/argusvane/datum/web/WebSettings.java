@@ -125,11 +125,6 @@ public record WebSettings(boolean enabled, Api api, Assets assets, Csrf csrf, Th
         /** The longest {@code Retry-After} a busy answer may carry. */
         public static final Duration MAX_BUSY_RETRY_AFTER = Duration.ofHours(1);
 
-        /** A host built without the retry setting: the default. */
-        public Api(String path, long maxBodyBytes, boolean problemDetails, Map<String, Boolean> endpoints) {
-            this(path, maxBodyBytes, problemDetails, endpoints, null);
-        }
-
         /** @throws IllegalArgumentException for a body cap below one byte (the start fails, naming the property) */
         public Api {
             if (maxBodyBytes < 1) {

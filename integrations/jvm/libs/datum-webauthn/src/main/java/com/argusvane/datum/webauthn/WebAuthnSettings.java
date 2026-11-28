@@ -141,16 +141,6 @@ public record WebAuthnSettings(String rpId, String rpName, List<String> origins,
         return Duration.ofSeconds(value.getSeconds());
     }
 
-    /** Passkeys signing for every form, with the defaults of the later settings. */
-    public WebAuthnSettings(String rpId, String rpName, List<String> origins, Duration window, boolean anonymous, boolean perForm) {
-        this(rpId, rpName, origins, window, anonymous, perForm, null, null, null, null);
-    }
-
-    /** Site-wide passkeys. */
-    public WebAuthnSettings(String rpId, String rpName, List<String> origins, Duration window, boolean anonymous) {
-        this(rpId, rpName, origins, window, anonymous, false);
-    }
-
     /** Whether passkeys are set up: a passkey domain and origins to check. */
     public boolean ready() {
         return !rpId.isEmpty() && !origins.isEmpty();

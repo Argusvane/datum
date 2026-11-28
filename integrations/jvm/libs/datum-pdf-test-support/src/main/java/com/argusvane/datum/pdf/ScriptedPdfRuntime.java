@@ -125,7 +125,7 @@ public final class ScriptedPdfRuntime implements GuestRuntime {
     public PdfRuntime pdfRuntime(String mode, int slots) {
         ProgramLimits limits = ProgramLimits.defaults();
         PdfProgram program = new PdfProgram(ProgramRunner.on(this), Program.of(Program.Kind.PDF, "/* pdf program */".getBytes(StandardCharsets.UTF_8)), limits,
-            new AbiProbe());
+            new AbiProbe(), null);
         HostOptions host = new HostOptions("fail", "refuse", "UTC", Clock.fixed(Instant.parse("2026-10-15T12:00:00Z"), ZoneOffset.UTC));
         return PdfRuntime.of(program, new RunSlots(slots, Duration.ZERO, "PDF render"), engine(mode), host, limits);
     }

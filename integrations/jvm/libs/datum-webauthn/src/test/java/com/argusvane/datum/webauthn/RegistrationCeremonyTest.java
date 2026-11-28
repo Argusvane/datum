@@ -187,7 +187,7 @@ class RegistrationCeremonyTest {
     /** Per-form passkeys sign their form alone; a race on the unique key is a 409. */
     @Test
     void perFormAndRaces() {
-        site.configure(new WebAuthnSettings("localhost", "Petition", List.of("http://localhost"), null, true, true));
+        site.configure(new WebAuthnSettings("localhost", "Petition", List.of("http://localhost"), null, true, true, null, null, null, null));
         PasskeyRecord passkey = site.register(new SoftwareAuthenticator());
         assertThat(passkey.formId()).isEqualTo("petition");
 
@@ -198,7 +198,7 @@ class RegistrationCeremonyTest {
                 throw new DuplicatePasskeyException("unique key");
             }
         };
-        RegistrationCeremony ceremony = new RegistrationCeremony(site.settings, site.challenges, duplicate, site.verifier, site.clock);
+        RegistrationCeremony ceremony = new RegistrationCeremony(site.settings, site.challenges, duplicate, site.verifier, site.clock, List.of(), List.of());
         PasskeySubject visitor = PasskeySubject.anonymous();
         PasskeyContext context = site.context(visitor, required);
         RegistrationOptions challenge = ceremony.challenge(context, visitor, "");

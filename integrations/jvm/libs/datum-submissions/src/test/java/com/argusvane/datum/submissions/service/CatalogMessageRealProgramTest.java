@@ -75,7 +75,7 @@ class CatalogMessageRealProgramTest {
         Fixtures.Repository forms = new Fixtures.Repository(form());
         SubmissionService service = SubmissionService.builder()
             .sandbox(() -> sandbox)
-            .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100, message -> { })).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
+            .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100)).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
             .dataSources(new DataSourceOptions(null, Duration.ofSeconds(2), null))
             .catalogs(catalogs)
             .handler(submission -> new SubmissionReceipt("id-1", "CODED-1", null))

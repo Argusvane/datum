@@ -95,7 +95,7 @@ class DatumFormsAutoConfigurationTest {
 
     @Test
     void applicationBeansReplaceTheDefaults() {
-        DefinitionSnapshotStore store = new InMemoryDefinitionSnapshotStore(3, message -> { });
+        DefinitionSnapshotStore store = new InMemoryDefinitionSnapshotStore(3);
         runner().withBean("appStore", DefinitionSnapshotStore.class, () -> store)
             .run(context -> {
                 assertThat(context).hasSingleBean(DefinitionSnapshotStore.class);

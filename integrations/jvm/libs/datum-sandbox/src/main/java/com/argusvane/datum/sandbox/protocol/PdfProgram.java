@@ -39,10 +39,6 @@ public final class PdfProgram implements PdfKernel {
     private final AbiProbe probe;
     private final @Nullable RunRecorder recorder;
 
-    public PdfProgram(ProgramRunner runtime, Program program, ProgramLimits limits, AbiProbe probe) {
-        this(runtime, program, limits, probe, null);
-    }
-
     /** The program with a recorder of its runs, or none (null). */
     public PdfProgram(ProgramRunner runtime, Program program, ProgramLimits limits, AbiProbe probe, @Nullable RunRecorder recorder) {
         this.runtime = Objects.requireNonNull(runtime, "runtime");

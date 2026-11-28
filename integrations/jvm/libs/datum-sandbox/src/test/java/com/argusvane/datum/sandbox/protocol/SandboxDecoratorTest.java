@@ -83,7 +83,7 @@ class SandboxDecoratorTest {
 
     private static SandboxService service(FakeRuntime runtime, AbiProbe probe) {
         return new SandboxService(runtime, PROGRAM, new RunScript("/* f */"), ProgramLimits.defaults(), HostOptions.defaults(),
-            new RunSlots(1, Duration.ZERO, "validation"), probe, RunLog.slf4j());
+            new RunSlots(1, Duration.ZERO, "validation"), probe, RunLog.slf4j(), null);
     }
 
     @Test

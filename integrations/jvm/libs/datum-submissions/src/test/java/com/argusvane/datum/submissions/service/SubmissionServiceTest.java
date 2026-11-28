@@ -156,7 +156,7 @@ class SubmissionServiceTest {
                 }
                 return sandbox;
             })
-            .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100, message -> { })).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
+            .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100)).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
             .dataSources(new DataSourceOptions(provider, Duration.ofSeconds(2), null))
             .catalogs(catalogs)
             .handler(submission -> {
@@ -220,7 +220,7 @@ class SubmissionServiceTest {
             Sandbox observed = com.argusvane.datum.sandbox.observation.GuestRunObservations.sandbox(observations, "jffi").decorate(protocol);
             SubmissionService service = SubmissionService.builder()
                 .sandbox(() -> observed)
-                .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100, message -> { })).sandbox(() -> protocol).events(event -> { }).publicCacheSize(16).build())
+                .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100)).sandbox(() -> protocol).events(event -> { }).publicCacheSize(16).build())
                 .dataSources(new DataSourceOptions(null, Duration.ofSeconds(2), null))
                 .handler(accepted -> new SubmissionReceipt("id-1", null, null))
                 .events(events::add)
@@ -913,7 +913,7 @@ class SubmissionServiceTest {
         void theCapDefaultsToTheBodyCapsDefaultAndAReceiverBuiltOfPartsPassesItsOwn() {
             SubmissionService defaults = SubmissionService.builder()
                 .sandbox(() -> sandbox)
-                .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100, message -> { })).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
+                .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100)).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
                 .dataSources(new DataSourceOptions(null, Duration.ofSeconds(2), null))
                 .handler(submission -> new SubmissionReceipt("id", "ref", null))
                 .events(event -> { })
@@ -923,7 +923,7 @@ class SubmissionServiceTest {
 
             SubmissionReceiver parts = SubmissionReceiver.builder()
                 .sandbox(() -> sandbox)
-                .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100, message -> { })).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
+                .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100)).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
                 .dataSources(new DataSourceOptions(null, Duration.ofSeconds(2), null))
                 .handler(submission -> new SubmissionReceipt("id", "ref", null))
                 .events(event -> { })
@@ -936,7 +936,7 @@ class SubmissionServiceTest {
         void aWordTheProgramDoesNotReadIsRefusedAtBuild() {
             assertThatThrownBy(() -> SubmissionService.builder()
                 .sandbox(() -> sandbox)
-                .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100, message -> { })).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
+                .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100)).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
                 .dataSources(new DataSourceOptions(null, Duration.ofSeconds(2), null))
                 .handler(submission -> new SubmissionReceipt("id", "ref", null))
                 .events(event -> { })
@@ -944,7 +944,7 @@ class SubmissionServiceTest {
                 .build()).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("logLevel is 'verbose'");
             assertThatThrownBy(() -> SubmissionReceiver.builder()
                 .sandbox(() -> sandbox)
-                .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100, message -> { })).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
+                .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100)).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
                 .dataSources(new DataSourceOptions(null, Duration.ofSeconds(2), null))
                 .handler(submission -> new SubmissionReceipt("id", "ref", null))
                 .events(event -> { })

@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.node.ObjectNode;
@@ -17,17 +16,11 @@ import tools.jackson.databind.node.ObjectNode;
 class DefinitionSnapshotStoreTest {
 
     @Test
-    void inMemoryStoreKeepsSnapshotsAndWarnsAtStartup() {
-        List<String> warnings = new ArrayList<>();
-        InMemoryDefinitionSnapshotStore store = new InMemoryDefinitionSnapshotStore(10, warnings::add);
-
-        DefinitionSnapshotStoreContract.check(store);
-
-        assertThat(warnings).hasSize(1);
-        assertThat(warnings.get(0)).contains("in memory").contains("DefinitionSnapshotStore");
+    void inMemoryStoreKeepsSnapshots() {
+        DefinitionSnapshotStoreContract.check(new InMemoryDefinitionSnapshotStore(10));
     }
 
-    /** The one-argument constructor writes nothing; the WARN is the start-up check's, and only for this store. */
+    /** The constructor writes nothing; the WARN is the start-up check's, and only for this store. */
     @Test
     void theStartupCheckWarnsForTheInMemoryStoreOnly() {
         InMemoryDefinitionSnapshotStore store = new InMemoryDefinitionSnapshotStore(7);
@@ -52,7 +45,7 @@ class DefinitionSnapshotStoreTest {
 
     @Test
     void inMemoryStoreIsBoundedLeastRecentlyUsedFirst() {
-        InMemoryDefinitionSnapshotStore store = new InMemoryDefinitionSnapshotStore(2, message -> { });
+        InMemoryDefinitionSnapshotStore store = new InMemoryDefinitionSnapshotStore(2);
         ObjectNode definition = DefinitionSnapshotStoreContract.definition("1");
         store.record("f", "a", definition);
         store.record("f", "b", definition);

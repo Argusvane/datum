@@ -54,7 +54,7 @@ class BuilderServiceTest {
         repository = new MemoryRepository();
         catalogs = new InMemoryTranslationCatalogStore();
         events = Collections.synchronizedList(new ArrayList<>());
-        definitions = DefinitionService.builder().repository(repository).snapshots(new InMemoryDefinitionSnapshotStore(100, warning -> { })).sandbox(() -> sandbox).events(events::add).publicCacheSize(16).build();
+        definitions = DefinitionService.builder().repository(repository).snapshots(new InMemoryDefinitionSnapshotStore(100)).sandbox(() -> sandbox).events(events::add).publicCacheSize(16).build();
         service = BuilderService.builder().repository(repository).definitions(definitions).translations(catalogs).types(BuilderApiTest.TYPES).clock(CLOCK).build();
         repository.seed(BuilderFixtures.base());
         baseHash = repository.hashOf(KEY);
@@ -154,7 +154,7 @@ class BuilderServiceTest {
             }
         };
         SandboxService sandbox = kernel.service();
-        BuilderService over = BuilderService.builder().repository(fixed).definitions(DefinitionService.builder().repository(fixed).snapshots(new InMemoryDefinitionSnapshotStore(100, warning -> { }))
+        BuilderService over = BuilderService.builder().repository(fixed).definitions(DefinitionService.builder().repository(fixed).snapshots(new InMemoryDefinitionSnapshotStore(100))
             .sandbox(() -> sandbox).events(events::add).publicCacheSize(16).build()).translations(catalogs).types(BuilderApiTest.TYPES).clock(CLOCK).build();
 
         assertThat(over.save(KEY, edited(), null, AUTHOR)).isEqualTo(new BuilderOutcome.ReadOnly(readOnly));
@@ -290,7 +290,7 @@ class BuilderServiceTest {
     // ---- the builder
 
     @Test
-    void theBuilderMakesTheSameServiceAsTheDeprecatedConstructorWithTheDefaultCap() {
+    void theBuilderDefaultsTheDefinitionCapAndMakesAServiceThatSaves() {
         BuilderService built = BuilderService.builder().repository(repository).definitions(definitions).translations(catalogs)
             .types(BuilderApiTest.TYPES).clock(CLOCK).build();
 

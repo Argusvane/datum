@@ -35,7 +35,7 @@ class GuestRunObservationsTest {
         RecordingObservations recording = new RecordingObservations();
         RunSlots slots = new RunSlots(1, Duration.ZERO, "validation");
         SandboxService service = new SandboxService(FakeRuntime.answering("{\"errors\":[]}"), PROGRAM, new RunScript("/* f */"),
-            ProgramLimits.defaults(), HostOptions.defaults(), slots, new AbiProbe(), RunLog.slf4j());
+            ProgramLimits.defaults(), HostOptions.defaults(), slots, new AbiProbe(), RunLog.slf4j(), null);
         Sandbox sandbox = GuestRunObservations.sandbox(recording.observations(), "panama").decorate(service);
 
         sandbox.proveAbi();
@@ -66,7 +66,7 @@ class GuestRunObservationsTest {
             return RunOutput.exited(0, (text + "\n").getBytes(StandardCharsets.UTF_8), null);
         });
         PdfKernel kernel = GuestRunObservations.pdfKernel(recording.observations(), "jffi")
-            .decorate(new PdfProgram(runtime, PDF, ProgramLimits.defaults(), new AbiProbe()));
+            .decorate(new PdfProgram(runtime, PDF, ProgramLimits.defaults(), new AbiProbe(), null));
         kernel.capabilities();
         kernel.call(JsonNodeFactory.instance.objectNode().put("abi", PdfAbi.MIN).put("op", "document"));
         kernel.call(JsonNodeFactory.instance.objectNode().put("abi", PdfAbi.MIN).put("op", "not a word"));
@@ -81,9 +81,9 @@ class GuestRunObservationsTest {
     @Test
     void withoutObservationsNothingIsWrapped() {
         SandboxService service = new SandboxService(FakeRuntime.answering("{\"errors\":[]}"), PROGRAM, new RunScript("/* f */"),
-            ProgramLimits.defaults(), HostOptions.defaults(), new RunSlots(1, Duration.ZERO, "validation"), new AbiProbe(), RunLog.slf4j());
+            ProgramLimits.defaults(), HostOptions.defaults(), new RunSlots(1, Duration.ZERO, "validation"), new AbiProbe(), RunLog.slf4j(), null);
         assertThat(GuestRunObservations.sandbox(DatumObservations.none(), "panama").decorate(service)).isSameAs(service);
-        PdfProgram program = new PdfProgram(FakeRuntime.answering("{}"), PDF, ProgramLimits.defaults(), new AbiProbe());
+        PdfProgram program = new PdfProgram(FakeRuntime.answering("{}"), PDF, ProgramLimits.defaults(), new AbiProbe(), null);
         assertThat(GuestRunObservations.pdfKernel(DatumObservations.none(), "panama").decorate(program)).isSameAs(program);
     }
 }

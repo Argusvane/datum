@@ -151,12 +151,12 @@ class EngineWebAuthnFixtureTest {
                 .signCount(registered.signCount())
                 .created(Instant.EPOCH)
                 .build());
-            WebAuthnSettings site = new WebAuthnSettings(fixture.get("rpId").asString(), "Petition", List.of(fixture.get("origin").asString()), null, true);
+            WebAuthnSettings site = new WebAuthnSettings(fixture.get("rpId").asString(), "Petition", List.of(fixture.get("origin").asString()), null, true, false, null, null, null, null);
             for (JsonNode document : credential.get("documents")) {
                 JsonNode delivered = document.get("document");
                 String signedAt = delivered.get("signatures").get(0).get("webauthn").get("signedAt").asString();
                 Clock clock = Clock.fixed(Instant.parse(signedAt), ZoneOffset.UTC);
-                SubmissionSignatureVerifier signatures = new SubmissionSignatureVerifier(site, passkeys, uses, verifier, clock);
+                SubmissionSignatureVerifier signatures = new SubmissionSignatureVerifier(site, passkeys, uses, verifier, clock, List.of());
                 FormSigning form = FormSigning.builder().mode(FormSigning.Mode.REQUIRED).scope(document.get("scope").asString())
                     .statement(statementOf(document) == null ? "" : statementOf(document)).build();
                 SignatureVerification verification = signatures.verify("petition", form, delivered, (ObjectNode) delivered, PasskeySubject.anonymous());

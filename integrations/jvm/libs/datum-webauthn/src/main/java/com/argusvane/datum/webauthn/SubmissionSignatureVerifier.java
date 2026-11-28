@@ -68,15 +68,10 @@ public final class SubmissionSignatureVerifier {
     private final Clock clock;
     private final List<SignatureCheckCustomizer> customizers;
 
-    public SubmissionSignatureVerifier(WebAuthnSettings settings, PasskeyRepository passkeys, PasskeyUseStore uses, WebAuthnVerifier verifier,
-                                       Clock clock) {
-        this(settings, passkeys, uses, verifier, clock, List.of());
-    }
-
     /**
-     * As above with the application's signature-check hooks, in the framework's order.
+     * The verifier with the application's signature-check hooks, in the framework's order.
      *
-     * @param customizers the per-form policy, before the assertion is verified
+     * @param customizers the per-form policy, before the assertion is verified; empty for none
      */
     public SubmissionSignatureVerifier(WebAuthnSettings settings, PasskeyRepository passkeys, PasskeyUseStore uses, WebAuthnVerifier verifier,
                                        Clock clock, List<SignatureCheckCustomizer> customizers) {

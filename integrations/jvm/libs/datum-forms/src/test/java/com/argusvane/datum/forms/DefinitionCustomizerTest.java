@@ -69,7 +69,7 @@ class DefinitionCustomizerTest {
 
     private DefinitionService service(List<DefinitionCustomizer> customizers) {
         repository.save(Fixtures.endpointFixture());
-        return DefinitionService.builder().repository(repository).snapshots(new InMemoryDefinitionSnapshotStore(50, message -> { })).sandbox(runtime::service).events(event -> { }).publicCacheSize(8)
+        return DefinitionService.builder().repository(repository).snapshots(new InMemoryDefinitionSnapshotStore(50)).sandbox(runtime::service).events(event -> { }).publicCacheSize(8)
             .clock(Clock.systemUTC()).tooCostlyMemory(Duration.ofMinutes(5)).customizers(customizers).build();
     }
 

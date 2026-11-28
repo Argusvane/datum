@@ -52,7 +52,7 @@ class BuilderSaveHooksTest {
         repository = new MemoryRepository();
         catalogs = new InMemoryTranslationCatalogStore();
         events = Collections.synchronizedList(new ArrayList<>());
-        definitions = DefinitionService.builder().repository(repository).snapshots(new InMemoryDefinitionSnapshotStore(100, warning -> { })).sandbox(() -> sandbox).events(events::add).publicCacheSize(16).build();
+        definitions = DefinitionService.builder().repository(repository).snapshots(new InMemoryDefinitionSnapshotStore(100)).sandbox(() -> sandbox).events(events::add).publicCacheSize(16).build();
         repository.seed(BuilderFixtures.base());
     }
 

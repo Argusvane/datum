@@ -126,50 +126,34 @@ public final class TimestampAuthority implements Timestamper {
     }
 
     /**
+     * The common case: an authority on the server's clock (always available) that accepts its issuing policy only, runs no
+     * customizer and reports nothing.
+     *
+     * @param clock the server's clock (see {@link TsaTimeSource} for a source that can refuse)
+     * @throws IllegalArgumentException when the policy is not an object identifier the server can write and read
+     */
+    public TimestampAuthority(TsaKeyMaterial keys, String policy, Duration accuracy, Clock clock, TsaSerialAllocator serials) {
+        this(keys, policy, accuracy, TsaTimeSource.of(Objects.requireNonNull(clock, "clock")), serials, List.of(), List.of(),
+            DatumObservations.none());
+    }
+
+    /**
      * @param keys where the signing key comes from, asked on every token
      * @param policy the policy the tokens name, dotted ({@link #DEFAULT_POLICY} when {@code null})
      * @param accuracy the accuracy stated, whole milliseconds, clamped to 0 to {@link #MAX_ACCURACY}; zero states
      *     none; under a second, genTime carries milliseconds ({@link #DEFAULT_ACCURACY} when {@code null})
-     * @param clock the server's clock (always available; see {@link TsaTimeSource} for a source that can refuse)
-     * @param serials takes each token's serial number before it is signed
-     * @throws IllegalArgumentException when the policy is not an object identifier the server can write and read
-     */
-    public TimestampAuthority(TsaKeyMaterial keys, String policy, Duration accuracy, Clock clock, TsaSerialAllocator serials) {
-        this(keys, policy, accuracy, TsaTimeSource.of(Objects.requireNonNull(clock, "clock")), serials);
-    }
-
-    /**
      * @param time where "now" comes from; when it is unavailable no token is issued: the request is refused with
      *     RFC 3161's {@code timeNotAvailable} (503), before a key is loaded or a serial taken
-     */
-    public TimestampAuthority(TsaKeyMaterial keys, String policy, Duration accuracy, TsaTimeSource time, TsaSerialAllocator serials) {
-        this(keys, policy, accuracy, time, serials, List.of());
-    }
-
-    /**
+     * @param serials takes each token's serial number before it is signed
      * @param acceptedPolicies further policies a request may ask for with {@code reqPolicy} (dotted); a token then names the
      *     policy asked for, as RFC 3161 has it. The issuing policy is always accepted; any other is refused with
-     *     unacceptedPolicy. Empty (the default) accepts the issuing policy only
-     * @throws IllegalArgumentException when a policy is not an object identifier the server can write and read
-     */
-    public TimestampAuthority(TsaKeyMaterial keys, String policy, Duration accuracy, TsaTimeSource time, TsaSerialAllocator serials,
-                              List<String> acceptedPolicies) {
-        this(keys, policy, accuracy, time, serials, acceptedPolicies, List.of());
-    }
-
-    /**
+     *     unacceptedPolicy. Empty accepts the issuing policy only
      * @param customizers the application's per-request policy, run in this order before any token is signed;
      *     empty for none
-     */
-    public TimestampAuthority(TsaKeyMaterial keys, String policy, Duration accuracy, TsaTimeSource time, TsaSerialAllocator serials,
-                              List<String> acceptedPolicies, List<TimestampRequestCustomizer> customizers) {
-        this(keys, policy, accuracy, time, serials, acceptedPolicies, customizers, DatumObservations.none());
-    }
-
-    /**
      * @param observations where each token asked of the authority is reported, its channel and its outcome
      *     ({@code granted} or the refusal's failure name) as a {@value DatumObservationNames#TSA_ISSUE} observation: the endpoint's requests under the HTTP request's trace, the host's own seals and receipts under the PDF
      *     operation that asked; {@link DatumObservations#none()} for none
+     * @throws IllegalArgumentException when a policy is not an object identifier the server can write and read
      */
     public TimestampAuthority(TsaKeyMaterial keys, String policy, Duration accuracy, TsaTimeSource time, TsaSerialAllocator serials,
                               List<String> acceptedPolicies, List<TimestampRequestCustomizer> customizers, DatumObservations observations) {

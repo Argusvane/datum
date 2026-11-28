@@ -42,7 +42,7 @@ public interface GoldenVerdictsContract extends RuntimeUnderTest {
     private SandboxService goldenService() {
         ProgramLimits limits = ProgramLimits.defaults();
         return new SandboxService(ProgramRunner.on(runtime()), RuntimeTckAssets.sandboxProgram(), RuntimeTckAssets.scripts(), limits, HostOptions.defaults(),
-            RunSlots.validation(limits), new AbiProbe(), RunLog.slf4j());
+            RunSlots.validation(limits), new AbiProbe(), RunLog.slf4j(), null);
     }
 
     /**

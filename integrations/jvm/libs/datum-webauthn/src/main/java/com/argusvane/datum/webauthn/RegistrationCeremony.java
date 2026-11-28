@@ -54,13 +54,8 @@ public final class RegistrationCeremony {
     private final List<RegistrationValidator> validators;
     private final SecureRandom random = new SecureRandom();
 
-    public RegistrationCeremony(WebAuthnSettings settings, PasskeyChallenges challenges, PasskeyRepository passkeys, WebAuthnVerifier verifier,
-                                Clock clock) {
-        this(settings, challenges, passkeys, verifier, clock, List.of(), List.of());
-    }
-
     /**
-     * As above with the application's registration hooks, each list in the framework's order.
+     * The ceremony with the application's registration hooks, each list in the framework's order (empty for none).
      *
      * @param customizers the per-request policy, at the challenge and before a registration is claimed
      * @param validators the judgement of a verified passkey, before it is stored

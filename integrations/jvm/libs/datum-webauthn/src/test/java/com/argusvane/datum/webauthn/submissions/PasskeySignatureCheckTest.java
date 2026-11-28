@@ -168,7 +168,7 @@ class PasskeySignatureCheckTest {
     /** A site with no passkey domain: a required form follows its policy for browsers without passkeys. */
     @Test
     void noPasskeyDomain() {
-        site.configure(new WebAuthnSettings("", "Petition", List.of(), null, true));
+        site.configure(new WebAuthnSettings("", "Petition", List.of(), null, true, false, null, null, null, null));
         form = FormSigning.builder().mode(FormSigning.Mode.REQUIRED).build();
         PasskeySignatureCheck check = check();
         SignatureVerdict refused = check.check(candidate(site.envelope(Map.of("fullName", "Ada"))));
@@ -191,7 +191,7 @@ class PasskeySignatureCheckTest {
     /** Anonymous visitors while visitors may not sign. */
     @Test
     void anonymousVisitorsWhileTheyMayNotSign() {
-        site.configure(new WebAuthnSettings("localhost", "Petition", List.of("http://localhost"), null, false));
+        site.configure(new WebAuthnSettings("localhost", "Petition", List.of("http://localhost"), null, false, false, null, null, null, null));
         PasskeySignatureCheck check = check();
         SignatureVerdict required = check.check(candidate(site.envelope(Map.of("fullName", "Ada"))));
         assertThat(code(required)).isEqualTo("signature.sign_in");

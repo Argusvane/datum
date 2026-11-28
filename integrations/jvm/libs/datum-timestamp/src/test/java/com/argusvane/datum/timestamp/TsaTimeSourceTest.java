@@ -3,8 +3,10 @@ package com.argusvane.datum.timestamp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.argusvane.datum.core.observation.DatumObservations;
 import com.argusvane.datum.timestamp.web.TsaHealth;
 import java.time.Instant;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.bouncycastle.tsp.TimeStampResponse;
@@ -16,7 +18,8 @@ class TsaTimeSourceTest {
     private static final Instant NOW = Fixtures.OCT_5;
 
     private static TimestampAuthority authority(TsaTimeSource source, AtomicInteger serials) {
-        return new TimestampAuthority(TsaKeyMaterial.of(Fixtures.key("tsa")), null, null, source, entry -> serials.incrementAndGet());
+        return new TimestampAuthority(TsaKeyMaterial.of(Fixtures.key("tsa")), null, null, source, entry -> serials.incrementAndGet(), List.of(), List.of(),
+            DatumObservations.none());
     }
 
     @Test

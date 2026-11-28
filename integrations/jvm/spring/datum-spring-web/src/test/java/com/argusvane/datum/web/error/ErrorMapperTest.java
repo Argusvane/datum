@@ -24,7 +24,7 @@ class ErrorMapperTest {
 
     private static final JsonMapper JSON = JsonMapper.builder().build();
     /** The mapper as the Spring binding builds it: Spring's own request errors told apart by status. */
-    private final ErrorMapper mapper = new ErrorMapper(false, List.of(), SpringFrameworkErrors.INSTANCE);
+    private final ErrorMapper mapper = new ErrorMapper(false, List.of(), SpringFrameworkErrors.INSTANCE, null);
 
     private String code(ErrorResponse response) {
         JsonNode body = JSON.readTree(response.bodyBytes(JSON));

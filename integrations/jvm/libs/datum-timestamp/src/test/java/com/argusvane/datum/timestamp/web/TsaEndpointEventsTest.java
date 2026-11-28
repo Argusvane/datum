@@ -14,6 +14,7 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -77,6 +78,6 @@ class TsaEndpointEventsTest {
             }
         };
         TsaClient client = new TsaClient("c-1", "Client one");
-        return new TsaEndpoint(authority, key -> Optional.of(client), open, new TsaCertificates(keys, List.of()), TsaSettings.defaults(), events);
+        return new TsaEndpoint(authority, key -> Optional.of(client), open, new TsaCertificates(keys, List.of()), TsaSettings.defaults(), events, Set.of());
     }
 }

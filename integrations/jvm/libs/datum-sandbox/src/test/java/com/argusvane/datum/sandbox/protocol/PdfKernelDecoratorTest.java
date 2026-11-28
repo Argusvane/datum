@@ -64,7 +64,7 @@ class PdfKernelDecoratorTest {
 
     @Test
     void noDecoratorIsTheProgramItself() {
-        PdfProgram program = new PdfProgram(guest("{}"), PDF, ProgramLimits.defaults(), new AbiProbe());
+        PdfProgram program = new PdfProgram(guest("{}"), PDF, ProgramLimits.defaults(), new AbiProbe(), null);
         assertThat(PdfKernelDecorator.compose(List.of()).decorate(program)).isSameAs(program);
     }
 
@@ -72,7 +72,7 @@ class PdfKernelDecoratorTest {
     void decoratorsComposeInOrderAndTheProtocolStaysTheProgramsOnTheGivenParts() {
         List<String> calls = new ArrayList<>();
         FakeRuntime runtime = guest("{\"ok\":false,\"error\":{\"code\":\"layout.notFound\",\"message\":\"no\"}}");
-        PdfProgram program = new PdfProgram(runtime, PDF, ProgramLimits.defaults(), new AbiProbe());
+        PdfProgram program = new PdfProgram(runtime, PDF, ProgramLimits.defaults(), new AbiProbe(), null);
         PdfKernel kernel = PdfKernelDecorator.compose(List.<PdfKernelDecorator>of(
             inner -> new Counting(inner, calls, "first"), inner -> new Counting(inner, calls, "second"))).decorate(program);
 
@@ -86,7 +86,7 @@ class PdfKernelDecoratorTest {
 
     @Test
     void aDecoratorThatAnswersNullIsRefused() {
-        PdfProgram program = new PdfProgram(guest("{}"), PDF, ProgramLimits.defaults(), new AbiProbe());
+        PdfProgram program = new PdfProgram(guest("{}"), PDF, ProgramLimits.defaults(), new AbiProbe(), null);
         assertThatThrownBy(() -> PdfKernelDecorator.compose(List.of(inner -> null)).decorate(program))
             .isInstanceOf(NullPointerException.class).hasMessageContaining("answered null");
     }

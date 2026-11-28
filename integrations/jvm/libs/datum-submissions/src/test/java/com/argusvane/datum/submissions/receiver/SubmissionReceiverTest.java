@@ -122,7 +122,7 @@ class SubmissionReceiverTest {
         signatureCheck = null;
         provider = null;
         cap = 1 << 20;
-        snapshots = new InMemoryDefinitionSnapshotStore(100, message -> { });
+        snapshots = new InMemoryDefinitionSnapshotStore(100);
         listenerThrowsOn = null;
         handlerDouble = null;
         idempotency = new com.argusvane.datum.submissions.idempotency.InMemorySubmissionIdempotencyStore(100);
@@ -883,7 +883,7 @@ class SubmissionReceiverTest {
             service = new SandboxService(com.argusvane.datum.sandbox.protocol.ProgramRunner.on(runtime), service.program(), new com.argusvane.datum.sandbox.protocol.RunScript("/* f */"),
                 com.argusvane.datum.sandbox.protocol.ProgramLimits.defaults(), com.argusvane.datum.sandbox.protocol.HostOptions.defaults(),
                 new com.argusvane.datum.sandbox.protocol.RunSlots(1, Duration.ZERO, "validation"),
-                new com.argusvane.datum.sandbox.protocol.AbiProbe(), com.argusvane.datum.sandbox.protocol.RunLog.slf4j());
+                new com.argusvane.datum.sandbox.protocol.AbiProbe(), com.argusvane.datum.sandbox.protocol.RunLog.slf4j(), null);
             try (var taken = service.slots().acquire()) {
                 assertThatThrownBy(() -> receiver().submit(request(), delivered(contactEnvelope())))
                     .isInstanceOf(SandboxException.class)
