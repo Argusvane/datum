@@ -156,4 +156,29 @@ describe("buildSchemaTable", () => {
     expect(rows.find((row) => row.componentId === "services")!.typeText).toBe("Any of 2");
     expect(rows.filter((row) => row.componentId === "services")).toHaveLength(1);
   });
+
+  it("draws a row for an answer stored as a list of values: a multiselect, several files", () => {
+    const root: ComponentNode = {
+      id: "root",
+      type: "form",
+      configuration: {},
+      children: {
+        content: [
+          {
+            id: "tags",
+            type: "multiselect",
+            configuration: { label: "Tags", options: [{ value: "a", label: "A" }, { value: "b", label: "B" }] }
+          },
+          { id: "docs", type: "file", configuration: { label: "Documents", multiple: true } },
+          text("name", "Name")
+        ]
+      }
+    } as ComponentNode;
+    const rows = buildSchemaTable(root).rows;
+    expect(rows.map((row) => [row.componentId, row.path, row.typeText])).toEqual([
+      ["tags", "tags", "Any of 2"],
+      ["docs", "docs", "List"],
+      ["name", "name", "Text"]
+    ]);
+  });
 });
