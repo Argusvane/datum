@@ -10,11 +10,11 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { DEFAULT_PDF_THEME, PDF_ABI_VERSION, PLAIN_PDF_THEME, type PdfDocument, type PdfKernelEnv, type PdfThemeDefinition } from "../../../engine/form-engine/render/index.ts";
-import { FIXTURE_FORM } from "../../../engine/form-engine/testing/fixture-form.ts";
-import { loadFontPack } from "../../pdf-kernel/src/fonts.ts";
-import { renderDocument } from "../../pdf-kernel/src/kernel/render.ts";
-import { handlePdfRequest } from "../../pdf-kernel/src/program/entry.ts";
+import { DEFAULT_PDF_THEME, PDF_ABI_VERSION, PLAIN_PDF_THEME, type PdfDocument, type PdfKernelEnv, type PdfThemeDefinition } from "../../../engine/form-engine/render/index.js";
+import { FIXTURE_FORM } from "../../../engine/form-engine/testing/fixture-form.js";
+import { loadFontPack } from "../../pdf-kernel/src/fonts.js";
+import { renderDocument } from "../../pdf-kernel/src/kernel/render.js";
+import { handlePdfRequest } from "../../pdf-kernel/src/program/entry.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const out = join(here, "..", "..", "pdf-kernel", "tests", "fixtures", "documents");
