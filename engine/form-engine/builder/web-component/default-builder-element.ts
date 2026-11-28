@@ -5897,14 +5897,18 @@ export class DatumBuilderElement extends HTMLElementBase {
       return Promise.resolve(this.saveFailed(error));
     }
     const saved = (): BuilderSaveOutcome => {
-      this.ctrl.markLocalesSaved();
-      this.localeTargets = new Map();
       this.fileActionDone({ action: "save", ...(changed ? { localeChanges } : {}), ...asked });
       return { status: "saved", ...(changed ? { localeChanges } : {}) };
     };
     if (!(result instanceof Promise)) {
+      this.ctrl.markLocalesSaved();
+      this.localeTargets = new Map();
       return Promise.resolve(saved());
     }
+    // The languages the save was handed are the baseline at once: one renamed or removed while it
+    // is pending is the next save's to hand over. A failure puts the baseline back, that move on top.
+    const unsaved = this.ctrl.markLocalesSaving();
+    this.localeTargets = new Map();
     this.setSaving(true, trigger);
     return result.then(
       () => {
@@ -5913,6 +5917,8 @@ export class DatumBuilderElement extends HTMLElementBase {
       },
       (error: unknown) => {
         this.setSaving(false);
+        unsaved();
+        this.localeTargets = new Map(this.ctrl.localeChangesSinceSave().renamed.map((entry) => [entry.from, entry.to]));
         return this.saveFailed(error);
       }
     );

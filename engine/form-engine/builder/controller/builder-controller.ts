@@ -2459,6 +2459,36 @@ export class BuilderController {
     this.localeLineage = new Map(this.localeBaseline.map((code) => [code, code]));
   }
 
+  /**
+   * {@link markLocalesSaved} for a save still pending: the languages as they stand, which the save
+   * was handed, are the baseline from now, so a language renamed or removed before the save
+   * settles is the next save's to report. Returns what to call should the save fail: the baseline
+   * goes back where it was, with what moved meanwhile counted on top of it. A baseline set again in
+   * between (a load, a host's own {@link markLocalesSaved}) is left as it is.
+   */
+  public markLocalesSaving(): () => void {
+    const baseline = this.localeBaseline;
+    const lineage = this.localeLineage;
+    this.markLocalesSaved();
+    const handed = this.localeBaseline;
+    return () => {
+      if (this.localeBaseline !== handed) {
+        return;
+      }
+      // Each language now descends from one the save was handed, which descends from one of the old baseline.
+      const since = this.localeLineage;
+      this.localeBaseline = baseline;
+      this.localeLineage = new Map();
+      for (const [code, origin] of since) {
+        const first = lineage.get(origin);
+        if (first !== undefined) {
+          this.localeLineage.set(code, first);
+        }
+      }
+      this.followLocales();
+    };
+  }
+
   // --- translations ----------------------------------------------------------
 
   /**
