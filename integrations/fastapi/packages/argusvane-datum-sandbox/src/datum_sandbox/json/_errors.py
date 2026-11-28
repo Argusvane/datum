@@ -14,6 +14,7 @@ class RefusalReason(enum.StrEnum):
     LONE_SURROGATE = "lone_surrogate"
     NO_JSON_FORM = "no_json_form"
     NUL_CHARACTER = "nul_character"
+    DUPLICATE_KEY = "duplicate_key"
 
 
 class BadDocumentError(ValueError):
