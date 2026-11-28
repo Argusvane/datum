@@ -1254,6 +1254,7 @@ traced; every one is held by a test in the library that applies it and by the co
 | a run's stdout 32 MiB and stderr 64 KiB | `Budget` | the frame protocol and the hardening port (`SandboxHardeningIT`, `HardeningContract`: a 40 MiB answer is refused) |
 | an outcome of at most 8 Mi UTF-16 units | `SandboxService` | the TypeScript hosts' `maxResultLength`; the `outcome_too_large` code in the error catalog |
 | answer JSON nested at most 512 deep; component depth 32, raw definition depth 256 | `StrictJson`, `DefinitionDepth` | security suite DEF-06 (`definition.tooDeep`) |
+| the guest's C stack: wasm-ld's 64 KiB above `qjs-wasi.wasm`'s statics, held at its floor | the build's `StackGuardRewrite` and `StackGuard` (datum-sandbox-endive) | the threat model: every move of the stack pointer past the floor (less 512 bytes) traps, and a run that reached the floor is a trap, 503 with no verdict (`StackGuardIT` on JFFI, Panama and bytecode) |
 | a 16-byte nonce from one `SecureRandom`; the guest globals removed | `Nonce`, `RunScript` | the frame protocol (a forged outcome is refused) |
 | sandbox ABI 4.1.0 (floor 4.0.0), PDF ABI 4.0.0 (floor 4.0.0) | `SandboxAbi`, `PdfAbi` | the programs' ABI and the golden answers (`abi-4.1.json`); a program that does not answer for the floor is refused at start |
 | the bounds of every `datum.runtime.*` budget (time, memory, slots, wait, body) | `ProgramLimits` | the documented clamps (a validation run is at most 60 s, a PDF run 300 s, 64 slots, a wait of 0 to 10 s) |

@@ -89,8 +89,10 @@ that leaves it out took 19 minutes on a busy machine, most of it integration tes
 `./mvnw -B -Pdev-native -pl spring/datum-spring-boot-starter-submissions -am clean install -DskipTests -DskipITs`, about 3 minutes.
 
 `datum-sandbox-endive` compiles the pinned `qjs-wasi.wasm` into a `Qjs` class with Endive for six native targets, 12 to
-16 minutes; `-Pdev-native` compiles the host's target only, for local iteration (the release profile refuses it). Use
-it for any build that touches that module. The plugin compiles on every build, also when its output is already in
+16 minutes. What it compiles is the pinned file rewritten so that every move of its C stack pointer is checked against the
+64 KiB stack (`src/build/java/.../StackGuardRewrite.java`, run with the JDK's source launcher after the pin check, a few
+seconds); a module the rewrite cannot read exactly fails the build. `-Pdev-native` compiles the host's target only, for
+local iteration (the release profile refuses it). Use it for any build that touches that module. The plugin compiles on every build, also when its output is already in
 `target/`; `-Pendive-prebuilt` builds over that output without compiling (no `clean`: it stops when the output is not
 there, and the release profile refuses it). The JVM workflow (`.github/workflows/jvm.yml`, started by hand rather than on
 every push) compiles once in its `jvm-runtime` job, caches the output, and builds every Java version with that profile.

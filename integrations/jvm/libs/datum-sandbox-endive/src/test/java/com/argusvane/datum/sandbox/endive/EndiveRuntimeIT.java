@@ -59,10 +59,13 @@ class EndiveRuntimeIT implements RuntimeContract {
         return EndiveGuestRuntime.STOP_GRACE;
     }
 
-    /** Endive's trap for exhausted recursion is its {@code TrapException("call stack exhausted")}. */
+    /**
+     * Unbounded JavaScript recursion reaches the C stack's floor long before Endive's call stack runs out, so it ends as the
+     * stack guard's trap ({@link StackGuard#OVERRUN}).
+     */
     @Override
     public void checkStackTrapMessage(String trapMessage) {
-        assertThat(trapMessage).contains("call stack exhausted");
+        assertThat(trapMessage).startsWith(StackGuard.OVERRUN);
     }
 
     private static Budget budget(int seconds, int mib) {
