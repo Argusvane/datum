@@ -47,33 +47,8 @@ public interface RunLog {
         };
     }
 
-    /**
-     * A text that stays on one log line: the backslash doubled, CR and LF as {@code \\r} and {@code \\n}, and
-     * every other control character as a backslash-u escape. That is each C0 and C1 control (ESC starts an
-     * ANSI sequence that rewrites a terminal line; NEL U+0085, VT and FF break lines for some log shippers;
-     * NUL ends a C string) and the line and paragraph separators U+2028 and U+2029.
-     */
+    /** A text that stays on one log line: {@link LogText#oneLine}. */
     static String oneLine(String text) {
-        StringBuilder out = null;
-        for (int i = 0; i < text.length(); i++) {
-            char c = text.charAt(i);
-            String escaped = switch (c) {
-                case '\\' -> "\\\\";
-                case '\r' -> "\\r";
-                case '\n' -> "\\n";
-                default -> Character.isISOControl(c) || c == '\u2028' || c == '\u2029' ? String.format("\\u%04x", (int) c) : null;
-            };
-            if (escaped != null && out == null) {
-                out = new StringBuilder(text.length() + 16).append(text, 0, i);
-            }
-            if (out != null) {
-                if (escaped != null) {
-                    out.append(escaped);
-                } else {
-                    out.append(c);
-                }
-            }
-        }
-        return out == null ? text : out.toString();
+        return LogText.oneLine(text);
     }
 }
