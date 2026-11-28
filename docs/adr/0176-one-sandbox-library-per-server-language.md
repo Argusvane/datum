@@ -132,7 +132,11 @@ A kit is what an engine's tests bind: the engine's own tests implement the `Wasi
 against the generic run alone and the protocol contracts against the real programs.
 
 - **JVM.** The engine is `datum-sandbox-endive` (with the selectors `-jffi` and `-panama`); the kit
-  is `datum-sandbox-tck`.
+  is `datum-sandbox-tck`. QuickJS-ng checks no stack under WASI and its C stack is a fixed 64 KiB
+  above the module's statics, so the engine's build compiles the pinned module rewritten after the
+  pin check: every `global.set` of `__stack_pointer` traps outside the stack (`StackGuardRewrite`),
+  and a module the rewrite cannot decode exactly fails the build rather than compiling unguarded. Each run arms a canary over the stack's lowest bytes and
+  reads it, with `.rodata`, after `_start` (`StackGuard`); a run that reached the floor is a trap.
 - **Python.** The engine is the distribution `argusvane-datum-sandbox-wasmtime`; the kit is
   `datum_sandbox.testing` (the `testing` extra).
 

@@ -24,6 +24,12 @@
       against qjs.sha256 and qjs.size, so an override is still held to the pin.
     -->
     <qjs.wasm.file>${project.build.directory}/qjs/qjs-wasi.wasm</qjs.wasm.file>
+    <!--
+      What Endive compiles: qjs.wasm.file with every write of its C stack pointer checked (src/build/java StackGuardRewrite,
+      run below after the pin check), and the stack's layout it found, which the jar carries for the run-time half.
+    -->
+    <qjs.guarded.file>${project.build.directory}/qjs/qjs-wasi-guarded.wasm</qjs.guarded.file>
+    <stack.guard.resources>${project.build.directory}/generated-resources/stack-guard</stack.guard.resources>
     <!-- The host's Redline target for the dev-native profile, set by the host-target-* profiles below. -->
     <endive.host.target>x86_64-unknown-linux-gnu</endive.host.target>
     <!-- True only under dev-native: NativeTargetsTest then skips its six-target check and the release profile refuses. -->
@@ -157,8 +163,63 @@
       </plugin>
       <plugin>
         <!--
+          The C stack guard, before the Endive compile: StackGuardRewrite (the JDK's source launcher, no dependencies) holds
+          qjs.wasm.file to the pin, then writes the module with every global.set of __stack_pointer checked against the
+          64 KiB stack (a move below its floor, past a 512-byte leaf room, or above its top traps) and the stack's layout
+          (META-INF/datum/stack-guard.properties). A module whose layout is not the one the guard is for, or whose code the
+          rewrite cannot decode exactly, fails the build: the pinned module is known, so it never compiles unguarded. Runs
+          under -Pendive-prebuilt too, where its output is the same bytes (the rewrite is deterministic) and the jar needs
+          the layout; EndiveGuestRuntime refuses a compiled class that does not carry the checks.
+        -->
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>qjs-stack-guard</id>
+            <phase>initialize</phase>
+            <goals><goal>exec</goal></goals>
+            <configuration>
+              <executable>${java.home}/bin/java</executable>
+              <arguments>
+                <argument>${project.basedir}/src/build/java/com/argusvane/datum/sandbox/endive/StackGuardRewrite.java</argument>
+                <argument>${qjs.wasm.file}</argument>
+                <argument>${qjs.sha256}</argument>
+                <argument>${qjs.size}</argument>
+                <argument>${qjs.guarded.file}</argument>
+                <argument>${stack.guard.resources}/META-INF/datum/stack-guard.properties</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-stack-guard-resource</id>
+            <phase>generate-resources</phase>
+            <goals><goal>add-resource</goal></goals>
+            <configuration>
+              <resources><resource><directory>${stack.guard.resources}</directory></resource></resources>
+            </configuration>
+          </execution>
+          <execution>
+            <!-- StackGuardRewriteTest drives the build's rewriter directly. -->
+            <id>add-stack-guard-test-source</id>
+            <phase>generate-test-sources</phase>
+            <goals><goal>add-test-source</goal></goals>
+            <configuration>
+              <sources><source>${project.basedir}/src/build/java</source></sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <!--
           The precompiled class com.argusvane.datum.sandbox.endive.Qjs: JVM bytecode plus Redline native code
-          for all six targets (~1.5-2 min per target, 12-16 min in all; deterministic output). Function 283
+          for all six targets (~1.5-2 min per target, 12-16 min in all; deterministic output), compiled from the
+          guarded module above, never from the downloaded file itself. Function 283
           (JS_CallInternal) is the one function too large for the bytecode compiler; it is pinned and any other one fails
           the build, so a new qjs release that grows another cannot silently slow the bytecode fallback.
         -->
@@ -172,7 +233,7 @@
             <goals><goal>compile</goal></goals>
             <configuration>
               <name>com.argusvane.datum.sandbox.endive.Qjs</name>
-              <wasmFile>${qjs.wasm.file}</wasmFile>
+              <wasmFile>${qjs.guarded.file}</wasmFile>
               <redlineExperimental>true</redlineExperimental>
               <interpreterFallback>FAIL</interpreterFallback>
               <interpretedFunctions>
@@ -187,6 +248,7 @@
         <configuration>
           <systemPropertyVariables>
             <qjs.wasm.file>${qjs.wasm.file}</qjs.wasm.file>
+            <qjs.guarded.file>${qjs.guarded.file}</qjs.guarded.file>
             <datum.devNative>${datum.devNative}</datum.devNative>
           </systemPropertyVariables>
           <excludes>
@@ -205,6 +267,8 @@
               <excludes combine.self="override"/>
               <includes>
                 <include>**/BytecodeFallbackTest.java</include>
+                <!-- The C stack guard on the bytecode path; failsafe runs it on JFFI and Panama. -->
+                <include>**/StackGuardIT.java</include>
               </includes>
               <reportsDirectory>${project.build.directory}/surefire-reports-bytecode</reportsDirectory>
               <!-- A small heap: the bytecode memory lives on it, and one test fills it to prove a full heap is the host's stop. -->

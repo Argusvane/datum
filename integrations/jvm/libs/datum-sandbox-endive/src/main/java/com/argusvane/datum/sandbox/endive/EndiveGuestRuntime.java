@@ -47,6 +47,10 @@ import run.endive.wasm.types.MemoryLimits;
  *   <li>the precompiled module on the runner {@link ProviderSelector} chose: {@code provider.builder(Qjs.load(),
  *       Qjs.loadNativeCode())} natively, {@code Qjs.safeBuilder()} as bytecode, which {@link EngineInfo#mode()} says (the
  *       Datum lifecycle and protocol refuse the PDF program there, never this engine: it runs no program, only files);</li>
+ *   <li>the guest's C stack held to its 64 KiB ({@link StackGuard}): the build compiles a rewrite of the pinned module in
+ *       which every move of the stack pointer past the stack's floor traps before the frame is used, and each run arms a
+ *       canary over the stack's lowest bytes before {@code _start} and reads it, with the module's {@code .rodata}, after;
+ *       a run that reached the floor is a trap with {@link StackGuard#OVERRUN}, however the guest ended;</li>
  *   <li>Endive's exceptions read: {@link WasiExitException} is an exit with its code; another {@link WasmEngineException}
  *       after {@code _start} is a trap ({@code TrapException} "call stack exhausted", "unreachable"; QuickJS reports its
  *       own memory limit as an exit, never as an engine fault); {@link WasmInterruptedException} is an
@@ -97,6 +101,7 @@ public final class EndiveGuestRuntime implements GuestRuntime, AutoCloseable {
     private final RuntimeInfo info;
     private final EngineInfo engineInfo;
     private final RunHarness harness;
+    private final StackGuard stackGuard;
     /** Native memories made for instances and not yet handed to a close (tests read it). */
     private final AtomicInteger unclosedMemories = new AtomicInteger();
     /** Native memories closed here because build() failed after making them (tests read it). */
@@ -130,7 +135,8 @@ public final class EndiveGuestRuntime implements GuestRuntime, AutoCloseable {
         this.selection = Objects.requireNonNull(selection, "selection");
         Objects.requireNonNull(settings, "settings");
         this.info = RuntimeInfo.of(selection, minimumMemoryBytes());
-        this.engineInfo = engineInfo(selection, info);
+        this.stackGuard = StackGuard.load(Qjs.load(), info.qjsSha256());
+        this.engineInfo = engineInfo(selection, info, stackGuard);
         this.harness = new RunHarness(new Engine(), settings);
         if (selection.runner().isNative()) {
             LOG.info("Datum Endive runtime: QuickJS {} runs native on the {} runner: {}.", info.qjsVersion(), selection.runner().id(),
@@ -143,15 +149,18 @@ public final class EndiveGuestRuntime implements GuestRuntime, AutoCloseable {
         warnIfNativeAccessDisabled(selection.runner(), ProviderSelector.nativeAccessBeforeSelection(), NATIVE_ACCESS_WARNED);
     }
 
-    /** What health, info and the ready event report: id {@code endive}, Endive's release, the runner as the mode, and why. */
-    static EngineInfo engineInfo(ProviderSelector.Selection selection, RuntimeInfo info) {
+    /**
+     * What health, info and the ready event report: id {@code endive}, Endive's release, the runner as the mode, why, and
+     * the C stack guard.
+     */
+    static EngineInfo engineInfo(ProviderSelector.Selection selection, RuntimeInfo info, StackGuard stackGuard) {
         String quickJs = "QuickJS " + info.qjsVersion() + " (qjs-wasi.wasm sha256 " + info.qjsSha256() + ")";
         String notes = selection.runner().isNative()
             ? quickJs + " on the " + selection.runner().id() + " runner: " + selection.reason() + "."
             : quickJs + " runs as JVM bytecode on " + ProviderSelector.platform() + ": " + selection.reason() + ". Validation is several "
                 + "times slower and the PDF program cannot run in its budget; add datum-sandbox-endive-jffi (Java 17+) or -panama "
                 + "(Java 25+) on a supported platform.";
-        return new EngineInfo(ID, info.endiveVersion(), selection.runner().id(), notes);
+        return new EngineInfo(ID, info.endiveVersion(), selection.runner().id(), notes + " " + stackGuard.describe() + ".");
     }
 
     @Override
@@ -381,6 +390,9 @@ public final class EndiveGuestRuntime implements GuestRuntime, AutoCloseable {
 
         @Override
         public Ending ended(Throwable failure) {
+            if (failure instanceof StackGuard.OverrunException overrun) {
+                return Ending.trap(overrun.getMessage());
+            }
             if (failure instanceof WasiExitException exit) {
                 return Ending.exited(exit.exitCode());
             }
@@ -405,10 +417,30 @@ public final class EndiveGuestRuntime implements GuestRuntime, AutoCloseable {
             this.made = made;
         }
 
+        /**
+         * Arms the stack guard's canary, calls {@code _start}, and reads the canary and {@code .rodata} however it ended: a
+         * run that reached the stack's floor ends as {@link StackGuard.OverrunException}, with how the guest then ended
+         * kept as suppressed (never as the cause, so a stop or an exit cannot hide it).
+         */
         @Override
         public void start() {
             started = true;
-            instance.export("_start").apply();
+            Memory memory = instance.memory();
+            stackGuard.arm(memory);
+            try {
+                instance.export("_start").apply();
+            } catch (RuntimeException | StackOverflowError failure) {
+                if (stackGuard.overran(memory)) {
+                    StackGuard.OverrunException overrun = new StackGuard.OverrunException(StackGuard.OVERRUN + "; the guest then ended with "
+                        + failure);
+                    overrun.addSuppressed(failure);
+                    throw overrun;
+                }
+                throw failure;
+            }
+            if (stackGuard.overran(memory)) {
+                throw new StackGuard.OverrunException(StackGuard.OVERRUN + "; the guest then returned from _start");
+            }
         }
 
         @Override
