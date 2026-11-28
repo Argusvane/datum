@@ -516,18 +516,26 @@ export function validationCodesRaisedBy(root: ComponentNode, kinds?: Readonly<Re
 }
 
 /**
- * Whether a value counts as "not filled in". A checkbox is the one type where `false` is a
- * missing answer rather than an answer — that is what a consent box means — while for every
- * other type `false` is a value like any other. A `checkboxes` group's value is an object of
- * booleans with every option present, so "nothing picked" arrives as an all-false object
- * once the group has been touched — which must mean exactly what `undefined` (never touched)
- * means, or a required group would be satisfiable by ticking and unticking a box.
+ * Whether a value counts as "not filled in". A lone checkbox is answered only by `true`: the
+ * tick is the answer — that is what a consent box means — so `false`, and any other value
+ * (`"false"`, `0`, `"yes"`), is a missing answer, while for every other type `false` is a value
+ * like any other. A `checkboxes` group's value is an object of booleans with every option
+ * present, so "nothing picked" arrives as an all-false object once the group has been touched —
+ * which must mean exactly what `undefined` (never touched) means, or a required group would be
+ * satisfiable by ticking and unticking a box. A group's answer that is no such object (a list,
+ * a text) picks nothing, as the group draws no tick for it.
  *
  * A number that is not finite (`NaN`, `±Infinity` — a calculation that divided by an empty or
  * zero answer) is empty too: JSON carries it as `null`, so a server judging the envelope sees
  * no answer, and the browser must not accept what the server then refuses.
  */
 export function isEmptyValue(value: unknown, type: string): boolean {
+  if (type === "checkbox") {
+    return value !== true;
+  }
+  if (type === "checkboxes") {
+    return value === null || typeof value !== "object" || Array.isArray(value) || !Object.values(value).some((entry) => entry === true);
+  }
   if (value === undefined || value === null) {
     return true;
   }
@@ -540,10 +548,7 @@ export function isEmptyValue(value: unknown, type: string): boolean {
   if (Array.isArray(value)) {
     return value.length === 0;
   }
-  if (type === "checkboxes" && typeof value === "object") {
-    return !Object.values(value).some((entry) => entry === true);
-  }
-  return type === "checkbox" && value === false;
+  return false;
 }
 
 /**

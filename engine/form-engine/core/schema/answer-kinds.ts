@@ -213,11 +213,21 @@ export function kernelAnswerBoundCode(
 /**
  * Mirrors `isEmptyValue` (validation/core/field-constraints.ts), a non-finite number empty as
  * the `null` JSON carries it as — what a value handed in-process, never through JSON, holds.
+ * A lone checkbox is answered only by `true` (`false`, `"false"`, `0` or `"yes"` is no answer),
+ * a checkbox group only by a record with an entry `true` (a list or a text picks nothing).
  * Here, in core, so the form-test judge reads emptiness as the kernel does without importing
  * the validation layer; `portable-kernel.ts` re-exports it. `kinds` is the
  * definition's map: a type mapped to `checkbox` or `checkboxes` reads emptiness as its base does.
  */
 export function kernelIsEmptyValue(value: unknown, type: string, kinds?: unknown): boolean {
+  const base = kernelKindBase(type, kinds);
+  // A lone checkbox is answered by `true` alone; a group by a record with a box ticked.
+  if (base === "checkbox") {
+    return value !== true;
+  }
+  if (base === "checkboxes") {
+    return value === null || typeof value !== "object" || Array.isArray(value) || !Object.values(value).some((entry) => entry === true);
+  }
   if (value === undefined || value === null) {
     return true;
   }
@@ -230,11 +240,7 @@ export function kernelIsEmptyValue(value: unknown, type: string, kinds?: unknown
   if (Array.isArray(value)) {
     return value.length === 0;
   }
-  const base = kernelKindBase(type, kinds);
-  if (base === "checkboxes" && typeof value === "object") {
-    return !Object.values(value).some((entry) => entry === true);
-  }
-  return base === "checkbox" && value === false;
+  return false;
 }
 
 /** This module's functions, for the kernel's `PORTABLE_KERNEL_FUNCTIONS`. */

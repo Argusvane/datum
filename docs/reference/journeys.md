@@ -587,7 +587,7 @@ A journey leaving a form field off every step does not relax the form. The build
 - A literal default answers the field. A required field answered by a literal `rules.defaultValue` that is not
   empty for its type is a warning, not an error: the browser submits the default unchanged, so the form's rule
   is met without asking. Empty is read as `required` reads an answer (`isEmptyValue`, `kernelIsEmptyValue`,
-  mirrored by `journeyEmptyAnswer`): blank or white-space text, an empty list, `false` on a checkbox and no box
+  mirrored by `journeyEmptyAnswer`): blank or white-space text, an empty list, anything but `true` on a checkbox and no box
   ticked answer nothing. A default worked out from other answers (a path, a calculation) may seed nothing, so it
   lifts nothing: the error stands, worded "its default, worked out from other answers, must come to one".
 - A required calculated field whose input is left out is `calc.input-left-out`. The diagnostics pass over a

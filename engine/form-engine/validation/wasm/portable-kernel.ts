@@ -5349,10 +5349,15 @@ export function kernelFormTestServerHostValue(into: Record<string, unknown>, nam
  * the object of booleans that field stores, one per option as the renderer stores it
  * (`` over the options `a`, `b` is `{ a: true, b: false }`), since the kernel's shape check
  * refuses a list there; a picked value outside `offered` is ticked too. Everything
- * else as written. `offered` is the field's inline options, or what a `given options for` gave
- * its source; absent, only the picked values are stored.
+ * else as written, but for a lone checkbox's `"true"` and `"false"`, which are the booleans, as
+ * the runtime's write stores them (`checkboxAnswer`, core/state/answer-shape.ts). `offered` is
+ * the field's inline options, or what a `given options for` gave its source; absent, only the
+ * picked values are stored.
  */
 export function kernelFormTestServerAnswerFor(type: string | undefined, value: FormTestValue, offered?: string[]): unknown {
+  if (type === "checkbox" && (value === "true" || value === "false")) {
+    return value === "true";
+  }
   if (type === "checkboxes" && Array.isArray(value)) {
     const picked = kernelRecord() as Record<string, unknown>;
     const chosen: string[] = [];

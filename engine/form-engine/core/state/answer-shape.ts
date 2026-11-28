@@ -1,7 +1,8 @@
 /**
- * What a single answer may be, and when two answers are one: the runtime's write path reads
- * both, so a value the renderer cannot draw is refused before it is stored and a write that
- * changes nothing stays quiet.
+ * What a single answer may be, how a checkbox's or a checkbox group's answer is stored, and
+ * when two answers are one: the runtime's write path reads them all, so a value the renderer
+ * cannot draw is refused before it is stored, a checkbox's answer is kept in the one shape every
+ * surface reads, and a write that changes nothing stays quiet.
  */
 
 /**
@@ -27,6 +28,57 @@ export function isScalarAnswer(value: unknown): boolean {
     typeof value === "number" ||
     typeof value === "boolean"
   );
+}
+
+/**
+ * A lone checkbox's answer as it is stored: the text `"true"` is `true` and `"false"` is
+ * `false`, as a host's prefill or an older draft may spell them. Every other value is kept as
+ * written, as a number box keeps text that is no number: the box is ticked only by `true`, and
+ * anything else (`false`, `0`, `1`, `"yes"`) is no tick, and no answer to `required`.
+ */
+export function checkboxAnswer(value: unknown): unknown {
+  if (value === "true") {
+    return true;
+  }
+  if (value === "false") {
+    return false;
+  }
+  return value;
+}
+
+/**
+ * A checkbox group's answer as it is stored: one boolean per option (`{ cat: true, dog: false }`),
+ * the record the renderer writes. A list of the values picked (`["cat"]`) becomes that record,
+ * `true` for each value in it and `false` for each of `options` (the group's inline options)
+ * it leaves out; a finite number in it picks its string form. A list holding anything else,
+ * and every other value, is kept as written.
+ */
+export function checkboxesAnswer(value: unknown, options: readonly string[]): unknown {
+  if (!Array.isArray(value)) {
+    return value;
+  }
+  const picked: string[] = [];
+  for (const item of value as unknown[]) {
+    if (typeof item === "string") {
+      picked.push(item);
+    } else if (typeof item === "number" && Number.isFinite(item)) {
+      picked.push(String(item));
+    } else {
+      return value;
+    }
+  }
+  // A plain object, as the renderer writes it; defined, so an option `__proto__` is a key.
+  const record: Record<string, boolean> = {};
+  const tick = (option: string, on: boolean): void => {
+    Object.defineProperty(record, option, { value: on, enumerable: true, writable: true, configurable: true });
+  };
+  for (const option of options) {
+    tick(option, picked.includes(option));
+  }
+  for (const option of picked) {
+    tick(option, true);
+  }
+  return record;
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {

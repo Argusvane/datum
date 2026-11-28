@@ -3362,12 +3362,13 @@ describe("portable kernel: strict truthiness of rule verdicts", () => {
   });
 
   it.each(answers)("reads %s as requiredWhen: only true requires, kernel and browser alike", (_label, answer) => {
-    // A list or a group is held by a checkbox group, which stores either, so the browser and the
-    // kernel judge the very same answer; a text field would refuse it (below).
+    // A list or a group is held by a plugin's type, which stores either as written (a checkbox
+    // group stores a list as its record), so the browser and the kernel judge the very same
+    // answer; a text field would refuse it (below).
     const holdsMany = answer !== null && typeof answer === "object";
     const root = verdictForm("requiredWhen");
     if (holdsMany) {
-      (root.children!.content as ComponentNode[])[0] = { id: "v", type: "checkboxes", configuration: {} } as ComponentNode;
+      (root.children!.content as ComponentNode[])[0] = { id: "v", type: "x-tags", configuration: {} } as ComponentNode;
     }
     const definition: FormDefinition = { id: "f", version: "1", schemaVersion: "1", root };
     const values: Record<string, unknown> = answer === undefined ? {} : { v: answer };
