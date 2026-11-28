@@ -56,7 +56,8 @@ export const AREAS = {
   submissions: [...SELF, ...SUBMISSIONS],
   // The suite's tests read the shared endpoint catalogue and fixtures, the JVM host-test-kit
   // sources, the generated agent-tools reference and the writer of the program banner the banner test reads.
-  conformanceSuite: [...SELF, "packages/conformance-suite/", ...NPM_RELEASE, ...SUBMISSIONS, "integrations/shared/", "integrations/jvm/libs/", "integrations/jvm/tck/", "docs/reference/agent-tools.md", "packages/datum/scripts/write-sandbox-program.ts"],
+  // The qjs-wasi runner's tests read the FastAPI host's engine pin, the script that fetches the module and its run script.
+  conformanceSuite: [...SELF, "packages/conformance-suite/", ...NPM_RELEASE, ...SUBMISSIONS, "integrations/shared/", "integrations/jvm/libs/", "integrations/jvm/tck/", "docs/reference/agent-tools.md", "packages/datum/scripts/write-sandbox-program.ts", "integrations/fastapi/packages/argusvane-datum-qjs-wasm/src/datum_qjs_wasm/runtime.json", "integrations/fastapi/scripts/fetch-runtime.mjs", "integrations/fastapi/packages/argusvane-datum-sandbox/src/datum_sandbox/protocol/_run_script.py"],
   formTest: [...SELF, "packages/form-test/", ...NPM_RELEASE, ...QUICKJS],
   // The host build scripts' own tests and the offline scripts' (node:test, Node built-ins only). The offline
   // libraries read the site's asset spec and the binding-check routing.

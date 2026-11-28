@@ -47,8 +47,14 @@ The engine's gates run against the in-process sandbox adapter, because a depende
    environment that does not exist on its first use with no protection, so create them before anything that lets a job
    publish: a trusted publisher registered while `pypi` is unconfigured lets a pushed tag upload unapproved. Required
    reviewers need a public repository or a paid plan.
-3. Store `NPM_TOKEN` (an automation token that can publish the `@argusvane` scope) as a secret of
-   the `npm` environment. Provenance needs no token.
+3. Configure npm trusted publishing: `release-npm.yml` publishes with its job's OIDC token and reads no npm secret.
+   On npmjs.com, for each published package (`@argusvane/datum`, `@argusvane/datum-conformance-suite` and
+   `@argusvane/datum-form-test`), open Settings, Trusted publishing, and add a GitHub Actions publisher: organization or
+   user `argusvane`, repository `datum`, workflow filename `release-npm.yml` (the file name only), environment `npm`.
+   Every field is case-sensitive and npm checks none of them until a publish. Then, under Publishing access, choose to
+   require two-factor authentication and disallow tokens, and delete the `NPM_TOKEN` secret from the `npm` environment
+   (and any automation token it held on npmjs.com). The publish needs npm 11.5.1 or later on Node 22.14.0 or later; the
+   workflow pins npm 11.21.1. Provenance comes with the same OIDC token.
 4. Register a pending trusted publisher on PyPI and on TestPyPI for each of the eight distributions: workflow
    `release-fastapi.yml`, environment `pypi` on PyPI and `testpypi` on TestPyPI.
 5. Restrict who may create `v*` tags to the owner and require the `ci-ok` check on `main` (a repository ruleset; it needs
@@ -105,9 +111,15 @@ passed `ci-ok`, or when a package's version is not the tag's.
 
 The Maven build job (`Release Maven`, about an hour) runs `release.mjs --stage`, which also refuses a version that is not
 a plain `x.y.z` and a `CHANGELOG.md` without a `## [0.1.0]` section. It builds the web components and the assets, runs the
-security suite over the sandbox program, builds and tests the reactor on Java 21 with the QuickJS runtime compiled for all
-six native targets, runs the post-checks over every jar, and stages the Central bundle with nothing signed. The release
+security suite over the sandbox program on quickjs-emscripten (the page's engine), builds and tests the reactor on Java 21
+with the QuickJS runtime compiled for all six native targets, runs the security suite again on the `qjs-wasi.wasm` that
+build compiled (held to the pom's `qjs.sha256`), runs the post-checks over every jar, and stages the Central bundle with nothing signed. The release
 directory (`release.json`, `SHA256SUMS`, `README.md` and `central-bundle.zip`) is the job's artifact.
+
+The FastAPI build job runs the security suite twice as well, before anything is built: on quickjs-emscripten, for the
+bundles `argusvane-datum-assets-ui` carries to the page, and on the `qjs-wasi.wasm` `argusvane-datum-qjs-wasm` carries
+(held to `runtime.json`), the engine the server runs. The browser bundles and the npm packages run only
+quickjs-emscripten, which `ci.yml` checks on every change.
 
 ### 3. Approve the publishes
 
