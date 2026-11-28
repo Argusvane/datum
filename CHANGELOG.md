@@ -15,12 +15,40 @@ release across npm, Maven Central and PyPI. 0.1.0 is published to npm only. What
 - The sandbox ABI (`WASM_ABI_VERSION`, 4.1.0 in 0.1.0) and the PDF ABI (`PDF_ABI_VERSION`, 4.0.0 in 0.1.0) are both
   reset to 1.0.0, and every host's floor for both programs is 1.0.0. A program built from 0.1.0 answers another major,
   so a host of the next release refuses it at start: rebuild the programs from the same release as the host.
+- A counted form text is worded by plural category only, as `<base>.<category>` (`summaryHeading.one`,
+  `summaryHeading.other`, `fileAnnounced.other`). A category no catalog words reads `<base>.other`.
+- `resolveFormText`, `resolveFormTextPlural` and `createFormTextResolver` read the host's translation catalog from
+  `words.catalog`, and `plural()` takes no fallback keys.
+- On `<datum-form-builder>`, the `features` list alone decides whether the PDF and Journeys sides exist
+  (`features="-pdf"`, `features="-journeys"`). `pdf` names how the executor arrives (`auto` or a module URL).
+- The PDF program refuses a `render` or `layout` document without its theme geometry (`controls`, `choice`, `fields`,
+  `headings`, `table`, `box`, `panel`, `list`, `spacing`) as `invalid_request`. A `fill` request with `areas` must send
+  the plan's `typography` and `colors`.
+- A stored draft must carry `state.mode`, `visitedSteps` and `completedSteps`; one without them is refused as
+  `draft.malformed`.
+- `FormTestSnapshot.pages` is always present (empty without a journey), and `BuilderModeContext.holdForInspector` is
+  required.
+- The Tests panel offers Assert this only when the shell lends `assertReady` beside `assertSnapshot`.
+- The PDF parity documents every host's render contract checks are `packages/pdf-kernel/tests/fixtures/documents/`
+  (`datum-pdf`, `datum-plain`, `datum-pdf-fr-CA`), built by the current engine.
 
 ### Removed
 
 - The PDF program's `capabilities` reply no longer lists features; it answers `abi` and `kernelVersion`. Hosts no
   longer check a program for features, and the conformance suite runs the `OUT` class against any PDF program of
   ABI 1.0.0 or a later version of that major.
+- Expression trees as authored rules. A rule, journey route `when`, worked-out value, PDF layout `when` or field or
+  area `expression` written as a tree (bare or `{ expression, run }`) is refused as `invalidRule`; write the formula
+  text or `{ formula, run }`. The 200-level depth limit for trees goes with them.
+- The `{base}One` / `base` pairs of counted form texts (`summaryHeadingOne`, `countLeftOne`, `fileAnnouncedMany`, …).
+- The `{{pageNumber}}` and `{{pageCount}}` spellings in PDF template text and print headers and footers; use
+  `{{page}}` and `{{pages}}`.
+- `<datum-form-builder>`'s `journeys` attribute, `pdf="off"`, and the `features` token `form`.
+- The agent tools' `navigator.modelContext` fallback: WebMCP is read from `document.modelContext` only.
+- The `JourneyPreview` alias, the builder entry's `JourneyPreviewContext`, and `LAYOUT_CONTAINER_TYPES` from the
+  render entry (it stays in the registry entry).
+- The builder components' fallbacks from the studio token names to other token names (`--db-accent-text`,
+  `--db-line-card`, `--db-focus`, `--db-ink-subtle`, `--db-surface-hover`, `--db-*-line`).
 
 ## [0.1.0] - 2026-11-26
 
