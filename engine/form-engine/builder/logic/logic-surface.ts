@@ -1335,6 +1335,18 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
     return `<div class="try-row"><h3 class="card-heading" id="logic-try-title">${esc(this.text("try.title"))}</h3><div class="try card-inset" role="group" aria-labelledby="logic-try-title"><div class="try-boxes">${boxes}${today}</div><p class="try-result" role="status" data-logic-try-result>${this.tryResultHtml()}</p></div></div>`;
   }
 
+  /**
+   * A Try it answer as the form stores it: digits typed for a number field as a number; a
+   * choice's value and a text field's digits (a postal code, an id) stay text, as the form keeps them.
+   */
+  private tryAnswerOf(id: string, value: unknown): unknown {
+    const kind = this.formulaFields().find((field) => (field.componentId ?? field.path) === id)?.kind;
+    if (kind === "number" && typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) {
+      return Number(value);
+    }
+    return value;
+  }
+
   /** The fields a formula reads, in reading order, each once; a path into a field's value names the field. */
   private tryFields(expression: Expression): FormulaField[] {
     const fields = this.formulaFields();
@@ -1394,7 +1406,7 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
       return "";
     }
     for (const [id, value] of this.tryValues) {
-      runtime.setValue(id, coerceTry(value));
+      runtime.setValue(id, this.tryAnswerOf(id, value));
     }
     const label = this.labelOf(working.componentId);
     const state = runtime.effectiveStatesMap().get(working.componentId);
@@ -1485,7 +1497,7 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
     const reads = (id: string): boolean => asked === undefined || asked.includes(id);
     for (const [id, value] of this.tryValues) {
       if (reads(id)) {
-        runtime.setValue(id, coerceTry(value));
+        runtime.setValue(id, this.tryAnswerOf(id, value));
       }
     }
     // Taken only when the condition holds: a probe the runtime gives no state is not a yes.
@@ -2720,14 +2732,6 @@ function findNode(root: ComponentNode, id: string): ComponentNode | undefined {
     }
   }
   return undefined;
-}
-
-/** A Try it answer as the store keeps it: numbers from a text box as numbers. */
-function coerceTry(value: unknown): unknown {
-  if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) {
-    return Number(value);
-  }
-  return value;
 }
 
 /** A worked-out value in Try it's words: a list or flags object as its items, text as is. */

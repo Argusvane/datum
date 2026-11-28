@@ -7,8 +7,8 @@ import type { ComponentNode } from "../form-engine/core/schema/types.js";
 
 /*
  * The Logic editor's working copy against the stored form: a clean copy follows what an undo
- * puts back. The surface is driven through the real builder element, with the formula box left
- * as its textarea.
+ * puts back, and Try it answers as the form stores them. The surface is driven through the real
+ * builder element, with the formula box left as its textarea.
  */
 
 defineDatumBuilderElement();
@@ -176,5 +176,26 @@ describe("a clean copy follows the stored rule", () => {
     expect((node(ctrl, "v").configuration as { messages: { rule: string } }).messages.rule).toBe("Old");
     expect(inside(surface).querySelector<HTMLInputElement>("[data-logic-message]")!.value).toBe("Old");
     expect(surface.dirty).toBe(false);
+  });
+});
+
+describe("Try it", () => {
+  it("keeps a choice's digit value as the text the form stores", async () => {
+    const { surface } = await mountInLogic();
+    openCard(surface, "form:r:visibleWhen");
+    expect(tryAnswer(surface, "rating", "2")).toContain("R is shown");
+  });
+
+  it("keeps digits typed for a text field as text", async () => {
+    const { surface } = await mountInLogic();
+    openCard(surface, "form:z:visibleWhen");
+    expect(tryAnswer(surface, "zip", "02134")).toContain("Z is shown");
+  });
+
+  it("still reads digits typed for a number field as a number", async () => {
+    const { surface } = await mountInLogic();
+    openCard(surface, "form:w:visibleWhen");
+    expect(tryAnswer(surface, "age", "18")).toContain("W is shown");
+    expect(tryAnswer(surface, "age", "9")).toContain("W is hidden");
   });
 });
