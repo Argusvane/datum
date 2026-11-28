@@ -976,6 +976,10 @@ class JourneyBuilderModeImpl implements JourneyBuilderMode {
 
   public async activate(context: BuilderModeContext): Promise<void> {
     await this.ensureDesigner();
+    // Removed while its chunk loaded (the host's removeMode): nothing goes up for a mode that is gone.
+    if (this.disposed) {
+      return;
+    }
     this.context = context;
     this.active = true;
     this.readMapLayout(context);

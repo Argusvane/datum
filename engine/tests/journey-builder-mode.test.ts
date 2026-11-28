@@ -717,6 +717,17 @@ describe("editing a journey", () => {
     expect(form.getProperty("consent", "required")).toBeUndefined();
   });
 
+  it("puts nothing up when it is disposed while its activate is still loading the designer", async () => {
+    const form = formController();
+    const root = new EventTarget();
+    const listen = vi.spyOn(root, "addEventListener");
+    const mode = createJourneyBuilderMode({ form, journey: seed() });
+    const activation = mode.activate?.({ ...context(), root: root as unknown as ShadowRoot });
+    mode.dispose?.();
+    await activation;
+    expect(listen.mock.calls.filter(([type]) => type === "click")).toEqual([]);
+  });
+
   it("never adds what is unassigned to a selected exit page, which sends nothing", async () => {
     const { mode } = await activated({
       journeys: [
