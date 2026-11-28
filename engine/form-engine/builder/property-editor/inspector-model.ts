@@ -1175,12 +1175,15 @@ export function buildInspectorModel(
     .filter((section, index) => section.fields.length > 0 || composed.sections[index]!.hideWhenEmpty !== true);
   } else {
     // No declared sections: gather the flat field list into the natural groups, keeping
-    // authored order within each. Groups nothing landed in are not rendered at all.
+    // authored order within each, and leaving out a field whose `visibleWhen` does not hold.
+    // Groups nothing landed in are not rendered at all.
     const grouped = new Map<string, PropertyEditorField[]>(
       GROUPED_SECTIONS.map((section) => [section.id, []])
     );
     for (const field of fields) {
-      grouped.get(naturalSectionFor(field, node.type))?.push(field);
+      if (fieldShown(node, field)) {
+        grouped.get(naturalSectionFor(field, node.type))?.push(field);
+      }
     }
     sections = GROUPED_SECTIONS.filter((section) => (grouped.get(section.id) ?? []).length > 0).map(
       (section) => ({
