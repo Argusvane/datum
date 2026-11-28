@@ -5022,7 +5022,8 @@ const EMPTY_TREE_VIEW: NestedTreeNodeView = {
  * The parsed expression lives in the controller's draft; JSON mid-keystroke does not parse and
  * so has nowhere to go but here. `texts` is what the box shows while the author types, `errors`
  * why the last keystroke did not reach the draft. Both are dropped when the selection moves
- * on, like the Rules tab's working state below.
+ * on, like the Rules tab's working state below, and with the draft on Discard or Escape, and
+ * when an Undo or a Redo changes the component: the box then shows the value as it stands.
  */
 interface ExpressionWorkingState {
   nodeId: string;
@@ -6886,7 +6887,7 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
     return this.rulesState;
   }
 
-  /** The expression-control working state for the current selection, reset when it or the controller moves. */
+  /** The expression-control working state for the current selection, reset when it or the controller moves (and see ExpressionWorkingState). */
   private expressions(nodeId: string): ExpressionWorkingState {
     this.followController();
     if (this.expressionState.nodeId !== nodeId) {
@@ -7107,6 +7108,11 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
       const key = keys?.full;
       if (key !== undefined && key === this.subjectKey) {
         return;
+      }
+      // An Undo or a Redo that changed the subject put back values the text typed in its
+      // expression boxes was not made against: the boxes show what the step left.
+      if (event?.historyStep) {
+        this.expressionState = emptyExpressionState("");
       }
       const typing = this.liveBoxWrite;
       if (event?.live && typing && typing.nodeId === this.subjectId() && key !== undefined && this.subjectKey !== undefined && keys?.clean === this.subjectKeyClean) {
@@ -9482,8 +9488,10 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
         return;
       }
       if (target.closest?.("[data-unsaved-discard]")) {
-        // Working rule state is derived from the draft, so it goes with it (as on Cancel).
+        // Working rule state is derived from the draft, so it goes with it (as on Cancel), and
+        // so does the text typed in an expression box.
         this.rulesState = emptyRulesState("");
+        this.expressionState = emptyExpressionState("");
         this.ctrl?.answerUnsavedChangesPrompt("discard");
         return;
       }
@@ -9558,9 +9566,10 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
       }
       if (target.closest?.("[data-inspector-cancel]")) {
         // Working rule state is derived from the draft, so it goes with it — and the JSON
-        // view's text, which may hold what never reached the draft.
+        // view's text and the expression boxes' text, which may hold what never reached the draft.
         this.rulesState = emptyRulesState("");
         this.jsonState = undefined;
+        this.expressionState = emptyExpressionState("");
         this.ctrl?.discardDraft(this.subjectId());
         this.paint();
         this.syncBoxesToPainted();
@@ -9905,8 +9914,10 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
         keyEvent.preventDefault();
         this.focusAfterLabel();
       } else if (keyEvent.key === "Escape" && this.ctrl?.hasPendingChanges(subject)) {
+        // What goes with the draft on Cancel goes with it here.
         this.rulesState = emptyRulesState("");
         this.jsonState = undefined;
+        this.expressionState = emptyExpressionState("");
         this.ctrl.discardDraft(subject);
         this.syncBoxesToPainted();
       }
