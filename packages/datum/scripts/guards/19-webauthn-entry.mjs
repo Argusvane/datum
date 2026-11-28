@@ -15,8 +15,9 @@ const SANDBOX = "__datum_register"; // the QuickJS sandbox program (check-bundle
 const KERNEL = "PDFAcroForm"; // pdf-lib (check-bundles.mjs KERNEL)
 const EXPORTS = ["createWebAuthnSigningProvider", "verifyWebAuthnSubmission", "verifyAssertion", "verifyRegistration", "registerCredential", "requestAssertion", "WebAuthnError"];
 
-// Measured 19.1 KB (the engine's ceremony and verifier code), plus 3 KB, rounded up.
-export const budgets = { [NAME]: 22 };
+// Measured 22.3 KB (the engine's ceremony and verifier code, with the SPKI reader behind the key-type
+// policy), plus 3 KB, rounded up.
+export const budgets = { [NAME]: 26 };
 
 export default function guard({ files, read, expect }) {
   expect(files.includes(NAME), `dist/${NAME} is missing; scripts/build-bundles.mjs builds it (--mode webauthn)`);

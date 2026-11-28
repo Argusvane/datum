@@ -21,10 +21,13 @@ const VALIDATOR_ERROR_CLASS = '"JourneyValidationHttpError"';
 // Budgets: the two chunks split out of the entry are held below,
 // with a tenth of room. datum-form.js (with its core chunk) is held to the gzip gate in check-bundles.mjs.
 
-/** Lazy chunk budgets in KB: measured 8.3 KB (WebAuthn) and 1.5 KB (server validator), plus a tenth. */
+/**
+ * Lazy chunk budgets in KB: measured 10.1 KB (WebAuthn, with the key-type policy and the verdicts of
+ * unreadable signatures) and 1.5 KB (server validator), plus a tenth, rounded up.
+ */
 const CHUNK_BUDGETS_KB = [
-  [/^datum-form-webauthn-.+\.js$/, 10],
-  [/^datum-builder-webauthn-.+\.js$/, 10],
+  [/^datum-form-webauthn-.+\.js$/, 12],
+  [/^datum-builder-webauthn-.+\.js$/, 12],
   [/^datum-form-server-validator-.+\.js$/, 2],
   [/^datum-builder-server-validator-.+\.js$/, 2]
 ];
