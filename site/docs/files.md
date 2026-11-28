@@ -10,13 +10,13 @@ The folder is `dist/` in the npm package `@argusvane/datum`:
 npm install @argusvane/datum
 ```
 
-It lands in `node_modules/@argusvane/datum/dist/`. That folder is what this page describes: copy it to your static files and serve it. Each [GitHub release](https://github.com/Argusvane/datum/releases) attaches the same files as an archive, for a machine without npm, and a page can load them from a CDN instead: see [From a CDN](#from-a-cdn).
+It lands in `node_modules/@argusvane/datum/dist/`. That folder is what this page describes: copy it to your static files and serve it. Each [GitHub release](https://github.com/Argusvane/datum/releases) attaches the same files, all but `types/`, as an archive, for a machine without npm, and a page can load them from a CDN instead: see [From a CDN](#from-a-cdn).
 
 To build the folder from the repository instead, you need Node 22, npm and git. From a clone, `npm run setup` installs the packages you name, each in its own folder and in dependency order, and builds the PDF program; then the build runs:
 
 <<< @/snippets/get-the-files.sh{sh}
 
-The build writes `packages/datum/dist/`, the same folder. [Getting started](/getting-started) does that step by step, with a first page. A Datum host builds the same folder into its own distribution; see [Server hosts](/server-hosts).
+The build writes `packages/datum/dist/`, the same folder. A Datum host builds the same folder into its own distribution; see [Server hosts](/server-hosts).
 
 A page that only shows a form asks for three of these files: `datum-form.css`, `datum-form.js` and the core chunk that loads with it. Everything else is fetched when a form first needs it, so copy the whole folder and let the element choose.
 
@@ -40,6 +40,7 @@ Other builds:
 | `datum-pdf.js` | The PDF kernel for the page, and `renderPdf` for a runtime | On the first PDF when `pdf="auto"` | 598 KB |
 | `datum-engine.js` | The runtime with no element, as one module: for a web worker, a test or a script in Node. A page that shows a form does not need it | By your own script, never by the element | 92 KB |
 | `datum-pdf-pages.js` | Page images of a PDF template, for the designer's preview | By the builder's PDF workspace | 156 KB |
+| `datum-webauthn.js` | The passkey functions with no element, for a script that registers or signs with a passkey itself. The element loads its own passkey chunk instead | By your own script, never by the element | 7 KB |
 | `datum-sandbox-program.js`, `datum-pdf-program.js` | The programs a server host runs inside its own WASM runtime | By your server, never by the page | 134 KB, 483 KB |
 | `pdfjs/` | The PDF viewer the builder uses to show a template: its worker `pdf.worker.min.mjs` and the `cmaps/`, `iccs/`, `standard_fonts/` and `wasm/` folders it reads | By the builder's PDF workspace | 203 files, about 5 MB |
 | `fonts/` | The faces the PDF module embeds: DejaVu Sans, Serif and Mono, seven files. Needed only with `pdf` | By the PDF module | about 3.4 MB |
@@ -47,6 +48,7 @@ Other builds:
 | `feature-files.json` | Which files each feature name loads, for a host that serves only what its `features` list needs | By your build or server | 18 KB |
 | `types/` | TypeScript declarations for the elements, their properties and events: see [React, Vue and Angular](/frameworks#typescript) | By your build | about 350 KB |
 | `datum-form-<name>-<hash>.js` and `datum-builder-<name>-<hash>.js` | Chunks the elements split off for themselves | By the element, when it needs the part | Between 1 KB and 250 KB each |
+| `<bundle>.LICENSE.txt` | Beside each entry file: the third-party packages that bundle carries and their licence texts | Never. Keep them with what you serve | |
 | `*.map` | A source map beside every script. Not in the folder unless the build was asked for them: `DATUM_SOURCE_MAPS=1 npm run datum:build` | By a browser's developer tools | about 75 MB in all |
 
 The sizes are those of one build and change with the next. The `features` list decides which of them a page ever asks for; see [Leaving parts out](/leaving-parts-out).
