@@ -58,8 +58,9 @@ import run.endive.wasm.types.MemoryLimits;
  * harness never interrupts {@code build()} (it maps the linear memory before it constructs the instance; repeated stops
  * during set-up leaked a whole memory limit of address space each), and should {@code build()} fail
  * for another reason (the JVM out of heap mid-set-up) the native memories it made are closed here before the failure goes
- * on. Each native instance also costs about 150 MiB of transient heap and 0.4 s of set-up, and its linear
- * memory lives off-heap (mmap) under a native runner, on the heap under bytecode.
+ * on. Each native instance also costs a few MiB of heap (what one warm run allocates: under 8 MiB on the Panama runner,
+ * under 2 MiB on JFFI; the start-up memory check counts {@code MemoryBudget.SETUP_HEAP} a slot) and about 0.4 s of set-up,
+ * and its linear memory lives off-heap (mmap) under a native runner, on the heap under bytecode.
  */
 public final class EndiveGuestRuntime implements GuestRuntime, AutoCloseable {
 
