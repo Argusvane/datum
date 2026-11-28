@@ -8,7 +8,7 @@ import { ComponentTree } from "../form-engine/core/tree/component-tree.js";
 import type { DataSourceResolver } from "../form-engine/render/core/component-options.js";
 import type { RenderableRuntime } from "../form-engine/render/core/runtime-render-bridge.js";
 import type { PdfTemplateInfo } from "../form-engine/render/pdf/pdf-abi.js";
-import type { PdfRenderProvider } from "../form-engine/render/pdf/pdf-provider.js";
+import { BASE64_TEMPLATE_RESOLVER, type PdfRenderProvider } from "../form-engine/render/pdf/pdf-provider.js";
 
 import { BuilderController } from "../form-engine/builder/controller/builder-controller.js";
 import { bindableCollections, bindableComponents, createPdfDesigner, pdfSheetWidth } from "../form-engine/builder/pdf-designer/pdf-designer.js";
@@ -1250,6 +1250,34 @@ describe("applyCatalogForAgent, openState and whenOpenReady", () => {
     expect(await waiting).toBe("failed");
     expect(Date.now() - started).toBeLessThan(1000);
     expect(await refused).toBeInstanceOf(Error);
+  });
+
+  it("hands a populated form's own PDF over as read, and a hosted file it attaches from the host's resolver", async () => {
+    const provider = modeProvider();
+    const { mode } = await modeOnPage({
+      pdf: { layouts: [templateLayout()] },
+      provider,
+      templates: () => ({
+        resolve: async (source) => (source.storage === "s3" ? new Uint8Array([9, 9, 9]) : BASE64_TEMPLATE_RESOLVER.resolve(source))
+      })
+    });
+    await untilTrue(() => mode.ready);
+    const withUpload: ComponentNode = {
+      ...MODE_FORM,
+      children: { content: [...MODE_FORM.children!["content"]!, { id: "doc", type: "file", configuration: { label: "Document", pdf: { attach: true } } }] }
+    };
+    const base = modeRuntime(() => undefined);
+    const hosted = { storage: "s3", name: "big.zip", type: "application/zip", size: 3, ref: { key: "uploads/big.zip" } };
+    const runtime: RenderableRuntime = {
+      ...base,
+      formRoot: () => withUpload,
+      componentTree: () => new ComponentTree(withUpload),
+      state: () => ({ ...base.state(), values: { firstName: "Ada", doc: hosted } })
+    };
+    await mode.renderPdf({ layoutId: "paper", runtime });
+    const fill = provider.requests.at(-1) as { template: { data: string }; attachments?: Array<{ name: string; data: string }> };
+    expect(fill.template).toEqual({ data: "AAA=" });
+    expect(fill.attachments?.map((attachment) => [attachment.name, attachment.data])).toEqual([["big.zip", "CQkJ"]]);
   });
 
   it("answers failed at once for a populated form when no PDF executor is assigned, and reads it once one is", async () => {
