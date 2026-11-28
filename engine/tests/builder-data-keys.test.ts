@@ -129,6 +129,18 @@ describe("the builder and data keys", () => {
     expect(ctrl.idError).toBeUndefined();
   });
 
+  it("refuses the same rename made straight through renameId, as an agent's rename makes it", () => {
+    const ctrl = controller([text("total_field", { dataKey: "total" }), text("amount")]);
+    ctrl.renameId("amount", "total");
+    expect(ctrl.idError).toMatch(/would store their answers in one place, total/);
+    expect(contentIds(ctrl)).toEqual(["total_field", "amount"]);
+    expect(ctrl.dataKeyProblems()).toEqual([]);
+    expect(ctrl.canUndo()).toBe(false);
+    ctrl.renameId("amount", "subtotal");
+    expect(ctrl.idError).toBeUndefined();
+    expect(contentIds(ctrl)).toEqual(["total_field", "subtotal"]);
+  });
+
   it("refuses to add or move a component onto a place another answer holds", () => {
     const ctrl = controller([text("first", { dataKey: "text_1" }), { id: "box", type: "container", configuration: {}, children: { content: [text("inner", { dataKey: "name" })] } }, text("name")]);
     // The palette would number the new text text_1, which is already a place in the data.

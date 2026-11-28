@@ -4327,8 +4327,15 @@ export class BuilderController {
     } catch (error) {
       return error instanceof Error ? error.message : this.builderWords().text("controller.idInvalid");
     }
-    // A component with no data key of its own is stored under its id: a new id
-    // moves its answer, which must not land where another component's is.
+    return this.renameDataProblem(currentId, nextId);
+  }
+
+  /**
+   * Whether re-seating `currentId` under `nextId` would put its answer where another component's
+   * is: a component with no data key of its own is stored under its id, so a new id moves its
+   * answer. The Save's check ({@link validateId}) and {@link renameId}'s.
+   */
+  private renameDataProblem(currentId: string, nextId: string): string | undefined {
     return this.dataPathProblemAfter((tree) => {
       const node = tree.find(currentId);
       if (node) {
@@ -6818,7 +6825,8 @@ export class BuilderController {
 
   /**
    * Re-seats a component under another id (refused, with {@link idError}, for one the tree or
-   * {@link BuilderControllerOptions.claimedIds} has, or outside the grammar). The rename is one
+   * {@link BuilderControllerOptions.claimedIds} has, one outside the grammar, or one that would
+   * put the component's answer where another component's is). The rename is one
    * step of the history with everything it rewrites: its
    * collection path and the row fields that list it, the rules that read it, its translations,
    * and what a listener of the change writes as it hears of it (a PDF layout's conditions and
@@ -6863,6 +6871,12 @@ export class BuilderController {
       // The form's root is the definition, not a component: its id is never re-seated.
       if (currentId === tree.rootId()) {
         this.idError = this.builderWords().text("controller.renameFailed");
+        this.emitChange("edit");
+        return false;
+      }
+      const clash = this.renameDataProblem(currentId, nextId);
+      if (clash) {
+        this.idError = clash;
         this.emitChange("edit");
         return false;
       }
