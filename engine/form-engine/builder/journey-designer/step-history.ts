@@ -1,7 +1,7 @@
 /**
  * One Undo for a journey's Step view over two controllers: the form's and the shown journey's. The mode creates it as the Step view goes
  * up and disposes it as it goes down; outside the Step view each controller keeps its own
- * history, as before. The shell reaches it through `BuilderMode.history`.
+ * history. The shell reaches it through `BuilderMode.history`.
  *
  * The rule: **Undo takes back the last change made while the Step view was up, whichever
  * controller holds it** (a form field's property, a step's membership or order); Redo makes it
@@ -11,7 +11,7 @@
  * entry whose controller's top is no longer its mark (the form edited in another workspace
  * since, an agent's own Undo, a history started over by a rebuild) is stale and is dropped,
  * never undone blind. With nothing of its own left, `undo()` answers false and the shell falls
- * back to the journey controller's own Undo, as before.
+ * back to the journey controller's own Undo.
  *
  * Steps made in one synchronous turn are one entry, undone together: a form rename and the
  * mode's follow-up that rewrites the shown journey's references (journey-builder-mode.ts

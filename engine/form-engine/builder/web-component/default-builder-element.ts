@@ -4709,7 +4709,7 @@ export class DatumBuilderElement extends HTMLElementBase {
    * (`BuilderMode.history`): while a journey's Step view is up its one history over the form
    * and the shown journey takes back the last thing done, whichever controller it landed on.
    * Answering false (no such history, or nothing of its own left), `controller` steps its own
-   * history, as before. `controller` defaults to the mode's on the page. Another one (the
+   * history. `controller` defaults to the mode's on the page. Another one (the
    * form's, from a canvas trying the form), or any with `own` (the agent's tools, which take
    * back their own steps and never the person's), is stepped through the mode's history only by
    * the entry holding that controller's own step on top, with what was done with it on the
@@ -5211,7 +5211,7 @@ export class DatumBuilderElement extends HTMLElementBase {
     this.formSettingsEl.formulaReferenceHref = this.formulaReferenceHrefValue;
     // The Header & footer and Variables panels: the bare elements until their chunk is
     // asked for by opening them; a chunk already on the page (an earlier open, any shell) wires
-    // them now, as before, so only the first open on a page waits.
+    // them now, so only the first open on a page waits.
     this.chromePanelHost = this.rootNode.querySelector<HTMLElement>(".chrome-settings") ?? undefined;
     this.variablesPanelHost = this.rootNode.querySelector<HTMLElement>(".variables") ?? undefined;
     this.testsPanelHost = this.rootNode.querySelector<HTMLElement>(".slot.tests") ?? undefined;
@@ -5533,7 +5533,7 @@ export class DatumBuilderElement extends HTMLElementBase {
       this.wrapEl?.toggleAttribute("data-trying", trying);
       // Try it in a designer's workspace tries the FORM: said before the canvas paints
       // (the setter dispatches this first), so its paint draws the form in the designer's place.
-      // A host's own mode in the Form workspace tries its own tree, as it always did.
+      // A host's own mode in the Form workspace tries its own tree.
       if (this.canvasEl && event.target === this.canvasEl) {
         const designer = isDesignerWorkspace(this.workspaceValue) && this.activeMode.id !== PRIMARY_BUILDER_MODE;
         this.canvasEl.tryForm = trying && designer ? { controller: this.ctrl, mode: this.activeMode, workspace: this.workspaceValue } : undefined;
@@ -5564,7 +5564,7 @@ export class DatumBuilderElement extends HTMLElementBase {
         // Record keeps the Tests drawer beside the form it writes from:
         // its live lines, Assert this and Stop stay in reach, and the
         // canvas keeps clear of it (data-tests-recording). A phone's sheet or a narrow drawer
-        // would cover the form, so there it folds as before and the bar keeps Stop recording.
+        // would cover the form, so there it folds as any panel does and the bar keeps Stop recording.
         const recordingHere = this.activePanel === "tests" && !this.phone && !this.narrow && this.testsPanelRecording();
         if (this.activePanel !== undefined && !recordingHere) {
           this.enteringTry = true;

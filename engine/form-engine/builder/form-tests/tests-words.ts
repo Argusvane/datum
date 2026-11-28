@@ -8,8 +8,8 @@
  *
  * The catalog is `tests-texts-en.ts`; a host's catalog (`text: { locale, catalog }`) overrides
  * any key, and a code this version does not know still reads (its code, or the parser's own
- * English for a problem), so a newer engine under an older builder degrades to something an
- * author can search for.
+ * English for a problem), so a code without words degrades to something an author can search
+ * for.
  */
 import { kernelFormTestMessage } from "../../core/form-tests/form-test-parse.js";
 import { FORM_TEST_MAX_STEPS } from "../../core/form-tests/form-test-types.js";

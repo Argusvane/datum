@@ -16,7 +16,7 @@ import { DATA_GRID_COMPONENT_TYPE } from "../schema/data-grid.js";
  *   container `applicant` is stored under the key `"applicant.email"`.
  * - A data key (`configuration.dataKey`) sets a node's own segment apart from its
  *   id: a field `billing_street` keyed `street` inside a container keyed `billing` is stored
- *   under `"billing.street"`. Unset, the segment is the id, exactly as before.
+ *   under `"billing.street"`. Unset, the segment is the id.
  *
  * The runtime's state and a submission's `values` are a **flat map keyed by value path**:
  * `{ "applicant.email": "a@b.co", "items[0].sku": "A1" }`. The nested document that map
@@ -511,7 +511,7 @@ export function findDataKeyProblems(
 /**
  * Resolves value paths for a tree, with the identity fallback that keeps every caller honest:
  * a component the map has not seen (added since the map was built, or addressed by a host that
- * never had one) reads and writes under its own id, exactly as before.
+ * never had one) reads and writes under its own id.
  */
 export function createValuePathResolver(root: ComponentNode): (componentId: string) => string {
   const paths = buildValuePaths(root);

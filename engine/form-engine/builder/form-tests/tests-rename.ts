@@ -115,7 +115,7 @@ export interface TestsRenameOptions {
    * For `kind: "page"`: the journey whose page was renamed. Page ids are per journey (two
    * journeys may each have a `details` page), so only the scenarios that run this journey
    * follow it: their `given journey`, else `defaultJourneyId`. Absent, every scenario
-   * follows, as before.
+   * follows.
    */
   journeyId?: string;
   /** The journey a scenario with no `given journey` runs (the definition's default, else its first); absent, such a scenario follows. */

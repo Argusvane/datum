@@ -94,7 +94,7 @@ export class ValidationPipeline {
     return [...this.stages.filter(isDeterministic), ...this.stages.filter((stage) => !isDeterministic(stage))];
   }
 
-  // Not `async`: the run's promise is `execute`'s own, so a caller resumes in as few turns as before.
+  // Not `async`: the run's promise is `execute`'s own, so a caller resumes in as few turns as `execute` takes.
   public run(context: ValidationContext, options: ValidationRunOptions = {}): Promise<ValidationPipelineResult> {
     const planned: PlannedStage[] = [];
     for (const stage of this.ordered()) {

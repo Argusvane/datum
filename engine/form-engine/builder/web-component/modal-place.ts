@@ -13,7 +13,7 @@
  * `inset` takes them) and a size, written as custom properties on the dialog. The dialog styles read them (`MODAL_INSET`, `MODAL_W`, `MODAL_H`) with
  * the window as the fallback, and the backdrop is clipped to the same box (`MODAL_BACKDROP_CLIP`),
  * so only the builder dims. A builder that fills the window (the page layout, Full window) gets
- * the insets of the window and looks as it always did. The box is followed while the dialog is
+ * the insets of the window, so the dialog fills it. The box is followed while the dialog is
  * open, since the page can still be scrolled under a modal dialog.
  */
 

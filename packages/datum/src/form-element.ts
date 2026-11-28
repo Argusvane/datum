@@ -3223,7 +3223,7 @@ export class DatumFormElement extends ElementBase {
 
   /** Back: the page before this one on the path as the answers stand now. Nothing is checked. */
   public previousPage(): Promise<JourneyNavigationResult> {
-    // Not `async`: with no runtime `requireRuntime()` throws synchronously, as it always did.
+    // Not `async`: with no runtime `requireRuntime()` throws synchronously.
     if (!this.allows("journeys")) {
       return Promise.reject(this.leftOut("journeys", "previousPage()"));
     }

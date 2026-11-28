@@ -892,7 +892,7 @@ export class RuntimeOrchestrator {
       },
       // A data grid's bound formulas, read form-scoped over the settled view as
       // `requiredWhen` is; the fold never asks for one reading `row.`. Only for a form that has
-      // one, so every other form folds as it always did. A rule scoped to the server is no rule here.
+      // one. A rule scoped to the server is no rule here.
       ...(this.hasRowBoundRules
         ? {
             ruleRowBound: (node: ComponentNode, key: "minRows" | "maxRows", idValues: Record<string, unknown>, pathValues: Record<string, unknown>): unknown => {

@@ -161,7 +161,7 @@ export interface BuilderModeRules {
   /**
    * The ways out of the node `nodeId` (a journey's step): its Logic tab lists them, in the
    * order they are tried, with the form's rule rows' markup, each opening in the Logic editor.
-   * `undefined` for a node that has none; the tab then lists its descriptors as before.
+   * `undefined` for a node that has none; the tab then lists its descriptors.
    */
   ways?(nodeId: string): BuilderModeWays | undefined;
 }

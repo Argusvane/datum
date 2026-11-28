@@ -9,7 +9,7 @@ import { CSRF_TOKEN, FIXTURE_FORM, REACHABLE, SUBMIT_ROUTE, VALIDATE_ROUTE } fro
  * HRD: the hardening subset over HTTP (the Java kit's HardeningContract, @Order 1801-1805). A packaged
  * host that registered the kit's hostile rule module (`datum-host-check fixtures` writes
  * hardening-rules.js) for the fixture form stops each attack inside the sandbox and answers the next
- * submission as before: a loop is cut at the validation budget, memory without bound and a 40 MiB
+ * submission as usual: a loop is cut at the validation budget, memory without bound and a 40 MiB
  * answer are refused, and bytes written after the answer frame (a forged outcome) refuse the run.
  * Each refuses that one submission, never an acceptance and never a 500. A run the sandbox stopped or
  * refused gave no verdict, so it answers 503 with the run's code (wasm.execution_error,

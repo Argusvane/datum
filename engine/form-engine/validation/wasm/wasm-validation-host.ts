@@ -103,7 +103,7 @@ export interface WasmSubmissionContext extends Omit<ValidationContext, "required
    * plain JSON object; nested objects are read by dotted paths (`host.user.role`). Present, the
    * kernel evaluates every rule and calculation reading `host.` against it, as the browser does,
    * and a key it lacks reads as no answer (`null` in `=`), never as undecided. Absent, such a
-   * rule is left unevaluated as before (its field keeps its configured state, a calculation keeps
+   * rule is left unevaluated (its field keeps its configured state, a calculation keeps
    * its submitted answer and is listed in `clientDerived`, a host-shown field is not required:
    * `visibilitySkipped`). A value that is not an object is warned about in the log and treated
    * as absent; one JSON cannot carry (a function, `NaN`, a `Date`) is refused before the run, as

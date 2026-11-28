@@ -828,7 +828,7 @@ export function drawnInspectorModel(model: InspectorModel): InspectorModel {
  * A data grid's row settings, gathered under their own heading. The names are common
  * ones (`layout`, `emptyText`, `maxRows` are a PDF repeat's too), so the section is chosen by the
  * component's type, never by the property name alone: on any other component these fall to
- * `settings` as they always did.
+ * `settings`.
  */
 const DATA_GRID_ROWS_PROPERTIES: ReadonlySet<string> = new Set([
   "layout",

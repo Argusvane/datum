@@ -5603,7 +5603,7 @@ export class BuilderController {
     // No position named: the end of the slot, except that a `content` slot closed by the Submit
     // button File > New seeded, untouched (`isSeededSubmit`), takes the newcomer before it, so
     // that Submit stays last as fields are added. A named index, a
-    // drop, a move, or a Submit the author changed or moved off the end place as before.
+    // drop, a move, or a Submit the author changed or moved off the end places it where asked, or at the end.
     const position = index ?? this.beforeSeededSubmit(target);
     const clash = this.dataPathProblemAfter((tree) => tree.insert(node, target.parentId, target.slotId, position));
     if (clash) {

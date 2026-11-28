@@ -137,8 +137,8 @@ function blockStyle(context: PdfRenditionContext) {
 
 /**
  * What the theme draws beside a label: the field's hint when the theme shows
- * hints, and the required marker when the theme words one. Absent keys stay absent, so a
- * theme that asks for neither produces the block it always did.
+ * hints, and the required marker when the theme words one. Absent keys stay absent: a
+ * theme that asks for neither adds nothing to the block.
  */
 function fieldDecor(context: PdfRenditionContext): { hint?: string; labelSuffix?: string } {
   const out: { hint?: string; labelSuffix?: string } = {};

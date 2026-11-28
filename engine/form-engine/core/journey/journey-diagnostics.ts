@@ -2719,7 +2719,7 @@ export function diagnoseJourney(root: ComponentNode, journey: Journey, options: 
       const paths = [...extractDependencies(rule)];
       const hostPath = paths.find((path) => path.startsWith("host."));
       const clock = kernelExprReadsClock(rule);
-      // `both` as before. A browser-only rule the server skips as it skips a host read, so
+      // A rule run on both sides that reads `host.` warns. A browser-only rule the server skips as it skips a host read, so
       // there is nothing to say; a server-only one is the next finding's.
       if (run === "both" && hostPath !== undefined && key !== "value") {
         report(

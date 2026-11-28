@@ -218,7 +218,7 @@ const COPY_DROPS: readonly string[] = [
 
 /**
  * The index of a journey's own nodes, or `undefined` for a journey that holds none — one of
- * component ids alone (`ownership.ownNodes` absent), which runs exactly as it always did.
+ * component ids alone (`ownership.ownNodes` absent).
  *
  * `root` is the form's tree, `ownership` the journey's (`journeyOwnership(root, journey)`), and
  * `defines` says whether the form defines a value key (`kernelDefinesKey` over

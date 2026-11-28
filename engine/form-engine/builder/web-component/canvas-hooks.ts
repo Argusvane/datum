@@ -16,7 +16,7 @@
  * - an empty slot draws a drop zone with the slot's hint.
  *
  * When the canvas draws a tree that is not its controller's own (one journey step) it
- * hands three more things, each absent on every other canvas, which then draws exactly as before:
+ * hands three more things, each absent on every other canvas, which then draws without them:
  *
  * - `tags`: a word on a component's box beside the hidden tag (a journey-only field's "Not sent");
  * - `regionOwner`: what the page's own chrome selects. The regions a journey page draws its

@@ -54,7 +54,7 @@ export interface JourneyOwnership {
    *: every node of an own entry that passes the usability rules A–C, bar a
    * worked-out value that is ignored (rules E and G). A value key is never placed by one.
    * Present, with the two records below, only when a page of the journey holds an object
-   * entry: a journey of component ids alone has the ownership it always had.
+   * entry.
    */
   ownNodes?: Record<string, true>;
   /**

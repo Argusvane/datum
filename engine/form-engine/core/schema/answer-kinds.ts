@@ -32,7 +32,7 @@ export type FieldInputState = NonNullable<ValidationContext["inputStates"]>[stri
 
 /**
  * A number answer: a finite number, or a string that is a plain decimal numeral once trimmed
- * (`12`, `-3.5`, `1e3`, `.5`) — as host prefill, imports and older drafts carry one. Anything
+ * (`12`, `-3.5`, `1e3`, `.5`) — as host prefill, imports and draft files carry one. Anything
  * else is not: `1,000`, `0x10`, `Infinity`, `12 kg`, a boolean, a list, an object.
  *
  * A string is judged by its spelling alone, never by the value an engine parses it to: engines

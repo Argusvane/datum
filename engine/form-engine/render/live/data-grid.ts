@@ -54,7 +54,7 @@ export interface GridRuntime {
 /** Where focus goes once the draw that shows the rows a button left has landed. */
 interface PendingFocus {
   gridId: string;
-  /** How many rows that draw shows; a draw of another count is an older build and leaves the move queued. */
+  /** How many rows that draw shows; a draw of another count is a stale one and leaves the move queued. */
   rows: number;
   /** The row to focus (its first control), or the Add button. */
   target: number | "add";

@@ -2044,7 +2044,7 @@ export class DatumFormBuilderElement extends ElementBase {
    * Switches workspaces now; returns whether the switch started (a held unsaved-edits prompt means
    * not yet). Journeys or PDF asked for while that mode's chunk is still coming is
    * entered once the mode registers, and counts as started; a side that is off or hidden is
-   * refused, as before.
+   * refused.
    */
   public setWorkspace(id: BuilderWorkspace): boolean {
     this.workspaceValue = id;

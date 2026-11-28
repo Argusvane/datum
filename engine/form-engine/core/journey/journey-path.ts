@@ -386,7 +386,7 @@ export function journeyEntryPlacesForm(entry: PresentationNode): boolean {
  *
  * An ancestor of anything placed that is on no page itself is structural. `order` stays the
  * form's own: no walker of it sees a presentation's node. The presentation records are attached only when a page holds an object
- * entry, so a journey of component ids alone has the ownership it always had.
+ * entry.
  *
  * A review page (`kind: "review"`) places no form component: it lists the path's answers, it
  * does not ask them. Its string entries and references are skipped, and an own entry that

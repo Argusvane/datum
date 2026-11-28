@@ -115,11 +115,11 @@ describe("the rewrites, each run against the form", () => {
     const result = await runSource(source);
     const step = result.steps.find((entry) => entry.status === "failed")!;
     const scenario = kernelParseFormTests(source, []).scenarios[0]!;
-    // The judge carries `params.sent` since the sandbox `test` op, so the rewrite exists as it stands.
+    // The judge carries `params.sent` when the submitted record holds the answer, so the rewrite exists as it stands.
     expect(step.params).toMatchObject({ sent: "Jane" });
     const outcome = acceptNewBehaviour(source, scenario, step);
     expect(outcome).toMatchObject({ line: 5, text: '  expect submitted applicant_name = "Jane"' });
-    // A step without it (a result from an older program) is still refused.
+    // A step without it (the side could not say what was sent) is refused: there is no value to write.
     const { sent: _sent, ...without } = (step.params ?? {}) as Record<string, unknown>;
     expect(acceptNewBehaviour(source, scenario, { ...step, params: without })).toEqual({ refused: "noActual" });
     const after = await runSource((outcome as { source: string }).source);
@@ -142,7 +142,7 @@ describe("a path that ends at an exit", () => {
     expect((await runSource((outcome as { source: string }).source)).status).toBe("passed");
   });
 
-  it("refuses when the step does not say which exit page (a result from an older program)", async () => {
+  it("refuses when the step does not say which exit page", async () => {
     const source = sourceOf(lines);
     const step = (await runSource(source)).steps.find((entry) => entry.status === "failed")!;
     const { last: _last, ...actual } = (step.actual ?? {}) as Record<string, unknown>;

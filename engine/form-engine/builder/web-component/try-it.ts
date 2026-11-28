@@ -720,7 +720,7 @@ export function createTryIt(options: TryItOptions & TryItWordsOptions): TryItCon
    */
   function syncShowing(): void {
     const showing = options.showing?.();
-    // Nothing shown and nothing drawn: the canvas's DOM is not touched (Try it without Show me draws as it always did).
+    // Nothing shown and nothing drawn: the canvas's DOM is not touched (Try it without Show me draws no bar).
     if (!showing && !showingEl) {
       return;
     }
@@ -1106,7 +1106,7 @@ export function createTryIt(options: TryItOptions & TryItWordsOptions): TryItCon
       return;
     }
     made.seen.set(key, settledAs);
-    // Typed into and emptied again before leaving it: the field says nothing, as before.
+    // Typed into and emptied again before leaving it: the field says nothing.
     if (isEmptyAnswer(value) && wasEmpty(prior)) {
       return;
     }
