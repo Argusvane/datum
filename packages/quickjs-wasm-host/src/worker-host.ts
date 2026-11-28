@@ -110,6 +110,8 @@ interface WorkerFailure {
   message?: string;
   detail?: { name: string; message: string };
   plugin?: string;
+  /** True when the worker's interrupt handler ended the work at the deadline. */
+  interrupted?: boolean;
 }
 
 /** The default for {@link QuickJsWorkerHostOptions.maxWasmHeapBytes}: 512 MiB. */
@@ -123,7 +125,7 @@ const WORKER_FILE = new URL("./worker/quickjs-worker.mjs", import.meta.url);
 function failureError(failure: WorkerFailure, fallback: QuickJsExecutionErrorCode): QuickJsExecutionError {
   const typed =
     failure.detail !== undefined
-      ? toExecutionError(failure.detail, failure.code ?? fallback)
+      ? toExecutionError(failure.detail, failure.code ?? fallback, failure.interrupted === true)
       : new QuickJsExecutionError(failure.code ?? fallback, failure.message ?? "The sandbox worker failed");
   return failure.plugin !== undefined ? new QuickJsExecutionError(typed.code, `Plugin "${failure.plugin}": ${typed.message}`) : typed;
 }

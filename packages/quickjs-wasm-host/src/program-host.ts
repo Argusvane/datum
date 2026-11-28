@@ -131,11 +131,16 @@ export function loadOwnQuickJs(): Promise<QuickJSWASMModule> {
 /** The module promise each host was created over, so a recycle drops the shared one only if it is still that one. */
 const hostModules = new WeakMap<QuickJsProgramHost, Promise<QuickJSWASMModule>>();
 
-export function toExecutionError(detail: unknown, fallbackCode: QuickJsExecutionErrorCode): QuickJsExecutionError {
+/**
+ * A guest error as a typed one. `interrupted` is the host's own word, never the guest's: it is
+ * true only when the host's interrupt handler ended the work (the deadline passed), and a guest
+ * that throws an error named or worded "interrupted" is typed by `fallbackCode` like any other.
+ */
+export function toExecutionError(detail: unknown, fallbackCode: QuickJsExecutionErrorCode, interrupted = false): QuickJsExecutionError {
   const dumped = detail as { name?: unknown; message?: unknown } | undefined;
   const name = typeof dumped?.name === "string" ? dumped.name : "";
   const message = typeof dumped?.message === "string" ? dumped.message : String(detail);
-  if (/interrupt/i.test(message) || /interrupt/i.test(name)) {
+  if (interrupted) {
     return new QuickJsExecutionError("interrupted", `Sandbox evaluation interrupted: ${message}`);
   }
   if (name === "SyntaxError") {
@@ -275,7 +280,24 @@ export class QuickJsProgramHost {
       if ("error" in result && result.error) {
         const detail = this.vm.dump(result.error);
         result.error.dispose();
-        throw toExecutionError(detail, failureCode);
+        throw toExecutionError(detail, failureCode, this.deadlineHit);
+      }
+      return result.value;
+    });
+  }
+
+  /**
+   * Calls a function handle with handle arguments under the deadline, as {@link evaluateHandle}
+   * evaluates: the call and the reading of an error it throws both run with the interrupt handler
+   * set. Returns the result as a handle the caller disposes; a guest error is typed with `failureCode`.
+   */
+  public callHandle(fn: QuickJSHandle, args: readonly QuickJSHandle[], failureCode: QuickJsExecutionErrorCode = "runtime_error"): QuickJSHandle {
+    return this.withDeadline(() => {
+      const result = this.vm.callFunction(fn, this.vm.undefined, ...args);
+      if ("error" in result && result.error) {
+        const detail = this.vm.dump(result.error);
+        result.error.dispose();
+        throw toExecutionError(detail, failureCode, this.deadlineHit);
       }
       return result.value;
     });
@@ -335,7 +357,7 @@ export class QuickJsProgramHost {
           if ("error" in callResult && callResult.error) {
             const detail = this.vm.dump(callResult.error);
             callResult.error.dispose();
-            throw toExecutionError(detail, "runtime_error");
+            throw toExecutionError(detail, "runtime_error", this.deadlineHit);
           }
           return this.capped(this.settle(callResult.value), resultCap);
         } catch (error) {
@@ -424,7 +446,7 @@ export class QuickJsProgramHost {
       if (this.vm.typeof(result) === "number") {
         return this.vm.getNumber(result);
       }
-      throw toExecutionError(this.vm.dump(result), "runtime_error");
+      throw toExecutionError(this.vm.dump(result), "runtime_error", this.deadlineHit);
     } finally {
       result.dispose();
     }
@@ -462,7 +484,7 @@ export class QuickJsProgramHost {
           const detail = this.vm.dump(state.error);
           state.error.dispose();
           this.drainJobs();
-          throw toExecutionError(detail, "runtime_error");
+          throw toExecutionError(detail, "runtime_error", this.deadlineHit);
         }
         if (this.runJobs() === 0 && !this.runtime.hasPendingJob()) {
           if (this.deadlineHit) {
