@@ -20,7 +20,7 @@ Copy the bundle folder into the application's static files and load the module f
 
 Loading it from the page, not through the application's bundler, keeps the folder together: the element fetches its optional parts from beside the file it was loaded from. See [Files you host](/files).
 
-The order does not matter. A property a component sets before the module has defined the element is kept and applied once it has.
+The order does not matter. A property a component sets before the module has defined the element is kept and applied once it has. The engine's `<datum-form-renderer>` and `<datum-form-host>` keep such a property the same way.
 
 ## A form component
 

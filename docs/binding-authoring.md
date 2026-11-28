@@ -204,6 +204,12 @@ control) takes it. The other marks an adapter may draw are `data-file-drop-statu
 drag enter and leave) and `data-file-button` (a press inside it sets `data-file-press` on the
 wrapper); the renderer itself sets `data-file-drag` on the wrapper while a file is dragged over it.
 An adapter that draws none of the marks gets none of the behaviour, and nothing breaks.
+Each `FileItem.id` is made from the attachment it names, not its place in the list, so key the
+rows by it (lit's `repeat`) and bind Remove and Download to it: a Remove pressed again after its
+file went removes nothing. A pick is written once its storage has answered, so the renderer asks
+the write guard again then: a submission that started meanwhile, or a field made read-only or
+disabled, refuses the write (`datum-binding-error {hook: "files"}`), and a file field in a data
+grid row writes to that row wherever it has moved, or nowhere once the row is gone.
 
 The builder canvas wraps the drawing
 through `canvasHooks` (`decorateField`, `renderContainer` and `emptySlot`), each taking and
@@ -249,8 +255,8 @@ never dropped.
 ### Lifecycle, guards and focus
 
 Per field, in order: `when` selects the adapter, `template` draws, `after` runs on every draw,
-`ready` runs for a new field (budgeted by `readyBudgetMs`, 3000 ms by default; a field that is late
-is shown as it is and reported), and `connect` runs and returns the cleanup that runs when the
+`ready` runs for a new field (budgeted by `readyBudgetMs`, 3000 ms by default, `Infinity` for no
+budget; a field that is late is shown as it is and reported), and `connect` runs and returns the cleanup that runs when the
 field leaves or the form unmounts. The binding-level `connect(root, form)` runs once per mount
 (section 6).
 
@@ -575,7 +581,8 @@ What a host's CSS and tests can hold on to in the Datum binding.
   `--required`, `--invalid`, `--disabled`, `--readonly` and `--over-limit` (`fieldClassNames`), so a
   host's CSS reaches the label, hint, error and control from one selector. The sheet reads the
   hooks and the form's `data-mode` and `aria-busy`, never the modifier classes; the one modifier it
-  selects on is the kind class. The hooks are the selectors for tests, agent tools and a host's
+  selects on is the kind class. An invalid box's error border keys on the control's
+  `aria-invalid` and on the wrapper's `data-invalid`, so it holds under every `controls.ariaStates`. The hooks are the selectors for tests, agent tools and a host's
   CSS across bindings; `datum-form__*` classes are Datum's own markup only.
 - **Headings.** The panel title, step heading, notice title and summary heading are heading
   elements at a level under the form's own (`headingLevel`, the `heading-level` attribute of
@@ -599,7 +606,9 @@ What a host's CSS and tests can hold on to in the Datum binding.
     `<instance key>__group-label`, `groupLabelId` in `groups.ts`), and the fieldset carries
     `aria-labelledby` and `aria-describedby`. A legend is outside the heading outline, so the
     group's label does not follow `headingLevel`; panel titles and step headings do. The sheet
-    floats the legend so that it lays out as a grid item.
+    floats the legend so that it lays out as a grid item. A panel's section is described by its
+    description (`aria-describedby`), and a hidden label hides the heading only: the description
+    stays in sight.
 - **Tokens.** Every value in Datum's sheet is a custom property with an engine literal as its
   fallback, and no colour is bare, so a form with no tokens set still paints from the literals.
   `FORM_TOKENS` (`render/live/datum/tokens.ts`, in tiers `base`, `derived` and `geometry`) lists
@@ -726,9 +735,11 @@ binding's sheet is bundled and never takes this path. A stylesheet is handled in
 
 1. **Fetched** with `fetch()`, once per page per `(url, integrity)`, so it must be same-origin or
    served with CORS.
-2. **Composed as text.** Every relative `url()` is resolved against the sheet's own address, and
-   leading `@import` rules are replaced by the text they name, keeping their `layer`, `supports()`
-   and media conditions.
+2. **Composed as text.** Every relative address is resolved against the sheet's own address: a
+   `url()` in any case and a string inside `image-set()`, but nothing inside a comment or another
+   string. Leading `@import` rules are replaced by the text they name, in place among the `@layer`
+   statements around them (so the layer order stays the sheet's), keeping their `layer`,
+   `supports()` and media conditions.
 3. **Parsed and rewritten** over the browser's parsed `cssRules`, recursing into nested and
    grouping rules: selectors that open with `html`, `body` or `:root` (also inside a leading
    `:where()` or `:is()`) name `:host` instead (`shadowSheet`); page-only declarations on the bare

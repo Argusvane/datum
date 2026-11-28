@@ -11,8 +11,12 @@
  *   step it names;
  * - Continue: checks the step on show, that step alone, and goes to its first error instead of
  *   advancing; clean, it records the step as completed and opens the next. Back opens the
- *   previous one with no check. An indicator entry opens a step already reached; an upcoming one
- *   is not a way to skip ahead;
+ *   previous one with no check. Both pass over a step a rule hides, which the indicator lists
+ *   holding nothing and does not open. An indicator entry opens a step already reached; an
+ *   upcoming one is not a way to skip ahead;
+ * - a steps container in a collection's row: each row's is its own, keyed by its instance key,
+ *   and switches in place (the runtime has one current step for the form); its Continue is held
+ *   by its own row's errors alone;
  * - focus: the new step's heading takes it (the page a multi-step form moves to), unless the
  *   caller has somewhere better in mind (an error);
  * - an error or a focus request on a field in a step that is not shown opens that step
@@ -24,6 +28,8 @@
  * the binding nor the Datum binding has a steps adapter.
  */
 import type { StepsNavigationState } from "../../core/schema/steps.js";
+import type { ComponentPath } from "../../core/schema/types.js";
+import { stringifyComponentPath } from "../../core/tree/component-path.js";
 import { stepStatus } from "../../core/schema/steps.js";
 import type { PresentationReveal, PresentationStep, PresentationSteps } from "../core/presentation-tree.js";
 import { usedContainerCapabilities, type StepsAdapter, type StepsState, type StepState } from "./contract.js";
@@ -45,17 +51,21 @@ interface StepsRuntime {
   validate?(options?: { scope?: string }): Promise<unknown>;
 }
 
-/** What the feature keeps for the life of the mount. */
+/** What the feature keeps for the life of the mount, by steps container instance (`node.key`). */
 interface StepsMemory {
-  /** The step the renderer opened, by steps container id: the shown step on a runtime that cannot navigate, or a move still in flight. */
+  /** The step the renderer opened: the shown step where the container does not navigate, or a move still in flight. */
   shown: Map<string, string>;
-  /** Steps reached and passed without the runtime recording it (a runtime that cannot navigate), by container id. */
+  /** Steps reached and passed without the runtime recording it (where the container does not navigate). */
   visited: Map<string, Set<string>>;
   completed: Map<string, Set<string>>;
   /** The step each container showed in the last draw. */
   active: Map<string, string | undefined>;
-  /** Each step's heading id, by step id. */
+  /** Each step's heading id, by container instance and step id. */
   headings: Map<string, string>;
+  /** The containers drawn in a collection's row: they switch in place, each row its own. */
+  inRows: Set<string>;
+  /** Which container instance each reveal entry of a step's components names (a row's own, where the id is shared). */
+  owners: WeakMap<PresentationReveal, string>;
   /** The last draw showed every step. */
   flat: boolean;
   /** A move is in flight: a second Continue or Back waits. */
@@ -69,6 +79,8 @@ function memoryOf(live: LiveContext): StepsMemory {
     completed: new Map(),
     active: new Map(),
     headings: new Map(),
+    inRows: new Set(),
+    owners: new WeakMap(),
     flat: false,
     moving: false
   }));
@@ -83,16 +95,27 @@ function setOf(map: Map<string, Set<string>>, id: string): Set<string> {
   return set;
 }
 
-/** Whether the runtime moves between steps; the builder canvas, which only shows them, never does. */
-function navigates(live: LiveContext): boolean {
-  return typeof (live.runtime as StepsRuntime).navigate === "function" && live.options.canvasHooks === undefined;
+const headingKey = (containerKey: string, stepId: string): string => `${containerKey}\u0000${stepId}`;
+
+/**
+ * Whether the runtime moves the container between steps; the builder canvas, which only shows
+ * them, never does. Nor does a container in a collection's row: the runtime has one current
+ * step for the form, and each row's container is its own.
+ */
+function navigates(live: LiveContext, containerKey: string): boolean {
+  return typeof (live.runtime as StepsRuntime).navigate === "function" && live.options.canvasHooks === undefined && !memoryOf(live).inRows.has(containerKey);
+}
+
+/** A steps container drawn in a collection's row: where its row's answers are (`items[1]`). */
+interface RowOf {
+  entryPath: string;
 }
 
 // ── Moving ─────────────────────────────────────────────────────────────────────────────────
 
 /** Moves the heading's focus to a step's heading, scrolled into view. */
-function focusHeading(live: LiveContext, stepId: string): void {
-  const id = memoryOf(live).headings.get(stepId);
+function focusHeading(live: LiveContext, containerKey: string, stepId: string): void {
+  const id = memoryOf(live).headings.get(headingKey(containerKey, stepId));
   const heading = id !== undefined ? live.root.getElementById(id) : null;
   if (heading instanceof HTMLElement) {
     live.focusElement(heading);
@@ -107,21 +130,21 @@ function focusHeading(live: LiveContext, stepId: string): void {
  * else by remembering the choice and drawing it. Focus then moves to the step's heading unless
  * `focus` is off. `false` when the move did not happen.
  */
-async function showStep(live: LiveContext, containerId: string, stepId: string, focus: boolean): Promise<boolean> {
+async function showStep(live: LiveContext, containerKey: string, stepId: string, focus: boolean): Promise<boolean> {
   const memory = memoryOf(live);
-  if (navigates(live)) {
+  if (navigates(live, containerKey)) {
     const result = await (live.runtime as StepsRuntime).navigate?.(stepId);
     if (result?.ok !== true || !live.mounted()) {
       return false;
     }
     await live.updated();
   } else {
-    memory.shown.set(containerId, stepId);
-    setOf(memory.visited, containerId).add(stepId);
+    memory.shown.set(containerKey, stepId);
+    setOf(memory.visited, containerKey).add(stepId);
     live.redraw();
   }
   if (focus && live.mounted()) {
-    focusHeading(live, stepId);
+    focusHeading(live, containerKey, stepId);
   }
   return true;
 }
@@ -144,32 +167,47 @@ async function moving(live: LiveContext, move: () => Promise<void>): Promise<voi
   }
 }
 
+/** Whether `path` is an answer of the row at `entryPath` (`items[1]`, not `items[10]`). */
+function inRow(path: string, entryPath: string): boolean {
+  return path === entryPath || path.startsWith(`${entryPath}.`) || path.startsWith(`${entryPath}[`);
+}
+
 /** Continue: checks the step on show, and either goes to its first error or opens `next`. */
-function proceed(live: LiveContext, containerId: string, current: string, next: string): Promise<void> {
+function proceed(live: LiveContext, containerKey: string, current: string, next: string, row: RowOf | undefined): Promise<void> {
   return moving(live, async () => {
     const authoring = live.options.canvasHooks !== undefined;
     const runtime = live.runtime as StepsRuntime;
     if (!authoring && typeof runtime.validate === "function") {
       const errors = await runtime.validate({ scope: current });
-      const blocking = Array.isArray(errors) && errors.some((error) => ((error as { severity?: string } | undefined)?.severity ?? "error") === "error");
+      // In a row, the step's components are every row's: this row's errors are the ones that hold it.
+      const ofRow = (error: unknown): boolean => {
+        const path = (error as { path?: ComponentPath } | undefined)?.path;
+        return row === undefined || (path !== undefined && inRow(stringifyComponentPath(path), row.entryPath));
+      };
+      const blocking = Array.isArray(errors) && errors.some((error) => ((error as { severity?: string } | undefined)?.severity ?? "error") === "error" && ofRow(error));
       if (blocking) {
         await live.updated();
-        live.focusErrors();
+        const first = row === undefined ? undefined : live.fields().find((field) => field.state.invalid && inRow(field.state.valuePath, row.entryPath));
+        if (first !== undefined) {
+          live.focusField(first.key);
+        } else {
+          live.focusErrors();
+        }
         return;
       }
-      if (typeof runtime.markStepCompleted === "function") {
+      if (row === undefined && typeof runtime.markStepCompleted === "function") {
         runtime.markStepCompleted(current);
       } else {
-        setOf(memoryOf(live).completed, containerId).add(current);
+        setOf(memoryOf(live).completed, containerKey).add(current);
       }
     }
-    await showStep(live, containerId, next, true);
+    await showStep(live, containerKey, next, true);
   });
 }
 
-function goTo(live: LiveContext, containerId: string, stepId: string): Promise<void> {
+function goTo(live: LiveContext, containerKey: string, stepId: string): Promise<void> {
   return moving(live, async () => {
-    await showStep(live, containerId, stepId, true);
+    await showStep(live, containerKey, stepId, true);
   });
 }
 
@@ -199,43 +237,57 @@ function drawSteps(node: PresentationSteps, draw: DrawContext) {
   const live = draw.live;
   const memory = memoryOf(live);
   const authoring = live.options.canvasHooks !== undefined;
-  const moves = navigates(live);
+  // Kept by the instance: the same steps container drawn in each row of a grid is one per row.
+  const own = node.key;
+  const rowScope = node.model.row;
+  const row: RowOf | undefined = rowScope !== undefined ? { entryPath: `${rowScope.collectionPath}[${rowScope.index}]` } : undefined;
+  if (row !== undefined) {
+    memory.inRows.add(own);
+  }
+  const moves = navigates(live, own);
   const flat = draw.tree.mode !== "interactive" || draw.form.printing;
   const ids = node.steps.map((step) => step.id);
   const navigation: StepsNavigationState = draw.output.meta.navigation;
-
   // The step the runtime shows, unless the renderer opened another: for good where nothing
   // navigates, until the runtime catches up (or refuses) where it does.
   let active = node.activeStepId;
-  const opened = memory.shown.get(node.id);
+  const opened = memory.shown.get(own);
   if (opened !== undefined) {
     if (!ids.includes(opened) || (moves && opened === node.activeStepId)) {
-      memory.shown.delete(node.id);
+      memory.shown.delete(own);
     } else {
       active = opened;
     }
   }
-  memory.active.set(node.id, active);
+  memory.active.set(own, active);
   memory.flat = flat;
   if (active !== undefined && !moves) {
-    setOf(memory.visited, node.id).add(active);
+    setOf(memory.visited, own).add(active);
   }
 
   const total = node.steps.length;
   const activeIndex = Math.max(0, ids.indexOf(active ?? ""));
   const words = draw.words;
-  const visited = memory.visited.get(node.id);
-  const completed = memory.completed.get(node.id);
+  const visited = memory.visited.get(own);
+  const completed = memory.completed.get(own);
 
   const steps: StepState[] = node.steps.map((step): StepState => {
-    let status = stepStatus(step.id, active, navigation);
+    // A row's container keeps its own record: the runtime's is the form's one sequence.
+    let status = stepStatus(step.id, active, row === undefined ? navigation : undefined);
     if (!moves && status !== "active") {
       status = completed?.has(step.id) ? "completed" : visited?.has(step.id) ? "visited" : status;
     }
     const headingId = step.model.accessibility.labelId;
-    memory.headings.set(step.id, headingId);
+    // Each of the step's components names this instance when it asks for the step to open.
+    for (const entry of step.children[0]?.reveal ?? []) {
+      if (entry.kind === "step" && entry.stepsId === node.id && entry.stepId === step.id) {
+        memory.owners.set(entry, own);
+      }
+    }
+    memory.headings.set(headingKey(own, step.id), headingId);
     const reached = status === "completed" || status === "visited";
-    const select = !flat && step.id !== active && (authoring || reached) ? () => void goTo(live, node.id, step.id) : undefined;
+    // A step a rule hides is listed, holding nothing: it is not a place to go.
+    const select = !flat && step.id !== active && (authoring || (reached && step.visible)) ? () => void goTo(live, own, step.id) : undefined;
     return {
       id: step.id,
       label: step.label,
@@ -251,8 +303,10 @@ function drawSteps(node: PresentationSteps, draw: DrawContext) {
     };
   });
 
-  const previous = flat ? undefined : node.steps[activeIndex - 1];
-  const following = flat ? undefined : node.steps[activeIndex + 1];
+  // Back and Continue pass over a step a rule hides (the builder canvas, which shows every step, does not).
+  const open = (step: PresentationStep): boolean => authoring || step.visible;
+  const previous = flat ? undefined : node.steps.slice(0, activeIndex).reverse().find(open);
+  const following = flat ? undefined : node.steps.slice(activeIndex + 1).find(open);
   const state: StepsState = {
     id: node.id,
     key: node.key,
@@ -270,8 +324,8 @@ function drawSteps(node: PresentationSteps, draw: DrawContext) {
     activeStepId: active,
     progress: total > 0 ? words("stepOf", { n: activeIndex + 1, total }) : "",
     others: draw.nodes(node.others),
-    ...(previous ? { back: { label: words("back"), go: () => void goTo(live, node.id, previous.id) } } : {}),
-    ...(following && active !== undefined ? { next: { label: words("continue"), go: () => void proceed(live, node.id, active, following.id) } } : {}),
+    ...(previous ? { back: { label: words("back"), go: () => void goTo(live, own, previous.id) } } : {}),
+    ...(following && active !== undefined ? { next: { label: words("continue"), go: () => void proceed(live, own, active, following.id, row) } } : {}),
     busy: live.busy() !== undefined
   };
 
@@ -317,23 +371,27 @@ export function stepsFeature(): LiveFeature {
       }
       let changed = false;
       for (const reveal of reveals) {
-        if (reveal.kind !== "step" || memory.active.get(reveal.stepsId) === reveal.stepId) {
+        if (reveal.kind !== "step") {
+          continue;
+        }
+        const own = memory.owners.get(reveal) ?? reveal.stepsId;
+        if (memory.active.get(own) === reveal.stepId) {
           continue;
         }
         // Shown now; the runtime follows (and may refuse, which puts the step back).
-        memory.shown.set(reveal.stepsId, reveal.stepId);
-        memory.active.set(reveal.stepsId, reveal.stepId);
-        if (navigates(live)) {
+        memory.shown.set(own, reveal.stepId);
+        memory.active.set(own, reveal.stepId);
+        if (navigates(live, own)) {
           const undo = (): void => {
-            if (memory.shown.get(reveal.stepsId) === reveal.stepId) {
-              memory.shown.delete(reveal.stepsId);
+            if (memory.shown.get(own) === reveal.stepId) {
+              memory.shown.delete(own);
               live.redraw();
             }
           };
           const move = (live.runtime as StepsRuntime).navigate?.(reveal.stepId);
           move?.then((result) => (result.ok ? undefined : undo()), undo);
         } else {
-          setOf(memory.visited, reveal.stepsId).add(reveal.stepId);
+          setOf(memory.visited, own).add(reveal.stepId);
         }
         changed = true;
       }

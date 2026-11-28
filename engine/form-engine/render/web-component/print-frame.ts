@@ -56,10 +56,16 @@ export interface PresentPrintDocumentOptions {
    * (the frame, if one was made, is removed). The `datum-print` event.
    */
   beforePrint?: ((presented: PresentedPrintDocument) => boolean) | undefined;
+  /**
+   * Asked once more right before the dialog, after the wait for the document's sheets: `false`
+   * prints nothing and removes the frame (a newer print superseded this one meanwhile, or the
+   * element left the page).
+   */
+  stillWanted?: (() => boolean) | undefined;
 }
 
 export interface PresentPrintResult extends PresentedPrintDocument {
-  /** The frame `print()` was called in; absent when {@link PresentPrintDocumentOptions.beforePrint} refused. */
+  /** The frame `print()` was called in; absent when {@link PresentPrintDocumentOptions.beforePrint} or {@link PresentPrintDocumentOptions.stillWanted} refused. */
   frame?: HTMLIFrameElement | undefined;
 }
 
@@ -260,9 +266,10 @@ export function writePrintDocument(doc: Document, win: Window, html: string, hos
 /**
  * Appends a hidden frame to `hostDocument.body`, writes `html` into it, waits for its
  * stylesheets, fonts and images, runs the self-check (writing the fallback's document instead
- * when it finds problems, with a console warning), asks `beforePrint`, and calls the frame
- * window's `print()`. Resolves once `print()` has been called — Chrome and Firefox return when
- * the dialog closes, Safari at once — or once `beforePrint` refused.
+ * when it finds problems, with a console warning), asks `beforePrint`, asks `stillWanted` once
+ * the wait is over, and calls the frame window's `print()`. Resolves once `print()` has been
+ * called — Chrome and Firefox return when the dialog closes, Safari at once — or once
+ * `beforePrint` or `stillWanted` refused.
  *
  * The frame removes itself on its window's `afterprint`. Chrome fires that inside `print()`
  * itself, so the frame is already gone when this resolves; Firefox fires it once the dialog
@@ -308,6 +315,10 @@ export async function presentPrintDocument(
   } catch (error) {
     frame.remove();
     throw error;
+  }
+  if (options.stillWanted && !options.stillWanted()) {
+    frame.remove();
+    return presented;
   }
 
   win.addEventListener("afterprint", () => frame.remove(), { once: true });

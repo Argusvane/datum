@@ -22,3 +22,30 @@ export const HTMLElementBase: typeof HTMLElement =
 export function canDefineCustomElements(): boolean {
   return typeof customElements !== "undefined";
 }
+
+/**
+ * Properties a page assigned before an element was upgraded (a script that set `el.runtime`
+ * before the module defining the element ran) sit on the instance as own data properties and
+ * shadow the prototype's accessors. Each is taken off and assigned again through its setter, in
+ * prototype order, so they behave as if set after the upgrade. Setters on superclass prototypes
+ * are covered too. Called from `connectedCallback`.
+ */
+export function adoptPreUpgradeProperties(element: HTMLElement): void {
+  const target = element as unknown as Record<string, unknown>;
+  const seen = new Set<string>();
+  for (let proto = Object.getPrototypeOf(element) as object | null; proto && proto !== HTMLElementBase.prototype; proto = Object.getPrototypeOf(proto) as object | null) {
+    for (const name of Object.getOwnPropertyNames(proto)) {
+      if (seen.has(name)) {
+        continue;
+      }
+      seen.add(name);
+      const accessor = Object.getOwnPropertyDescriptor(proto, name);
+      if (!accessor?.set || !Object.prototype.hasOwnProperty.call(element, name)) {
+        continue;
+      }
+      const value = target[name];
+      delete target[name];
+      target[name] = value;
+    }
+  }
+}

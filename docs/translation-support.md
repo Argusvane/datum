@@ -866,10 +866,12 @@ is read, and only the canonical value is stored (a number, or a `YYYY-MM-DD` dat
 above stay strict. A number reads digits grouped in threes by spaces or the locale's grouping mark
 and a fraction after the locale's decimal mark, or "." where "." is not the locale's grouping
 mark ("1,250,000" and "1 000" in English, "1 000,5" and "2,5" in French); digits grouped in other
-sizes ("1,5" in English) are not a number, and a plain numeral reads as itself, so a text box
+sizes ("1,5" in English), or under a first group led by a zero ("0,500" in English, "0.500" in
+German), are not a number, and a plain numeral reads as itself, so a text box
 drawn for a number stores what `Number()` parses ("0x10" is stored as 16, "0b11" as 3, "0o17" as
 15). A month reads as its name, the locale's short form or three or more letters only one month
-starts with, in the form's language or English, ignoring case, accents and a closing full stop
+starts with, in the form's language or English (the Gregorian calendar's names, whatever calendar
+the locale uses by default, so Persian reads "مارس" and not "اسفند"), ignoring case, accents and a closing full stop
 ("Feb", "Sept.", "fevrier"), and is stored as the month's number; a select month is unchanged, and
 a typed name redraws as its digits ("02") on the next draw. Text neither reading can read is kept as typed, so "12 kg"
 is `number` and "Fbz" is `date`. A value a host, a draft or a server writes is never read this way.

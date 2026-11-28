@@ -216,6 +216,8 @@ A field node has an `id`, a `type`, a `label`, an optional `hint` and `note`, `r
 
 Before the dialog opens, the element raises a cancelable `datum-print` event. Its `detail` holds `html`, the complete document, and `theme`, the id of the print theme it was drawn with, and `fellBack`, the problems that sent a print theme back to the basic one, when any did. Call `preventDefault()` to take the document over, to send it to a PDF service or open it in a window of your own. Nothing then prints.
 
+A print a newer `print()` replaces, or whose element leaves the page before its dialog, opens no dialog.
+
 ## Switching print off
 
 The `features` attribute lists what a form can do. A list without `print` makes `print()` reject.

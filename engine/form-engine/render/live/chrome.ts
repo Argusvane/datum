@@ -178,18 +178,22 @@ function adapted(part: ChromePart, region: RegionDraw, content: TemplateResult, 
 /** The engine's own switcher: a labelled `<select>`, one option per locale, each with its `lang`. */
 function defaultSwitcher(state: LanguageSwitcherState): TemplateResult {
   const labelClass = state.hideLabel ? "datum-form__language-switcher-label datum-form__visually-hidden" : "datum-form__language-switcher-label";
+  // A current locale none of the options is shows a blank, never the first language, so choosing that one is still a switch.
+  const unlisted = !state.locales.some((entry) => entry.code === state.current);
   return html`<div class="datum-form__language-switcher" data-chrome-part=${LANGUAGE_SWITCHER_PART_TYPE}><label class=${labelClass} for=${state.controlId}>${state.label}</label><select
       id=${state.controlId}
       class="datum-form__language-switcher-select datum-form__control datum-form__control--select"
       data-locale-switch
-      .value=${live(state.current)}
+      .value=${live(unlisted ? "" : state.current)}
       @change=${(event: Event) => {
         const control = event.currentTarget as HTMLSelectElement;
         if (!state.switchTo(control.value)) {
-          control.value = state.current;
+          control.value = unlisted ? "" : state.current;
         }
       }}
-    >${state.locales.map((entry) => html`<option value=${entry.code} lang=${entry.code} ?selected=${entry.code === state.current}>${entry.label}</option>`)}</select></div>`;
+    >${unlisted ? html`<option value="" disabled hidden selected></option>` : nothing}${state.locales.map(
+      (entry) => html`<option value=${entry.code} lang=${entry.code} ?selected=${entry.code === state.current}>${entry.label}</option>`
+    )}</select></div>`;
 }
 
 function switcherPart(part: ChromePart, region: RegionDraw): TemplateResult | undefined {
