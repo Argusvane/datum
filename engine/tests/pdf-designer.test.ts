@@ -5,6 +5,7 @@ import { createPdfBuilderMode, type PdfBuilderMode, type PdfBuilderModeOptions }
 import type { PdfConfiguration, PdfTemplateLayout } from "../form-engine/core/schema/pdf-layout.js";
 import type { FormState } from "../form-engine/core/state/form-state.js";
 import { ComponentTree } from "../form-engine/core/tree/component-tree.js";
+import type { DataSourceResolver } from "../form-engine/render/core/component-options.js";
 import type { RenderableRuntime } from "../form-engine/render/core/runtime-render-bridge.js";
 import type { PdfTemplateInfo } from "../form-engine/render/pdf/pdf-abi.js";
 import type { PdfRenderProvider } from "../form-engine/render/pdf/pdf-provider.js";
@@ -185,6 +186,39 @@ describe("createPdfDesigner", () => {
     await designer.refresh({ firstName: "Grace" });
     expect(designer.fieldPreview("firstName")?.querySelector("input")?.value).toBe("Grace");
     expect(designer.fieldPreview("firstName")).not.toBe(preview);
+  });
+
+  it("keeps the newer refresh's previews when an older one finishes after it", async () => {
+    const withCountry: ComponentNode = {
+      ...form(),
+      children: { content: [...form().children!["content"]!, { id: "country", type: "select", configuration: { label: "Country", data: { sourceId: "countries" } } }] }
+    };
+    // The data source answers when the test says so: the first refresh's call is held back.
+    const held: Array<() => void> = [];
+    let holding = false;
+    const dataSourceResolver: DataSourceResolver = {
+      resolveDataSource: () =>
+        new Promise((resolve) => {
+          const answer = (): void => resolve({ items: [{ value: "CA", label: "Canada" }] });
+          if (holding) {
+            held.push(answer);
+          } else {
+            answer();
+          }
+        })
+    };
+    const designer = await createPdfDesigner({ formRoot: withCountry, values: { firstName: "Ada" }, dataSourceResolver });
+    holding = true;
+    const older = designer.refresh({ firstName: "Older" });
+    await vi.waitFor(() => expect(held.length).toBeGreaterThan(0));
+    holding = false;
+    await designer.refresh({ firstName: "Newer" });
+    expect(designer.fieldPreview("firstName")?.querySelector("input")?.value).toBe("Newer");
+    for (const answer of held) {
+      answer();
+    }
+    await older;
+    expect(designer.fieldPreview("firstName")?.querySelector("input")?.value).toBe("Newer");
   });
 
   it("refreshes over the host's values with the answers tried laid over them", async () => {
