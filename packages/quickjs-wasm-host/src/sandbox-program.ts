@@ -265,6 +265,14 @@ export const INTRINSIC_ALIASES: readonly string[] = [
  * the global object would reach the engine's define by its own route, so `new Proxy` and
  * `Proxy.revocable` refuse that one target.
  *
+ * The global object's prototype is where a bare name that is not one of its own properties is
+ * looked up (`hasOwnProperty`, `toString`, a name the host removed, a name no module defined), so
+ * it stays the one it starts with, on both engines. `Object.setPrototypeOf`, `Reflect.setPrototypeOf`
+ * and the `__proto__` setter on `Object.prototype` get the same kind of guard: given the global
+ * object and a prototype other than its own, the first two throw a `TypeError` and return false
+ * as the language does for an object whose prototype cannot change, and the setter throws; given
+ * anything else, they are the originals.
+ *
  * The global object itself stays extensible, so a plugin can still define globals of its own. Every
  * object reached from a global is frozen, `__datum_` globals included: the program keeps its mutable
  * state in closure locals. A host that embeds the sandbox program elsewhere (a server host's own
@@ -345,6 +353,29 @@ export const FREEZE_INTRINSICS_SNIPPET = [
   '  define(Object, "defineProperty", method(guarded.defineProperty));',
   '  define(Object, "defineProperties", method(guarded.defineProperties));',
   '  define(Reflect, "defineProperty", method(guardedReflect.defineProperty));',
+  // The global object's prototype stays the one it starts with (see the comment above the snippet).
+  "  var apply = Reflect.apply;",
+  "  var setProto = Object.setPrototypeOf;",
+  "  var reflectSetProto = Reflect.setPrototypeOf;",
+  "  var startProto = getProto(root);",
+  '  function isProto(v) { return v === null || typeof v === "object" || typeof v === "function"; }',
+  "  function swaps(o, proto) { return o === root && isProto(proto) && proto !== startProto; }",
+  "  function refuseSwap() { throw new TypeError(\"The global object's prototype cannot be changed in the sandbox\"); }",
+  "  var guardedSetProto = {",
+  "    setPrototypeOf(o, proto) { if (swaps(o, proto)) { refuseSwap(); } return setProto(o, proto); }",
+  "  };",
+  "  var guardedReflectSetProto = {",
+  "    setPrototypeOf(o, proto) { return swaps(o, proto) ? false : reflectSetProto(o, proto); }",
+  "  };",
+  '  define(Object, "setPrototypeOf", method(guardedSetProto.setPrototypeOf));',
+  '  define(Reflect, "setPrototypeOf", method(guardedReflectSetProto.setPrototypeOf));',
+  '  var protoAccessor = getDescriptor(Object.prototype, "__proto__");',
+  "  if (protoAccessor !== undefined && typeof protoAccessor.set === \"function\") {",
+  "    var protoSetter = protoAccessor.set;",
+  // Method shorthand, so the setter has no `prototype` object of its own to leave unfrozen.
+  "    var guardedProtoSetter = { set(proto) { if (swaps(this, proto)) { refuseSwap(); } return apply(protoSetter, this, [proto]); } };",
+  '    define(Object.prototype, "__proto__", { get: protoAccessor.get, set: guardedProtoSetter.set, enumerable: protoAccessor.enumerable, configurable: protoAccessor.configurable });',
+  "  }",
   // A proxy without a defineProperty trap hands the define to its target by the engine's own
   // route, past the guarded functions, so the global object cannot be a proxy's target.
   '  if (typeof Proxy === "function") {',
