@@ -121,4 +121,108 @@ describe("the freeze holds a global against a redefining descriptor", () => {
       host.dispose();
     }
   }, 60_000);
+
+});
+
+/**
+ * A bare name that is not one of the global object's own properties is looked up on its prototype,
+ * so after the freeze that prototype stays the one the global object starts with: no route lets one
+ * module put an object of its own there and change what another module's `hasOwnProperty`, or a
+ * name nobody defined, resolves to.
+ */
+
+const fakePrototype = `new Proxy({}, { has: function () { return true; }, get: function (t, k) { return k === Symbol.unscopables ? undefined : function () { return true; }; } })`;
+const PROTOTYPE_SWAPS = [
+  `Object.setPrototypeOf(globalThis, ${fakePrototype});`,
+  `Reflect.setPrototypeOf(globalThis, ${fakePrototype});`,
+  `globalThis.__proto__ = ${fakePrototype};`,
+  `Object.getOwnPropertyDescriptor(Object.prototype, "__proto__").set.call(globalThis, ${fakePrototype});`,
+  `var s = {}; Object.defineProperty(s, "__proto__", { value: ${fakePrototype}, enumerable: true }); Object.assign(globalThis, s);`
+];
+
+// The first module tries the swap as it loads; the second reports when a bare name resolves to something it should not.
+const prototypeModules = (statement: string) => [
+  { id: "swap", version: "1", source: `(function () { try { ${statement} } catch (e) {} return { validators: [] }; })()` },
+  {
+    id: "names",
+    version: "1",
+    source: `({ validators: [ (c) => typeof hasOwnProperty === "function" && hasOwnProperty === Object.prototype.hasOwnProperty && typeof nobodyDefinedThis === "undefined" ? { errors: [{ code: "intact", stage: "probe", source: "custom", severity: "error" }] } : { errors: [] } ] })`
+  }
+];
+
+describe("the freeze keeps the global object's prototype", () => {
+  it("on the page's adapter: another module's bare names resolve as the language's own", async () => {
+    for (const statement of PROTOTYPE_SWAPS) {
+      const host = await createQuickJsValidationHost(prototypeModules(statement));
+      try {
+        const outcome = await host.run({ context: { formId: "f", values: { name: "abc" }, locale: "en", form }, policy: WasmValidationHost.STRICT_POLICY });
+        expect(outcome.errors.map((error) => error.code), statement).toEqual(["intact"]);
+      } finally {
+        host.dispose();
+      }
+    }
+  }, 60_000);
+
+  it.each([
+    ["the worker host", (statement: string) => createQuickJsWorkerHost({ plugins: prototypeModules(statement) })],
+    ["the fresh-sandbox host (worker: false)", (statement: string) => createQuickJsFreshSandboxHost({ plugins: prototypeModules(statement) })]
+  ])("on %s: another module's bare names resolve as the language's own", async (_name, make) => {
+    for (const statement of PROTOTYPE_SWAPS) {
+      const host = await make(statement);
+      try {
+        expect(codes(await host.run(contextJson)), statement).toEqual(["intact"]);
+      } finally {
+        await host.dispose();
+      }
+    }
+  }, 120_000);
+
+  it("refuses each route as the language does for an object whose prototype cannot change, and leaves every other object alone", async () => {
+    const host = await QuickJsProgramHost.create();
+    try {
+      host.evaluate(FREEZE_INTRINSICS_SNIPPET, "sandbox-freeze");
+      const report = host.evaluateHandle(
+        `(function () {
+          var out = {};
+          var start = Object.getPrototypeOf(globalThis);
+          var other = {};
+          function attempt(name, f) { try { out[name] = String(f()); } catch (e) { out[name] = e instanceof TypeError ? "TypeError" : "other"; } }
+          attempt("setPrototypeOf", function () { Object.setPrototypeOf(globalThis, other); });
+          attempt("toNull", function () { Object.setPrototypeOf(globalThis, null); });
+          attempt("reflect", function () { return Reflect.setPrototypeOf(globalThis, other); });
+          attempt("assign", function () { globalThis.__proto__ = other; });
+          attempt("setter", function () { Object.getOwnPropertyDescriptor(Object.prototype, "__proto__").set.call(globalThis, other); });
+          out.intact = Object.getPrototypeOf(globalThis) === start;
+          attempt("sameProto", function () { return Object.setPrototypeOf(globalThis, start) === globalThis && Reflect.setPrototypeOf(globalThis, start); });
+          attempt("notAPrototype", function () { globalThis.__proto__ = 5; return Object.getPrototypeOf(globalThis) === start; });
+          attempt("ordinary", function () { var a = {}, b = { x: 1 }; Object.setPrototypeOf(a, b); var c = {}; c.__proto__ = b; var d = {}; return a.x + c.x + (Reflect.setPrototypeOf(d, b) ? d.x : 0); });
+          attempt("frozen", function () { return Reflect.setPrototypeOf(Object.freeze({}), other); });
+          attempt("getter", function () { return ({}).__proto__ === Object.prototype && globalThis.__proto__ === start; });
+          attempt("shape", function () { return [Object.setPrototypeOf.length, Reflect.setPrototypeOf.length, Object.isFrozen(Object), Object.isFrozen(Reflect), Object.isFrozen(Object.getOwnPropertyDescriptor(Object.prototype, "__proto__").set)].join(","); });
+          return out;
+        })()`,
+        "probe"
+      );
+      try {
+        expect(host.vm.dump(report)).toEqual({
+          setPrototypeOf: "TypeError",
+          toNull: "TypeError",
+          reflect: "false",
+          assign: "TypeError",
+          setter: "TypeError",
+          intact: true,
+          sameProto: "true",
+          notAPrototype: "true",
+          ordinary: "3",
+          frozen: "false",
+          getter: "true",
+          shape: "2,2,true,true,true"
+        });
+      } finally {
+        report.dispose();
+      }
+    } finally {
+      host.dispose();
+    }
+  }, 60_000);
 });

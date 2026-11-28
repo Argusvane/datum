@@ -195,7 +195,9 @@ authority by construction (no fetch, filesystem, process or timers), and the pro
   freeze it puts guarded `Object.defineProperty`, `Object.defineProperties` and
   `Reflect.defineProperty` in place, which refuse a change to a non-configurable own property of
   the global object as the language does (a `TypeError`, or `false` from `Reflect`), and `Proxy`
-  refuses the global object as its target. `freezeIntrinsics: false` is the documented opt-out for
+  refuses the global object as its target. The global object's prototype, where a bare name that
+  is not its own property is looked up, keeps the one it starts with: `Object.setPrototypeOf`,
+  `Reflect.setPrototypeOf` and the `__proto__` setter are guarded the same way. `freezeIntrinsics: false` is the documented opt-out for
   a plugin that must patch a built-in. A host that embeds the program itself evaluates the same
   snippet at the same point.
 - **A server gives every call a fresh sandbox, on its own thread** (ADR 0181).

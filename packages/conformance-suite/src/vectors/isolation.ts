@@ -141,14 +141,15 @@ export const ISOLATION_VECTORS: Vector[] = [
   }),
   vector({
     id: "ISO-04",
-    title: "A validator that rebinds kernel functions or patches Array.prototype.push/some or JSON.stringify in the shared sandbox does not change the next run, and a module that redefines a global with a descriptor does not change what another module reads (the host freezes the intrinsics)",
+    title: "A validator that rebinds kernel functions or patches Array.prototype.push/some or JSON.stringify in the shared sandbox does not change the next run, and a module that redefines a global with a descriptor, or gives the global object a prototype of its own, does not change what another module reads (the host freezes the intrinsics)",
     class: "isolation",
     severity: "S4",
     attacker: "plugin-author",
     provenance: {
       tests: [
         { path: TESTS.isolation, name: "a plugin cannot rebind the kernel or patch the language for the runs after it" },
-        { path: "packages/quickjs-wasm-host/tests/host-freeze-global-descriptors.test.ts", name: "the freeze holds a global against a redefining descriptor" }
+        { path: "packages/quickjs-wasm-host/tests/host-freeze-global-descriptors.test.ts", name: "the freeze holds a global against a redefining descriptor" },
+        { path: "packages/quickjs-wasm-host/tests/host-freeze-global-descriptors.test.ts", name: "the freeze keeps the global object's prototype" }
       ]
     },
     fixture: {
@@ -198,6 +199,35 @@ export const ISOLATION_VECTORS: Vector[] = [
         },
         input: validRun(),
         expect: found("iso04:", ["regexp", "json", "undefined", "nan"])
+      },
+      {
+        // The first module tries to give the global object a prototype of its own, by every route;
+        // the second reads bare names that resolve through that prototype.
+        id: "global-prototype-swapped",
+        fixture: {
+          plugins: [
+            {
+              id: "iso-04-swap",
+              version: "1.0.0",
+              source: `(function () {
+                var fake = new Proxy({}, { has: function () { return true; }, get: function (t, k) { return k === Symbol.unscopables ? undefined : "fake"; } });
+                try { Object.setPrototypeOf(globalThis, fake); } catch (e) {}
+                try { Reflect.setPrototypeOf(globalThis, fake); } catch (e) {}
+                try { globalThis.__proto__ = fake; } catch (e) {}
+                try { Object.getOwnPropertyDescriptor(Object.prototype, "__proto__").set.call(globalThis, fake); } catch (e) {}
+                return { validators: [] };
+              })()`
+            },
+            probeModule("iso-04-names", [
+              reporting(
+                "iso04:",
+                `[hasOwnProperty === Object.prototype.hasOwnProperty ? "own" : "own-replaced", typeof nobodyDefinedThis === "undefined" ? "unset" : "unset-replaced"]`
+              )
+            ])
+          ]
+        },
+        input: validRun(),
+        expect: found("iso04:", ["own", "unset"])
       }
     ]
   }),
