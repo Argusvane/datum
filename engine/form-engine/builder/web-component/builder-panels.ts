@@ -7875,12 +7875,13 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
     }
     const messages = editor.kind === "messages";
     // A half-typed add row is not dropped without a word.
-    const unfinished = messages ? undefined : this.takePendingOptionRow(editor);
+    const unfinished = this.takePendingOptionRow(editor);
     if (unfinished) {
       editor.error = unfinished.message;
       this.captureOptionsFrame();
       this.paint();
-      // Focus the box the problem is in: a clashing key is in the key box, the rest in the label box.
+      // Focus the box the problem is in: a clashing or missing key (a message's code) is in the
+      // key box, the rest in the label box.
       this.root.querySelector<HTMLElement>(`[data-options-new='${unfinished.box}']`)?.focus();
       return;
     }
@@ -7910,12 +7911,29 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
   /**
    * The add row as Apply finds it: nothing typed, nothing to do; a label, a row
    * (under its key, or one made from the label); a key with no label, the reason it is not
-   * applied. A key some row already has is refused as Add refuses it.
+   * applied. A key some row already has is refused as Add refuses it. In the messages editor a
+   * row needs both: a code and its message are a row, and either one alone is the reason it is
+   * not applied (a code is never made from the message).
    */
   private takePendingOptionRow(editor: OptionsEditorView): { message: string; box: "value" | "label" } | undefined {
     const key = editor.newValue.trim();
     const label = editor.newLabel.trim();
     if (key.length === 0 && label.length === 0) {
+      return undefined;
+    }
+    if (editor.kind === "messages") {
+      if (key.length === 0) {
+        return { message: this.words.text("optionsEditor.err.enterCode"), box: "value" };
+      }
+      if (editor.rows.some((row) => row.value.trim() === key)) {
+        return { message: this.words.text("optionsEditor.err.codeHasMessage", { code: key }), box: "value" };
+      }
+      if (label.length === 0) {
+        return { message: this.words.text("optionsEditor.err.messageEmpty", { code: key }), box: "label" };
+      }
+      editor.rows.push({ value: key, label });
+      editor.newValue = "";
+      editor.newLabel = "";
       return undefined;
     }
     if (label.length === 0) {
