@@ -18,12 +18,13 @@ import {
 } from "../../core/submission/webauthn-assertion.js";
 import { parseAuthenticatorData, type AuthenticatorFlags } from "./authenticator-data.js";
 import { WebAuthnError, toWebAuthnError } from "./errors.js";
+import { MIN_RSA_MODULUS_BITS, coseAlgorithmOfSpki, coseAlgorithmOfSpkiBase64, meetsKeyPolicy, readSpki } from "./spki.js";
 
 /** A credential a ceremony may use, as the page stores it: id (base64url) and the transports it was registered over. */
 export interface WebAuthnCredentialReference {
   id: string;
   transports?: string[];
-  /** COSE algorithm, when known; lets the archived assertion say what signed it. */
+  /** COSE algorithm, when known; lets the archived assertion say what signed it. Absent: the `publicKey`'s key type says (RSA RS256, EC ES256). */
   algorithm?: number;
   /** SPKI DER base64, when known; archived with the assertion so it verifies on its own. */
   publicKey?: string;
@@ -101,7 +102,7 @@ export async function requestAssertion(options: RequestAssertionOptions): Promis
     signature: bytesToBase64Url(new Uint8Array(response.signature)),
     userHandle: response.userHandle ? bytesToBase64Url(new Uint8Array(response.userHandle)) : null,
     ...(known?.publicKey ? { publicKey: known.publicKey } : {}),
-    algorithm: known?.algorithm ?? COSE_ALGORITHM.ES256,
+    algorithm: known?.algorithm ?? coseAlgorithmOfSpkiBase64(known?.publicKey) ?? COSE_ALGORITHM.ES256,
     rpId: options.rpId,
     origin: clientData.origin,
     signedAt: (options.now ?? (() => new Date()))().toISOString()
@@ -114,9 +115,13 @@ export interface VerifyAssertionOptions {
   /** The origins the client may have written; the page's own for a page verifying itself. */
   expectedOrigins: readonly string[];
   rpId: string;
-  /** SPKI DER base64; the assertion's archived key when absent. */
-  publicKey?: string;
-  /** COSE algorithm of that key; the assertion's when absent. */
+  /**
+   * SPKI DER base64; the assertion's archived key when absent. `null` says no key is registered
+   * for this credential: the `publicKey` and `signature` checks fail, and the archived key does not
+   * stand in.
+   */
+  publicKey?: string | null;
+  /** COSE algorithm of that key; absent, the key's type says (RSA RS256, EC ES256), else the assertion's. */
   algorithm?: number;
   requireUserVerification?: boolean;
   subtle?: SubtleCrypto;
@@ -128,9 +133,15 @@ export interface AssertionVerdict {
     type: boolean;
     challenge: boolean;
     origin: boolean;
+    /** The ceremony did not run in a cross-origin frame: no `crossOrigin: true`, no `topOrigin`. */
+    crossOrigin: boolean;
     rpId: boolean;
     userPresent: boolean;
     userVerified: boolean;
+    /** The flags are consistent: a credential reported backed up (BS) is backup eligible (BE). */
+    backupState: boolean;
+    /** A key is at hand and meets the policy: ES256 on P-256, or RS256 of at least 2048 bits. */
+    publicKey: boolean;
     signature: boolean;
   };
   flags: AuthenticatorFlags;
@@ -166,69 +177,94 @@ export function ecdsaDerToP1363(der: Uint8Array, size = 32): Uint8Array {
   return out;
 }
 
-async function verifySignature(
-  algorithm: number,
-  publicKey: Uint8Array,
-  data: Uint8Array,
-  signature: Uint8Array,
-  subtle: SubtleCrypto
-): Promise<boolean> {
+/** The verification key, when the key and the algorithm meet the policy: ES256 on P-256, RS256 of at least 2048 bits. */
+async function importVerificationKey(spki: Uint8Array, algorithm: number, subtle: SubtleCrypto): Promise<CryptoKey | undefined> {
+  if (!meetsKeyPolicy(readSpki(spki), algorithm)) {
+    return undefined;
+  }
+  try {
+    if (algorithm === COSE_ALGORITHM.ES256) {
+      const key = await subtle.importKey("spki", spki as BufferSource, { name: "ECDSA", namedCurve: "P-256" }, false, ["verify"]);
+      return (key.algorithm as EcKeyAlgorithm).namedCurve === "P-256" ? key : undefined;
+    }
+    const key = await subtle.importKey("spki", spki as BufferSource, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
+    return (key.algorithm as RsaHashedKeyAlgorithm).modulusLength >= MIN_RSA_MODULUS_BITS ? key : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function verifySignature(algorithm: number, key: CryptoKey, data: Uint8Array, signature: Uint8Array, subtle: SubtleCrypto): Promise<boolean> {
   if (algorithm === COSE_ALGORITHM.ES256) {
-    const key = await subtle.importKey("spki", publicKey as BufferSource, { name: "ECDSA", namedCurve: "P-256" }, false, ["verify"]);
     return subtle.verify({ name: "ECDSA", hash: "SHA-256" }, key, ecdsaDerToP1363(signature) as BufferSource, data as BufferSource);
   }
-  if (algorithm === COSE_ALGORITHM.RS256) {
-    const key = await subtle.importKey("spki", publicKey as BufferSource, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
-    return subtle.verify({ name: "RSASSA-PKCS1-v1_5" }, key, signature as BufferSource, data as BufferSource);
-  }
-  throw new WebAuthnError("unsupported", `COSE algorithm ${algorithm} is not one this verifier checks (ES256 -7, RS256 -257).`);
+  return subtle.verify({ name: "RSASSA-PKCS1-v1_5" }, key, signature as BufferSource, data as BufferSource);
 }
 
 /**
- * The relying party's checks over an archived assertion: type, challenge, origin, rpIdHash,
- * user presence (and verification when required), then the signature over
- * `authenticatorData || SHA-256(clientDataJSON)`. Never throws for a failed check — the
- * verdict says which one; throws only when the bundle cannot be read or no key is at hand.
+ * The relying party's checks over an archived assertion: type, challenge, origin, no
+ * cross-origin frame, rpIdHash, user presence (and verification when required), consistent
+ * backup flags, a key that meets the policy (ES256 on P-256, RS256 of at least 2048 bits), then
+ * the signature over `authenticatorData || SHA-256(clientDataJSON)`. The algorithm is the
+ * option's, else the key's type (RSA RS256, EC ES256), else the assertion's. Never throws for a
+ * failed check — the verdict says which one; throws a {@link WebAuthnError} only when the bundle
+ * cannot be read (`protocol`), no key is at hand (`no_credentials`) or there is no WebCrypto
+ * (`unsupported`).
  */
 export async function verifyAssertion(assertion: WebAuthnAssertion, options: VerifyAssertionOptions): Promise<AssertionVerdict> {
   const subtle = options.subtle ?? (globalThis as { crypto?: { subtle?: SubtleCrypto } }).crypto?.subtle;
   if (!subtle) {
     throw new WebAuthnError("unsupported", "WebCrypto is not available here; give the verifier a SubtleCrypto.");
   }
-  const publicKey = options.publicKey ?? assertion.publicKey;
-  if (!publicKey) {
+  const unregistered = options.publicKey === null;
+  const publicKey = unregistered ? undefined : (options.publicKey ?? assertion.publicKey);
+  if (!unregistered && !publicKey) {
     throw new WebAuthnError("no_credentials", "No public key is known for this credential.");
   }
   let clientData: WebAuthnClientData;
   let authenticatorData: Uint8Array;
+  let parsed: ReturnType<typeof parseAuthenticatorData>;
   try {
     clientData = parseClientData(assertion.clientDataJSON);
     authenticatorData = base64UrlToBytes(assertion.authenticatorData);
+    parsed = parseAuthenticatorData(authenticatorData);
   } catch (error) {
     throw new WebAuthnError("protocol", "The assertion could not be read.", error);
   }
-  const parsed = parseAuthenticatorData(authenticatorData);
   const rpIdHash = sha256(new TextEncoder().encode(options.rpId));
   const checks: AssertionVerdict["checks"] = {
     type: clientData.type === "webauthn.get",
     challenge: clientData.challenge === bytesToBase64Url(options.expectedChallenge),
     origin: options.expectedOrigins.includes(clientData.origin),
+    crossOrigin: clientData.crossOrigin !== true && clientData.topOrigin === undefined,
     rpId: parsed.rpIdHash.length === rpIdHash.length && parsed.rpIdHash.every((byte, index) => byte === rpIdHash[index]),
     userPresent: parsed.flags.userPresent,
     userVerified: options.requireUserVerification ? parsed.flags.userVerified : true,
+    backupState: parsed.flags.backupEligible || !parsed.flags.backedUp,
+    publicKey: false,
     signature: false
   };
   const clientDataHash = sha256(base64UrlToBytes(assertion.clientDataJSON));
   const signed = new Uint8Array(authenticatorData.length + clientDataHash.length);
   signed.set(authenticatorData, 0);
   signed.set(clientDataHash, authenticatorData.length);
-  try {
-    checks.signature = await verifySignature(options.algorithm ?? assertion.algorithm, base64ToBytes(publicKey), signed, base64UrlToBytes(assertion.signature), subtle);
-  } catch (error) {
-    if (error instanceof WebAuthnError) {
-      throw error;
+  if (publicKey) {
+    let spki: Uint8Array | undefined;
+    try {
+      spki = base64ToBytes(publicKey);
+    } catch {
+      spki = undefined;
     }
-    checks.signature = false;
+    const algorithm = options.algorithm ?? (spki ? coseAlgorithmOfSpki(spki) : undefined) ?? assertion.algorithm;
+    const key = spki ? await importVerificationKey(spki, algorithm, subtle) : undefined;
+    checks.publicKey = key !== undefined;
+    if (key) {
+      try {
+        checks.signature = await verifySignature(algorithm, key, signed, base64UrlToBytes(assertion.signature), subtle);
+      } catch {
+        checks.signature = false;
+      }
+    }
   }
   const failed = (Object.keys(checks) as Array<keyof AssertionVerdict["checks"]>).find((key) => !checks[key]);
   return {
@@ -236,16 +272,22 @@ export async function verifyAssertion(assertion: WebAuthnAssertion, options: Ver
     checks,
     flags: parsed.flags,
     signCount: parsed.signCount,
-    ...(failed ? { reason: REASONS[failed] } : {})
+    ...(failed ? { reason: failed === "publicKey" && unregistered ? UNREGISTERED_CREDENTIAL : REASONS[failed] } : {})
   };
 }
+
+/** The reason on a signature whose credential the verifier has no key registered for. */
+const UNREGISTERED_CREDENTIAL = "the credential is not registered with this verifier";
 
 const REASONS: Record<keyof AssertionVerdict["checks"], string> = {
   type: "the client data is not a webauthn.get assertion",
   challenge: "the challenge is not the hash of this document",
   origin: "the origin is not one the verifier accepts",
+  crossOrigin: "the assertion was made in a cross-origin frame (crossOrigin or topOrigin), which the verifier refuses",
   rpId: "the relying party id hash does not match",
   userPresent: "the authenticator reports no user presence",
   userVerified: "user verification was required and not performed",
+  backupState: "the authenticator reports a backed-up credential that is not backup eligible",
+  publicKey: "the public key is not one the verifier accepts (ES256 on P-256, or RS256 of at least 2048 bits)",
   signature: "the signature does not verify with the registered public key"
 };

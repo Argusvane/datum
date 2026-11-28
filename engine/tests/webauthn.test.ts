@@ -57,7 +57,7 @@ describe("verifyAssertion", () => {
       const assertion = await authenticator.assert(challenge);
       const verdict = await verifyAssertion(assertion, { expectedChallenge: challenge, expectedOrigins: [ORIGIN], rpId: RP, requireUserVerification: true });
       expect(verdict.valid).toBe(true);
-      expect(verdict.checks).toEqual({ type: true, challenge: true, origin: true, rpId: true, userPresent: true, userVerified: true, signature: true });
+      expect(verdict.checks).toEqual({ type: true, challenge: true, origin: true, crossOrigin: true, rpId: true, userPresent: true, userVerified: true, backupState: true, publicKey: true, signature: true });
       expect(verdict.signCount).toBe(1);
       expect(verdict.reason).toBeUndefined();
       expect(assertion.algorithm).toBe(algorithm === "ES256" ? COSE_ALGORITHM.ES256 : COSE_ALGORITHM.RS256);
@@ -405,12 +405,12 @@ describe("a registration a server can verify", () => {
     expect(verifyRegistration({ ...result, id: bytesToBase64Url(new Uint8Array(16)) }, base).checks.credentialId).toBe(false);
     // An assertion's client data is not a registration.
     const asserted = await authenticator.assert(base64UrlToBytes(challenge));
-    expect(verifyRegistration({ id: result.id, response: { ...result.response, clientDataJSON: asserted.clientDataJSON } }, base).checks.type).toBe(false);
+    expect(verifyRegistration({ id: result.id, publicKey: result.publicKey, response: { ...result.response, clientDataJSON: asserted.clientDataJSON } }, base).checks.type).toBe(false);
     // Authenticator data without the AT flag (an assertion's) carries no credential.
-    const plain = verifyRegistration({ id: result.id, response: { ...result.response, authenticatorData: asserted.authenticatorData } }, base);
+    const plain = verifyRegistration({ id: result.id, publicKey: result.publicKey, response: { ...result.response, authenticatorData: asserted.authenticatorData } }, base);
     expect(plain.checks.attestedCredential).toBe(false);
     expect(plain.checks.credentialId).toBe(false);
-    expect(() => verifyRegistration({ id: result.id, response: { ...result.response, authenticatorData: "" } }, base)).toThrow(WebAuthnError);
+    expect(() => verifyRegistration({ id: result.id, publicKey: result.publicKey, response: { ...result.response, authenticatorData: "" } }, base)).toThrow(WebAuthnError);
   });
 
   it("refuses a user handle or a challenge WebAuthn would not take", async () => {

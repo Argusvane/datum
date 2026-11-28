@@ -166,10 +166,10 @@ It resolves with the record:
 - `createdAt`.
 - For the server's checks, `userHandle` and `response` (`clientDataJSON`, `authenticatorData`, `attestationObject`, `transports`).
 
-A server that handed out the challenge checks the registration with `verifyRegistration(result, { expectedChallenge, expectedOrigins, rpId, requireUserVerification })`, which returns:
+A server that handed out the challenge checks the registration with `verifyRegistration(result, { expectedChallenge, expectedOrigins, rpId, requireUserVerification })`, where `result` carries the `id`, the `publicKey` (and the `algorithm`, when known) and the `response`. It returns:
 
 - `valid`.
-- Per-check `checks`: `type`, `challenge`, `origin`, `rpId`, `userPresent`, `userVerified`, `attestedCredential`, `credentialId`.
+- Per-check `checks`: `type`, `challenge`, `origin`, `crossOrigin` (not made in a cross-origin frame), `rpId`, `userPresent`, `userVerified`, `backupState` (not backed up without being backup eligible), `attestedCredential`, `credentialId`, `publicKey` (ES256 on P-256, or RS256 of at least 2048 bits, matching `algorithm`).
 - A `reason`.
 
 The attestation itself is not judged. A page that is its own relying party stores the record without `response` and `userHandle`.
@@ -208,7 +208,7 @@ Under `embedded` placement the signatures ride on the envelope the form delivers
 
 Under `wrapper` placement the envelope is untouched and the page delivers `detail.signed` from the `datum-submit` event instead: `{ "format": { … }, "payload": <the envelope>, "signatures": [ … ] }`. Send `detail.signed ?? detail.submission`.
 
-- `algorithm` is `webauthn-es256` or `webauthn-rs256`; the inner `algorithm` is the COSE number, -7 or -257.
+- `algorithm` is `webauthn-es256` or `webauthn-rs256`; the inner `algorithm` is the COSE number, -7 or -257. A listed credential with a `publicKey` but no `algorithm` is labelled by its key's type. A discoverable signature from a credential the page did not know is labelled ES256, and the verifier takes the algorithm from the key it registered.
 - `publicKey` appears inside `webauthn` when the page knew the credential's key.
 
 What is hashed depends on `format.scope`, and each is written as RFC 8785 canonical JSON:
@@ -225,10 +225,12 @@ The server rebuilds the signed bytes from the document, hashes them and checks, 
 
 - The type.
 - The challenge.
-- The origin.
+- The origin, and that the signature was not made in a cross-origin frame (`crossOrigin: true` or a `topOrigin` is refused).
 - The relying party id.
 - That the person was present.
 - That the person was verified, when it requires that.
+- That the backup flags agree: a credential is not backed up without being backup eligible.
+- The key: ES256 on P-256, or RS256 of at least 2048 bits.
 - The signature against the registered key.
 
 A host also refuses a replayed assertion, a counter that went backwards and a signature that arrived outside its time window. `verifyWebAuthnSubmission` runs the checks in your own code, in a browser or wherever WebCrypto exists, and returns one verdict per WebAuthn signature on the document.
@@ -237,7 +239,7 @@ A host also refuses a replayed assertion, a counter that went backwards and a si
 const verdicts = await verifyWebAuthnSubmission(document, {
   expectedOrigins: ["https://forms.example.org"],
   rpId: "forms.example.org",
-  publicKeyFor: (credentialId) => keys.get(credentialId),   // { publicKey, algorithm? } the user registered
+  publicKeyFor: (credentialId) => keys.get(credentialId),   // { publicKey, algorithm? } the user registered; undefined: not registered, so invalid
   requireUserVerification: true
 });
 if (!verdicts.length || !verdicts.every((verdict) => verdict.valid)) reject();
@@ -246,13 +248,16 @@ if (!verdicts.length || !verdicts.every((verdict) => verdict.valid)) reject();
 | Verdict field | Meaning |
 |---|---|
 | `valid` | Every check passed |
-| `checks` | `type`, `challenge`, `origin`, `rpId`, `userPresent`, `userVerified`, `signature`: each true or false, so a failure says why |
+| `checks` | `type`, `challenge`, `origin`, `crossOrigin`, `rpId`, `userPresent`, `userVerified`, `backupState`, `publicKey`, `signature`: each true or false, so a failure says why |
 | `reason` | The first check that failed, in words |
+| `key` | The key the signature was checked with: `registered` (from `publicKeyFor`) or `archived` (the one in the signature, only without `publicKeyFor`). Absent when there was none |
 | `flags`, `signCount` | The authenticator's flags and counter. A counter that went backwards is yours to refuse |
 | `participantId`, `credentialId`, `algorithm` | Who signed, with which credential |
 | `format`, `statement` | The scope and placement the signature was made under, and the words it covers |
 
-A signature whose format is missing or unreadable is invalid. Without `publicKeyFor`, the key archived in the signature is used, which proves only that the signer holds that key, not that it is the person's registered one.
+A signature whose format is missing or unreadable is invalid. So is one whose credential `publicKeyFor` returns nothing for: the credential is not registered, and the key archived in the signature does not stand in. When `publicKeyFor` gives a key without an `algorithm`, the key's type says it (RSA RS256, EC ES256). Without `publicKeyFor`, the key archived in the signature is used (`key: "archived"`), which proves only that the signer holds that key, not that it is the person's registered one; a host that trusts only its own keys requires `key: "registered"`.
+
+A signature that cannot be read, or that has no key to check it with, gets an invalid verdict with its reason, and the other signatures are still checked. `verifyWebAuthnSubmission` throws only when there is no WebCrypto.
 
 ## Errors
 
@@ -271,7 +276,7 @@ A ceremony that fails throws a `WebAuthnError` with a `code`, and `describeWebAu
 
 ## In an iframe
 
-Signing from inside a cross-origin frame needs `allow="publickey-credentials-get"` on the `<iframe>`. See [In an iframe](/iframe).
+Signing from inside a cross-origin frame needs `allow="publickey-credentials-get"` on the `<iframe>`. See [In an iframe](/iframe). The browser then writes `crossOrigin: true` into the signature, and `verifyWebAuthnSubmission`, `verifyRegistration` and the Spring Boot host refuse it: a signature that must verify is made in a top-level page, or in a frame of the same origin as every page around it.
 
 ## Leaving it out
 
