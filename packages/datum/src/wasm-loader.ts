@@ -9,7 +9,6 @@
 import { WASM_ABI_VERSION, type WasmPluginModule, type WasmValidationHost } from "@argusvane/datum-engine";
 
 import { ChunkLoadError, importUrl, noteImportFailure } from "./chunk-load-error.js";
-import { IntegrityError, importWithIntegrity } from "./integrity.js";
 import type { CreateWasmValidationHostOptions } from "./wasm.js";
 
 interface WasmModule {
@@ -96,7 +95,10 @@ async function loadHost(spec: string, plugins: readonly WasmPluginModule[], inte
   const key = checked ? `${url}\n${integrity.trim()}` : url;
   let load = loads.get(key);
   if (!load) {
-    const imported: Promise<WasmModule> = checked ? importWithIntegrity<WasmModule>(url, integrity.trim(), `The sandbox module at ${url}`) : import(/* @vite-ignore */ importUrl(url));
+    // The integrity check is a chunk of its own: only a page that sets wasm-integrity loads it.
+    const imported: Promise<WasmModule> = checked
+      ? import("./integrity.js").then(({ importWithIntegrity }) => importWithIntegrity<WasmModule>(url, integrity.trim(), `The sandbox module at ${url}`))
+      : import(/* @vite-ignore */ importUrl(url));
     load = imported.then((module: WasmModule) => {
       // A module that loaded but is unusable is retried through a fresh URL too, so a corrected
       // deployment at the same URL is fetched, not served from the module map.
@@ -113,7 +115,7 @@ async function loadHost(spec: string, plugins: readonly WasmPluginModule[], inte
       }
       return module;
     }, (error: unknown): never => {
-      if (error instanceof IntegrityError) {
+      if (error instanceof Error && error.name === "IntegrityError") {
         throw error;
       }
       // A module that is not there (deleted, blocked, a 404) names itself; forgotten below.
