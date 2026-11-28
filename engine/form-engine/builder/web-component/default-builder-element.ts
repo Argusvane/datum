@@ -2068,7 +2068,8 @@ export class DatumBuilderElement extends HTMLElementBase {
 
   /**
    * Removes a mode. The active one is left at once — the host's decision, not held by the
-   * guard — and the form comes back on the page. The form itself cannot be removed.
+   * guard — and the form comes back on the page; a switch to it still activating lands nothing.
+   * The form itself cannot be removed.
    */
   public removeMode(id: string): void {
     if (id === PRIMARY_BUILDER_MODE) {
@@ -2080,6 +2081,8 @@ export class DatumBuilderElement extends HTMLElementBase {
     }
     if (mode === this.activeMode) {
       this.returnToForm(mode);
+    } else if (mode === this.activating) {
+      this.supersedeActivation();
     }
     this.modeMap.delete(id);
     this.surfaces.delete(mode);

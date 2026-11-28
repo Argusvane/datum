@@ -145,6 +145,25 @@ describe("a mode switch given way to while it activates", () => {
     expect(slow.active()).toBe(true);
   });
 
+  it("lands nothing for a mode removed while it activates: the form stays on the page", async () => {
+    const element = mount();
+    const slow = gatedMode("slow");
+    slow.mode.dispose = () => {
+      slow.log.push("dispose");
+    };
+    element.addMode(slow.mode);
+    expect(element.setMode("slow")).toBe(true);
+    element.removeMode("slow");
+    await slow.finish();
+    expect(element.mode).toBe("form");
+    expect(element.modes.map((mode) => mode.id)).toEqual(["form"]);
+    expect(element.activeController).toBe(element.controller);
+    expect(element.getAttribute("mode")).not.toBe("slow");
+    expect(slow.active()).toBe(false);
+    expect(slow.log[0]).toBe("activate");
+    expect(slow.log.at(-1)).toBe("deactivate");
+  });
+
   it("takes down a mode whose document could not be opened after its activate ran", async () => {
     const element = mount();
     const log: string[] = [];
