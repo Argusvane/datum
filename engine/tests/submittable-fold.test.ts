@@ -1402,7 +1402,7 @@ describe("the fold and the kernel's browser-reachable code import no path engine
     expect(readers).toEqual(["kernelJourneyClockPages", "kernelFoldSubmission", "kernelFormTestServerChange", "kernelFormTestOpPerform"]);
   });
 
-  it("the shared helpers import types only, and the path engine re-exports each of them as it is", async () => {
+  it("the shared helpers import types only, and the path engine splices each of them as it is", () => {
     const source = sourceOf("../form-engine/core/journey/journey-shared.ts");
     expect(source.match(/^import\s+(?!type\b).*$/gm) ?? []).toEqual([]);
     const shared = Object.entries(journeyShared).filter(([, value]) => typeof value === "function");
@@ -1412,9 +1412,7 @@ describe("the fold and the kernel's browser-reachable code import no path engine
     const declared = [...source.matchAll(/^(?:export\s+)?(?:async\s+)?function\*?\s+(\w+)/gm)].map((match) => match[1]).sort();
     expect(declared).toEqual(shared.map(([name]) => name).sort());
     expect(source.match(/^(?:export\s+)?(?:const|let|var|class)\s/gm) ?? []).toEqual([]);
-    const path = (await import("../form-engine/core/journey/journey-path.js")) as Record<string, unknown>;
     for (const [name, fn] of shared) {
-      expect(path[name], name).toBe(fn);
       expect(JOURNEY_PATH_FUNCTIONS, name).toContain(fn);
       expect((fn as () => unknown).toString(), name).not.toMatch(/__vi(?:te)?_(?:ssr_)?import_\d+__/);
     }
