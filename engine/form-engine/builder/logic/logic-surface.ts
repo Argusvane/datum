@@ -60,7 +60,8 @@ import {
 import { printFormula } from "../formula/feel-print.js";
 import { FORMULA_EDITOR_STYLES } from "../formula/formula-editor-styles.js";
 import { loadFormulaEditor, type FormulaEditorModule } from "../formula/formula-editor-loader.js";
-import { formulaFieldsOf, type FormulaField } from "../formula/formula-fields.js";
+import { formulaFieldKind, formulaFieldsOf, type FormulaField } from "../formula/formula-fields.js";
+import { baseTypeOf } from "../../registry/kinds.js";
 import {
   formulaEditorState,
   mountFormulaTextarea,
@@ -1340,13 +1341,22 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
   /**
    * A Try it answer as the form stores it: digits typed for a number field as a number; a
    * choice's value and a text field's digits (a postal code, an id) stay text, as the form keeps them.
+   * A plugin's or a binding's type (`gcds-number`) is read as the base the form's `kinds` map gives it.
    */
   private tryAnswerOf(id: string, value: unknown): unknown {
-    const kind = this.formulaFields().find((field) => (field.componentId ?? field.path) === id)?.kind;
-    if (kind === "number" && typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) {
-      return Number(value);
+    if (typeof value !== "string" || value.trim() === "" || !Number.isFinite(Number(value))) {
+      return value;
     }
-    return value;
+    const field = this.formulaFields().find((entry) => (entry.componentId ?? entry.path) === id);
+    let kind = field?.kind;
+    const controller = this.ctrl;
+    if (kind === "other" && field?.componentId !== undefined && controller) {
+      const type = findNode(controller.snapshot(), field.componentId)?.type;
+      if (type !== undefined) {
+        kind = formulaFieldKind(baseTypeOf(type, controller.definitionKinds(controller.openedKinds?.())));
+      }
+    }
+    return kind === "number" ? Number(value) : value;
   }
 
   /** The fields a formula reads, in reading order, each once; a path into a field's value names the field. */

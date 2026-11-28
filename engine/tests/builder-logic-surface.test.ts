@@ -43,7 +43,10 @@ function formRoot(): ComponentNode {
         { id: "zip", type: "text", configuration: { label: "Zip" } },
         { id: "z", type: "text", configuration: { label: "Z" }, rules: { visibleWhen: 'zip = "02134"' } },
         { id: "age", type: "number", configuration: { label: "Age" } },
-        { id: "w", type: "text", configuration: { label: "W" }, rules: { visibleWhen: "age > 17" } }
+        { id: "w", type: "text", configuration: { label: "W" }, rules: { visibleWhen: "age > 17" } },
+        // A binding's type the form's `kinds` map reads as a number.
+        { id: "count", type: "acme-number", configuration: { label: "Count" } },
+        { id: "c", type: "text", configuration: { label: "C" }, rules: { visibleWhen: "count = 3" } }
       ]
     }
   };
@@ -198,6 +201,14 @@ describe("Try it", () => {
     openCard(surface, "form:w:visibleWhen");
     expect(tryAnswer(surface, "age", "18")).toContain("W is shown");
     expect(tryAnswer(surface, "age", "9")).toContain("W is hidden");
+  });
+
+  it("reads digits typed for a type the kinds map makes a number as a number", async () => {
+    const { surface, ctrl } = await mountInLogic();
+    ctrl.openedKinds = () => ({ "acme-number": "number" });
+    openCard(surface, "form:c:visibleWhen");
+    expect(tryAnswer(surface, "count", "3")).toContain("C is shown");
+    expect(tryAnswer(surface, "count", "4")).toContain("C is hidden");
   });
 });
 
