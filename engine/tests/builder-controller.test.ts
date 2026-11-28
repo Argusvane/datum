@@ -1696,6 +1696,28 @@ describe("BuilderController — undo and redo around a rename", () => {
     expect(content(ctrl)).toEqual([labelled("contact", "New, from a JSON sample")]);
   });
 
+  it("drops the draft of a replaced field even when the new content reuses its id", () => {
+    const ctrl = controller(form({ id: "email", type: "text", configuration: { label: "Old email", placeholder: "old@x" } }, labelled("name", "Name")));
+    ctrl.select("email");
+    // Typed and typed back: a draft with nothing pending, which the replace's guard lets through.
+    ctrl.setDraftProperty("email", "label", "Changed");
+    ctrl.setDraftProperty("email", "label", "Old email");
+    // A draft left open on a field that is not selected any more.
+    ctrl.setDraftProperty("name", "label", "Pending");
+    ctrl.select("email");
+    expect(ctrl.hasPendingChanges("email")).toBe(false);
+    expect(ctrl.requestReplaceContent([{ id: "email", type: "number", configuration: { label: "Email from model" } }, labelled("name", "Name from model")])).toBe(true);
+
+    const fresh = [{ id: "email", type: "number", configuration: { label: "Email from model" } }, labelled("name", "Name from model")];
+    expect(content(ctrl)).toEqual(fresh);
+    expect(ctrl.hasPendingChanges("email")).toBe(false);
+    expect(ctrl.hasPendingChanges("name")).toBe(false);
+    expect(ctrl.editedNode("email")?.configuration).toEqual({ label: "Email from model" });
+    ctrl.commitDraft("email");
+    ctrl.commitDraft("name");
+    expect(content(ctrl)).toEqual(fresh);
+  });
+
   it("renames the one of two nodes sharing a hand-written id it finds first, and undoes it on that one", () => {
     const ctrl = controller(form(labelled("dup", "A"), labelled("name", "Name"), labelled("dup", "B")));
     ctrl.remove("dup");

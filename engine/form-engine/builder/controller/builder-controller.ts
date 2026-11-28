@@ -5708,8 +5708,8 @@ export class BuilderController {
    * new ones, in their order — a form's closing buttons, say. Checked like
    * {@link insertComponents}: the new ids only have to avoid what remains (the root, its other
    * slots and what is kept) and what is claimed beside the tree, so a rebuilt form may reuse the
-   * ids it replaces. Drafts of the removed components go with them; the selection is dropped if
-   * it went too.
+   * ids it replaces. Drafts of the removed components go with them, a reused id's too (its draft
+   * holds the old component's settings); the selection is dropped if it went too.
    */
   public replaceContent(nodes: readonly ComponentNode[], options: { slotId?: string; keep?: readonly string[] } = {}): InsertComponentsResult {
     const tree = this.editor.componentTree();
@@ -5771,17 +5771,15 @@ export class BuilderController {
       return this.refuseInsert(clash);
     }
 
-    const before = new Set(collectIds(root));
+    const going = current.filter((child) => !keep.has(child.id)).flatMap((child) => collectIds(child));
     // What goes takes its translations with it, from every language and in the same undo entry; an id the new content reuses keeps them (a changed string flags them stale).
     const staying = new Set([...fresh, ...kept].flatMap((node) => collectIds(node)));
-    const prune = this.pruneOwnersCommand(current.filter((child) => !keep.has(child.id)).flatMap((child) => collectIds(child)).filter((id) => !staying.has(id)));
+    const prune = this.pruneOwnersCommand(going.filter((id) => !staying.has(id)));
     const replacement = new ReplaceChildrenCommand(tree, root.id, nextChildren);
     this.editor.execute(prune ? new CompositeCommand("REPLACE_CONTENT", [replacement, prune]) : replacement);
-    const after = new Set(collectIds(this.editor.componentTree().getRoot()));
-    for (const id of before) {
-      if (!after.has(id)) {
-        this.drafts.delete(id);
-      }
+    // A draft is of the node it was opened on, which is gone even when a new one reuses its id.
+    for (const id of going) {
+      this.drafts.delete(id);
     }
     this.heldAction = undefined;
     this.dropError = undefined;
