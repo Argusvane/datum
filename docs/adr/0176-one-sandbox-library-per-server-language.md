@@ -49,7 +49,13 @@ group, where a runtime may also say which pools it serves).
 
 - **JVM (`.wasi`).** The layer's refusals are one small unchecked family (`WasiException`: a run
   that cannot start, limits an engine cannot honour, an engine that cannot be selected), which
-  the layer above translates once into the exceptions and wire codes the hosts share.
+  the layer above translates once into the exceptions and wire codes the hosts share. The guest gets
+  no real wall clock and no real randomness (`GuestIo`): the realtime clock and the file times of
+  `/app` read the Unix epoch, and `random_get` reads the same seeded stream (the pinned qjs-wasi
+  does not import it), on every run, so
+  QuickJS's own `Math.random`, which it seeds from the realtime clock, repeats too. The monotonic
+  clock stays the engine's (Endive reads it from `System.nanoTime()` with no option to replace
+  it): it times sleeps and timers and tells a guest how long it has run, never the date.
 - **Python (`datum_sandbox.wasi`).** Imports only the standard library. Each file name is one plain
   file name and the arguments are checked (a bare string is refused). The run directory is private
   (0700) and made read-only before the engine sees it. The layer's refusals are its own
