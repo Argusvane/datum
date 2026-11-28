@@ -5299,6 +5299,10 @@ export class DatumBuilderElement extends HTMLElementBase {
     this.syncStripItems();
     this.syncFeatureParts();
 
+    // Fresh panels have no controller and no Form fields yet, and the bar has heard no controller
+    // since a disconnect unbound it: the re-point below is made in full, whatever was pointed before.
+    this.pointedController = undefined;
+    this.fieldsSource = undefined;
     this.renderDocuments();
     this.applyPanelControllers();
     this.applyTheme();
