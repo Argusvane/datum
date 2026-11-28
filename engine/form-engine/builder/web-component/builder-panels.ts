@@ -1289,6 +1289,8 @@ export class DatumBuilderCanvasElement extends BuilderPanelElement implements Te
   /** Stops the remote-picture guard on the renderer's shadow root. */
   private remoteImageGuard: (() => void) | undefined;
   private watchedRoot: ParentNode | undefined;
+  /** The renderer element that has the canvas's action and language listeners; a renderer built later takes its own. */
+  private boundRenderer: DatumFormRendererElement | undefined;
   /** Names the document load the canvas shows; a new one is made on every load, so confirmations never carry over. */
   private loadToken = newRemoteLoadToken();
   private inertQueued = false;
@@ -4310,13 +4312,53 @@ export class DatumBuilderCanvasElement extends BuilderPanelElement implements Te
     });
   }
 
+  /**
+   * The listeners on the renderer element itself. Its own, unlike those on the shadow root: run
+   * for every renderer the canvas creates, so a renderer built after a no-controller render has them too.
+   */
+  private bindRenderer(): void {
+    const renderer = this.rendererEl;
+    if (!renderer || renderer === this.boundRenderer) {
+      return;
+    }
+    this.boundRenderer = renderer;
+    // A previewed button reports intent like any other; on the canvas it does nothing, but for
+    // Submit in Try it (a journey's own Submit included), which the stand-in server answers.
+    renderer.addEventListener("datum-form-action", (event) => {
+      event.stopPropagation();
+      const detail = (event as CustomEvent<DatumFormActionDetail>).detail;
+      const panel = this.root.querySelector<HTMLElement>("[data-try-panel]");
+      if (this.previewingValue && detail?.action === "submit" && panel && !panel.hidden) {
+        // Pressed before the chunk is in (a click straight after Try it): it runs once it is.
+        // Not if the author left Try it meanwhile: a Submit queued on the load dies with the panel.
+        void this.startTry().then((tryIt) => {
+          const shown = this.root.querySelector<HTMLElement>("[data-try-panel]");
+          if (tryIt && this.previewingValue && shown && !shown.hidden) {
+            void tryIt.submit();
+          }
+        });
+      }
+    });
+    // A language switcher the author placed in the form's own chrome previews on
+    // the canvas like the rest of it; a pick there is the same choice as the toolbar's locale
+    // select, so it goes the same way and the toolbar, inspector and canvas stay in step.
+    renderer.addEventListener("datum-locale-applied", (event) => {
+      event.stopPropagation();
+      const locale = (event as CustomEvent<{ locale: string }>).detail?.locale;
+      // Not while the form is tried over a designer: the switch is the tried form's own.
+      if (locale && !this.tryingForm() && locale !== this.ctrl?.currentLocale()) {
+        this.ctrl?.setOptions({ locale });
+      }
+    });
+  }
+
   private bind(): void {
     this.watchRenderer();
+    this.bindRenderer();
     if (this.bound) {
       return;
     }
     this.bound = true;
-    const renderer = this.rendererEl;
 
     this.root.addEventListener("click", (event) => {
       const path = event.composedPath() as HTMLElement[];
@@ -4632,35 +4674,6 @@ export class DatumBuilderCanvasElement extends BuilderPanelElement implements Te
       event.preventDefault();
       window.addEventListener("mousemove", this.onSheetDrag);
       window.addEventListener("mouseup", this.onSheetDragEnd);
-    });
-
-    // A previewed button reports intent like any other; on the canvas it does nothing, but for
-    // Submit in Try it (a journey's own Submit included), which the stand-in server answers.
-    renderer?.addEventListener("datum-form-action", (event) => {
-      event.stopPropagation();
-      const detail = (event as CustomEvent<DatumFormActionDetail>).detail;
-      const panel = this.root.querySelector<HTMLElement>("[data-try-panel]");
-      if (this.previewingValue && detail?.action === "submit" && panel && !panel.hidden) {
-        // Pressed before the chunk is in (a click straight after Try it): it runs once it is.
-        // Not if the author left Try it meanwhile: a Submit queued on the load dies with the panel.
-        void this.startTry().then((tryIt) => {
-          const shown = this.root.querySelector<HTMLElement>("[data-try-panel]");
-          if (tryIt && this.previewingValue && shown && !shown.hidden) {
-            void tryIt.submit();
-          }
-        });
-      }
-    });
-    // A language switcher the author placed in the form's own chrome previews on
-    // the canvas like the rest of it; a pick there is the same choice as the toolbar's locale
-    // select, so it goes the same way and the toolbar, inspector and canvas stay in step.
-    renderer?.addEventListener("datum-locale-applied", (event) => {
-      event.stopPropagation();
-      const locale = (event as CustomEvent<{ locale: string }>).detail?.locale;
-      // Not while the form is tried over a designer: the switch is the tried form's own.
-      if (locale && !this.tryingForm() && locale !== this.ctrl?.currentLocale()) {
-        this.ctrl?.setOptions({ locale });
-      }
     });
 
     this.root.addEventListener("dragstart", (event) => {
