@@ -568,8 +568,9 @@ export interface PdfConfiguration {
   /**
    * What a "Download PDF" with no further choice produces when no layout's `when` holds —
    * with no conditions, simply what it produces. Absent: the first layout. A form with
-   * conditional layouts declares it (the builder writes it as soon as one has a `when`), so
-   * the programs that predate conditions print what the newer ones fall back to.
+   * conditional layouts declares it (the builder writes it as soon as one has a `when`), so an
+   * edit to the list — removing or moving the first layout — never quietly changes which layout
+   * prints when no condition holds.
    */
   defaultLayoutId?: string;
 }

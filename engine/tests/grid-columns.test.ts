@@ -56,15 +56,6 @@ describe("grid columns", () => {
     });
   });
 
-  it("folds a legacy content slot the same way, so nothing authored is lost", () => {
-    // A grid from before columns were slots kept everything under `content`.
-    const folded = foldGridChildrenIntoColumns(
-      { content: [field("a"), field("b")] },
-      ["column_1", "column_2"]
-    );
-    expect(folded).toEqual({ column_1: [], column_2: [field("a"), field("b")] });
-  });
-
   it("reports nothing to do when every slot is a declared column", () => {
     // Including when some declared columns have no key yet — materializing them is not an edit
     // worth an undo entry.

@@ -211,9 +211,6 @@ describe("inspect: public", () => {
     expect(answer.definition.pdf).toEqual(form.pdf);
     expect(JSON.stringify(form)).toBe(before);
   });
-
-  // `public` strips over the tree the run reads, so a server-secret
-  // rule on a legacy column's component (a child once the grid is normalized) is stripped too.
 });
 
 describe("inspect: check", () => {

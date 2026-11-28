@@ -2182,15 +2182,15 @@ export function kernelReadMayBeWithheld(
  * result that serializes as the submitted value does leaves the submitted one in place, so an
  * honest submission comes back exactly as it was sent. Every read is as the envelope carries it
  * (`kernelJsonValue`): a calculation that came to no answer is no key, and reads as `undefined`
- * in the next, here and in the browser alike (an older browser's `null` for it, JSON's spelling
- * of the `NaN` arithmetic once made, is worked out again to no key). `recalculated` lists the
+ * in the next, here and in the browser alike (a `null` sent for it, JSON's spelling of `NaN`, is
+ * worked out again to no key). `recalculated` lists the
  * value paths whose answer changed, in document order; the records are prototype-free.
  *
  * `unreproduced` lists the value paths of the calculations kept as sent while a value
  * was there — one that reads `host.`, one a read of which came back unanswered in the last
  * pass — in document order: answers worked out in the browser that this side took on trust
- * ({@link kernelClientDerived}). A kept `null` (an older browser's spelling of a
- * calculation that came to nothing) is no value.
+ * ({@link kernelClientDerived}). A kept `null` (JSON's spelling of a calculation that came to
+ * nothing) is no value.
  *
  * A calculation on a field of a repeating section is worked out entry by entry:
  * for each entry the values carry (`items[0].sku`, {@link kernelRowIndexes}) its
