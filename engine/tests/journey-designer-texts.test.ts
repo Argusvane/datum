@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { BuilderController } from "../form-engine/builder/controller/builder-controller.js";
+import { createJourneyBuilderMode } from "../form-engine/builder/journey-designer/journey-builder-mode.js";
 import { journeyComponentTypes } from "../form-engine/builder/journey-designer/journey-components.js";
 import { journeyEmptyStateHtml } from "../form-engine/builder/journey-designer/journey-designer-panels.js";
 import { findingsSummary } from "../form-engine/builder/journey-designer/journey-checks.js";
@@ -47,5 +49,22 @@ describe("journey designer and map words follow the builder's catalog", () => {
     const relabelled = designer.relabel(built);
     expect(relabelled.find((entry) => entry.type === JOURNEY_PAGE_TYPE)?.label).toBe("Page FR");
     expect(relabelled.find((entry) => entry.type === "extra")?.label).toBe("Extra");
+  });
+});
+
+describe("the journey's outline in the builder's catalog", () => {
+  it("names a step in the host's words, as it names a route's target", async () => {
+    const form = new BuilderController({
+      locale: "fr",
+      initialRoot: { id: "root", type: "form", configuration: {}, children:{ content: [{ id: "fullName", type: "text", configuration: { label: "Full name" } }, { id: "notes", type: "text", configuration: { label: "Notes" } }] } }
+    });
+    const catalog: BuilderTextCatalog = { fr: { "journey.designer.page.ref": "Étape {number} · {name}" } };
+    const journey = { journeys: [{ id: "a", name: "A", pages: [{ id: "about", title: "About you", components: ["fullName"], routes: [{ to: "more" }] }, { id: "more", title: "More", components: ["notes"] }] }] };
+    const mode = createJourneyBuilderMode({ form, journey, textCatalog: () => catalog });
+    await mode.activate?.({ host: {} as HTMLElement, root: {} as ShadowRoot, showCanvasSurface: () => undefined });
+    const steps = mode.controller.treeView().slots[0]?.children ?? [];
+    expect(steps.map((step) => step.label)).toEqual(["Étape 1 · About you", "Étape 2 · More"]);
+    expect(steps[0]?.slots.flatMap((slot) => slot.children.map((child) => child.label))).toContain("Route → Étape 2 · More");
+    mode.dispose?.();
   });
 });
