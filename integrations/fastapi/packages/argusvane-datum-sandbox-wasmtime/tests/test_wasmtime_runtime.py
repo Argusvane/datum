@@ -26,6 +26,7 @@ from datum_sandbox.protocol import (
     APP_RUN_SCRIPT,
     PDF_ABI_MIN,
     PDF_RUN_SCRIPT,
+    REMOVED_GLOBALS,
     PoolKind,
     RuleModule,
     SandboxError,
@@ -515,6 +516,28 @@ def test_shutdown_wakes_a_sleeping_guest_at_once_as_interrupted(tmp_path: Path) 
     assert time.monotonic() - began < 1.0, "the sleep was woken, not waited out"
     worker.join(5)
     assert ends == [RunEnd.INTERRUPTED]
+
+
+def test_every_removed_global_is_one_the_engine_has_and_none_reaches_a_rule_module(
+    runtime: WasmtimeGuestRuntime,
+) -> None:
+    names = json.dumps(list(REMOVED_GLOBALS))
+    present = run_raw(
+        runtime, f"print(JSON.stringify({names}.filter(function (n) {{ return n in globalThis; }})));", budget(5, 32)
+    )
+    assert present.end is RunEnd.CLEAN, present.stderr
+    assert json.loads(present.stdout) == list(REMOVED_GLOBALS), "the run script removes only what the engine has"
+    nonce = new_nonce()
+    run_budget = budget(5, 32)
+    probe = RuleModule(
+        "probe",
+        "1",
+        f"(function () {{ var seen = {names}.filter(function (n) {{ return n in globalThis; }}); "
+        "return { validators: [function () { return { errors: seen.map(function (n) { "
+        "return { code: 'leak.' + n, componentId: 'name', message: n }; }) }; }] }; })()",
+    )
+    answer = json.loads(sandbox_answer(sandbox_run(runtime, nonce, run_budget, rules=[probe]), nonce, run_budget))
+    assert [error["code"] for error in answer["errors"] if error["code"].startswith("leak.")] == []
 
 
 def test_poll_oneoff_is_shadowed_with_the_wasi_preview1_signature(
