@@ -3,24 +3,35 @@
 The pinned `qjs-wasi.wasm` keeps wasm-ld's 64 KiB shadow stack above its static data and QuickJS-ng checks no stack
 under WASI, so plain JavaScript recursion of about 190 frames overwrites the statics before wasmtime's own stack check
 fires. These cases hold the guard to that: ordinary depth is untouched, recursion past the stack is a trap however the
-guest ended, and a touched canary or `.rodata` byte is an overrun even when the guest then exits 0. Nothing here runs
-under xdist.
+guest ended, a frame that reserves more than it writes cannot step over the canary into `.bss`, a touched canary or
+`.rodata` byte is an overrun even when the guest then exits 0, and a module the guard cannot read refuses the start
+unless running unguarded is allowed. Nothing here runs under xdist.
 """
 
+import hashlib
+import logging
 import shutil
 import tempfile
 from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+import wasmtime
 from guests import datum_limits
 
 from datum_sandbox.testing.runtime_support import budget, run_raw
-from datum_sandbox.wasi import EngineSettings, GuestEndKind, GuestIo, OutputSink, RunEnd
+from datum_sandbox.wasi import EngineConfigurationError, EngineSettings, GuestEndKind, GuestIo, OutputSink, RunEnd
 from datum_sandbox_wasmtime import WasmtimeGuestRuntime
 from datum_sandbox_wasmtime._qjs import load_qjs
 from datum_sandbox_wasmtime._runtime import WasmtimeInstance
-from datum_sandbox_wasmtime._stack import CANARY, STACK_SIZE, StackGuard, StackOverrunError, stack_guard
+from datum_sandbox_wasmtime._stack import (
+    CANARY,
+    STACK_SIZE,
+    StackGuard,
+    StackOverrunError,
+    describe_unguarded,
+    stack_guard,
+)
 
 pytestmark = pytest.mark.runtime
 
@@ -71,7 +82,7 @@ def test_the_pinned_guest_has_its_stack_above_its_statics(guard: StackGuard, run
 
 
 @pytest.mark.parametrize("module", [b"", b"not wasm", b"\0asm\1\0\0\0"])
-def test_a_module_without_the_layout_runs_unguarded(module: bytes) -> None:
+def test_a_module_without_the_layout_has_no_guard(module: bytes) -> None:
     assert stack_guard(module) is None
 
 
@@ -108,3 +119,84 @@ def test_a_touched_canary_or_rodata_byte_makes_a_clean_exit_a_trap(
         assert end.detail.startswith(OVERRUN)
     finally:
         instance.close()
+
+
+def _wide_frames(depth: int, width: int = 640) -> str:
+    """Recursion whose every frame reserves room for a call of `width` arguments that it never makes."""
+    zeros = ",".join(["0"] * width)
+    return (
+        "function g() { return 0; }\n"
+        f"function f(n) {{ if (n > 0) return f(n - 1) + 0; if (n < 0) return g({zeros}); return 0; }}\n"
+        f"print(f({depth}));"
+    )
+
+
+def test_a_frame_that_reserves_more_than_it_writes_cannot_step_over_the_canary(runtime: WasmtimeGuestRuntime) -> None:
+    """Frames that reserve more stack than they write: one that would reach below the floor is a trap before it runs."""
+    ends = {depth: run_raw(runtime, _wide_frames(depth), budget(10, 32)) for depth in range(16)}
+    for depth, result in ends.items():
+        if result.end is RunEnd.CLEAN:
+            assert result.stdout == b"0\n", depth
+        else:
+            assert result.end is RunEnd.TRAP, (depth, result.end)
+            assert OVERRUN in result.detail, (depth, result.detail)
+    assert all(ends[depth].end is RunEnd.CLEAN for depth in range(8)), "ordinary depth is untouched"
+    assert all(ends[depth].end is RunEnd.TRAP for depth in range(12, 16)), "a frame past the floor is a trap"
+
+
+def test_a_stack_pointer_below_the_floor_traps_and_marks_the_canary(
+    runtime: WasmtimeGuestRuntime, guard: StackGuard, tmp_path: Path
+) -> None:
+    instance = _instance(runtime, tmp_path, _wide_frames(15))
+    try:
+        memory, store = instance._memory, instance._store
+        assert memory is not None
+        with pytest.raises(StackOverrunError) as caught:
+            instance.start()
+        assert isinstance(caught.value.__cause__, wasmtime.Trap)
+        assert memory.read(store, guard.floor, guard.floor + 1) != bytes([0xA5]), "the check's own mark"
+    finally:
+        instance.close()
+
+
+def _own_module(tmp_path: Path, module: bytes) -> tuple[Path, str]:
+    path = tmp_path / "own.wasm"
+    path.write_bytes(module)
+    return path, hashlib.sha256(module).hexdigest()
+
+
+UNGUARDABLE = '(module (memory (export "memory") 1) (func (export "_start")))'
+"""A module that names no stack pointer, as an own build without a name section does."""
+
+
+def test_a_module_the_guard_cannot_read_refuses_the_start(tmp_path: Path) -> None:
+    path, digest = _own_module(tmp_path, wasmtime.wat2wasm(UNGUARDABLE))
+    with pytest.raises(EngineConfigurationError) as caught:
+        WasmtimeGuestRuntime(datum_limits(1, 1, tmp_path / "work", qjs_path=path, qjs_sha256=digest))
+    assert "datum.runtime.allow_unguarded_stack" in caught.value.hint
+    assert str(path) in caught.value.message
+
+
+def test_a_module_the_guard_cannot_read_runs_when_allowed_and_says_so_at_warning(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    path, digest = _own_module(tmp_path, wasmtime.wat2wasm(UNGUARDABLE))
+    limits = datum_limits(1, 1, tmp_path / "work", qjs_path=path, qjs_sha256=digest, allow_unguarded_stack=True)
+    with caplog.at_level(logging.WARNING, logger="datum.runtime"):
+        own = WasmtimeGuestRuntime(limits)
+    try:
+        warned = [record for record in caplog.records if "without the shadow stack guard" in record.getMessage()]
+        assert [record.levelname for record in warned] == ["WARNING"]
+        assert "datum.runtime.allow_unguarded_stack" in warned[0].getMessage()
+        assert describe_unguarded() in own.engine_info().notes
+    finally:
+        own.close()
+
+
+def test_the_pinned_guest_starts_guarded_whatever_the_setting_says(tmp_path: Path) -> None:
+    own = WasmtimeGuestRuntime(datum_limits(1, 1, tmp_path, allow_unguarded_stack=True))
+    try:
+        assert describe_unguarded() not in own.engine_info().notes
+        assert any(note.startswith("shadow stack guard: ") for note in own.engine_info().notes)
+    finally:
+        own.close()

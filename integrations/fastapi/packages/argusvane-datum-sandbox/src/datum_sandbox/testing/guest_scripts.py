@@ -29,8 +29,8 @@ r.push(typeof os.symlink !== 'function' || os.symlink('/app/run.js', '/app/link'
 r.push(typeof os.utimes !== 'function' || os.utimes('/app/run.js', 0, 0) < 0);
 var w = std.open('/app/run.js', 'r'); w.puts('overwritten'); w.flush(); w.close();
 print(JSON.stringify(r));
-var tried = 0, made = 0, until = Date.now() + 1500, long = 'a'.repeat(200000);
-while (Date.now() < until) { if (os.mkdir('/app/' + long + tried) === 0) { made++; } tried++; }
+var tried = 0, made = 0, long = 'a'.repeat(200000);
+while (tried < 2000) { if (os.mkdir('/app/' + long + tried) === 0) { made++; } tried++; }
 print(JSON.stringify([tried > 0, made]));
 print(std.loadFile('/app/run.js').indexOf('var r = [];') === 0);
 var wr = function (p) { var f = std.open(p, 'w'); if (f) { f.puts('x'); f.close(); return true; } return false; };

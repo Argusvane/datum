@@ -378,6 +378,11 @@ class Runtime(_Section):
     )
     qjs_path: str | None = text(None, "An own copy of qjs-wasi.wasm; unset uses the packaged, pinned module.")
     qjs_sha256: Sha256 | None = Field(default=None, description="SHA-256 of the own qjs-wasi.wasm copy.")
+    allow_unguarded_stack: bool = flag(
+        False,
+        "Run an own qjs-wasi.wasm the shadow stack guard cannot read, unguarded (logged at WARNING); off refuses the"
+        " start.",
+    )
     validation: ValidationBudget = Field(default_factory=ValidationBudget, description="Validation run budgets.")
     pdf: PdfBudget = Field(default_factory=PdfBudget, description="PDF run budgets.")
     verify_max_bytes: Size = size(

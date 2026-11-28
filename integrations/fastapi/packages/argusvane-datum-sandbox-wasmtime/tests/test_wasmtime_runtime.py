@@ -26,6 +26,7 @@ from datum_sandbox.protocol import (
     APP_RUN_SCRIPT,
     PDF_ABI_MIN,
     PDF_RUN_SCRIPT,
+    REMOVED_GLOBALS,
     PoolKind,
     RuleModule,
     SandboxError,
@@ -56,6 +57,7 @@ from datum_sandbox_wasmtime import _runtime as runtime_module
 from datum_sandbox_wasmtime._clock import THREAD_NAME, deadline_ticks
 from datum_sandbox_wasmtime._memory import PAGE, reservation
 from datum_sandbox_wasmtime._qjs import load_qjs
+from datum_sandbox_wasmtime._runtime import TABLE_ELEMENTS
 
 pytestmark = pytest.mark.runtime
 
@@ -340,7 +342,9 @@ def test_the_engine_settings_and_the_store_limits_are_the_ruled_ones(
         assert recorded["memory_reservation_for_growth"] == growth
         limits.clear()
         assert run_raw(own, "print(1);", budget(5, 32)).end is RunEnd.CLEAN
-        assert limits == [{"memory_size": 32 * MIB, "instances": 1, "memories": 1, "tables": 1}]
+        assert limits == [
+            {"memory_size": 32 * MIB, "table_elements": TABLE_ELEMENTS, "instances": 1, "memories": 1, "tables": 1}
+        ]
     finally:
         own.close()
 
@@ -514,7 +518,29 @@ def test_shutdown_wakes_a_sleeping_guest_at_once_as_interrupted(tmp_path: Path) 
     assert ends == [RunEnd.INTERRUPTED]
 
 
-def test_poll_oneoff_is_the_one_shadowed_import_with_the_wasi_preview1_signature(
+def test_every_removed_global_is_one_the_engine_has_and_none_reaches_a_rule_module(
+    runtime: WasmtimeGuestRuntime,
+) -> None:
+    names = json.dumps(list(REMOVED_GLOBALS))
+    present = run_raw(
+        runtime, f"print(JSON.stringify({names}.filter(function (n) {{ return n in globalThis; }})));", budget(5, 32)
+    )
+    assert present.end is RunEnd.CLEAN, present.stderr
+    assert json.loads(present.stdout) == list(REMOVED_GLOBALS), "the run script removes only what the engine has"
+    nonce = new_nonce()
+    run_budget = budget(5, 32)
+    probe = RuleModule(
+        "probe",
+        "1",
+        f"(function () {{ var seen = {names}.filter(function (n) {{ return n in globalThis; }}); "
+        "return { validators: [function () { return { errors: seen.map(function (n) { "
+        "return { code: 'leak.' + n, componentId: 'name', message: n }; }) }; }] }; })()",
+    )
+    answer = json.loads(sandbox_answer(sandbox_run(runtime, nonce, run_budget, rules=[probe]), nonce, run_budget))
+    assert [error["code"] for error in answer["errors"] if error["code"].startswith("leak.")] == []
+
+
+def test_poll_oneoff_is_shadowed_with_the_wasi_preview1_signature(
     runtime: WasmtimeGuestRuntime,
 ) -> None:
     from datum_sandbox_wasmtime import _poll  # noqa: PLC0415 - the shadow's own module

@@ -88,6 +88,7 @@ class EngineSection:
     work_dir: str | None = None
     qjs_path: str | None = None
     qjs_sha256: str | None = None
+    allow_unguarded_stack: bool = False
 
     @property
     def stray_bound(self) -> int:
@@ -170,6 +171,7 @@ _KEYS: Final[dict[str, _Key]] = {
     "work_dir": _Key(RUNTIME + "work_dir", None, path=True),
     "qjs_path": _Key(RUNTIME + "qjs_path", None, path=True),
     "qjs_sha256": _Key(RUNTIME + "qjs_sha256", None),
+    "allow_unguarded_stack": _Key(RUNTIME + "allow_unguarded_stack", False),
     "fail_fast": _Key(RUNTIME + "fail_fast", True),
     "warm_up_runs": _Key(RUNTIME + "warm_up_runs", 3),
     "startup_budget": _Key(RUNTIME + "startup_budget", 30.0),
@@ -305,6 +307,7 @@ class SandboxSettings:
         work_dir: str | None = None,
         qjs_path: str | None = None,
         qjs_sha256: str | None = None,
+        allow_unguarded_stack: bool | None = None,
         fail_fast: bool | None = None,
         warm_up_runs: int | None = None,
         startup_budget: float | None = None,
@@ -373,6 +376,7 @@ class SandboxSettings:
             work_dir=cast("str | None", work),
             qjs_path=cast("str | None", module_path),
             qjs_sha256=None if module_digest is None else str(module_digest).lower(),
+            allow_unguarded_stack=bool(b.plain("allow_unguarded_stack")),
         )
 
         lifecycle = LifecycleSection(
