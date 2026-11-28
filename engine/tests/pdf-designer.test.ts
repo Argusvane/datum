@@ -1010,6 +1010,28 @@ describe("suggestMappings and createFormFields for the assistant", () => {
     expect(stepsOf(mode.controller)).toBe(2);
   });
 
+  it("keeps a checkbox's mapping and its checked value one step: one Undo takes the guess back whole", async () => {
+    const withAgree: ComponentNode = {
+      ...MODE_FORM,
+      children: { content: [...MODE_FORM.children!["content"]!, { id: "agree", type: "checkbox", configuration: { label: "I agree" } }] }
+    };
+    const form = new BuilderController({ initialRoot: structuredClone(withAgree) });
+    const inspection: PdfTemplateInfo = {
+      ...MODE_INSPECTION,
+      fields: [
+        ...MODE_INSPECTION.fields.slice(0, 2),
+        { name: "agree", kind: "checkbox", page: 1, rect: { x: 10, y: 620, width: 14, height: 14 }, exportValues: ["Yes"], readOnly: false, required: false }
+      ]
+    };
+    const { mode, paper } = await templateOnPage(form, async () => inspection);
+    expect(mode.suggestMappings()).toBe(3);
+    expect(paper().fields.find((field) => field.pdfField === "agree")).toMatchObject({ source: { kind: "component", componentId: "agree" }, checkedValue: "Yes" });
+    mode.controller.undo();
+    // The last guess, the checkbox's, is gone whole: no mapping left without its checked value.
+    expect(paper().fields.find((field) => field.pdfField === "agree")).toBeUndefined();
+    expect(stepsOf(mode.controller)).toBe(2);
+  });
+
   it("runs the form's insert and the layout's write through around, each whole, and nothing across the waits", async () => {
     const form = new BuilderController({ initialRoot: structuredClone(MODE_FORM) });
     const { mode, paper } = await templateOnPage(form);

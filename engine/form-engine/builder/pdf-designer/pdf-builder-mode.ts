@@ -1546,18 +1546,15 @@ class PdfBuilderModeImpl implements PdfBuilderMode {
       if (!id) {
         continue;
       }
+      // A checkbox's source and checked value are one guess, so one edit.
+      const pair = [
+        { componentId: id, propertyPath: "source", value: { ...mapping.source } },
+        ...(mapping.checkedValue !== undefined ? [{ componentId: id, propertyPath: "checkedValue", value: mapping.checkedValue }] : [])
+      ];
       if (options.batch) {
-        edits.push({ componentId: id, propertyPath: "source", value: { ...mapping.source } });
-        if (mapping.checkedValue !== undefined) {
-          edits.push({ componentId: id, propertyPath: "checkedValue", value: mapping.checkedValue });
-        }
+        edits.push(...pair);
       } else {
-        run(() => {
-          entry.controller.setProperty(id, "source", { ...mapping.source });
-          if (mapping.checkedValue !== undefined) {
-            entry.controller.setProperty(id, "checkedValue", mapping.checkedValue);
-          }
-        });
+        run(() => entry.controller.setProperties(pair));
       }
       count += 1;
     }
