@@ -1407,6 +1407,70 @@ describe("BuilderController — unsaved changes prompt", () => {
     expect(ctrl.unsavedChangesPrompt()).toBeUndefined();
     expect(ctrl.selectedComponentId()).toBeUndefined();
   });
+
+  describe("an action held while the Save renames the component it targets", () => {
+    /** A fieldset `box`, selected, with an unsaved id `details`. */
+    function renaming() {
+      const ctrl = controller({
+        id: "root",
+        type: "form",
+        configuration: {},
+        children: {
+          content: [
+            { id: "box", type: "fieldset", configuration: {}, children: { body: [] } },
+            { id: "loose", type: "text", configuration: {} }
+          ]
+        }
+      });
+      ctrl.select("box");
+      ctrl.setDraftId("box", "details");
+      return ctrl;
+    }
+    const bodyOf = (ctrl: BuilderController) => ctrl.snapshot().children!.content![0]!;
+
+    it("lands a held drop in the renamed container", () => {
+      const ctrl = renaming();
+      ctrl.applyDrop(dropOf(ctrl.dragPayloadForType("text")), "box", "body", 0);
+      expect(ctrl.unsavedChangesPrompt()).toEqual({ componentId: "box", action: "drop" });
+      ctrl.answerUnsavedChangesPrompt("save");
+
+      expect(ctrl.dropError).toBeUndefined();
+      expect(bodyOf(ctrl).id).toBe("details");
+      expect(bodyOf(ctrl).children!.body).toHaveLength(1);
+    });
+
+    it("adds and moves into the renamed container", () => {
+      const added = renaming();
+      expect(added.requestAdd("text", "box", "body")).toBe(false);
+      added.answerUnsavedChangesPrompt("save");
+      expect(added.dropError).toBeUndefined();
+      expect(bodyOf(added).children!.body).toHaveLength(1);
+
+      const moved = renaming();
+      expect(moved.requestMove("loose", { parentId: "box", slotId: "body", index: 0 })).toBe(false);
+      moved.answerUnsavedChangesPrompt("save");
+      expect(moved.dropError).toBeUndefined();
+      expect(bodyOf(moved).children!.body!.map((n) => n.id)).toEqual(["loose"]);
+
+      const movedTo = renaming();
+      expect(movedTo.requestMoveTo("loose", "box", 0, "body")).toBe(false);
+      movedTo.answerUnsavedChangesPrompt("save");
+      expect(movedTo.dropError).toBeUndefined();
+      expect(bodyOf(movedTo).children!.body!.map((n) => n.id)).toEqual(["loose"]);
+    });
+
+    it("moves and duplicates the renamed component itself", () => {
+      const moved = renaming();
+      expect(moved.requestMoveBy("box", 1)).toBe(false);
+      moved.answerUnsavedChangesPrompt("save");
+      expect(moved.snapshot().children!.content!.map((n) => n.id)).toEqual(["loose", "details"]);
+
+      const copied = renaming();
+      expect(copied.requestDuplicate("box")).toBe(false);
+      copied.answerUnsavedChangesPrompt("save");
+      expect(copied.snapshot().children!.content).toHaveLength(3);
+    });
+  });
 });
 
 describe("BuilderController — host validation codes for the messages editor", () => {

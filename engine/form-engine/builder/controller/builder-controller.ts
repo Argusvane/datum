@@ -779,6 +779,13 @@ export interface BuilderMoveToResult {
 export type HeldActionKind = "select" | "add" | "drop" | "leave" | "replace" | "remove" | "panel";
 
 /**
+ * A held action. `follow` gives the id a component has when the action runs for the id it had
+ * when the action was held: the prompt's Save may rename the component the draft is of, and an
+ * action aimed at it (a drop into it, a move of it) must land on it under its new id.
+ */
+type HeldRun = (follow: (id: string) => string) => void;
+
+/**
  * A selection-changing action the controller is holding until the author says what to do
  * with the selected component's unsaved edits.
  */
@@ -1638,7 +1645,7 @@ export class BuilderController {
    * An action held back by the selection's unsaved edits until the author answers the
    * prompt (see {@link requestSelect}); `run` performs it once the draft is dealt with.
    */
-  private heldAction: { prompt: UnsavedChangesPrompt; run: () => void } | undefined;
+  private heldAction: { prompt: UnsavedChangesPrompt; run: HeldRun } | undefined;
   /** Unsaved edits outside the tree that leaving is held for too (see {@link LeaveGuard}). */
   private leaveGuard: LeaveGuard | undefined;
   /**
@@ -5157,12 +5164,12 @@ export class BuilderController {
       this.select(componentId);
       return true;
     }
-    return this.holdUnlessClean("select", () => this.select(componentId));
+    return this.holdUnlessClean("select", (follow) => this.select(componentId === undefined ? undefined : follow(componentId)));
   }
 
   /** {@link add} through the same guard: a new component takes the selection with it. */
   public requestAdd(type: string, parentId?: string, slotId?: string, init?: AddComponentInit): boolean {
-    return this.holdUnlessClean("add", () => this.add(type, parentId, slotId, init));
+    return this.holdUnlessClean("add", (follow) => this.add(type, parentId === undefined ? undefined : follow(parentId), slotId, init));
   }
 
   /**
@@ -5403,9 +5410,11 @@ export class BuilderController {
   /**
    * Answers the prompt. `save` commits the draft and carries on with what was held — unless
    * the save is refused (an unusable id or class), in which case nothing moves and the
-   * refusal shows where it always does. `discard` throws the draft away and carries on.
-   * `stay` drops the held action: the author is where they were, draft intact. A prompt
-   * held for a leave guard's edits is settled through the guard the same way.
+   * refusal shows where it always does. A Save that gives the component a new id carries the
+   * held action to it under that id: a drop into it lands there, a move of it moves it.
+   * `discard` throws the draft away and carries on. `stay` drops the held action: the author
+   * is where they were, draft intact. A prompt held for a leave guard's edits is settled
+   * through the guard the same way.
    */
   public answerUnsavedChangesPrompt(decision: UnsavedChangesDecision): void {
     const held = this.heldAction;
@@ -5426,24 +5435,29 @@ export class BuilderController {
         return;
       }
       this.emitChange("select");
-      held.run();
+      held.run((id) => id);
       return;
     }
+    const from = held.prompt.componentId;
+    const to = this.drafts.get(from)?.id.trim();
     if (decision === "discard") {
-      this.discardDraft(held.prompt.componentId);
-    } else if (!this.commitDraft(held.prompt.componentId)) {
+      this.discardDraft(from);
+    } else if (!this.commitDraft(from)) {
       return;
     }
+    // A Save that renamed the component: what the action names by its old id it now finds under the new.
+    const tree = this.editor.componentTree();
+    const renamed = decision === "save" && to !== undefined && to !== from && !tree.find(from) && tree.find(to) !== undefined;
     // Back through the guard: the draft is settled, but a leave may still have a leave
     // guard's edits to ask about (a second prompt); anything else runs now.
-    this.holdUnlessClean(held.prompt.action, held.run);
+    this.holdUnlessClean(held.prompt.action, (follow) => held.run((id) => follow(renamed && id === from ? to : id)));
   }
 
   /**
    * Runs `run` now, or holds it behind a prompt while the selection has unsaved edits. A
    * newer held action replaces an older one: the author's latest click is the one that counts.
    */
-  private holdUnlessClean(action: HeldActionKind, run: () => void, vanishing?: ReadonlySet<string>): boolean {
+  private holdUnlessClean(action: HeldActionKind, run: HeldRun, vanishing?: ReadonlySet<string>): boolean {
     /*
      * Which drafts count depends on where the author is going.
      *
@@ -5476,7 +5490,7 @@ export class BuilderController {
       return false;
     }
     this.heldAction = undefined;
-    run();
+    run((id) => id);
     return true;
   }
 
@@ -5681,8 +5695,9 @@ export class BuilderController {
     entries: readonly InsertComponentEntry[] | (() => readonly InsertComponentEntry[]),
     options: InsertComponentsOptions & { onResult?: (result: InsertComponentsResult) => void } = {}
   ): boolean {
-    return this.holdUnlessClean("add", () => {
-      const result = this.insertComponents(typeof entries === "function" ? entries() : entries, options);
+    return this.holdUnlessClean("add", (follow) => {
+      const planned = typeof entries === "function" ? entries() : entries.map((entry) => (entry.parentId === undefined ? entry : { ...entry, parentId: follow(entry.parentId) }));
+      const result = this.insertComponents(planned, options);
       options.onResult?.(result);
     });
   }
@@ -5780,8 +5795,8 @@ export class BuilderController {
     nodes: readonly ComponentNode[] | (() => readonly ComponentNode[]),
     options: { slotId?: string; keep?: readonly string[]; onResult?: (result: InsertComponentsResult) => void } = {}
   ): boolean {
-    return this.holdUnlessClean("replace", () => {
-      const result = this.replaceContent(typeof nodes === "function" ? nodes() : nodes, options);
+    return this.holdUnlessClean("replace", (follow) => {
+      const result = this.replaceContent(typeof nodes === "function" ? nodes() : nodes, options.keep ? { ...options, keep: options.keep.map((id) => follow(id)) } : options);
       options.onResult?.(result);
     });
   }
@@ -5860,9 +5875,9 @@ export class BuilderController {
     node: ComponentNode | (() => ComponentNode | undefined),
     options: { onResult?: (result: InsertComponentsResult) => void } = {}
   ): boolean {
-    return this.holdUnlessClean("replace", () => {
+    return this.holdUnlessClean("replace", (follow) => {
       const planned = typeof node === "function" ? node() : node;
-      options.onResult?.(planned ? this.replaceComponent(componentId, planned) : { ok: false, ids: [] });
+      options.onResult?.(planned ? this.replaceComponent(follow(componentId), planned) : { ok: false, ids: [] });
     });
   }
 
@@ -6243,8 +6258,8 @@ export class BuilderController {
     }
     return this.holdUnlessClean(
       "remove",
-      () => {
-        const ids = typeof componentIds === "function" ? componentIds() : componentIds;
+      (follow) => {
+        const ids = typeof componentIds === "function" ? componentIds() : componentIds.map((id) => follow(id));
         const removed = options.removeReferences ? this.removeEachWithReferences(ids) : this.removeComponents(ids);
         options.onResult?.(removed);
       },
@@ -6444,8 +6459,8 @@ export class BuilderController {
     after?: (moved: boolean, result: BuilderMoveToResult) => void
   ): boolean {
     // `after` runs when the move does, now or once the prompt's Save or Apply lets it through.
-    return this.holdUnlessClean("drop", () => {
-      const result = this.moveToResult(componentId, container, index, slotId);
+    return this.holdUnlessClean("drop", (follow) => {
+      const result = this.moveToResult(follow(componentId), follow(container), index, slotId);
       after?.(result.moved, result);
     });
   }
@@ -6564,22 +6579,22 @@ export class BuilderController {
 
   /** {@link move} through the unsaved-edits guard, as a drop goes through it. Whether it ran now. */
   public requestMove(componentId: string, target: { parentId: string; slotId: string; index: number }): boolean {
-    return this.holdUnlessClean("drop", () => this.move(componentId, target));
+    return this.holdUnlessClean("drop", (follow) => this.move(follow(componentId), { ...target, parentId: follow(target.parentId) }));
   }
 
   /** {@link moveBy} through the unsaved-edits guard. Whether it ran now. */
   public requestMoveBy(componentId: string, delta: -1 | 1): boolean {
-    return this.holdUnlessClean("drop", () => this.moveBy(componentId, delta));
+    return this.holdUnlessClean("drop", (follow) => this.moveBy(follow(componentId), delta));
   }
 
   /** {@link duplicate} through the unsaved-edits guard: the copy takes the selection, as an add does. Whether it ran now. */
   public requestDuplicate(componentId: string): boolean {
-    return this.holdUnlessClean("add", () => this.duplicate(componentId));
+    return this.holdUnlessClean("add", (follow) => this.duplicate(follow(componentId)));
   }
 
   /** {@link addAfter} through the unsaved-edits guard, as {@link requestAdd}. Whether it ran now. */
   public requestAddAfter(type: string, afterId?: string, init?: AddComponentInit): boolean {
-    return this.holdUnlessClean("add", () => this.addAfter(type, afterId, init));
+    return this.holdUnlessClean("add", (follow) => this.addAfter(type, afterId === undefined ? undefined : follow(afterId), init));
   }
 
   /**
@@ -7353,11 +7368,12 @@ export class BuilderController {
     // The dropped component takes the selection with it. Moving the very component whose
     // edits are pending leaves nothing behind, so only a drop that lands the selection
     // somewhere else waits on the unsaved-changes prompt.
-    const run = (): void => {
-      this.performDrop(intent);
+    const run: HeldRun = (follow) => {
+      const target = { ...intent.target, parentId: follow(intent.target.parentId) };
+      this.performDrop(intent.kind === "move-existing" ? { ...intent, componentId: follow(intent.componentId), target } : { ...intent, target });
     };
     if (intent.kind === "move-existing" && intent.componentId === this.selectedId) {
-      run();
+      run((id) => id);
     } else {
       this.holdUnlessClean("drop", run);
     }
