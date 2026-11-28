@@ -321,7 +321,7 @@ or async, decided per call (see "Hooks and the event loop").
 | `form_repository` | `FormDefinitionRepository` (`current`); `WritableFormDefinitionRepository` adds `create`, `replace` | read-only `FileFormDefinitionRepository` over `datum.forms.locations` | implement it to store forms in a database; the builder needs the writable form |
 | `snapshot_store` | `DefinitionSnapshotStore` (`record`, `find`) | bounded in memory | the versions a submission is judged against, by hash |
 | `translation_store` | `TranslationCatalogStore` (`read`, `write` against an ETag) | bounded in memory | the builder's translation grid |
-| `data_sources` | sequence of `DataSourceProvider` (`items`, `exists`) | none (404) | option lists and values a form loads (`GET /api/data-sources/{id}`). Providers are asked in order and the first whose `exists(id)` is true answers; the default `exists` answers true for every id, hides the providers after it and is warned about (`datum.W006`) |
+| `data_sources` | sequence of `DataSourceProvider` (`items`, `exists`) | none (404) | option lists and values a form loads (`GET /api/data-sources/{id}`). Providers are asked in order and the first whose `exists(id)` is true answers; each implements both methods (`exists` says which ids it serves), and a provider without its own `exists` stops the start |
 | `pre_checks` | sequence of `SubmissionPreCheck`, `(IncomingSubmission) -> Allow \| Reject(code, message)` | none | refuse before the sandbox runs (anti-spam, quotas); the first `Reject` stops the rest |
 | `pre_check_statuses` | `(Reject) -> int` | `PreCheckStatuses.standard()`: 403 for every code | `PreCheckStatuses.by_suffix()` answers 422 for `.invalid` and 503 for `.unavailable`; a mapping may answer 429 but with no `Retry-After` (a rate limit belongs in the throttle) |
 | `validators` | sequence of `SubmissionValidator`, `(ValidatedSubmission, SubmissionContext) -> HookFindings \| None` | none | host-side validation after the kernel's; all run, errors refuse together, warnings ride along |
@@ -939,7 +939,6 @@ warnings and info lines can be silenced by id in `datum.silenced_checks`; an ERR
 | `datum.W002` | warning | slots times memory (every worker) exceeds the container's limit less the resident set |
 | `datum.W003` | warning | the default logging submission handler is in use |
 | `datum.W004` | warning | a per-process store in memory |
-| `datum.W006` | warning | a data-source provider keeps the default `exists` |
 | `datum.W007` | warning | an unknown `DATUM_*` environment variable |
 | `datum.W008` | warning | a runtime budget clamped to its bound |
 | `datum.W009` | warning | a timestamp trust-state memory store acknowledged |

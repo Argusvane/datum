@@ -3,6 +3,7 @@ package com.argusvane.datum.timestamp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import com.argusvane.datum.core.observation.DatumObservations;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -269,7 +270,8 @@ class OpensslRoundTripIT {
     void anUnavailableTimeSourceIsARejectionOpensslReads() throws Exception {
         TsaKey key = tsaKey("ec", "critical,timeStamping");
         TimestampAuthority drifting = new TimestampAuthority(TsaKeyMaterial.checked(key, Clock.systemUTC()), null, null,
-            () -> TsaTimeSource.Reading.unavailable("the system clock is 5 s from the reference"), log);
+            () -> TsaTimeSource.Reading.unavailable("the system clock is 5 s from the reference"), log, List.of(), List.of(),
+            DatumObservations.none());
         byte[] query = query();
         TimestampReply reply = drifting.respond(query, null);
         assertThat(reply.status()).isEqualTo(503);

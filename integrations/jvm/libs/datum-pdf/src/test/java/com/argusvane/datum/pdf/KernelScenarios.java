@@ -63,7 +63,7 @@ abstract class KernelScenarios {
         engine = engine();
         // A parity and flow test, not a speed test: 60 s per run, as datum-sandbox-endive's PdfRenderIT.
         ProgramLimits limits = ProgramLimits.builder().pdfSeconds(60).build();
-        PdfProgram pdf = new PdfProgram(ProgramRunner.on(engine), program, limits, new AbiProbe());
+        PdfProgram pdf = new PdfProgram(ProgramRunner.on(engine), program, limits, new AbiProbe(), null);
         runtime = PdfRuntime.of(pdf, new RunSlots(2, Duration.ofSeconds(10), "PDF render"), engine.engineInfo(), HostOptions.defaults(), limits);
     }
 

@@ -74,7 +74,7 @@ class HostContextTest {
         return SubmissionService.builder()
             .sandbox(() -> sandbox)
             .definitions(DefinitionService.builder().repository(new Fixtures.Repository(Fixtures.contact(), Fixtures.trip()))
-                .snapshots(new InMemoryDefinitionSnapshotStore(100, message -> { })).sandbox(() -> sandbox).events(event -> { })
+                .snapshots(new InMemoryDefinitionSnapshotStore(100)).sandbox(() -> sandbox).events(event -> { })
                 .publicCacheSize(16).build())
             .dataSources(new DataSourceOptions(null, Duration.ofSeconds(2), null))
             .handler(submission -> new SubmissionReceipt("id-" + UUID.randomUUID(), "REF", null))

@@ -37,7 +37,7 @@ class EnabledRoutesNoticeTest {
     @Test
     void enabledRoutesAreListedWithTheirMethodPathAndSwitch() {
         WebSettings settings = new WebSettings(true, new WebSettings.Api("/v1", 1024, false,
-            Map.of("submissions", true, "validate", true)), WebSettings.Assets.defaults(), null, null, null);
+            Map.of("submissions", true, "validate", true), null), WebSettings.Assets.defaults(), null, null, null);
         Predicate<String> on = key -> key.equals("datum.web.api.endpoints.submissions") || key.equals("datum.tsa.enabled")
             || key.equals("datum.web.api.endpoints.validate");
         var notice = EnabledRoutesNotice.notice(new Facts(settings, ALL, Map.of("tsa", "/stamp"), true, on));

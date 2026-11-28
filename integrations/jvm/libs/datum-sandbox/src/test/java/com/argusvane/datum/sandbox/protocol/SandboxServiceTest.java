@@ -39,7 +39,7 @@ class SandboxServiceTest {
 
     private SandboxService service(FakeRuntime runtime, RunSlots slots) {
         return new SandboxService(runtime, PROGRAM, SCRIPTS, ProgramLimits.defaults(), HOST, slots, new AbiProbe(),
-            (form, level, message, data) -> logged.add(new String[] {form, level, message, data == null ? null : data.toString()}));
+            (form, level, message, data) -> logged.add(new String[] {form, level, message, data == null ? null : data.toString()}), null);
     }
 
     private static ObjectNode json(String text) {
@@ -363,7 +363,7 @@ class SandboxServiceTest {
         };
         SandboxService service = new SandboxService(FakeRuntime.answering(
             "{\"errors\":[],\"logs\":[{\"level\":\"info\",\"message\":\"one\"},{\"level\":\"warn\",\"message\":\"two\"}]}"),
-            PROGRAM, SCRIPTS, ProgramLimits.defaults(), HOST, new RunSlots(2, Duration.ZERO, "validation"), new AbiProbe(), down);
+            PROGRAM, SCRIPTS, ProgramLimits.defaults(), HOST, new RunSlots(2, Duration.ZERO, "validation"), new AbiProbe(), down, null);
         SandboxResult result = service.validate(context(), List.of(), true);
         assertThat(result.outcome().get("errors").isEmpty()).isTrue();
         assertThat(offered).containsExactly("one", "two");
@@ -579,7 +579,7 @@ class SandboxServiceTest {
     void theProgramMustBeTheSandboxOne() {
         Program pdf = Program.of(Program.Kind.PDF, new byte[] {1});
         assertThatThrownBy(() -> new SandboxService(FakeRuntime.answering("{}"), pdf, SCRIPTS, ProgramLimits.defaults(), HOST,
-            new RunSlots(1, Duration.ZERO, "validation"), new AbiProbe(), RunLog.slf4j())).isInstanceOf(IllegalArgumentException.class);
+            new RunSlots(1, Duration.ZERO, "validation"), new AbiProbe(), RunLog.slf4j(), null)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

@@ -15,12 +15,23 @@ release across npm, Maven Central and PyPI. 0.1.0 is published to npm only. What
 - The sandbox ABI (`WASM_ABI_VERSION`, 4.1.0 in 0.1.0) and the PDF ABI (`PDF_ABI_VERSION`, 4.0.0 in 0.1.0) are both
   reset to 1.0.0, and every host's floor for both programs is 1.0.0. A program built from 0.1.0 answers another major,
   so a host of the next release refuses it at start: rebuild the programs from the same release as the host.
+- JVM: `DataSourceProvider.exists(id)` is abstract, so every provider says which source ids it owns and a lambda is no
+  longer a provider. FastAPI: a data-source provider without its own `exists` stops the start with
+  `DatumConfigurationError`.
+- `datum-host.js` calls the builder's and the form's methods directly, so a page must load the bundles that ship with
+  it.
 
 ### Removed
 
 - The PDF program's `capabilities` reply no longer lists features; it answers `abi` and `kernelVersion`. Hosts no
   longer check a program for features, and the conformance suite runs the `OUT` class against any PDF program of
   ABI 1.0.0 or a later version of that major.
+- JVM: the start-up WARN for `DataSourceProvider` beans that keep a default `exists`. FastAPI: the `datum.W006` check
+  and `datum_core.forms.keeps_default_exists`.
+- JVM: the shorter constructors of `WebAuthnSettings`, `WebSettings.Api`, `AssetService`, `RegistrationCeremony`,
+  `SubmissionSignatureVerifier`, `TsaEndpoint`, `ErrorMapper` (three arguments), `PdfProgram`, `SandboxService`,
+  `TimestampAuthority` (the `TsaTimeSource` forms) and `InMemoryDefinitionSnapshotStore(int, Consumer)`. Pass the full
+  argument list.
 
 ## [0.1.0] - 2026-11-26
 

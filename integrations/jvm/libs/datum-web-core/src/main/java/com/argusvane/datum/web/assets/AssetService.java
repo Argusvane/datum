@@ -58,17 +58,6 @@ public final class AssetService {
     private final HostBindings bindings;
     private volatile byte[] glue;
 
-    public AssetService(DatumAssets assets, WebSettings settings, List<WithheldAssets> withheld,
-                        ClassLoader loader, JsonMapper json) {
-        this(assets, settings, withheld, loader, json, null);
-    }
-
-    /** @param capabilities where the capabilities' endpoint paths are read for {@code host.json}, or null */
-    public AssetService(DatumAssets assets, WebSettings settings, List<WithheldAssets> withheld,
-                        ClassLoader loader, JsonMapper json, DatumCapabilities capabilities) {
-        this(assets, settings, withheld, loader, json, capabilities, null);
-    }
-
     /**
      * @param capabilities where the capabilities' endpoint paths are read for {@code host.json}, or null
      * @param bindings     which design-system binding each form route is drawn by, published in {@code host.json} for the

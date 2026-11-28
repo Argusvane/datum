@@ -64,12 +64,10 @@ public final class TsaEndpoint {
     private final boolean anyCookieRefused;
     private final DatumEventPublisher events;
 
-    public TsaEndpoint(TimestampAuthority authority, TsaClientStore clients, TsaFlood flood, TsaCertificates certificates,
-                       TsaSettings settings, DatumEventPublisher events) {
-        this(authority, clients, flood, certificates, settings, events, Set.of());
-    }
-
-    /** As above, refusing also the session cookie names in {@code extraSessionCookies} (the host's renamed cookie). */
+    /**
+     * @param extraSessionCookies session cookie names refused besides {@code settings}' own (the host's renamed cookie);
+     *     empty for none
+     */
     public TsaEndpoint(TimestampAuthority authority, TsaClientStore clients, TsaFlood flood, TsaCertificates certificates,
                        TsaSettings settings, DatumEventPublisher events, Set<String> extraSessionCookies) {
         this.authority = Objects.requireNonNull(authority, "authority");

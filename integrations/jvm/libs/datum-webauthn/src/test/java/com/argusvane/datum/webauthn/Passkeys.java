@@ -26,7 +26,7 @@ final class Passkeys {
     SubmissionSignatureVerifier signatures;
 
     Passkeys() {
-        this(new WebAuthnSettings("localhost", "Petition", List.of("http://localhost"), null, true));
+        this(new WebAuthnSettings("localhost", "Petition", List.of("http://localhost"), null, true, false, null, null, null, null));
     }
 
     Passkeys(WebAuthnSettings settings) {
@@ -35,8 +35,8 @@ final class Passkeys {
 
     void configure(WebAuthnSettings settings) {
         this.settings = settings;
-        ceremony = new RegistrationCeremony(settings, challenges, repository, verifier, clock);
-        signatures = new SubmissionSignatureVerifier(settings, repository, uses, verifier, clock);
+        ceremony = new RegistrationCeremony(settings, challenges, repository, verifier, clock, List.of(), List.of());
+        signatures = new SubmissionSignatureVerifier(settings, repository, uses, verifier, clock, List.of());
     }
 
     /** The submission verifier with the application's signature-check hooks, in this order. */

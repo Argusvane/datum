@@ -29,7 +29,7 @@ class AssetServicePropertiesTest {
     private AssetService service(DatumProperties properties, WithheldAssets... withheld) {
         DatumAssets assets = new DatumAssets(true, "testbuild1", "/datum/assets", "/datum/assets/testbuild1", "/api",
             AssetManifestLoader.load(getClass().getClassLoader()));
-        return new AssetService(assets, properties.toSettings(), List.of(withheld), getClass().getClassLoader(), JSON);
+        return new AssetService(assets, properties.toSettings(), List.of(withheld), getClass().getClassLoader(), JSON, null, null);
     }
 
     @Test

@@ -47,7 +47,7 @@ public interface PdfRenderContract extends RuntimeUnderTest {
         // A parity test, not a speed test: 60 s per render rather than the production 15 s, so a loaded CI runner (JFFI
         // renders took 10-12.5 s under contention) cannot fail it with BUDGET. The budget itself is
         // proved by the sandbox budget tests; the printed times stay as information.
-        PdfProgram pdf = new PdfProgram(ProgramRunner.on(runtime()), RuntimeTckAssets.pdfProgram(), ProgramLimits.builder().pdfSeconds(60).build(), new AbiProbe());
+        PdfProgram pdf = new PdfProgram(ProgramRunner.on(runtime()), RuntimeTckAssets.pdfProgram(), ProgramLimits.builder().pdfSeconds(60).build(), new AbiProbe(), null);
         assertThat(pdf.capabilities().kernelVersion()).as("the capabilities answer names the kernel's version").isNotEmpty();
         JsonNode hashes = RuntimeTckAssets.fixture("documents-3.8/hashes.json");
         ArrayNode fonts = fonts();

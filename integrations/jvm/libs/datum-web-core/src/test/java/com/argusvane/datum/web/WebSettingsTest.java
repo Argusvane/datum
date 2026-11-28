@@ -13,7 +13,6 @@ class WebSettingsTest {
     @Test
     void theBusyRetryAfterDefaultsToFiveSeconds() {
         assertThat(WebSettings.defaults().api().busyRetryAfter()).isEqualTo(Duration.ofSeconds(5));
-        assertThat(new WebSettings.Api("/api", 1024, false, Map.of()).busyRetryAfter()).isEqualTo(Duration.ofSeconds(5));
         assertThat(new WebSettings.Api("/api", 1024, false, Map.of(), null).busyRetryAfter()).isEqualTo(WebSettings.Api.DEFAULT_BUSY_RETRY_AFTER);
     }
 

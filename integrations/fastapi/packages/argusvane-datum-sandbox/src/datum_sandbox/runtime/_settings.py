@@ -1,7 +1,7 @@
 """`SandboxSettings`: one immutable value holding every clamp of the `datum.runtime.*` and `datum.host.*` keys.
 
 `SandboxSettings.build(**values)` is the one place a value is held to its bound. A budget outside its bound is moved to
-the nearest bound with one `datum.W008` check (`checks`), as before; what cannot be clamped refuses the build with a
+the nearest bound with one `datum.W008` check (`checks`); what cannot be clamped refuses the build with a
 `DatumConfigurationError` naming the key: a digest with no module path, a diagnostics word that is none of the three, a
 capture bound below 1. Every value keeps where it came from, so `explain()` answers each key's value and its source
 (default, configured, clamped from a value to a bound). A host maps its own configuration onto the keyword names: the
@@ -233,7 +233,7 @@ class _Builder:
         return value
 
     def bounded(self, name: str) -> float:
-        """Take a budget: the nearest bound (W008) when it is outside, as `ProgramLimits.clamp` always did."""
+        """Take a budget: the nearest bound (W008) when it is outside."""
         bounds = BOUNDS[name]
         spec = _KEYS[name]
         asked = self.values.get(name)

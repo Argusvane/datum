@@ -96,7 +96,7 @@ public interface SandboxHardeningContract extends RuntimeUnderTest {
 
     private static SandboxService service(ProgramRunner on, Program program, ProgramLimits limits, AbiProbe probe) {
         return new SandboxService(on, program, RuntimeTckAssets.scripts(), limits, HostOptions.defaults(), RunSlots.validation(limits), probe,
-            RunLog.slf4j());
+            RunLog.slf4j(), null);
     }
 
     private SandboxService realService(ProgramLimits limits) {

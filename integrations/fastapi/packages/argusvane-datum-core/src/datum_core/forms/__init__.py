@@ -28,7 +28,7 @@ from datum_core.forms.protocols import (
     WritableFormDefinitionRepository,
 )
 from datum_core.forms.repository import FileFormDefinitionRepository
-from datum_core.forms.sources import CompositeDataSourceProvider, DataSourceService, Deadline, keeps_default_exists
+from datum_core.forms.sources import CompositeDataSourceProvider, DataSourceService, Deadline
 from datum_core.forms.translations import TranslationService
 from datum_core.stores import StoredCatalog, StoredDefinition
 
@@ -66,6 +66,5 @@ __all__ = [
     "WritableFormDefinitionRepository",
     "carries_server_secret_rule",
     "is_form_key",
-    "keeps_default_exists",
     "parse_form_key",
 ]

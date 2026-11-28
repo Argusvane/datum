@@ -81,7 +81,7 @@ class BuilderApiTest {
     }
 
     void build(long cap) {
-        definitions = DefinitionService.builder().repository(repository).snapshots(new InMemoryDefinitionSnapshotStore(100, warning -> { }))
+        definitions = DefinitionService.builder().repository(repository).snapshots(new InMemoryDefinitionSnapshotStore(100))
             .sandbox(() -> sandbox.get()).events(events::add).publicCacheSize(16).build();
         api = new BuilderApi(repository, definitions, catalogs, TYPES, cap, "/ctx/api", Clock.systemUTC());
     }
@@ -293,7 +293,7 @@ class BuilderApiTest {
                     "/* program */".getBytes(StandardCharsets.UTF_8)),
                 new com.argusvane.datum.sandbox.protocol.RunScript("/* freeze */"), com.argusvane.datum.sandbox.protocol.ProgramLimits.defaults(),
                 com.argusvane.datum.sandbox.protocol.HostOptions.defaults(), slots, new com.argusvane.datum.sandbox.protocol.AbiProbe(),
-                com.argusvane.datum.sandbox.protocol.RunLog.slf4j());
+                com.argusvane.datum.sandbox.protocol.RunLog.slf4j(), null);
             sandbox = () -> bounded;
             ObjectNode definition = BuilderFixtures.base();
             BuilderFixtures.content(definition).addObject().put("id", "b").put("type", "text");
@@ -593,7 +593,7 @@ class BuilderApiTest {
          */
         @Test
         void aListenerThatThrowsDoesNotTurnASavedFormIntoAFailure() {
-            definitions = DefinitionService.builder().repository(repository).snapshots(new InMemoryDefinitionSnapshotStore(100, warning -> { })).sandbox(() -> sandbox.get())
+            definitions = DefinitionService.builder().repository(repository).snapshots(new InMemoryDefinitionSnapshotStore(100)).sandbox(() -> sandbox.get())
                 .events(com.argusvane.datum.core.DatumEventPublisher.guarded(event -> {
                     throw new IllegalStateException("listener failed");
                 })).publicCacheSize(16).build();
@@ -614,7 +614,7 @@ class BuilderApiTest {
          */
         @Test
         void anApplicationsOwnPublisherThatThrowsReachesTheCallerOfTheSave() {
-            InMemoryDefinitionSnapshotStore snapshots = new InMemoryDefinitionSnapshotStore(100, warning -> { });
+            InMemoryDefinitionSnapshotStore snapshots = new InMemoryDefinitionSnapshotStore(100);
             definitions = DefinitionService.builder().repository(repository).snapshots(snapshots).sandbox(() -> sandbox.get()).events(event -> {
                 throw new IllegalStateException("outbox down");
             }).publicCacheSize(16).build();
@@ -635,7 +635,7 @@ class BuilderApiTest {
         @Test
         void aSnapshotStoreThatFailsForAVersionRecordedBeforeIsStillTheWarning() {
             java.util.concurrent.atomic.AtomicBoolean readOnly = new java.util.concurrent.atomic.AtomicBoolean();
-            InMemoryDefinitionSnapshotStore memory = new InMemoryDefinitionSnapshotStore(100, warning -> { });
+            InMemoryDefinitionSnapshotStore memory = new InMemoryDefinitionSnapshotStore(100);
             DefinitionSnapshotStore flaky = new DefinitionSnapshotStore() {
                 @Override
                 public void record(String key, String sha256, ObjectNode definition) {
@@ -715,7 +715,7 @@ class BuilderApiTest {
                     return repository.save(copy, expectedSha256);
                 }
             };
-            definitions = DefinitionService.builder().repository(dropsVendorKeys).snapshots(new InMemoryDefinitionSnapshotStore(100, warning -> { }))
+            definitions = DefinitionService.builder().repository(dropsVendorKeys).snapshots(new InMemoryDefinitionSnapshotStore(100))
                 .sandbox(() -> sandbox.get()).events(events::add).publicCacheSize(16).build();
             api = new BuilderApi(dropsVendorKeys, definitions, catalogs, TYPES, CAP, "", Clock.systemUTC());
             ObjectNode next = BuilderFixtures.base();

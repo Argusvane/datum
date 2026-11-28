@@ -158,7 +158,7 @@ class RunWatchTest {
         assertThat(RunWatch.start(facts::add, PROGRAM, "validate", "run.js", new byte[1])).isNotNull();
         assertThat(service(FakeRuntime.answering("{}"), false).recorder()).isNull();
         assertThat(service(FakeRuntime.answering("{}"), true).recorder()).isNotNull();
-        assertThat(new PdfProgram((program, script, argv, stdin, budget) -> null, PDF, ProgramLimits.defaults(), new AbiProbe()).recorder()).isNull();
+        assertThat(new PdfProgram((program, script, argv, stdin, budget) -> null, PDF, ProgramLimits.defaults(), new AbiProbe(), null).recorder()).isNull();
     }
 
     /** A check whose answer lists no structure, or a public copy with no definition, is the run's no_outcome. */

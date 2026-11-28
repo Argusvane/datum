@@ -855,7 +855,7 @@ class DatumSandboxTest {
     // ---- the builder
 
     @Test
-    void theBuilderMakesARuntimeThatStartsLikeTheDeprecatedConstructors() {
+    void theBuilderMakesARuntimeThatProbesSmokesAndReportsReady() {
         runtime = DatumSandbox.builder().runtime(engine).store(Programs.packaged().store()).limits(ProgramLimits.defaults())
             .settings(TestSettings.of("endive", true, 2, Duration.ofSeconds(1), 1, Duration.ZERO)).events(events::add).build();
         runtime.start();

@@ -86,20 +86,4 @@ class CompositeDataSourceProviderTest {
         assertThat(CompositeDataSourceProvider.of(List.of(only, new Owning("b", true, "two")))).isInstanceOf(CompositeDataSourceProvider.class);
         assertThatThrownBy(() -> new CompositeDataSourceProvider(List.of())).isInstanceOf(IllegalArgumentException.class);
     }
-
-    @Test
-    void aProviderKeepingTheDefaultExistsIsNamedInAWarn() {
-        DataSourceProvider careless = (id, locale, principal) -> List.of();
-        Owning careful = new Owning("a", true, "one");
-        CompositeDataSourceProvider composite = new CompositeDataSourceProvider(List.of(careless, careful));
-
-        assertThat(composite.withoutExists()).containsExactly(careless);
-        List<DatumStartupCheck.Notice> notices = composite.startupCheck().check();
-        assertThat(notices).hasSize(1);
-        assertThat(notices.get(0).level()).isEqualTo(DatumStartupCheck.Level.WARN);
-        assertThat(notices.get(0).message()).contains("does not override exists(id)").contains("2 DataSourceProvider");
-        // The careless one answers everything, so the second is never reached: the reason for the warning.
-        assertThat(composite.exists("anything")).isTrue();
-        assertThat(new CompositeDataSourceProvider(List.of(careful, new Owning("b", true, "two"))).startupCheck().check()).isEmpty();
-    }
 }

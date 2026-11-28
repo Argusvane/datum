@@ -164,7 +164,7 @@ class SignatureCheckCustomizerTest {
         assertThat(verify(site.signed(authenticator, Map.of("fullName", "Bo")), PREFERRED, "http").code()).isEqualTo("revoked");
 
         // Visitors may not sign here: their signature is never judged (the seam answers signature.sign_in).
-        Passkeys closed = new Passkeys(new WebAuthnSettings("localhost", "Petition", List.of("http://localhost"), null, false));
+        Passkeys closed = new Passkeys(new WebAuthnSettings("localhost", "Petition", List.of("http://localhost"), null, false, false, null, null, null, null));
         SoftwareAuthenticator visitor = new SoftwareAuthenticator();
         closed.register(visitor);
         closed.signatureCustomizers(List.of(draft -> {

@@ -89,16 +89,7 @@ public final class SandboxService implements Sandbox {
      * @param slots the validation slots
      * @param probe the ABI gate's memory (share one per program store)
      * @param runLog where a run's log goes
-     */
-    public SandboxService(ProgramRunner runtime, Program program, RunScript scripts, ProgramLimits limits,
-                          HostOptions hostOptions, RunSlots slots, AbiProbe probe, RunLog runLog) {
-        this(runtime, program, scripts, limits, hostOptions, slots, probe, runLog, null);
-    }
-
-    /**
-     * The service with a recorder of its runs ({@link RunRecorder}), or none.
-     *
-     * @param recorder told of every judged run, or null for none
+     * @param recorder told of every judged run ({@link RunRecorder}), or null for none
      */
     public SandboxService(ProgramRunner runtime, Program program, RunScript scripts, ProgramLimits limits,
                           HostOptions hostOptions, RunSlots slots, AbiProbe probe, RunLog runLog, @Nullable RunRecorder recorder) {
@@ -118,7 +109,7 @@ public final class SandboxService implements Sandbox {
 
     /** A service with validation slots from the limits, a fresh ABI gate and the SLF4J run log. */
     public static SandboxService create(ProgramRunner runtime, Program program, RunScript scripts, ProgramLimits limits, HostOptions hostOptions) {
-        return new SandboxService(runtime, program, scripts, limits, hostOptions, RunSlots.validation(limits), new AbiProbe(), RunLog.slf4j());
+        return new SandboxService(runtime, program, scripts, limits, hostOptions, RunSlots.validation(limits), new AbiProbe(), RunLog.slf4j(), null);
     }
 
     /** The program this service runs. */

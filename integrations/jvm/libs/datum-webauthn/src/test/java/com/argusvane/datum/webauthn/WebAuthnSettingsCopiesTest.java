@@ -13,7 +13,7 @@ class WebAuthnSettingsCopiesTest {
 
     @Test
     void everyComponentHasACopyThatChangesItAlone() throws ReflectiveOperationException {
-        assertThat(RecordCopies.assertCopies(new WebAuthnSettings("localhost", "Petition", List.of("http://localhost"), null, true)))
+        assertThat(RecordCopies.assertCopies(new WebAuthnSettings("localhost", "Petition", List.of("http://localhost"), null, true, false, null, null, null, null)))
             .isGreaterThanOrEqualTo(2);
     }
 

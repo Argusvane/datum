@@ -28,12 +28,11 @@ from concurrent.futures import TimeoutError as FutureTimeout
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final, cast
 
-from datum_core.checks import W006
 from datum_core.forms.outcomes import DataSourceNotFound, DataSourceOutcome, DataSourceUnavailable, Items
 from datum_core.forms.protocols import DataSourceProvider, DataSourceRequest
 from datum_core.hooks import Awaiter, MaybeAwaitable, is_async_callable, resolve
 from datum_core.loggers import FORMS
-from datum_sandbox.checks import CheckLevel, DatumCheck, DatumConfigurationError
+from datum_sandbox.checks import DatumConfigurationError
 from datum_sandbox.json import JsonValue
 
 if TYPE_CHECKING:
@@ -71,11 +70,17 @@ class _Expired(Exception):  # noqa: N818 - control flow inside this module only
 
 
 class CompositeDataSourceProvider:
-    """The providers in the order they are asked, and the `datum.W006` check for default `exists` ones."""
+    """The providers in the order they are asked."""
 
     def __init__(self, providers: Sequence[DataSourceProvider]) -> None:
-        """Keep the providers in list order."""
+        """Keep the providers in list order; one whose class has no `exists` of its own is refused."""
         self.providers = tuple(providers)
+        for provider in self.providers:
+            if getattr(type(provider), "exists", None) in (None, DataSourceProvider.exists):
+                raise DatumConfigurationError(
+                    f"the data-source provider {type(provider).__qualname__} has no exists of its own",
+                    hint="implement exists(source_id): it says which source ids the provider serves",
+                )
 
     def __iter__(self) -> Iterator[DataSourceProvider]:
         """Iterate the providers in order."""
@@ -84,25 +89,6 @@ class CompositeDataSourceProvider:
     def __len__(self) -> int:
         """How many providers there are."""
         return len(self.providers)
-
-    def checks(self) -> tuple[DatumCheck, ...]:
-        """One `datum.W006` per provider that keeps the default `exists` (it answers for every id)."""
-        return tuple(
-            DatumCheck(
-                CheckLevel.WARNING,
-                W006,
-                f"the data-source provider {type(provider).__qualname__} keeps the default exists, so it answers for"
-                " every id and hides the providers after it",
-                "implement exists",
-            )
-            for provider in self.providers
-            if keeps_default_exists(provider)
-        )
-
-
-def keeps_default_exists(provider: object) -> bool:
-    """Say whether the provider's class has no `exists` of its own (it inherits the default, or has none)."""
-    return getattr(type(provider), "exists", None) in (None, DataSourceProvider.exists)
 
 
 async def _within(awaitable: Awaitable[object], seconds: float) -> object:
@@ -227,9 +213,7 @@ class DataSourceService:
     async def _ask_on(
         self, loop: "AbstractEventLoop", provider: DataSourceProvider, name: str, argument: object
     ) -> object:
-        method = cast("Callable[[object], object] | None", getattr(provider, name, None))
-        if method is None:  # no exists at all: the default
-            return True
+        method = cast("Callable[[object], object]", getattr(provider, name))
         if is_async_callable(method):
             return await cast("Awaitable[object]", method(argument))
         answer = await loop.run_in_executor(self._executor(), method, argument)
@@ -255,9 +239,7 @@ class DataSourceService:
         return _rows(self._call(provider, "items", request, deadline), request.source_id)
 
     def _call(self, provider: DataSourceProvider, name: str, argument: object, deadline: Deadline) -> object:
-        method = cast("Callable[[object], object] | None", getattr(provider, name, None))
-        if method is None:  # no exists at all: the default
-            return True
+        method = cast("Callable[[object], object]", getattr(provider, name))
         if is_async_callable(method):
             return self._await(method(argument), deadline)
         future = self._submit(method, argument)
@@ -302,9 +284,7 @@ def _rows(found: object, source_id: str) -> DataSourceOutcome:
 
 def _sync_call(provider: DataSourceProvider, name: str, argument: object) -> object:
     """Call a provider method on this thread; with no awaiter an awaitable answer is refused (and closed)."""
-    method = cast("Callable[[object], object] | None", getattr(provider, name, None))
-    if method is None:  # no exists at all: the default
-        return True
+    method = cast("Callable[[object], object]", getattr(provider, name))
     if is_async_callable(method):
         raise DatumConfigurationError(
             f"the data-source provider {type(provider).__qualname__} is asynchronous but no awaiter was supplied",

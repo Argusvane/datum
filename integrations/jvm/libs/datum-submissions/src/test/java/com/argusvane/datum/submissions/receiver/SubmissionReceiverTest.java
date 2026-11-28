@@ -91,6 +91,21 @@ class SubmissionReceiverTest {
     private SubmissionHandlerDouble handlerDouble;
     private com.argusvane.datum.submissions.spi.SubmissionIdempotencyStore idempotency;
 
+    /** A data source that owns every source id and answers each with what {@code items} gives. */
+    private static DataSourceProvider source(java.util.function.Supplier<List<OptionItem>> items) {
+        return new DataSourceProvider() {
+            @Override
+            public List<OptionItem> items(String id, String locale, Principal principal) {
+                return items.get();
+            }
+
+            @Override
+            public boolean exists(String id) {
+                return true;
+            }
+        };
+    }
+
     @BeforeEach
     void setUp() {
         runtime = new TestRuntime();
@@ -107,7 +122,7 @@ class SubmissionReceiverTest {
         signatureCheck = null;
         provider = null;
         cap = 1 << 20;
-        snapshots = new InMemoryDefinitionSnapshotStore(100, message -> { });
+        snapshots = new InMemoryDefinitionSnapshotStore(100);
         listenerThrowsOn = null;
         handlerDouble = null;
         idempotency = new com.argusvane.datum.submissions.idempotency.InMemorySubmissionIdempotencyStore(100);
@@ -868,7 +883,7 @@ class SubmissionReceiverTest {
             service = new SandboxService(com.argusvane.datum.sandbox.protocol.ProgramRunner.on(runtime), service.program(), new com.argusvane.datum.sandbox.protocol.RunScript("/* f */"),
                 com.argusvane.datum.sandbox.protocol.ProgramLimits.defaults(), com.argusvane.datum.sandbox.protocol.HostOptions.defaults(),
                 new com.argusvane.datum.sandbox.protocol.RunSlots(1, Duration.ZERO, "validation"),
-                new com.argusvane.datum.sandbox.protocol.AbiProbe(), com.argusvane.datum.sandbox.protocol.RunLog.slf4j());
+                new com.argusvane.datum.sandbox.protocol.AbiProbe(), com.argusvane.datum.sandbox.protocol.RunLog.slf4j(), null);
             try (var taken = service.slots().acquire()) {
                 assertThatThrownBy(() -> receiver().submit(request(), delivered(contactEnvelope())))
                     .isInstanceOf(SandboxException.class)
@@ -968,9 +983,9 @@ class SubmissionReceiverTest {
 
         @Test
         void aDataSourceThatCannotAnswerIs503BeforeAnyRun() {
-            provider = (id, locale, principal) -> {
+            provider = source(() -> {
                 throw new IllegalStateException("upstream down");
-            };
+            });
             assertThatThrownBy(() -> receiver().submit(request(), delivered(envelope("sourced", "1", "{\"colour\":\"red\"}"))))
                 .isInstanceOf(ProgramUnavailableException.class)
                 .satisfies(e -> {
@@ -983,7 +998,7 @@ class SubmissionReceiverTest {
 
         @Test
         void theOptionSnapshotHoldsWhatTheSourceAllows() {
-            provider = (id, locale, principal) -> List.of(new OptionItem("red", null, null, null, null));
+            provider = source(() -> List.of(new OptionItem("red", null, null, null, null)));
             receiver().submit(request(), delivered(envelope("sourced", "1", "{\"colour\":\"red\"}")));
             assertThat(runtime.contexts().get(0).path("optionSnapshot").path("colours").toString()).isEqualTo("[{\"value\":\"red\"}]");
         }

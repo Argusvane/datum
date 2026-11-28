@@ -109,6 +109,21 @@ class SubmissionServiceTest {
     private long cap;
     private com.argusvane.datum.core.observation.DatumObservations observations;
 
+    /** A data source that owns every source id and answers each with what {@code items} gives. */
+    private static DataSourceProvider source(java.util.function.Supplier<List<OptionItem>> items) {
+        return new DataSourceProvider() {
+            @Override
+            public List<OptionItem> items(String id, String locale, Principal principal) {
+                return items.get();
+            }
+
+            @Override
+            public boolean exists(String id) {
+                return true;
+            }
+        };
+    }
+
     @BeforeEach
     void setUp() {
         runtime = new TestRuntime();
@@ -141,7 +156,7 @@ class SubmissionServiceTest {
                 }
                 return sandbox;
             })
-            .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100, message -> { })).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
+            .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100)).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
             .dataSources(new DataSourceOptions(provider, Duration.ofSeconds(2), null))
             .catalogs(catalogs)
             .handler(submission -> {
@@ -205,7 +220,7 @@ class SubmissionServiceTest {
             Sandbox observed = com.argusvane.datum.sandbox.observation.GuestRunObservations.sandbox(observations, "jffi").decorate(protocol);
             SubmissionService service = SubmissionService.builder()
                 .sandbox(() -> observed)
-                .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100, message -> { })).sandbox(() -> protocol).events(event -> { }).publicCacheSize(16).build())
+                .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100)).sandbox(() -> protocol).events(event -> { }).publicCacheSize(16).build())
                 .dataSources(new DataSourceOptions(null, Duration.ofSeconds(2), null))
                 .handler(accepted -> new SubmissionReceipt("id-1", null, null))
                 .events(events::add)
@@ -553,14 +568,14 @@ class SubmissionServiceTest {
 
         @Test
         void theOptionSnapshotIsTakenAndASourceThatCannotAnswerStopsTheCall() {
-            provider = (id, locale, principal) -> List.of(new OptionItem("red", null, null, null, null));
+            provider = source(() -> List.of(new OptionItem("red", null, null, null, null)));
             service().submit(FormRef.fromDocument(), envelope("sourced", "1", "{\"colour\":\"red\"}"), bus());
             assertThat(runtime.contexts().get(0).path("optionSnapshot").path("colours").toString()).isEqualTo("[{\"value\":\"red\"}]");
 
             setUp();
-            provider = (id, locale, principal) -> {
+            provider = source(() -> {
                 throw new IllegalStateException("upstream down");
-            };
+            });
             SubmissionOutcome outcome = service().submit(FormRef.fromDocument(), envelope("sourced", "1", "{\"colour\":\"red\"}"), bus());
             assertThat(outcome).isInstanceOf(Unavailable.class);
             assertThat(((Unavailable) outcome).code()).isEqualTo("server.unavailable");
@@ -898,7 +913,7 @@ class SubmissionServiceTest {
         void theCapDefaultsToTheBodyCapsDefaultAndAReceiverBuiltOfPartsPassesItsOwn() {
             SubmissionService defaults = SubmissionService.builder()
                 .sandbox(() -> sandbox)
-                .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100, message -> { })).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
+                .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100)).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
                 .dataSources(new DataSourceOptions(null, Duration.ofSeconds(2), null))
                 .handler(submission -> new SubmissionReceipt("id", "ref", null))
                 .events(event -> { })
@@ -908,7 +923,7 @@ class SubmissionServiceTest {
 
             SubmissionReceiver parts = SubmissionReceiver.builder()
                 .sandbox(() -> sandbox)
-                .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100, message -> { })).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
+                .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100)).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
                 .dataSources(new DataSourceOptions(null, Duration.ofSeconds(2), null))
                 .handler(submission -> new SubmissionReceipt("id", "ref", null))
                 .events(event -> { })
@@ -921,7 +936,7 @@ class SubmissionServiceTest {
         void aWordTheProgramDoesNotReadIsRefusedAtBuild() {
             assertThatThrownBy(() -> SubmissionService.builder()
                 .sandbox(() -> sandbox)
-                .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100, message -> { })).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
+                .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100)).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
                 .dataSources(new DataSourceOptions(null, Duration.ofSeconds(2), null))
                 .handler(submission -> new SubmissionReceipt("id", "ref", null))
                 .events(event -> { })
@@ -929,7 +944,7 @@ class SubmissionServiceTest {
                 .build()).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("logLevel is 'verbose'");
             assertThatThrownBy(() -> SubmissionReceiver.builder()
                 .sandbox(() -> sandbox)
-                .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100, message -> { })).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
+                .definitions(DefinitionService.builder().repository(forms).snapshots(new InMemoryDefinitionSnapshotStore(100)).sandbox(() -> sandbox).events(event -> { }).publicCacheSize(16).build())
                 .dataSources(new DataSourceOptions(null, Duration.ofSeconds(2), null))
                 .handler(submission -> new SubmissionReceipt("id", "ref", null))
                 .events(event -> { })

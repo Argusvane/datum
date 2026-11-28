@@ -24,7 +24,7 @@ class AssetServiceTest {
     private AssetService service(WebSettings settings, WithheldAssets... withheld) {
         DatumAssets assets = new DatumAssets(true, "testbuild1", "/datum/assets", "/datum/assets/testbuild1", "/api",
             AssetManifestLoader.load(getClass().getClassLoader()));
-        return new AssetService(assets, settings, List.of(withheld), getClass().getClassLoader(), JSON);
+        return new AssetService(assets, settings, List.of(withheld), getClass().getClassLoader(), JSON, null, null);
     }
 
     private static WebSettings withAssets(WebSettings.Assets assets) {
@@ -46,7 +46,7 @@ class AssetServiceTest {
         assertThat(service.gate("testbuild1/sub/")).isEmpty();
         assertThat(service.gate(null)).isEmpty();
         AssetService off = new AssetService(new DatumAssets(false, "testbuild1", "/datum/assets", "/datum/assets/testbuild1", "/api",
-            AssetManifestLoader.load(getClass().getClassLoader())), WebSettings.defaults(), List.of(), getClass().getClassLoader(), JSON);
+            AssetManifestLoader.load(getClass().getClassLoader())), WebSettings.defaults(), List.of(), getClass().getClassLoader(), JSON, null, null);
         assertThat(off.gate("testbuild1/datum-form.js")).as("assets off").isEmpty();
     }
 
@@ -140,7 +140,7 @@ class AssetServiceTest {
     private AssetService withCapabilities(String apiBase, DatumCapabilities capabilities) {
         DatumAssets assets = new DatumAssets(true, "testbuild1", "/shop/datum/assets", "/shop/datum/assets/testbuild1", apiBase,
             AssetManifestLoader.load(getClass().getClassLoader()));
-        return new AssetService(assets, WebSettings.defaults(), List.of(), getClass().getClassLoader(), JSON, capabilities);
+        return new AssetService(assets, WebSettings.defaults(), List.of(), getClass().getClassLoader(), JSON, capabilities, null);
     }
 
     @Test

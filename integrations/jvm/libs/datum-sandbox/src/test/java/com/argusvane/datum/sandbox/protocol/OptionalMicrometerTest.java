@@ -28,7 +28,7 @@ public class OptionalMicrometerTest {
         Program program = Program.of(Program.Kind.SANDBOX, "/* program */".getBytes(StandardCharsets.UTF_8));
         SandboxService service = new SandboxService(FakeRuntime.answering("{\"errors\":[]}"), program, new RunScript("/* f */"),
             ProgramLimits.defaults(), HostOptions.defaults(), new RunSlots(1, Duration.ZERO, "validation", () -> { }), new AbiProbe(),
-            RunLog.slf4j());
+            RunLog.slf4j(), null);
         Sandbox sandbox = SandboxDecorator.compose(List.of(GuestRunObservations.sandbox(DatumObservations.none(), "test"))).decorate(service);
         sandbox.proveAbi();
         sandbox.validate((tools.jackson.databind.node.ObjectNode) StrictJson.decode("{\"formId\":\"f\",\"form\":{\"id\":\"root\","

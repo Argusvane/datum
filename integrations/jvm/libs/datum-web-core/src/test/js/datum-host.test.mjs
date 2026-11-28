@@ -94,6 +94,11 @@ function fakeElement(extra = {}) {
       this.notice = text;
     },
     hasUnsavedChanges: () => false,
+    localeChangesSinceSave: () => ({ removed: [], renamed: [] }),
+    markLocalesSaved() {},
+    async submit() {
+      return {};
+    },
     previousElementSibling: null,
     nextElementSibling: null,
     values: {},
@@ -233,7 +238,7 @@ test('builder() sends locale changes, and reloads the catalog the server moved',
       'PUT api/forms/intake': json(200, {}, { ETag: '"h2"', 'X-Datum-Removed-Locales': 'de' }),
     },
   });
-  const element = fakeElement({ localeChangesSinceSave: () => ({ removed: ['de'], renamed: [] }), markLocalesSaved() {} });
+  const element = fakeElement({ localeChangesSinceSave: () => ({ removed: ['de'], renamed: [] }) });
   const handle = await DatumHost.builder(element, { formKey: 'intake' });
   assert.equal(await handle.save(), true);
   const put = seen.find((call) => call.method === 'PUT');

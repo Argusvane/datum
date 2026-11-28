@@ -83,18 +83,12 @@ public final class ErrorMapper {
 
     /** A mapper that knows no framework exception (each one is a 500). */
     public ErrorMapper(boolean problemDetails, List<ErrorTranslator> translators) {
-        this(problemDetails, translators, FrameworkErrors.NONE);
+        this(problemDetails, translators, FrameworkErrors.NONE, null);
     }
 
     /**
-     * @param translators asked first, in order
-     * @param framework   asked after the Datum exceptions, before a failure becomes a 500
-     */
-    public ErrorMapper(boolean problemDetails, List<ErrorTranslator> translators, FrameworkErrors framework) {
-        this(problemDetails, translators, framework, null);
-    }
-
-    /**
+     * @param translators    asked first, in order
+     * @param framework      asked after the Datum exceptions, before a failure becomes a 500
      * @param busyRetryAfter the {@code Retry-After} of a {@code server.busy} answer (whole seconds, at least 1); null: 5 s
      *                       ({@code datum.web.api.busy-retry-after})
      */

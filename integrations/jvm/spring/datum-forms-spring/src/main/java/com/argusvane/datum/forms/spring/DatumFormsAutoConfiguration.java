@@ -216,17 +216,10 @@ public final class DatumFormsAutoConfiguration {
      * The provider the options use. One bean, or one marked {@code @Primary}, is used as it
      * is. Two or more with none primary are asked in turn, in the framework's order ({@code @Order},
      * {@code Ordered}), the first whose {@code exists(id)} is true answering: separate modules each contribute a source
-     * without the application writing a dispatcher. Several providers need {@code exists} overridden, which the start-up
-     * check below reports when they do not.
+     * without the application writing a dispatcher.
      */
     static DataSourceProvider chosen(ObjectProvider<DataSourceProvider> provider) {
         DataSourceProvider unique = provider.getIfUnique();
         return unique != null ? unique : CompositeDataSourceProvider.of(provider.orderedStream().toList());
-    }
-
-    /** The start-up word for several providers whose {@code exists} is the default: the first would answer every id. */
-    @Bean
-    DatumStartupCheck datumDataSourceProvidersStartupCheck(ObjectProvider<DataSourceProvider> provider) {
-        return () -> chosen(provider) instanceof CompositeDataSourceProvider composite ? composite.startupCheck().check() : java.util.List.of();
     }
 }

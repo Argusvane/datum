@@ -4,6 +4,7 @@ import static com.argusvane.datum.timestamp.Fixtures.hex;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.argusvane.datum.core.observation.DatumObservations;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
@@ -418,7 +419,7 @@ class TimestampAuthorityTest {
     void aListedPolicyIsAcceptedAndNamedInTheToken() throws Exception {
         InMemoryTsaLog log = new InMemoryTsaLog(Fixtures.clock(Fixtures.LATER), 1000, 1);
         TimestampAuthority authority = new TimestampAuthority(TsaKeyMaterial.of(Fixtures.key("ec-p256")), null, null,
-            TsaTimeSource.of(Fixtures.clock(Fixtures.LATER)), log, List.of("1.2.3.5", " ", "1.2.3.5"));
+            TsaTimeSource.of(Fixtures.clock(Fixtures.LATER)), log, List.of("1.2.3.5", " ", "1.2.3.5"), List.of(), DatumObservations.none());
         assertThat(authority.acceptedPolicies()).containsExactly(TimestampAuthority.DEFAULT_POLICY, "1.2.3.5");
 
         TimestampReply listed = authority.respond(TimestampQuery.forData(DATA, "sha256", true, null, "1.2.3.5"), null);
@@ -439,7 +440,7 @@ class TimestampAuthorityTest {
     @Test
     void anAcceptedPolicyThatIsNoObjectIdentifierStopsTheConstruction() {
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> new TimestampAuthority(TsaKeyMaterial.of(Fixtures.key("ec-p256")), null, null,
-            TsaTimeSource.of(Fixtures.clock(Fixtures.LATER)), entry -> 1, List.of("not-an-oid")))
+            TsaTimeSource.of(Fixtures.clock(Fixtures.LATER)), entry -> 1, List.of("not-an-oid"), List.of(), DatumObservations.none()))
             .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("not-an-oid");
     }
 }

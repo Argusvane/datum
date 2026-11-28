@@ -173,7 +173,7 @@ class SubmissionSignatureVerifierTest {
         assertThat(site.verify(surrogate, form, VISITOR).code()).isEqualTo("canonical");
 
         // Not set up: unverifiable, whatever arrives.
-        site.configure(new WebAuthnSettings("", "Petition", List.of(), null, true));
+        site.configure(new WebAuthnSettings("", "Petition", List.of(), null, true, false, null, null, null, null));
         SignatureVerification notSetUp = site.verify(site.signed(authenticator, Map.of("fullName", "Eve")), form, VISITOR);
         assertThat(notSetUp).extracting(SignatureVerification::status, SignatureVerification::code)
             .containsExactly(SignatureVerification.Status.UNVERIFIABLE, "not_set_up");
@@ -193,7 +193,7 @@ class SubmissionSignatureVerifierTest {
     /** Per-form passkeys sign their form only; another account's passkey signs nothing for this one. */
     @Test
     void scopeAndOwners() {
-        site.configure(new WebAuthnSettings("localhost", "Petition", List.of("http://localhost"), null, true, true));
+        site.configure(new WebAuthnSettings("localhost", "Petition", List.of("http://localhost"), null, true, true, null, null, null, null));
         FormSigning form = required("");
         SoftwareAuthenticator authenticator = new SoftwareAuthenticator();
         PasskeyRecord passkey = site.register(authenticator);
@@ -402,7 +402,7 @@ class SubmissionSignatureVerifierTest {
     /** The window is the site's, both ways round. */
     @Test
     void theWindow() {
-        site.configure(new WebAuthnSettings("localhost", "Petition", List.of("http://localhost"), Duration.ofSeconds(120), true));
+        site.configure(new WebAuthnSettings("localhost", "Petition", List.of("http://localhost"), Duration.ofSeconds(120), true, false, null, null, null, null));
         FormSigning form = required("");
         SoftwareAuthenticator authenticator = new SoftwareAuthenticator();
         site.register(authenticator);
@@ -471,7 +471,7 @@ class SubmissionSignatureVerifierTest {
      */
     @Test
     void formIsCheckedBeforeOwner() {
-        site.configure(new WebAuthnSettings("localhost", "Petition", List.of("http://localhost"), null, true, true));
+        site.configure(new WebAuthnSettings("localhost", "Petition", List.of("http://localhost"), null, true, true, null, null, null, null));
         SoftwareAuthenticator owned = new SoftwareAuthenticator();
         PasskeyRecord passkey = site.register(owned, "Phone", new PasskeySubject("7", "ada", "Ada"));
         assertThat(passkey.formId()).isEqualTo("petition");
