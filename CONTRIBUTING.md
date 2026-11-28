@@ -127,7 +127,7 @@ Do not edit these by hand; change the source and regenerate. Each has a `--check
 | `docs/generated/theme-accessibility.md` | `cd packages/datum && npm run a11y:report` (`npm run a11y` first, when the baselines change) | the tests in `packages/datum` |
 | `site/docs/_generated/*.md` (the element reference tables) | `cd site && npm run docs:reference` | `node scripts/gen-docs-reference.mjs --check`, run by `site/test` |
 | `packages/conformance-suite/golden/agent-tools.json` | `cd packages/conformance-suite && npm run golden:agent` | the catalogue test in that package |
-| `integrations/fastapi/packages/argusvane-datum-qjs-wasm/.../runtime.json` and the runtime pin in the JVM pom | `npm run fastapi:pin-runtime -- <tag>`, `npm run jvm:pin-runtime -- <tag>` | the pin tests of each host (`QjsPinTest`, the FastAPI script tests) |
+| `integrations/fastapi/packages/argusvane-datum-qjs-wasm/.../runtime.json` and the runtime pin in the JVM pom | `npm run jvm:pin-runtime -- <tag>` (or `fastapi:pin-runtime`; either writes both pins) | the pin tests of each host (`QjsPinTest`, the FastAPI script tests, which also hold the two pins equal) |
 | `bindings/gcds/tokens.json`, `bindings/gcds/pdf/tokens.generated.ts` | `cd bindings/gcds && npm run tokens:generate` | the binding's tests |
 | `bindings/fluent/theme/*` | `cd bindings/fluent && npm run theme:generate` | review the diff; `npm run kit:check` |
 

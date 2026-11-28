@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Fetches qjs-wasi.wasm from the official quickjs-ng release the pin names and verifies its size and sha256 against the pin
-// (datum_qjs_wasm/runtime.json, written by integrations/shared/scripts/pin-runtime.mjs --target fastapi). build-assets.mjs calls
+// (datum_qjs_wasm/runtime.json, written by integrations/shared/scripts/pin-runtime.mjs). build-assets.mjs calls
 // fetchRuntime(); the command line is the same step on its own.
 //
 //   node integrations/fastapi/scripts/fetch-runtime.mjs [--qjs-wasm-file <path>] [--out <path>]
