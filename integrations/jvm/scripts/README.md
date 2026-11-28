@@ -29,7 +29,7 @@
   `deploy -DskipUpload=true -Dgpg.skip=true`, which stages the Central bundle and uploads nothing; the bundle is checked
   and copied into the dist directory as `central-bundle.zip`, its SHA-256 in `release.json` (`staged: true`). It needs
   no `~/.m2/settings.xml` and no key, and prints no push command. `DATUM_RELEASE_REPO=<checkout>` makes it build and check
-  another checkout than its own (the workflow runs its own commit's scripts over the tag's tree). `--version` is mandatory. In order: the commit guard (a real run
+  another checkout than its own (the workflow runs main's scripts over the tag's tree). `--version` is mandatory. In order: the commit guard (a real run
   refuses unless the version is a plain x.y.z, the working tree is clean, `origin` names argusvane/datum, HEAD is on
   `origin/main` (no local-main fallback), a `ci.yml` run on HEAD passed `ci-ok` (read with an installed, signed-in `gh`),
   the tag `v<v>` exists and points at HEAD, and `CHANGELOG.md` has a `## [<v>]` section; it also refuses

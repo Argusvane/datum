@@ -25,9 +25,14 @@
 #   release-assets: SHA256SUMS-maven (every jar, pom and signature uploaded, by its repository path) is attached to the GitHub
 #     Release of the tag; when the tag has no Release yet, one is created as a draft, as the npm and PyPI workflows do.
 #
-# What is built is always the tag's tree. The release scripts that build, check, sign and upload it are this workflow's own
-# commit's (the tag's on a push; on a run started by hand, the branch it was started from, which should be main), so a tag
-# pushed before the scripts could stage a bundle, v0.1.0 among them, is released by the current ones.
+# What is built is always the tag's tree. The release scripts that build, check, sign and upload it are main's, checked out
+# by name whichever ref started the run, so a tag pushed before the scripts could stage a bundle, v0.1.0 among them, is
+# released by the current ones, and a run started by hand from another branch still runs main's scripts. The workflow file
+# itself is the starting ref's, which no step can check: the environment's rule allowing only main and v* tags is what keeps a
+# branch's edit of this file away from the secrets.
+#
+# No job restores a cache: a dependency cache is written by the runs on main, which run install scripts first, and Maven
+# does not check a jar again once it is in ~/.m2. Every release resolves its dependencies afresh.
 #
 # Every action is pinned by commit SHA (the comment names the release).
 name: Release Maven
@@ -89,12 +94,13 @@ jobs:
           # Full history, branches and tags: release.mjs holds HEAD against origin/main and the tag against HEAD.
           fetch-depth: 0
 
-      # The release scripts are this workflow's own commit's (the tag's on a push; the branch's on a run started by hand), run
-      # over the tag's checkout with DATUM_RELEASE_REPO: a tag made before the scripts could stage a bundle is still released by
-      # them, while everything built comes from the tag. The folder is excluded locally so the tree still reads as clean.
+      # The release scripts are main's, whichever ref started the run, run over the tag's checkout with DATUM_RELEASE_REPO: a
+      # tag made before the scripts could stage a bundle is still released by them, while everything built comes from the tag.
+      # The folder is excluded locally so the tree still reads as clean.
       - name: Checkout the release scripts
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: main
           path: .release-tools
           persist-credentials: false
       - name: Keep the release scripts out of the tag's tree
@@ -104,14 +110,6 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: |
-            packages/conformance-suite/package-lock.json
-            packages/datum/package-lock.json
-            packages/quickjs-wasm-host/package-lock.json
-            packages/pdf-kernel/package-lock.json
-            packages/submissions/package-lock.json
-            engine/package-lock.json
 
       # release.mjs builds the web components itself (npm run datum:build, never a stale dist), so only their
       # dependencies are installed here; the security suite it runs is built from the conformance suite.
@@ -128,8 +126,6 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-          cache: maven
-          cache-dependency-path: integrations/jvm/**/pom.xml
 
       - name: Test the release scripts
         run: npm run jvm:test:scripts
@@ -163,11 +159,12 @@ jobs:
     permissions:
       contents: read
     steps:
-      # This workflow's own commit, as in the build job: central-publish.mjs and the bundle checks it shares with release.mjs.
-      # Nothing of the tag's is run here; the bundle is the build job's.
+      # Main's scripts, as in the build job: central-publish.mjs and the bundle checks it shares with release.mjs. Nothing of
+      # the tag's is run here; the bundle is the build job's.
       - name: Checkout the release scripts
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: main
           persist-credentials: false
 
       - name: Setup Node
