@@ -90,7 +90,7 @@
         tree[path.at(-1)] = { text: fr, source: hash(en) };
         return en;
       };
-      const is = (field, value) => ({ kind: "binary", operator: "eq", left: { kind: "path", path: field }, right: { kind: "literal", value } });
+      const is = (field, value) => `${field} = "${value}"`;
       const yesNo = (id) => [
         { value: "yes", label: say(["components", id, "options", "yes", "label"], "Yes", "Oui") },
         { value: "no", label: say(["components", id, "options", "no", "label"], "No", "Non") }

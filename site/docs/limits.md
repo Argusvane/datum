@@ -64,7 +64,6 @@ A file field's answer rides in the submission, so a host's request body cap boun
 | What | Limit | When it is passed |
 |---|---|---|
 | Nesting in a formula's text | 100 levels (parentheses, calls, `if`, lists, intervals, prefix operators) | `tooDeep` |
-| Nesting in a rule written as a tree | 200 levels | `tooDeep` |
 | Text a function reads or builds | 10,000 characters. The first 10,000 are used and a warning is logged | The run log's `text.truncated` warning |
 | Items in a list a function reads | 10,000. The function gives no answer and a warning is logged | The run log |
 | Errors in one run | 10,000 | `errors.truncated` |

@@ -328,7 +328,7 @@ or make the default.
 ### Layouts chosen by the answers
 
 A layout may carry `when`, a condition in the rules language (ADR 0044), written as a formula
-(`province = "QC"`, ADR 0139; [formulas.md](formulas.md)) or as an expression tree: a download that names
+(`province = "QC"`, ADR 0139; [formulas.md](formulas.md)): a download that names
 no layout prints the first layout, in the list's order, whose `when` holds on the person's
 answers — a French copy for Quebec, a large-print copy for whoever asked for one — else the
 declared default.
@@ -1585,8 +1585,8 @@ page's proportions at any canvas width.
 Engine hosts register the side with `builder.addMode(createPdfBuilderMode({ formRoot, values,
 runtime, templates, pdf, onChange, … }))`; the embeddable `<datum-form-builder>` does that on
 connect, fetching the mode itself as a lazy chunk (ADR 0143) and the executor as another on the
-first preview (`pdf="off"`, or a `features` list without `pdf`, leaves the PDF side out and
-fetches neither). The bundle has no synchronous `createPdfBuilderMode`; it exports
+first preview (a `features` list without `pdf`, `features="-pdf"` for one, leaves the PDF side
+out and fetches neither). The bundle has no synchronous `createPdfBuilderMode`; it exports
 `loadPdfBuilderMode()` (`(await DatumBuilder.loadPdfBuilderMode()).createPdfBuilderMode(...)`),
 and `@argusvane/datum-engine` keeps the synchronous factory. `createPdfDesigner()` is there for a host that
 wants the raw `builderOptions` for its own `BuilderController`.

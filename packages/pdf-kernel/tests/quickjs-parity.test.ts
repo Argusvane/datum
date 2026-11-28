@@ -98,7 +98,7 @@ describe("in-process vs QuickJS parity", () => {
         content: [
           { id: "name", type: "text", configuration: { label: "Name", required: true } },
           { id: "vip", type: "checkbox", configuration: { label: "VIP" } },
-          { id: "vipCode", type: "text", configuration: { label: "VIP code" }, rules: { visibleWhen: { kind: "path", path: "vip" } } },
+          { id: "vipCode", type: "text", configuration: { label: "VIP code" }, rules: { visibleWhen: "vip" } },
           { id: "country", type: "select", configuration: { label: "Country", data: { sourceId: "countries" } } }
         ]
       }

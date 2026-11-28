@@ -127,23 +127,13 @@ describe("SubmissionService: formulas at register, serve and judge", () => {
     expect(SUBMISSION_ROUTES.some((route) => route.method === "GET" && route.path === "/api/forms/:key/definition" && route.operation === "publicDefinition")).toBe(true);
   });
 
-  it("judges a string rule as it judges the same rule as a tree", async () => {
+  it("refuses to register a form whose rule is an expression tree, and lists it under the warn opt-in", async () => {
     const asTree = formWith(
       rule({ requiredWhen: { kind: "binary", operator: "eq", left: { kind: "path", path: "employed" }, right: { kind: "literal", value: true } } })
     );
-    const asString = formWith(rule({ requiredWhen: "employed = true" }));
-    const outcomes: string[] = [];
-    for (const definition of [asTree, asString]) {
-      const { service } = make();
-      await service.register(definition);
-      for (const values of [{ employed: true }, { employed: false }, { employed: true, reason: "x" }]) {
-        const { record } = await service.receive({ submissionKey: crypto.randomUUID(), document: envelopeOf(definition, values) });
-        outcomes.push(`${record.status}:${record.errors.map((error) => `${error.componentId}/${error.code}`).join(",")}`);
-      }
-    }
-    expect(outcomes.slice(0, 3)).toEqual(outcomes.slice(3));
-    expect(outcomes[0]).toMatch(/^rejected:reason\//);
-    expect(outcomes[1]).toBe("accepted:");
+    await expect(make().service.register(asTree)).rejects.toMatchObject({ code: "invalid_definition", message: expect.stringContaining("this one is an expression tree") });
+    const registered = await make().service.register(asTree, { validation: { unknownFields: "strip", formulaErrors: "warn" } });
+    expect(registered.formulaProblems).toEqual([expect.objectContaining({ code: "invalidRule" })]);
   });
 
   it("reads today() from the today dependency, else the local calendar date of the clock", async () => {

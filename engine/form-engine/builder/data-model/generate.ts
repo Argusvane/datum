@@ -13,6 +13,7 @@ import type { BuilderTextOptions } from "../logic/builder-texts.js";
 import { builderText } from "../data/data-texts-en.js";
 import { isReservedComponentId } from "../../core/tree/component-id.js";
 import { mappingFor, RADIO_MAX_OPTIONS } from "./mapping.js";
+import { printFormula } from "../formula/feel-print.js";
 
 /**
  * Building components from a data model: each place in the data becomes the
@@ -209,7 +210,7 @@ class Generator {
       configuration.options = (node.children ?? []).map((child) => ({ value: child.key, label: optionLabel(child.key, child.label) }));
     }
     if (!inEntry && isScalar(node.default) && node.kind !== "array" && node.kind !== "object") {
-      out.rules = { defaultValue: { kind: "literal", value: node.default } };
+      out.rules = { defaultValue: printFormula({ kind: "literal", value: node.default }) };
     }
 
     if (node.kind === "object" && type === "container") {

@@ -72,8 +72,8 @@ import {
  * key of the form's own data under `@`. Each says what the runtime and the kernel do, and
  * `journey-diagnostics-own-nodes.test.ts` holds each to it.
  *
- * **Formulas, the clock and run scopes.** A rule or a condition may be written as a tree, as a
- * formula string or as the object form with a `run` scope (`RuleSource`); every read here goes
+ * **Formulas, the clock and run scopes.** A rule or a condition is written as a formula string
+ * or as the object form with a `run` scope (`RuleSource`); every read here goes
  * through {@link ruleOf}, so a formula is diagnosed as its tree is and one that does not parse
  * reads as no rule, which is how every runtime reads it. A rule reading `today()` or `age()` is
  * judged by whichever clock the side that runs it has (`rule.reads-clock`,
@@ -288,10 +288,9 @@ const NUMBER_OF_ONE: ReadonlySet<string> = new Set(["abs", "round", "floor", "ce
 const FORMULA_SIGNATURES = formulaFunctionSignatures();
 
 /**
- * The tree a rule or a condition stands for, however it is written (a tree, a formula string,
- * the object form), or `undefined` when there is none the evaluator can run: a formula that
- * does not parse, or a hand-edited tree with a misspelt operator, reads as no rule, as it does
- * at run time.
+ * The tree a rule or a condition stands for (a formula string, the object form, or a compiled
+ * copy's tree), or `undefined` when there is none the evaluator can run: a formula that does not
+ * parse reads as no rule, as it does at run time.
  */
 function ruleOf(source: unknown): Expression | undefined {
   const expression = kernelRuleExpression(source, kernelParseFormula, FORMULA_SIGNATURES);

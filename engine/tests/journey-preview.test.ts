@@ -17,7 +17,6 @@ import {
 } from "../form-engine/builder/journey-designer/journey-preview.js";
 import { JOURNEY_PAGES_SLOT, JOURNEY_ROUTES_SLOT } from "../form-engine/builder/journey-designer/journey-mode-model.js";
 import { journeyFromTree, treeFromJourney } from "../form-engine/builder/journey-designer/journey-tree.js";
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import type { Journey } from "../form-engine/core/schema/journey.js";
 import type { ComponentNode, LocalizationConfiguration } from "../form-engine/core/schema/types.js";
 import type { FormRuntime } from "../form-engine/runtime/browser/form-runtime.js";
@@ -61,12 +60,7 @@ function formRoot(): ComponentNode {
   };
 }
 
-const methodIs = (value: string): Expression => ({
-  kind: "binary",
-  operator: "eq",
-  left: { kind: "path", path: "contactMethod" },
-  right: { kind: "literal", value }
-});
+const methodIs = (value: string): string => `contactMethod = ${JSON.stringify(value)}`;
 
 /** About you → (phone: Finish) → More → Finish; About you asks the server, which a preview never does. */
 function journey(): Journey {

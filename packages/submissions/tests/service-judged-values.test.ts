@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { submissionEnvelopeOf, type CanonicalSubmission, type ComponentNode, type Expression, type FormDefinition } from "@argusvane/datum-engine";
+import { submissionEnvelopeOf, type CanonicalSubmission, type ComponentNode, type FormDefinition } from "@argusvane/datum-engine";
 
 import {
   InMemorySubmissionStore,
@@ -18,12 +18,7 @@ import {
  * hidden and excluded — which nothing validated; it must not be printed, exported or counted.
  */
 
-const eq = (path: string, value: string | boolean): Expression => ({
-  kind: "binary",
-  operator: "eq",
-  left: { kind: "path", path },
-  right: { kind: "literal", value }
-});
+const eq = (path: string, value: string | boolean): string => `${path} = ${JSON.stringify(value)}`;
 
 const BUSINESS_NAME: ComponentNode = { id: "business_name", type: "text", configuration: { required: true, maxLength: 5, pattern: "[a-z]+" } };
 
@@ -56,7 +51,7 @@ const JOURNEY_FORM = formWith([
   { id: "employed", type: "checkbox", configuration: {} },
   BUSINESS_NAME,
   { id: "employer", type: "text", configuration: { required: true } },
-  { id: "age", type: "number", configuration: {}, rules: { value: { kind: "arithmetic", operator: "subtract", left: { kind: "literal", value: 2026 }, right: { kind: "path", path: "born" } } } },
+  { id: "age", type: "number", configuration: {}, rules: { value: "2026 - born" } },
   { id: "born", type: "number", configuration: {} }
 ]);
 

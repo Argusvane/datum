@@ -2,20 +2,18 @@ import type { Expression, RuleSource, RunScope } from "../../core/expressions/ex
 import { FORMULA_FUNCTION_NAMES } from "../../core/expressions/function-table.js";
 import { DATA_GRID_COMPONENT_TYPE } from "../../core/schema/data-grid.js";
 import type { ComponentRules } from "../../core/schema/types.js";
-import { printFormula } from "../formula/feel-print.js";
 import { FORM_ROOT_COMPONENT_TYPE } from "./inspector-model.js";
 import { ruleRun, ruleText } from "./rule-source.js";
 
 /**
  * Render-agnostic model behind the properties panel's Logic tab.
  *
- * A rule is stored as a formula string (the FEEL subset), as the expression tree the engine
- * evaluates, or as the object form `{ formula | expression, run }` that also says where it runs
- * (`RuleSource`). The tab edits every rule as text: a stored tree opens printed with ids
- * (`feel-print.ts`), a string as written, and the author's text is written back as a string
- * (or the object form, for a run scope other than both). A rule opened and left alone stays
- * byte for byte. The engine parses the text (`kernelParseFormula`); this module only shapes
- * what the tab shows and what the draft gets.
+ * A rule is stored as a formula string (the FEEL subset), or as the object form
+ * `{ formula, run }` that also says where it runs (`RuleSource`). The tab edits every rule as
+ * text, opened as written, and the author's text is written back as a string (or the object
+ * form, for a run scope other than both). A rule opened and left alone stays byte for byte. The
+ * engine parses the text (`kernelParseFormula`); this module only shapes what the tab shows and
+ * what the draft gets.
  */
 
 export type RuleKey = keyof ComponentRules;
@@ -362,8 +360,8 @@ export interface RuleEditorState {
   descriptor: RuleDescriptor;
   mode: RuleEditorMode;
   /**
-   * The formula as the box holds it: a stored string as written, a stored tree printed with
-   * ids (`printFormula`), or what the author has typed since.
+   * The formula as the box holds it: the stored text as written, or what the author has typed
+   * since.
    */
   text: string;
   /** Where the rule runs; `both` when the rule says nothing. */
@@ -397,41 +395,9 @@ export function ruleRunControl(descriptor: RuleDescriptor): RuleRunControl {
   return BROWSER_ONLY_RULE_KEYS.has(descriptor.key) ? "browser" : "choice";
 }
 
-/** The tree a stored rule holds as written, when it holds one (a formula string holds none until parsed). */
-function storedTree(source: unknown): Expression | undefined {
-  if (typeof source !== "object" || source === null || Array.isArray(source)) {
-    return undefined;
-  }
-  const record = source as Record<string, unknown>;
-  if (typeof record.kind === "string") {
-    return source as Expression;
-  }
-  if (typeof record.formula !== "string" && typeof record.expression === "object" && record.expression !== null) {
-    return record.expression as Expression;
-  }
-  return undefined;
-}
-
-/** A stored tree as formula text, one case per line for a value rule; a tree the printer cannot word falls back to its JSON. */
-function printedTree(tree: Expression, descriptor: RuleDescriptor): string {
-  try {
-    return printFormula(tree, { multiline: descriptor.kind === "value" });
-  } catch {
-    return formatExpressionJson(tree);
-  }
-}
-
-/**
- * The formula text a stored rule opens as: a string as written (bare or in the object form),
- * else its tree printed with ids, never labels. Blank for no rule.
- */
-export function ruleEditorText(source: unknown, descriptor: RuleDescriptor): string {
-  const text = ruleText(source);
-  if (text !== undefined) {
-    return text;
-  }
-  const tree = storedTree(source);
-  return tree ? printedTree(tree, descriptor) : "";
+/** The formula text a stored rule opens as: the string as written (bare or in the object form); blank for no rule. */
+export function ruleEditorText(source: unknown): string {
+  return ruleText(source) ?? "";
 }
 
 /**
@@ -449,9 +415,9 @@ export function buildRuleEditorState(
   if (!descriptor) {
     throw new Error(`Unknown rule: ${String(rule)}`);
   }
-  const stored = ruleEditorText(source, descriptor);
+  const stored = ruleEditorText(source);
   const text = working.text ?? stored;
-  const mode = working.mode ?? (stored !== "" || storedTree(source) !== undefined ? "formula" : "off");
+  const mode = working.mode ?? (stored !== "" ? "formula" : "off");
   return {
     key: descriptor.key,
     descriptor,
@@ -463,29 +429,21 @@ export function buildRuleEditorState(
 }
 
 /**
- * What the draft stores for `text` under run scope `run`, given what the form holds for the
- * rule (`stored`: the committed rule, never the draft's, which a first keystroke has already
- * turned into a string): blank text is no rule; text that still prints the stored tree keeps
- * that tree as written, bare for both sides, else as `{ expression, run }`, so a rule opened and
- * left alone stays byte for byte and one typed into and typed back is a tree again; anything
- * else is the formula string, bare when it runs on both sides, else `{ formula, run }`.
+ * What the draft stores for `text` under run scope `run`: blank text is no rule; anything else
+ * is the formula string, bare when it runs on both sides, else `{ formula, run }`.
  */
-export function composeRuleSource(stored: unknown, text: string, run: RunScope): RuleSource | undefined {
+export function composeRuleSource(text: string, run: RunScope): RuleSource | undefined {
   if (text.trim() === "") {
     return undefined;
-  }
-  const tree = storedTree(stored);
-  if (tree && (printFormula(tree) === text || printFormula(tree, { multiline: true }) === text)) {
-    return run === "both" ? tree : { expression: tree, run };
   }
   return run === "both" ? text : { formula: text, run };
 }
 
 /**
- * Whether `value` is a rule as stored: a formula string, a tree ({@link isExpression}), or the
- * object form with a formula or a tree and, when given, a known run scope.
+ * Whether `value` is a rule as stored: a formula string, or the object form with a formula and,
+ * when given, a known run scope (an expression tree is no rule a definition may hold).
  */
-export function isRuleSourceShape(value: unknown, knownFunctions?: Iterable<string>): value is RuleSource {
+export function isRuleSourceShape(value: unknown): value is RuleSource {
   if (typeof value === "string") {
     return true;
   }
@@ -493,15 +451,7 @@ export function isRuleSourceShape(value: unknown, knownFunctions?: Iterable<stri
     return false;
   }
   const record = value as Record<string, unknown>;
-  if (typeof record.kind === "string") {
-    return isExpression(value, knownFunctions);
-  }
-  const hasFormula = typeof record.formula === "string";
-  const hasTree = record.expression !== undefined;
-  if (!hasFormula && !hasTree) {
-    return false;
-  }
-  if (hasTree && !isExpression(record.expression, knownFunctions)) {
+  if (typeof record.formula !== "string" || record.kind !== undefined || record.expression !== undefined) {
     return false;
   }
   return record.run === undefined || (typeof record.run === "string" && RUN_SCOPES.has(record.run));

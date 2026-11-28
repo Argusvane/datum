@@ -641,7 +641,7 @@ describe("datum choice fields: what is written", () => {
   it("takes the read-only mark off again when a rule makes the field editable", async () => {
     const definition = [
       { id: "lock", type: "checkbox", configuration: { label: "Lock" } },
-      { ...choices("select"), rules: { readonlyWhen: { kind: "path", path: "lock" } } }
+      { ...choices("select"), rules: { readonlyWhen: "lock" } }
     ] as ComponentNode[];
     const drawn = await draw(definition, { values: { lock: true } });
     const select = (): HTMLSelectElement => drawn.shell("pick").querySelector("select") as HTMLSelectElement;

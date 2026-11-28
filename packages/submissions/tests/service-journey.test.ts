@@ -13,7 +13,6 @@ import {
   runKernel,
   type CanonicalSubmission,
   type ComponentNode,
-  type Expression,
   type FormDefinition,
   type Journey,
   type JourneyValidationRequest,
@@ -38,12 +37,7 @@ import {
  * by id only, and the server works the path out again from the values.
  */
 
-const eq = (path: string, value: string | boolean): Expression => ({
-  kind: "binary",
-  operator: "eq",
-  left: { kind: "path", path },
-  right: { kind: "literal", value }
-});
+const eq = (path: string, value: string | boolean): string => `${path} = ${JSON.stringify(value)}`;
 
 const ELIGIBILITY: FormDefinition = {
   id: "eligibility",
@@ -208,7 +202,7 @@ describe("SubmissionService: journeys", () => {
 describe("SubmissionService: a PDF layout chosen by a journey's answers", () => {
   it("never lets an answer on a branch the person left choose the layout", async () => {
     // not(empty(id)), not the bare path: a condition holds only for true (strict truthiness), so a text answer is no yes.
-    const answered = (id: string): Expression => ({ kind: "unary", operator: "not", operand: { kind: "call", name: "empty", args: [{ kind: "path", path: id }] } });
+    const answered = (id: string): string => `not(empty(${id}))`;
     const doc = (id: string) => ({ id: `${id}-doc`, type: "pdf-document", configuration: {}, children: { body: [] } });
     // Tried in order: the self-employed copy when a business is named, the employee copy when an employer is.
     const definition: FormDefinition = {
@@ -297,8 +291,7 @@ describe("SubmissionService: validate", () => {
  * Required when: the same fixture the engine's and the QuickJS host's parity suites
  * use, received and validated here — in-process and through the sandbox program.
  */
-const path = (name: string): Expression => ({ kind: "path", path: name });
-const ratioKnown: Expression = { kind: "binary", operator: "neq", left: path("ratio"), right: { kind: "literal", value: null } };
+const ratioKnown = "ratio != null";
 const reachField = (id: string, configuration: Record<string, unknown> = {}, extra: Partial<ComponentNode> = {}): ComponentNode => ({ id, type: "text", configuration, ...extra });
 const REACH: FormDefinition = {
   id: "reach",
@@ -323,7 +316,7 @@ const REACH: FormDefinition = {
         reachField("both", { required: true }, { rules: { requiredWhen: eq("contact", "never") } }),
         reachField("income", {}, { type: "number" }),
         reachField("members", {}, { type: "number" }),
-        reachField("ratio", {}, { type: "number", rules: { value: { kind: "arithmetic", operator: "divide", left: path("income"), right: path("members") } } }),
+        reachField("ratio", {}, { type: "number", rules: { value: "income / members" } }),
         reachField("per_head", {}, { rules: { requiredWhen: ratioKnown } })
       ]
     }
@@ -333,7 +326,7 @@ const REACH: FormDefinition = {
       {
         id: "reach",
         pages: [
-          { id: "how", components: ["contact", "phone", "gate", "secret", "echo", "branch"], routes: [{ when: { kind: "unary", operator: "not", operand: eq("branch", "x") }, to: "finish" }] },
+          { id: "how", components: ["contact", "phone", "gate", "secret", "echo", "branch"], routes: [{ when: `not(${eq("branch", "x")})`, to: "finish" }] },
           { id: "detailed", components: ["detail"] },
           { id: "finish", components: ["extra", "billing", "staff_note", "both", "income", "members", "ratio", "per_head"], routes: [{ to: "$end" }] }
         ]
@@ -463,7 +456,7 @@ const LEFT_OUT: FormDefinition = {
         { id: "staff_box", type: "fieldset", configuration: {}, rules: { visibleWhen: staff }, children: { content: [reachField("nested_ref", { required: true })] } },
         reachField("opt_in", { hidden: true, required: true, hiddenRequiredBehavior: "required", hiddenValidationBehavior: "validate" }),
         reachField("cost", {}, { type: "number" }),
-        reachField("total", {}, { type: "number", rules: { value: { kind: "arithmetic", operator: "multiply", left: path("cost"), right: { kind: "literal", value: 2 } } } }),
+        reachField("total", {}, { type: "number", rules: { value: "cost * 2" } }),
         reachField("code", { pattern: "[A-Z]{3}" })
       ]
     }
@@ -473,7 +466,7 @@ const LEFT_OUT: FormDefinition = {
       {
         id: "short",
         pages: [
-          { id: "start", components: ["resident"], routes: [{ when: { kind: "unary", operator: "not", operand: eq("resident", "yes") }, to: "$end" }] },
+          { id: "start", components: ["resident"], routes: [{ when: `not(${eq("resident", "yes")})`, to: "$end" }] },
           { id: "more", components: ["extra"] }
         ]
       }

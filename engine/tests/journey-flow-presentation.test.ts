@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import { evaluateExpression } from "../form-engine/rules/evaluator/evaluator.js";
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import type { ComponentNode } from "../form-engine/core/schema/types.js";
 import { validateJourneyShape, type Journey, type JourneyPage, type JourneyPageEntry } from "../form-engine/core/schema/journey.js";
 import { diagnoseJourney, exploreJourneyWalks, journeyWalkGraph } from "../form-engine/core/journey/journey-diagnostics.js";
@@ -16,7 +15,7 @@ import { applyJourney, presentationRoot, publicVariant } from "./fixtures/presen
  * throw. The facts for journeys of component ids alone are `flowmap-flow.test.ts`'s.
  */
 
-const visibleWhen: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "name" }, right: { kind: "literal", value: "show" } };
+const visibleWhen = 'name = "show"';
 
 /** The fixture's form, plus a field a rule may hide, one hidden for good, and one inside a repeating section. */
 function form(): ComponentNode {
@@ -85,7 +84,7 @@ describe("journeyFlow over pages holding nodes of their own", () => {
     ["an alias of a field hidden for good", [alias("alt", "never")]],
     ["a layout of references to a field a rule may hide", [layout("box", reference("sometimes"))]],
     ["a reference at the top of a page to a field a rule may hide", [reference("sometimes")]],
-    ["a worked-out value alone, of a field a rule may hide", [own("sum", "journey-value", { to: "sometimes", value: { kind: "literal", value: 1 } })]],
+    ["a worked-out value alone, of a field a rule may hide", [own("sum", "journey-value", { to: "sometimes", value: "1" })]],
     ["only entries a usability rule drops", [own("upload", "file"), own("email")]],
     ["a layout whose only reference names nothing", [layout("box", reference("ghost"))]]
   ];

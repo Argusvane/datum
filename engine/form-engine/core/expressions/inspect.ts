@@ -422,47 +422,6 @@ export function kernelInspectParse(text: string, signatures: FormulaFunctionSign
 }
 
 /**
- * Every function name a call written as JSON in the definition carries (a record with `kind`
- * `"call"` and a string `name`, wherever it stands: a component's rules, a journey, a PDF layout)
- * that `signatures` lacks, each once, in reading order, as a signature taking any number of
- * arguments. A record that only looks like a call (inside a literal) adds a name nothing calls,
- * which changes nothing. Explicit stack.
- */
-export function kernelInspectWrittenCallNames(definition: FormDefinition, signatures: FormulaFunctionSignature[]): FormulaFunctionSignature[] {
-  const seen = Object.create(null) as Record<string, boolean>;
-  for (let s = 0; s < signatures.length; s += 1) {
-    const signature = signatures[s] as unknown;
-    if (kernelIsPlainRecord(signature) && typeof signature.name === "string") {
-      seen[signature.name] = true;
-    }
-  }
-  const added: FormulaFunctionSignature[] = [];
-  const stack: unknown[] = [definition.pdf, definition.journey, definition.root];
-  while (stack.length > 0) {
-    const node = stack.pop();
-    if (node === null || typeof node !== "object") {
-      continue;
-    }
-    if (Array.isArray(node)) {
-      for (let i = node.length - 1; i >= 0; i -= 1) {
-        stack.push(node[i]);
-      }
-      continue;
-    }
-    const record = node as Record<string, unknown>;
-    if (record.kind === "call" && typeof record.name === "string" && seen[record.name] !== true) {
-      seen[record.name] = true;
-      added.push({ name: record.name, min: 0, max: Infinity });
-    }
-    const keys = Object.keys(record);
-    for (let k = keys.length - 1; k >= 0; k -= 1) {
-      stack.push(record[keys[k] as string]);
-    }
-  }
-  return added;
-}
-
-/**
  * The static inventory of a definition's formulas. The definition is compiled into a copy
  * through {@link kernelInspectParse} (a formula calling an unknown function still counts; one
  * that fails otherwise is absent, as it is at run time) and read in document order:
@@ -484,12 +443,7 @@ export function kernelRulesInventory(
   const lenient: FormulaParser = function (text: string, known: FormulaFunctionSignature[]): FormulaParseResult {
     return kernelInspectParse(text, known, parse);
   };
-  // A tree is not parsed, so the lenient parser cannot accept the unknown names it calls, and
-  // the compile would drop a tree calling one. Every name a call written as JSON carries is
-  // known here (any argument count), so one compile reads every rule, as a formula calling an
-  // unknown name is read.
-  const known = signatures.concat(kernelInspectWrittenCallNames(definition, signatures));
-  const compiled = kernelCompileDefinition(definition.root, definition.journey, definition.pdf, lenient, known).definition;
+  const compiled = kernelCompileDefinition(definition.root, definition.journey, definition.pdf, lenient, signatures).definition;
   const rules: InspectedRule[] = [];
   const used: string[] = [];
 
@@ -829,7 +783,6 @@ export function kernelInspectDefinition(
 
 /** This module's kernel functions, for `PORTABLE_KERNEL_FUNCTIONS`. */
 export const INSPECT_FUNCTIONS: readonly ((...args: never[]) => unknown)[] = [
-  kernelInspectWrittenCallNames,
   kernelInspectAbi,
   kernelInspectAbiAccepts,
   kernelPublicDefinition,

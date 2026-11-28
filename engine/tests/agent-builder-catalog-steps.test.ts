@@ -327,7 +327,7 @@ describe("an agent's translated catalog action over a person's earlier step", ()
       id: "a",
       kind: "generated",
       name: "Summary",
-      when: { kind: "path", path: "email" },
+      when: "email",
       root: { id: "document", type: "pdf-document", configuration: {}, children: { body: [{ id: "field", type: "pdf-field", configuration: { componentId: "email" } }], header: [], footer: [] } }
     };
     const { set, mode } = await layouts({ layouts: [bound, layout("b", "Full")], defaultLayoutId: "a" });
@@ -345,11 +345,11 @@ describe("an agent's translated catalog action over a person's earlier step", ()
     okOf(await set.builder.execute("begin_session", { purpose: "Rename" }));
     const renamed = okOf(await set.builder.execute("rename_component", { componentId: "email", newId: "contact_email" }));
     expect(renamed.undo).toMatchObject({ steps: 1, ownSteps: 1 });
-    expect((mode.layouts[0] as PdfGeneratedLayout).when).toEqual({ kind: "path", path: "contact_email" });
+    expect((mode.layouts[0] as PdfGeneratedLayout).when).toBe("contact_email");
     expect(mode.controller.canUndo()).toBe(false);
     const ended = okOf(await set.builder.execute("end_session", { summary: "Done.", undo: true }));
     expect(ended.session).toMatchObject({ undone: 1, undoable: 0 });
-    expect((mode.layouts[0] as PdfGeneratedLayout).when).toEqual({ kind: "path", path: "email" });
+    expect((mode.layouts[0] as PdfGeneratedLayout).when).toBe("email");
     expect(form.undoMark()).toBe(personMark);
     expect(label(set)).toBe("Person's label");
   });

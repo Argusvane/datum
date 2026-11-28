@@ -18,13 +18,8 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-const byName = { kind: "path", path: "fullName" } as const;
-const hostRule = {
-  kind: "binary",
-  operator: "eq",
-  left: { kind: "path", path: "host.role" },
-  right: { kind: "literal", value: "staff" }
-} as const;
+const byName = "fullName";
+const hostRule = 'host.role = "staff"';
 
 function definition(): FormDefinition {
   const base = sampleDefinition();

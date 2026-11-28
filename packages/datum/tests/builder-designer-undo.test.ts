@@ -626,7 +626,7 @@ describe("a form rename the open PDF layouts followed", () => {
     template: { storage: "base64", name: "paper.pdf", type: "application/pdf", size: 8, data: "JVBERi0xLjQK" },
     fields: [{ pdfField: "Full Name", source: { kind: "component", componentId: "fullName" } }],
     areas: [{ id: "a1", page: 1, rect: { x: 40, y: 40, width: 120, height: 20 }, source: { kind: "expression", expression: "fullName" } }],
-    when: { kind: "path", path: "fullName" }
+    when: "fullName"
   });
 
   function provider(): PdfRenderProvider {
@@ -649,7 +649,7 @@ describe("a form rename the open PDF layouts followed", () => {
   function mountLayouts(): DatumFormBuilderElement {
     const element = document.createElement("datum-form-builder");
     const letter = generated("letter", "Letter");
-    element.definition = { ...sampleDefinition(), pdf: { layouts: [{ ...letter, when: { kind: "path", path: "fullName" } }, paperLayout()] } } as FormDefinition;
+    element.definition = { ...sampleDefinition(), pdf: { layouts: [{ ...letter, when: "fullName" }, paperLayout()] } } as FormDefinition;
     element.pdfSupport = { provider: provider() };
     document.body.append(element);
     return element;
@@ -669,16 +669,16 @@ describe("a form rename the open PDF layouts followed", () => {
     const bound = (letter.root.children!.body![0]!.configuration as { componentId: string }).componentId;
     const mapped = (paper.fields[0]!.source as { componentId: string }).componentId;
     const area = (paper.areas![0]!.source as { expression: string }).expression;
-    return [field, (letter.when as { path: string }).path, bound, (paper.when as { path: string }).path, mapped, area].join(" ");
+    return [field, letter.when as string, bound, paper.when as string, mapped, area].join(" ");
   };
   /** The same as the open trees have them: the custom layout's condition and binding, the populated form's condition and mapping. */
   const inTrees = (letter: BuilderController, paper: BuilderController, widget: string): string => {
     const letterRoot = letter.snapshot();
     const paperRoot = paper.snapshot();
     return [
-      ((letterRoot.configuration as { when?: { path: string } }).when ?? { path: "-" }).path,
+      (letterRoot.configuration as { when?: string }).when ?? "-",
       (letterRoot.children!.body![0]!.configuration as { componentId: string }).componentId,
-      ((paperRoot.configuration as { when?: { path: string } }).when ?? { path: "-" }).path,
+      (paperRoot.configuration as { when?: string }).when ?? "-",
       (paper.getProperty(widget, "source") as { componentId: string }).componentId
     ].join(" ");
   };
@@ -716,7 +716,7 @@ describe("a form rename the open PDF layouts followed", () => {
       await opened(element, "pdf");
       const tree = await built(element, id);
       const name = (): unknown => element.pdfMode!.layouts.find((entry) => entry.id === id)!.name;
-      const named = (): string => ((tree.snapshot().configuration as { when?: { path: string } }).when ?? { path: "-" }).path;
+      const named = (): string => (tree.snapshot().configuration as { when?: string }).when ?? "-";
       element.controller!.renameId("fullName", "legalName");
       expect(named()).toBe("legalName");
       expect(tree.canUndo()).toBe(false);

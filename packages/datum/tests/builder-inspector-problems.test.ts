@@ -160,7 +160,7 @@ describe("problems in the inspector", () => {
 
   it("goes to an expression that does not parse too, since Save would quietly keep the last one that did", async () => {
     const definition = sampleDefinition();
-    definition.root.children!.content!.push({ id: "notes", type: "text", configuration: { label: "Notes" }, rules: { visibleWhen: { kind: "path", path: "subscribe" } } });
+    definition.root.children!.content!.push({ id: "notes", type: "text", configuration: { label: "Notes" }, rules: { visibleWhen: "subscribe" } });
     const element = await mount(definition);
     await select(element, "notes");
     type(inspector(element).querySelector<HTMLInputElement>('input[data-prop="label"]')!, "Your notes");
@@ -336,7 +336,7 @@ describe("a formula box typed into", () => {
       // Any caller's commit sees it: nothing is stored, the draft stays (the refusal is a plain
       // change, which the canvas draws; the inspector's state is as it drew it).
       expect(controller.commitDraft("email")).toBe(false);
-      expect(controller.snapshot().children!.content!.find((node) => node.id === "email")!.rules).toEqual({ visibleWhen: { kind: "path", path: "subscribe" } });
+      expect(controller.snapshot().children!.content!.find((node) => node.id === "email")!.rules).toEqual({ visibleWhen: "subscribe" });
       expect(controller.draftRules("email")?.visibleWhen).toBe("subscribe = true +");
       expect(canvasPaints.count).toBe(1);
       expect(inspectorPaints.count).toBe(0);
@@ -361,10 +361,8 @@ describe("a formula box typed into", () => {
     }
   });
 
-  it("keeps a tree-stored rule a tree when typed into and typed back, and carries a run scope as the tree, or the string, it stores", async () => {
-    const definition = sampleDefinition();
-    definition.root.children!.content!.push({ id: "notes", type: "text", configuration: { label: "Notes" }, rules: { visibleWhen: "subscribe" } });
-    const element = await mount(definition);
+  it("keeps a rule as written when typed into and typed back, and carries a run scope as the object with its formula", async () => {
+    const element = await mount(sampleDefinition());
     const controller = element.builder!.controller;
     await select(element, "email");
     const box = await openRulesTab(element, "visibleWhen");
@@ -372,20 +370,13 @@ describe("a formula box typed into", () => {
     keystroke(box, "subscribex");
     expect(controller.draftRules("email")?.visibleWhen).toBe("subscribex");
     keystroke(box, "subscribe");
-    expect(controller.draftRules("email")?.visibleWhen).toEqual({ kind: "path", path: "subscribe" });
+    expect(controller.draftRules("email")?.visibleWhen).toBe("subscribe");
     expect(controller.hasPendingChanges("email")).toBe(false);
-    // A run scope over the untouched tree carries the tree.
     inspector(element).querySelector<HTMLButtonElement>('[data-rule="visibleWhen"][data-rule-run="server"]')!.click();
-    expect(controller.draftRules("email")?.visibleWhen).toEqual({ expression: { kind: "path", path: "subscribe" }, run: "server" });
+    expect(controller.draftRules("email")?.visibleWhen).toEqual({ formula: "subscribe", run: "server" });
     inspector(element).querySelector<HTMLButtonElement>("[data-inspector-save]")!.click();
     await until(() => !controller.hasPendingChanges("email"));
-    expect(controller.snapshot().children!.content!.find((node) => node.id === "email")!.rules).toEqual({ visibleWhen: { expression: { kind: "path", path: "subscribe" }, run: "server" } });
-    // Over a stored string, the string.
-    inspector(element).querySelector<HTMLButtonElement>('[data-inspector-tab="properties"]')!.click();
-    await select(element, "notes");
-    await openRulesTab(element, "visibleWhen");
-    inspector(element).querySelector<HTMLButtonElement>('[data-rule="visibleWhen"][data-rule-run="server"]')!.click();
-    expect(controller.draftRules("notes")?.visibleWhen).toEqual({ formula: "subscribe", run: "server" });
+    expect(controller.snapshot().children!.content!.find((node) => node.id === "email")!.rules).toEqual({ visibleWhen: { formula: "subscribe", run: "server" } });
   });
 });
 

@@ -44,35 +44,9 @@ describe("agent-written rules go through the compile's guards", () => {
     expect(result.ok).toBe(true);
   });
 
-  it("check_form reports a tree rule holding a risky pattern, and a tree of no shape", async () => {
-    const builder = agentBuilder();
-    const root = builder.controller.snapshot();
-    const put = (rule: unknown): void => {
-      const walk = (node: any): void => {
-        if (node.id === "email") {
-          node.rules = { visibleWhen: rule };
-        }
-        for (const child of Object.values(node.children ?? {}).flat() as any[]) {
-          walk(child);
-        }
-      };
-      walk(root);
-    };
-    // A tree reaches a form through an import; `loadDefinition`-style hosts hand it to the controller whole.
-    put(riskyTree);
-    const loaded = agentBuilder({ root });
-    const risky: any = await loaded.execute("check_form", {});
-    const findings = (risky.findings ?? []) as Array<{ area: string; code: string; componentId?: string }>;
-    expect(findings.some((finding) => finding.area === "formula" && finding.code === "pattern.risky" && finding.componentId === "email")).toBe(true);
-
-    put({ kind: "binary", operator: "nope" });
-    const malformed = agentBuilder({ root });
-    const bad: any = await malformed.execute("check_form", {});
-    expect(((bad.findings ?? []) as Array<{ area: string; componentId?: string }>).some((finding) => finding.area === "formula" && finding.componentId === "email")).toBe(true);
-  });
-
-  it("check_form and get_component report a stored rule of no recognised shape", async () => {
-    for (const rule of [5, true, [1], { foo: 1 }, { expression: 5 }, { formula: 5 }]) {
+  it("check_form and get_component report a stored rule that is neither a formula nor the object form", async () => {
+    // An expression tree is no rule a definition may hold, bare or in the object form.
+    for (const rule of [5, true, [1], { foo: 1 }, { expression: 5 }, { formula: 5 }, riskyTree, { expression: riskyTree, run: "server" }]) {
       const root = agentBuilder().controller.snapshot();
       const walk = (node: any): void => {
         if (node.id === "email") {

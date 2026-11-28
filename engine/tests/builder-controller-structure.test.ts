@@ -213,7 +213,7 @@ describe("BuilderController.duplicate", () => {
   it("places a copy right after the original with a numbered id, selects it, and is one undo entry", () => {
     const ctrl = controller([
       node("name"),
-      node("email", "text", { dataKey: "emailAddress" }, { rules: { visibleWhen: { kind: "path", path: "name" } } }),
+      node("email", "text", { dataKey: "emailAddress" }, { rules: { visibleWhen: "name" } }),
       node("last")
     ]);
     const reasons = reasonsOf(ctrl);
@@ -228,7 +228,7 @@ describe("BuilderController.duplicate", () => {
     expect(copy.configuration).toEqual({ label: "email" });
     expect(ctrl.dataPathOf("email_2")).toBe("email_2");
     // A rule reading a component outside the copy still reads it.
-    expect(copy.rules).toEqual({ visibleWhen: { kind: "path", path: "name" } });
+    expect(copy.rules).toEqual({ visibleWhen: "name" });
     expect(ctrl.dataKeyProblems()).toEqual([]);
 
     ctrl.undo();
@@ -254,22 +254,10 @@ describe("BuilderController.duplicate", () => {
           content: [
             node("agree", "checkbox"),
             node("phone", "text", { dataKey: "tel" }, {
-              rules: {
-                visibleWhen: {
-                  kind: "logical",
-                  operator: "and",
-                  left: { kind: "path", path: "agree" },
-                  right: {
-                    kind: "logical",
-                    operator: "or",
-                    left: { kind: "binary", operator: "eq", left: { kind: "path", path: "name" }, right: { kind: "literal", value: "x" } },
-                    right: { kind: "path", path: "row.agree" }
-                  }
-                }
-              }
+              rules: { visibleWhen: 'agree and (name = "x" or row.agree)' }
             }),
             node("addr", "container", { dataKey: "address" }, {
-              children: { content: [node("street", "text", { dataKey: "line1" }, { rules: { requiredWhen: { kind: "path", path: "addr.line1" } } })] }
+              children: { content: [node("street", "text", { dataKey: "line1" }, { rules: { requiredWhen: "addr.line1" } })] }
             })
           ]
         }
@@ -291,23 +279,11 @@ describe("BuilderController.duplicate", () => {
     expect(ctrl.dataKeyProblems()).toEqual([]);
 
     // Inside the copy: re-pointed. Outside it, or read from a row: as written.
-    expect(findIn(root, "phone_2")!.rules).toEqual({
-      visibleWhen: {
-        kind: "logical",
-        operator: "and",
-        left: { kind: "path", path: "agree_2" },
-        right: {
-          kind: "logical",
-          operator: "or",
-          left: { kind: "binary", operator: "eq", left: { kind: "path", path: "name" }, right: { kind: "literal", value: "x" } },
-          right: { kind: "path", path: "row.agree" }
-        }
-      }
-    });
-    expect(findIn(root, "street_2")!.rules).toEqual({ requiredWhen: { kind: "path", path: "addr_2.line1" } });
+    expect(findIn(root, "phone_2")!.rules).toEqual({ visibleWhen: 'agree_2 and (name = "x" or row.agree)' });
+    expect(findIn(root, "street_2")!.rules).toEqual({ requiredWhen: "addr_2.line1" });
     // The original is untouched.
     expect(findIn(root, "phone")!.configuration).toEqual({ label: "phone", dataKey: "tel" });
-    expect(findIn(root, "phone")!.rules!.visibleWhen).toMatchObject({ left: { kind: "path", path: "agree" } });
+    expect(findIn(root, "phone")!.rules!.visibleWhen).toBe('agree and (name = "x" or row.agree)');
 
     ctrl.undo();
     expect(ids(ctrl)).toEqual(["name", "contact"]);

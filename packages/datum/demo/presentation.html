@@ -75,8 +75,6 @@
         lines.unshift(`${new Date().toLocaleTimeString()}  ${line}`);
         events.textContent = lines.slice(0, 40).join("\n");
       };
-      const read = (name) => ({ kind: "path", path: name });
-
       form.definition = {
         id: "income-support",
         version: "1.0.0",
@@ -124,10 +122,10 @@
                     { id: "m2", type: "number", configuration: { label: "Month 2" } },
                     { id: "m3", type: "number", configuration: { label: "Month 3" } },
                     // A worked-out value: the form's `annual_income`, from the page's own fields.
-                    { id: "income_total", type: "journey-value", configuration: { to: "annual_income", value: { kind: "call", name: "sum", args: [read("m1"), read("m2"), read("m3")] } } }
+                    { id: "income_total", type: "journey-value", configuration: { to: "annual_income", value: "sum(m1, m2, m3)" } }
                   ],
                   routes: [
-                    { when: { kind: "binary", operator: "gte", left: read("annual_income"), right: { kind: "literal", value: 50000 } }, to: "assist" },
+                    { when: "annual_income >= 50000", to: "assist" },
                     { to: "$end" }
                   ]
                 },

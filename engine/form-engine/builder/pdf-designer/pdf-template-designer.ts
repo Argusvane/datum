@@ -14,7 +14,7 @@ import type { LocalizedText, PropertyEditorValueMap } from "../../core/schema/co
 import { addressOf, readTranslation, resolveText, type FormTranslations, type TextAddress, type TextSources, type TranslationCatalog } from "../../core/localization/translations.js";
 import { readSourceId } from "../../core/schema/data-source-capability.js";
 import { parseInlineOptions } from "../../core/schema/inline-options.js";
-import type { Expression } from "../../core/expressions/expression.js";
+import type { RuleSource } from "../../core/expressions/expression.js";
 import { DEFAULT_PDF_AREA_DRAW, pdfFieldNameProblem, readPdfValueMap, resolvePdfAreaFields, type PdfFieldMapping, type PdfFieldMappingSource, type PdfMappingBinding, type PdfTemplateArea, type PdfTemplateAreaDraw, type PdfTemplateAreaField, type PdfTemplateLayout, type PdfTemplateSource, type PdfValueFormat } from "../../core/schema/pdf-layout.js";
 import type { ComponentNode } from "../../core/schema/types.js";
 import type { PdfTemplateFieldInfo, PdfTemplateInfo } from "../../render/pdf/pdf-abi.js";
@@ -720,7 +720,7 @@ export function createPdfTemplateDesigner(options: PdfTemplateDesignerOptions): 
     // The layout's condition, as written: one the evaluator cannot run never holds,
     // and is the author's to mend rather than the designer's to drop. Cleared, there is none.
     if (when !== undefined && when !== null) {
-      next.when = when as Expression;
+      next.when = when as RuleSource;
     }
     const areaList = childrenOf(tree, PDF_TEMPLATE_AREAS_SLOT).map((node) => areaFromNode(node, pageOf));
     if (areaList.length > 0) {

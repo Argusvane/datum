@@ -143,7 +143,7 @@ describe("building components from a model", () => {
     expect(nodes.status).toMatchObject({
       type: "radio",
       configuration: { label: "Status", required: true, options: [{ value: "in_progress", label: "In progress" }, { value: "done", label: "Done" }] },
-      rules: { defaultValue: { kind: "literal", value: "done" } }
+      rules: { defaultValue: "\"done\"" }
     });
     expect(nodes.email).toMatchObject({ type: "text", configuration: { required: true, maxLength: 80, pattern: "\\S+@\\S+", autocomplete: "email", inputmode: "email" } });
     expect(nodes.tags).toMatchObject({ type: "checkboxes", configuration: { required: true, options: [{ value: "a", label: "A" }, { value: "b", label: "B" }] } });

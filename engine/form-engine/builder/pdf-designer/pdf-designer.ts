@@ -14,7 +14,7 @@
  * designer's binding.
  */
 import type { DataSourceSet } from "../../core/schema/contracts.js";
-import type { Expression } from "../../core/expressions/expression.js";
+import type { RuleSource } from "../../core/expressions/expression.js";
 import type { ComponentNode } from "../../core/schema/types.js";
 import { addressOf, resolveText, type FormTranslations, type TextSources, type TranslationCatalog } from "../../core/localization/translations.js";
 import { BUTTON_COMPONENT_TYPE } from "../../core/schema/button.js";
@@ -332,7 +332,7 @@ export async function createPdfDesigner(options: PdfDesignerOptions): Promise<Pd
         ...rest,
         root: rootConditioned(rootUnnamed(root), undefined),
         ...(name !== undefined && name.trim() !== "" ? { name } : {}),
-        ...(when !== undefined && when !== null ? { when: when as Expression } : {})
+        ...(when !== undefined && when !== null ? { when: when as RuleSource } : {})
       };
     },
     refresh,

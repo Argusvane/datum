@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import "../src/builder.js";
 import type { DatumFormBuilderElement, DatumPdfLayoutChangeDetail } from "../src/builder.js";
-import type { Expression, FormDefinition, PdfConfiguration, PdfGeneratedLayout, PdfRenderProvider, PdfTemplateLayout } from "@argusvane/datum-engine";
+import type { FormDefinition, PdfConfiguration, PdfGeneratedLayout, PdfRenderProvider, PdfTemplateLayout } from "@argusvane/datum-engine";
 
 import { sampleDefinition, until, pdfAlone } from "./helpers.js";
 
@@ -43,10 +43,10 @@ afterEach(() => {
   }
 });
 
-const SUBSCRIBED: Expression = { kind: "path", path: "subscribe" };
-const CANADA: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "country" }, right: { kind: "literal", value: "CA" } };
+const SUBSCRIBED = "subscribe";
+const CANADA = 'country = "CA"';
 
-function generated(id: string, name: string, when?: Expression): PdfGeneratedLayout {
+function generated(id: string, name: string, when?: string): PdfGeneratedLayout {
   return {
     id,
     kind: "generated",
@@ -308,20 +308,20 @@ describe("conditions on PDF layouts in the builder", () => {
     await until(() => element.pdfMode!.layoutId === "letter" && element.pdfMode!.ready);
     const layout = element.pdfMode!.controller;
     // The Rules tab holds an unsaved condition of its own on the layout on the page.
-    layout.setDraftProperty(layout.rootId(), "when", { kind: "unary", operator: "not", operand: SUBSCRIBED });
+    layout.setDraftProperty(layout.rootId(), "when", "not(subscribe)");
 
     // Renamed by the host while the PDF side is up (on the Form tab, the leave prompt settles drafts first).
     element.controller!.renameId("subscribe", "wantsNews");
     await until(() => changes.some((change) => change.reason === "layouts"));
     const layouts = element.definition.pdf!.layouts!;
-    expect(layouts[0]!.when).toEqual({ kind: "path", path: "wantsNews" });
+    expect(layouts[0]!.when).toBe("wantsNews");
     // A condition that names something else is left as it was; so is a binding to another component.
-    expect(layouts[1]!.when).toEqual(CANADA);
+    expect(layouts[1]!.when).toBe(CANADA);
     expect(((layouts[0] as PdfGeneratedLayout).root.children!.body![0]!.configuration as { componentId: string }).componentId).toBe("fullName");
     expect(changes.filter((change) => change.reason === "layouts").map((change) => change.layout.id)).toEqual(["letter"]);
     // The open tree followed in place, and its draft was renamed rather than overwritten.
-    expect((layout.snapshot().configuration as { when?: unknown }).when).toEqual({ kind: "path", path: "wantsNews" });
-    expect(layout.draftProperty(layout.rootId(), "when")).toEqual({ kind: "unary", operator: "not", operand: { kind: "path", path: "wantsNews" } });
+    expect((layout.snapshot().configuration as { when?: unknown }).when).toBe("wantsNews");
+    expect(layout.draftProperty(layout.rootId(), "when")).toBe("not(wantsNews)");
     expect(layout.hasPendingChanges(layout.rootId())).toBe(true);
   });
 
@@ -473,13 +473,13 @@ describe("conditions on PDF layouts in the builder", () => {
     element.mode = "pdf";
     await until(() => asked > 0);
     element.controller!.renameId("subscribe", "wantsNews");
-    expect(element.definition.pdf!.layouts![0]!.when).toEqual({ kind: "path", path: "wantsNews" });
+    expect(element.definition.pdf!.layouts![0]!.when).toBe("wantsNews");
     release();
     await until(() => element.mode === "pdf" && element.pdfMode?.ready);
     // The build did not put the old id back, in the catalog or in the tree it seeded.
-    expect(element.definition.pdf!.layouts![0]!.when).toEqual({ kind: "path", path: "wantsNews" });
+    expect(element.definition.pdf!.layouts![0]!.when).toBe("wantsNews");
     const layout = element.pdfMode!.controller;
-    expect((layout.snapshot().configuration as { when?: unknown }).when).toEqual({ kind: "path", path: "wantsNews" });
+    expect((layout.snapshot().configuration as { when?: unknown }).when).toBe("wantsNews");
   });
 
   it("keeps a form rename that lands while a populated form's PDF is still being read", async () => {
@@ -506,9 +506,9 @@ describe("conditions on PDF layouts in the builder", () => {
     element.controller!.renameId("subscribe", "wantsNews");
     release();
     await until(() => element.mode === "pdf" && element.pdfMode?.ready && element.pdfMode.controller.componentTypes().length > 0);
-    expect(element.definition.pdf!.layouts![0]!.when).toEqual({ kind: "path", path: "wantsNews" });
+    expect(element.definition.pdf!.layouts![0]!.when).toBe("wantsNews");
     const layout = element.pdfMode!.controller;
-    expect((layout.snapshot().configuration as { when?: unknown }).when).toEqual({ kind: "path", path: "wantsNews" });
+    expect((layout.snapshot().configuration as { when?: unknown }).when).toBe("wantsNews");
   });
 
   it("Form Try it's Preview PDF picks the layout by the answers through the PDF mode", async () => {

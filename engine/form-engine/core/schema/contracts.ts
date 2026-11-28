@@ -64,7 +64,7 @@ export type PropertyEditorFieldType =
   | "path"
   /**
    * A formula written in the Rules tab's formula editor (live draft, lint, "Reads as"); the
-   * value is what a rule stores: the formula string, an expression tree, or `{ formula, run }`.
+   * value is what a rule stores: the formula string, or `{ formula, run }`.
    */
   | "formula"
   /**

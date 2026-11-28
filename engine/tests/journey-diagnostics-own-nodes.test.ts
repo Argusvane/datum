@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import { diagnoseJourney, diagnoseJourneys, type JourneyDiagnostic } from "../form-engine/core/journey/journey-diagnostics.js";
 import { journeyFormKeys, journeyOwnNodeRule, journeyOwnership, journeyTargetUsable } from "../form-engine/core/journey/journey-path.js";
 import { validateJourneyShape, type Journey, type JourneyPage, type JourneyPageEntry, type PresentationNode } from "../form-engine/core/schema/journey.js";
@@ -15,7 +14,7 @@ import { APPLY_ABOVE, applyJourney, presentationRoot, publicVariant } from "./fi
 import { formulaFunctionSignatures } from "../form-engine/core/expressions/function-table.js";
 
 // A host hands the kernel the function table's signatures, as the in-process and sandbox hosts
-// do: a tree's calls are checked against them like a formula's. These runs do the same.
+// do: a formula's calls are checked against them. These runs do the same.
 const runKernel = (
   context: Parameters<typeof kernelRun>[0],
   validators: Parameters<typeof kernelRun>[1],
@@ -42,26 +41,26 @@ function group(id: string, type: string, children: ComponentNode[], extra: Parti
   return { id, type, configuration: { label: id }, children: { content: children }, ...extra };
 }
 
-function read(name: string): Expression {
-  return { kind: "path", path: name };
+function read(name: string): string {
+  return /^[A-Za-z_][\w.]*$/.test(name) ? name : `\`${name}\``;
 }
 
-function literal(value: string | number | boolean | null): Expression {
-  return { kind: "literal", value };
+function literal(value: string | number | boolean | null): string {
+  return JSON.stringify(value);
 }
 
-function eq(path: string, value: string | number | boolean | null): Expression {
-  return { kind: "binary", operator: "eq", left: read(path), right: literal(value) };
+function eq(path: string, value: string | number | boolean | null): string {
+  return `${read(path)} = ${literal(value)}`;
 }
 
-function call(name: "sum" | "coalesce" | "concat", ...args: Expression[]): Expression {
-  return { kind: "call", name, args };
+function call(name: "sum" | "coalesce" | "concat", ...args: string[]): string {
+  return `${name}(${args.join(", ")})`;
 }
 
 const own = (id: string, type = "text", configuration: Record<string, unknown> = { label: id }, extra: Record<string, unknown> = {}): JourneyPageEntry =>
   ({ id, type, configuration, ...extra }) as unknown as JourneyPageEntry;
 const reference = (componentId: string): JourneyPageEntry => ({ type: "journey-field", configuration: { componentId } });
-const workedOut = (id: string, to: string, value: Expression, extra: Record<string, unknown> = {}): JourneyPageEntry => own(id, "journey-value", { to, value }, extra);
+const workedOut = (id: string, to: string, value: string, extra: Record<string, unknown> = {}): JourneyPageEntry => own(id, "journey-value", { to, value }, extra);
 const choices = (...values: string[]): Array<{ value: string; label: string }> => values.map((value) => ({ value, label: value }));
 
 /** A journey `apply` of `pages`, then a page `rest` listing `rest` (by default the fields no worked-out value needs). */
@@ -442,12 +441,12 @@ describe("map.shape-mismatch and map.options-not-subset: an answer of another ki
   });
 
   it("a worked-out value whose expression comes to another shape than its field: an error, read from the expression", () => {
-    const cases: Array<[string, string, Expression, boolean]> = [
+    const cases: Array<[string, string, string, boolean]> = [
       ["a sum into a number", "annual_income", call("sum", read("m1"), read("m2")), false],
       ["a sum into text", "name", call("sum", read("m1"), read("m2")), true],
       ["a concatenation into a number", "annual_income", call("concat", read("m1"), read("m2")), true],
-      ["a comparison into a number", "annual_income", { kind: "binary", operator: "gt", left: read("m1"), right: literal(1) }, true],
-      ["a comparison into a tick", "agree", { kind: "binary", operator: "gt", left: read("m1"), right: literal(1) }, false],
+      ["a comparison into a number", "annual_income", "m1 > 1", true],
+      ["a comparison into a tick", "agree", "m1 > 1", false],
       ["a copy of a number field into a number", "annual_income", read("m1"), false],
       ["a copy of a text field into a number", "annual_income", read("note"), true],
       ["a coalesce of mixed shapes: cannot tell", "annual_income", call("coalesce", read("note"), read("m1")), false]
@@ -555,7 +554,7 @@ describe("map.reads-other-page and rule.unknown-field: what a worked-out value c
 });
 
 describe("map.sources-conditional: a required field worked out only from fields that may all be hidden", () => {
-  const months = (m1Rule?: Expression, m2Rule?: Expression): Journey =>
+  const months = (m1Rule?: string, m2Rule?: string): Journey =>
     journeyOf(
       [
         page(
@@ -710,9 +709,9 @@ describe("condition.reads-client-derived: a path turning on a value worked out i
   });
 
   it("through a form calculation that reads one, as the kernel's list follows it; never for an alias's field", () => {
-    const root = rootWith(field("double", "number", { rules: { value: { kind: "arithmetic", operator: "multiply", left: read("annual_income"), right: literal(2) } } }));
+    const root = rootWith(field("double", "number", { rules: { value: "annual_income * 2" } }));
     const journey = applyJourney();
-    journey.pages[1]!.routes = [{ when: { kind: "binary", operator: "gte", left: read("double"), right: literal(1) }, to: "assist" }, { when: eq("email", "x"), to: "assist" }, { to: "$end" }];
+    journey.pages[1]!.routes = [{ when: "double >= 1", to: "assist" }, { when: eq("email", "x"), to: "assist" }, { to: "$end" }];
     const diagnostics = diagnoseJourney(root, journey);
     const finding = only(diagnostics, "condition.reads-client-derived");
     expect([finding.componentId, finding.routeIndex]).toEqual(["annual_income", 0]);
@@ -813,9 +812,9 @@ describe("rule.unknown-field: an own node's rule reading what it can never read"
             { label: "Note" },
             {
               rules: {
-                visibleWhen: { kind: "logical", operator: "and", left: eq("ghost", 1), right: eq("@apply.m1", 1) },
-                requiredWhen: { kind: "logical", operator: "or", left: eq("total", 1), right: eq("words", 1) },
-                enabledWhen: { kind: "logical", operator: "and", left: eq("m1", 1), right: eq("name", "x") },
+                visibleWhen: `${eq("ghost", 1)} and ${eq("@apply.m1", 1)}`,
+                requiredWhen: `${eq("total", 1)} or ${eq("words", 1)}`,
+                enabledWhen: `${eq("m1", 1)} and ${eq("name", "x")}`,
                 readonlyWhen: eq("host.role", "staff")
               }
             }
@@ -840,11 +839,11 @@ describe("rule.unknown-field: an own node's rule reading what it can never read"
   });
 
   it("parity: the browser reads an own field by its id, never by its @ key", () => {
-    const shownBy = (rule: Expression): Journey => journeyOf([page("first", own("m1", "number"), own("words", "html", { content: "x" }, { rules: { visibleWhen: rule } }))]);
+    const shownBy = (rule: string): Journey => journeyOf([page("first", own("m1", "number"), own("words", "html", { content: "x" }, { rules: { visibleWhen: rule } }))]);
     for (const [rule, shown] of [
       [eq("m1", 5), true],
       [eq("@apply.m1", 5), false]
-    ] as Array<[Expression, boolean]>) {
+    ] as Array<[string, boolean]>) {
       const journey = shownBy(rule);
       expect(of(diagnoseJourney(presentationRoot(), journey), "rule.unknown-field").length).toBe(shown ? 0 : 1);
       const runtime = runtimeOf(presentationRoot(), journey);
@@ -908,7 +907,7 @@ describe("data-key.reserved-prefix: a key of the form's own data under @", () =>
 });
 
 describe("calc.input-left-out: empty literals and defaults from a page", () => {
-  const withTotal = (value: Expression, type = "text"): ComponentNode =>
+  const withTotal = (value: string, type = "text"): ComponentNode =>
     rootWith(field("total", type, { configuration: { label: "Total", required: true }, rules: { value } }), field("base", "text"), field("rate", "text", { rules: { defaultValue: read("base") } }));
   const leavingOut = (...left: string[]): Journey => ({
     id: "apply",
@@ -922,7 +921,7 @@ describe("calc.input-left-out: empty literals and defaults from a page", () => {
       ['coalesce(name, "")', call("coalesce", read("name"), literal(""))],
       ["coalesce(name, null)", call("coalesce", read("name"), literal(null))],
       ['concat(concat(name, " "), "")', call("concat", call("concat", read("name"), literal(" ")), literal(""))]
-    ] as Array<[string, Expression]>) {
+    ] as Array<[string, string]>) {
       const root = withTotal(value);
       const finding = only(diagnoseJourney(root, leavingOut("name")), "calc.input-left-out");
       expect([finding.severity, finding.componentId, finding.requiredField], name).toEqual(["error", "name", "total"]);
@@ -970,7 +969,7 @@ describe("calc.input-left-out: empty literals and defaults from a page", () => {
  * Diagnostics for a journey's own nodes: each finding as the runtime and the kernel bear it out.
  */
 describe("map.reads-no-source: a worked-out value reading none of its page's own fields", () => {
-  const withFixed = (value: Expression, to = "annual_income", ...others: JourneyPageEntry[]): Journey =>
+  const withFixed = (value: string, to = "annual_income", ...others: JourneyPageEntry[]): Journey =>
     journeyOf([page("first", ...others, workedOut("fixed", to, value))], ["email", "name", ...(to === "annual_income" ? ["approved_amount"] : ["money"])]);
   const steps = (...more: Array<(runtime: FormRuntime) => void>) => (runtime: FormRuntime): void => {
     runtime.setValue("email", "ada@example.org");
@@ -1027,7 +1026,7 @@ describe("map.reads-no-source: a worked-out value reading none of its page's own
 });
 
 describe("map.sources-conditional under a Required-when rule: a warning — the rule may hold while every source hides, or never then", () => {
-  const employment = (requiredWhen: Expression): ComponentNode =>
+  const employment = (requiredWhen: string): ComponentNode =>
     rootWith(field("employed", "checkbox"), field("income", "number", { configuration: { label: "Income" }, rules: { requiredWhen } }));
   const journey = journeyOf(
     [
@@ -1113,16 +1112,16 @@ describe("page.no-title as the runtime heads the page", () => {
 });
 
 describe("calc.input-left-out: a coalesce stops at the first argument that comes to a value, empty or not", () => {
-  const withTotal = (value: Expression, type: string): ComponentNode => rootWith(field("total", type, { configuration: { label: "Total", required: true }, rules: { value } }));
+  const withTotal = (value: string, type: string): ComponentNode => rootWith(field("total", type, { configuration: { label: "Total", required: true }, rules: { value } }));
   const leavingName: Journey = { id: "apply", pages: [{ id: "all", title: "All", components: ["email", "money", "approved_amount", "total"] }] };
   const steps = (runtime: FormRuntime): void => {
     runtime.setValue("email", "ada@example.org");
     runtime.setValue("annual_income", 1);
   };
-  const twice: Expression = { kind: "arithmetic", operator: "multiply", left: read("name"), right: literal(2) };
+  const twice = "name * 2";
 
   it("an argument other than a bare path, missing its input, ends it empty: reported, and both sides refuse", async () => {
-    for (const [name, value, type] of [['coalesce(concat(name), "x")', call("coalesce", call("concat", read("name")), literal("x")), "text"]] as Array<[string, Expression, string]>) {
+    for (const [name, value, type] of [['coalesce(concat(name), "x")', call("coalesce", call("concat", read("name")), literal("x")), "text"]] as Array<[string, string, string]>) {
       const root = withTotal(value, type);
       const finding = only(diagnoseJourney(root, leavingName), "calc.input-left-out");
       expect([finding.severity, finding.componentId, finding.requiredField], name).toEqual(["error", "name", "total"]);
@@ -1136,7 +1135,7 @@ describe("calc.input-left-out: a coalesce stops at the first argument that comes
       ['coalesce(coalesce(name), "x")', call("coalesce", call("coalesce", read("name")), literal("x")), "text"],
       // Arithmetic over a missing operand is no answer, never NaN: the coalesce goes on to 0, and total = 0 on both sides.
       ["coalesce(name * 2, 0)", call("coalesce", twice, literal(0)), "number"]
-    ] as Array<[string, Expression, string]>) {
+    ] as Array<[string, string, string]>) {
       const root = withTotal(value, type);
       expect(of(diagnoseJourney(root, leavingName), "calc.input-left-out"), name).toEqual([]);
       expect(await refused(root, leavingName, steps), name).toEqual([]);

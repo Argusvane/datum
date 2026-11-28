@@ -368,7 +368,7 @@ describe("createPdfDesigner", () => {
   });
 
   it("round-trips the layout's when: on the document root for the Rules tab, one copy at the top level in the layout", async () => {
-    const quebec = { kind: "binary", operator: "eq", left: { kind: "path", path: "province" }, right: { kind: "literal", value: "QC" } } as const;
+    const quebec = 'province = "QC"';
     const conditional: PdfGeneratedLayout = {
       id: "quebec",
       kind: "generated",
@@ -393,7 +393,7 @@ describe("createPdfDesigner", () => {
     expect(edited.root.children?.body?.map((node) => node.type)).toEqual([PDF_TEXT_COMPONENT_TYPE]);
 
     // Edited on the root, it comes back as the layout's; cleared, the layout has none.
-    const large = { kind: "path", path: "largePrint" } as const;
+    const large = "largePrint";
     controller.setProperty("document", "when", large);
     expect(designer.layoutFrom(controller.snapshot()).when).toEqual(large);
     // A when the evaluator cannot run is kept as written, for the author to see and mend.

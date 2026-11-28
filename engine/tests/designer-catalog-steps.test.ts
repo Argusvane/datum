@@ -361,7 +361,7 @@ describe("a form rename a built PDF layout follows", () => {
       id,
       kind: "generated",
       name,
-      when: { kind: "path", path: "province" },
+      when: "province",
       root: { id: "document", type: "pdf-document", configuration: {}, children: { body: [{ id: "field", type: "pdf-field", configuration: { componentId: "province" } }], header: [], footer: [] } }
     };
   }
@@ -383,12 +383,12 @@ describe("a form rename a built PDF layout follows", () => {
   /** The layout's condition and binding as the catalog has them. */
   const inCatalog = (mode: PdfBuilderMode, id: string): string => {
     const found = mode.layouts.find((entry) => entry.id === id) as PdfGeneratedLayout;
-    return `${(found.when as { path?: string } | undefined)?.path}/${(found.root.children!.body![0]!.configuration as { componentId: string }).componentId}`;
+    return `${String(found.when)}/${(found.root.children!.body![0]!.configuration as { componentId: string }).componentId}`;
   };
   /** The same as the layout's open tree has them. */
   const inTree = (tree: BuilderController): string => {
     const root = tree.snapshot();
-    return `${((root.configuration as { when?: { path?: string } }).when ?? {}).path}/${(root.children!.body![0]!.configuration as { componentId: string }).componentId}`;
+    return `${String((root.configuration as { when?: unknown }).when)}/${(root.children!.body![0]!.configuration as { componentId: string }).componentId}`;
   };
 
   it("takes the tree along with no entry of its own: one Undo puts back the id, the condition and the binding, and Redo renames them all again", async () => {

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import type { Expression } from "../form-engine/core/expressions/expression.js";
+import type { Expression, RuleSource } from "../form-engine/core/expressions/expression.js";
+import { kernelCompileJourney } from "../form-engine/core/expressions/compile.js";
+import type { FormulaProblem } from "../form-engine/core/expressions/formula-types.js";
+import { kernelParseFormula } from "../form-engine/core/expressions/formula.js";
+import { formulaFunctionSignatures } from "../form-engine/core/expressions/function-table.js";
 import type { ComponentNode } from "../form-engine/core/schema/types.js";
 import type { Journey, JourneyPage, JourneyRoute } from "../form-engine/core/schema/journey.js";
 import { diagnoseJourney } from "../form-engine/core/journey/journey-diagnostics.js";
@@ -22,10 +26,10 @@ function formOf(...children: ComponentNode[]): ComponentNode {
 }
 
 let conditionSerial = 0;
-/** A condition of its own: no two share an object, so the brute force treats them as free. */
-function cond(path = "x"): Expression {
+/** A condition of its own: each compiles to a tree of its own, so the brute force treats them as free. */
+function cond(path = "x"): RuleSource {
   conditionSerial += 1;
-  return { kind: "binary", operator: "eq", left: { kind: "path", path }, right: { kind: "literal", value: `v${conditionSerial}` } };
+  return `${path} = "v${conditionSerial}"`;
 }
 
 function journeyOf(...pages: JourneyPage[]): Journey {
@@ -53,8 +57,11 @@ function edgesOf(flow: JourneyFlow): string[] {
   return flow.edges.map((edge) => `${edge.kind}:${edge.from}>${edge.to}${edge.routeIndex !== undefined ? `#${edge.routeIndex}` : ""}${edge.otherwise ? " otherwise" : ""}${edge.live ? "" : " dead"}`);
 }
 
-/** Every outcome the path engine can give, conditions free. */
-function everyOutcome(root: ComponentNode, journey: Journey): { shown: Set<string>; ends: boolean; taken: Set<string> } {
+/** Every outcome the path engine can give, conditions free, over the journey's compiled copy. */
+function everyOutcome(root: ComponentNode, written: Journey): { shown: Set<string>; ends: boolean; taken: Set<string> } {
+  const problems: FormulaProblem[] = [];
+  const journey = (kernelCompileJourney({ journeys: [written] }, kernelParseFormula, formulaFunctionSignatures(), problems) as { journeys: Journey[] }).journeys[0]!;
+  expect(problems).toEqual([]);
   const conditions: Expression[] = [];
   const see = (expression: Expression | undefined): void => {
     if (expression !== undefined && !conditions.includes(expression)) {

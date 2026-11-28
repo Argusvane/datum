@@ -271,7 +271,7 @@ describe("the rules inside a row read by key, so they follow the key and never t
 describe("the follow-ups' rewrites", () => {
   it("renameRowKeysInRuleSource touches row reads of the keys only, each read once", () => {
     expect(renameRowKeysInRuleSource('row.sku != "" and sku = 1 and row.skus = 2', [{ from: "sku", to: "code" }])).toBe('row.code != "" and sku = 1 and row.skus = 2');
-    expect(renameRowKeysInRuleSource({ kind: "path", path: "row.sku" }, [{ from: "sku", to: "code" }])).toEqual({ kind: "path", path: "row.code" });
+    expect(renameRowKeysInRuleSource({ formula: "row.sku", run: "server" }, [{ from: "sku", to: "code" }])).toEqual({ formula: "row.code", run: "server" });
     expect(
       renameRowKeysInRuleSource('row.sku = "a" and row.qty = "b"', [
         { from: "sku", to: "qty" },

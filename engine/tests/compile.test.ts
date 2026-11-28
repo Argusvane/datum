@@ -193,29 +193,47 @@ describe("kernelCompileRulesOf", () => {
 });
 
 describe("kernelCompileRules", () => {
-  it("compiles a string, a tree and the object form alike", () => {
+  it("compiles a string and the object form; a tree is invalidRule, bare or in the object form", () => {
     const problems: FormulaProblem[] = [];
     const rules = {
       visibleWhen: "email",
       requiredWhen: emailPath,
       enabledWhen: { formula: "email" },
       readonlyWhen: { formula: "email", run: "server" },
-      value: { expression: emailPath, formula: "ignored", run: "server-secret" }
+      value: { expression: emailPath, formula: "ignored", run: "server-secret" },
+      defaultValue: { formula: "email", run: "browser" }
     };
     const before = snapshot(rules);
     const compiled = kernelCompileRules(rules, "rules:f", true, stubParser, signatures, problems);
     expect(snapshot(rules)).toBe(before);
-    expect(problems).toEqual([]);
+    expect(problems.map((problem) => [problem.where, problem.code, problem.params])).toEqual([
+      ["rules:f:requiredWhen", "invalidRule", { key: "requiredWhen", got: "tree" }],
+      ["rules:f:value", "invalidRule", { key: "value", got: "tree" }]
+    ]);
     expect(compiled).toEqual({
       visibleWhen: emailPath,
-      requiredWhen: emailPath,
       enabledWhen: { expression: emailPath },
       readonlyWhen: { expression: emailPath, run: "server" },
-      value: { expression: emailPath, run: "server-secret" }
+      defaultValue: { expression: emailPath, run: "browser" }
     });
-    expect(compiled.requiredWhen).toBe(emailPath);
-    expect("formula" in (compiled.value as object)).toBe(false);
+    expect("formula" in (compiled.readonlyWhen as object)).toBe(false);
     expect("run" in (compiled.enabledWhen as object)).toBe(false);
+  });
+
+  it("passes a compiled copy's trees through when it compiles the copy again (recompile)", () => {
+    const problems: FormulaProblem[] = [];
+    const compiled = kernelCompileRules(
+      { visibleWhen: "email", requiredWhen: emailPath, value: { expression: emailPath, run: "server-secret" } },
+      "rules:f",
+      true,
+      stubParser,
+      signatures,
+      problems,
+      true
+    );
+    expect(problems).toEqual([]);
+    expect(compiled).toEqual({ visibleWhen: emailPath, requiredWhen: emailPath, value: { expression: emailPath, run: "server-secret" } });
+    expect(compiled.requiredWhen).toBe(emailPath);
   });
 
   it("drops a key whose formula fails and reports it with its span and text", () => {
@@ -249,7 +267,7 @@ describe("kernelCompileRules", () => {
     expect(compiled).toEqual({ value: { expression: emailPath } });
   });
 
-  it("reports a rule that is neither a formula, a tree nor the object form as invalidRule and drops the key", () => {
+  it("reports a rule that is neither a formula nor the object form as invalidRule and drops the key", () => {
     const odd: Record<string, unknown> = {
       visibleWhen: true,
       requiredWhen: {},
@@ -300,7 +318,7 @@ describe("kernelCompileRules", () => {
     const compiled = kernelCompileRules(
       {
         visibleWhen: { formula: "email", run: "server" },
-        value: { expression: emailPath, run: "server-secret" },
+        value: { formula: "email", run: "server-secret" },
         requiredWhen: { formula: "email", run: "browser" },
         enabledWhen: { formula: "email", run: "both" },
         readonlyWhen: "email"
@@ -320,7 +338,7 @@ describe("kernelCompileRules", () => {
     });
     expect(problems.map((problem) => [problem.where, problem.code, problem.params, problem.start, problem.end, problem.text])).toEqual([
       ["journey:j:node:n:visibleWhen", "runScope", { key: "visibleWhen", run: "server" }, 0, 5, "email"],
-      ["journey:j:node:n:value", "runScope", { key: "value", run: "server-secret" }, 0, 0, ""]
+      ["journey:j:node:n:value", "runScope", { key: "value", run: "server-secret" }, 0, 5, "email"]
     ]);
   });
 
@@ -329,7 +347,7 @@ describe("kernelCompileRules", () => {
     const compiled = kernelCompileRules(
       {
         defaultValue: { formula: "email", run: "server" },
-        filter: { expression: emailPath, run: "server-secret" },
+        filter: { formula: "email", run: "server-secret" },
         navigationGating: { formula: "email", run: "browser" }
       },
       "rules:f",
@@ -345,7 +363,7 @@ describe("kernelCompileRules", () => {
     });
     expect(problems.map((problem) => [problem.where, problem.code, problem.params, problem.start, problem.end, problem.text])).toEqual([
       ["rules:f:defaultValue", "runScope", { key: "defaultValue", run: "server" }, 0, 5, "email"],
-      ["rules:f:filter", "runScope", { key: "filter", run: "server-secret" }, 0, 0, ""]
+      ["rules:f:filter", "runScope", { key: "filter", run: "server-secret" }, 0, 5, "email"]
     ]);
     expect(problems[0]?.message).toContain("defaultValue");
   });
@@ -371,7 +389,7 @@ function definitionFixture(): FormDefinition {
           id: "group",
           type: "fieldset",
           configuration: {},
-          rules: { visibleWhen: emailPath },
+          rules: { visibleWhen: "email" },
           children: { default: [field("name", { rules: { value: { formula: "upper !! name" } } as unknown as ComponentRules })] }
         }
       ]
@@ -442,7 +460,7 @@ describe("kernelCompileDefinition", () => {
     expect(email.configuration).toBe(definition.root.children!.default![0]!.configuration);
     expect(email.rules).toEqual({ visibleWhen: { kind: "path", path: "session" } });
     const group = root.children!.default![1]!;
-    expect(group.rules?.visibleWhen).toBe(emailPath);
+    expect(group.rules?.visibleWhen).toEqual(emailPath);
     expect(group.children!.default![0]!.rules).toEqual({});
 
     const compiledJourney = journey as { journeys: Array<{ pages: Array<Record<string, unknown>> }> };
@@ -628,7 +646,7 @@ describe("run scopes outside a form component's five kernel rules", () => {
             when: { formula: "email", run: "server-secret" },
             template: { kind: "inline", data: "" },
             fields: [{ name: "a", source: { kind: "expression", expression: { formula: "email", run: "server" } } }],
-            areas: [{ id: "area", page: 1, rect: { x: 0, y: 0, width: 1, height: 1 }, source: { kind: "expression", expression: { expression: emailPath, run: "server-secret" } } }]
+            areas: [{ id: "area", page: 1, rect: { x: 0, y: 0, width: 1, height: 1 }, source: { kind: "expression", expression: { formula: "email", run: "server-secret" } } }]
           }
         ]
       }
@@ -1076,7 +1094,7 @@ describe("kernelConditionKind and the condition.notBoolean warning", () => {
         default: [
           ruleSite("a", { visibleWhen: "len(name)", requiredWhen: "name = \"x\"", enabledWhen: { formula: "1 + 1", run: "both" }, readonlyWhen: "consent", value: "len(name)" }),
           { id: "g", type: "container", configuration: {}, children: { default: [ruleSite("b", { navigationGating: '"yes"' })] } },
-          ruleSite("c", { visibleWhen: { kind: "literal", value: 5 } })
+          ruleSite("c", { visibleWhen: "5" })
         ]
       }
     } as unknown as ComponentNode;
@@ -1404,17 +1422,17 @@ describe("kernelCompileDefinition: the riskyPatterns policy", () => {
     expect(compile('contains(name, "(a+)+")').problems).toEqual([]);
   });
 
-  it("applies to journeys and PDF layouts, and leaves a tree-written rule alone", () => {
+  it("applies to journeys and PDF layouts, and to a compiled layout's tree read again", () => {
     const journey = { journeys: [{ id: "j", pages: [{ id: "p", components: [], routes: [{ to: "$end", when: 'matches(a, "(a+)+")' }] }] }] };
     const pdf = { layouts: [{ id: "l", when: 'matches(a, "(a*)*")' }] };
     const compiled = kernelCompileDefinition(formRoot("true"), journey, pdf, kernelParseFormula, formulaFunctionSignatures());
     expect(compiled.problems.map((problem) => `${problem.where} ${problem.code}`)).toEqual(["journey:j:page:p:route:0 pattern.risky", "pdf:l pattern.risky"]);
-    // A tree-written layout rule is looked at too, in a PDF; the other sites leave a tree alone.
+    // A compiled layout's tree compiled again (the PDF render's read) is looked at too.
     const tree = { kind: "call", name: "matches", args: [{ kind: "path", path: "a" }, { kind: "literal", value: "(a+)+" }] } as Expression;
-    const treed = kernelCompileDefinition(formRoot("true"), undefined, { layouts: [{ id: "l", when: tree }] }, kernelParseFormula, formulaFunctionSignatures());
+    const treed = kernelCompileDefinition(formRoot("true"), undefined, { layouts: [{ id: "l", when: tree }] }, kernelParseFormula, formulaFunctionSignatures(), undefined, true);
     expect(treed.problems.map((problem) => `${problem.where} ${problem.code}`)).toEqual(["pdf:l pattern.risky"]);
     expect((treed.definition.pdf as { layouts: { when?: unknown }[] }).layouts[0]?.when).toBeUndefined();
-    expect(kernelCompileDefinition(formRoot("true"), undefined, { layouts: [{ id: "l", when: tree }] }, kernelParseFormula, formulaFunctionSignatures(), "allow").problems).toEqual([]);
+    expect(kernelCompileDefinition(formRoot("true"), undefined, { layouts: [{ id: "l", when: tree }] }, kernelParseFormula, formulaFunctionSignatures(), "allow", true).problems).toEqual([]);
   });
 });
 

@@ -49,12 +49,12 @@ function form(): ComponentNode {
                         ]
                       }
                     },
-                    text("agent", "Registered agent", { rules: { visibleWhen: { kind: "binary", operator: "eq", left: { kind: "path", path: "structure" }, right: { kind: "literal", value: "partnership" } } } }),
+                    text("agent", "Registered agent", { rules: { visibleWhen: 'structure = "partnership"' } }),
                     { id: "employees", type: "number", configuration: { label: "Number of employees" } },
                     text("bn", "Business number", {
-                      rules: { requiredWhen: { kind: "binary", operator: "gt", left: { kind: "path", path: "employees" }, right: { kind: "literal", value: 0 } } }
+                      rules: { requiredWhen: "employees > 0" }
                     }),
-                    { id: "fee", type: "number", configuration: { label: "Licence fee" }, rules: { value: { kind: "literal", value: 120 } } },
+                    { id: "fee", type: "number", configuration: { label: "Licence fee" }, rules: { value: "120" } },
                     { id: "start", type: "date", configuration: { label: "Start date", dataKey: "start_date" } }
                   ]
                 }

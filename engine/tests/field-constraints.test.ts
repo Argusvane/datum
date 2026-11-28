@@ -9,7 +9,6 @@ import {
 import { validationCodesRaisedBy } from "../form-engine/validation/core/field-constraints.js";
 import { ValidationPipeline } from "../form-engine/validation/core/validation-pipeline.js";
 import type { ComponentNode } from "../form-engine/core/schema/types.js";
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import type { ValidationContext } from "../form-engine/core/schema/contracts.js";
 import { runKernel } from "../form-engine/validation/wasm/portable-kernel.js";
 import { DATA_GRID_ROWS_CAP, normalizeDataGrids } from "../form-engine/core/schema/data-grid.js";
@@ -440,12 +439,7 @@ describe("field constraints — keys named like Object.prototype members", () =>
 });
 
 describe("field constraints — Required when", () => {
-  const byPhone: Expression = {
-    kind: "binary",
-    operator: "eq",
-    left: { kind: "path", path: "contact" },
-    right: { kind: "literal", value: "phone" }
-  };
+  const byPhone = 'contact = "phone"';
   const root = form([
     { id: "contact", type: "radio", configuration: {} },
     { id: "phone", type: "text", configuration: {}, rules: { requiredWhen: byPhone } },

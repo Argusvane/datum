@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import type { Expression } from "../form-engine/core/expressions/expression.js";
+import type { Expression, RuleSource } from "../form-engine/core/expressions/expression.js";
 import { kernelCompileDefinition } from "../form-engine/core/expressions/compile.js";
 import { kernelParseFormula } from "../form-engine/core/expressions/formula.js";
 import { formulaFunctionSignatures } from "../form-engine/core/expressions/function-table.js";
@@ -48,7 +48,7 @@ const risky = (name: string, pattern: string): Expression => ({ kind: "call", na
 const generated = (id: string, children: ComponentNode[], when?: unknown): PdfGeneratedLayout => ({
   id,
   kind: "generated",
-  ...(when !== undefined ? { when: when as Expression } : {}),
+  ...(when !== undefined ? { when: when as RuleSource } : {}),
   root: { id: "document", type: PDF_DOCUMENT_COMPONENT_TYPE, configuration: {}, children: { body: children, header: [], footer: [] } }
 });
 const timed = <T,>(run: () => T): { value: T; ms: number } => {
@@ -58,12 +58,12 @@ const timed = <T,>(run: () => T): { value: T; ms: number } => {
 };
 
 describe("the PDF evaluators refuse a risky pattern at the call", () => {
-  it("a layout when: a tree-written condition never holds and costs nothing", () => {
+  it("a layout when: a risky condition never holds and costs nothing", () => {
     const { value, ms } = timed(() => evaluatePdfLayoutCondition(risky("matches", RISKY), { a: HOSTILE }));
     expect(value).toBeUndefined();
     expect(ms).toBeLessThan(500);
     expect(pdfLayoutConditionEvaluator("2026-01-01", undefined, "refuse")(risky("matches", RISKY), { a: HOSTILE })).toBeUndefined();
-    const pdf = { layouts: [generated("risky", [], risky("matches", RISKY)), generated("plain", [])], defaultLayoutId: "plain" };
+    const pdf = { layouts: [generated("risky", [], `matches(a, "${RISKY}")`), generated("plain", [])], defaultLayoutId: "plain" };
     const chosen = timed(() => selectPdfLayoutForValues({ root: form, pdf }, { a: HOSTILE }));
     expect(chosen.value.layout?.id).toBe("plain");
     expect(chosen.ms).toBeLessThan(500);
@@ -84,7 +84,7 @@ describe("the PDF evaluators refuse a risky pattern at the call", () => {
       id: "tpl",
       kind: "template",
       template: { storage: "base64", name: "t.pdf", type: "application/pdf", size: 4, data: "JVBERg==" },
-      fields: [{ pdfField: "F", source: { kind: "expression", expression: risky("matches", RISKY) as never } } as PdfFieldMapping]
+      fields: [{ pdfField: "F", source: { kind: "expression", expression: `matches(a, "${RISKY}")` } } as PdfFieldMapping]
     };
     const started2 = Date.now();
     const out = await buildPdfRenderModel(form, held({ a: HOSTILE }), resolver, {}, { layout: template, formulaErrors: "warn" });
@@ -114,24 +114,24 @@ describe("the compile reports a risky literal in every PDF site, tree-written on
   const compile = (pdf: unknown, riskyPatterns?: unknown) => kernelCompileDefinition(form, undefined, pdf, kernelParseFormula, formulaFunctionSignatures(), riskyPatterns);
   const where = (pdf: unknown) => compile(pdf).problems.map((problem) => `${problem.where} ${problem.code}`);
 
-  it("a template field and area source expression, as text and as a tree", () => {
+  it("a template field and area source expression, as text and as the object form; a tree there is refused", () => {
     const text = 'matches(a, "(a+)+$")';
     const base = { id: "l", kind: "template", template: { storage: "x" } };
     expect(where({ layouts: [{ ...base, fields: [{ pdfField: "f", source: { kind: "expression", expression: text } }] }] })).toEqual(["pdf:l:field:0 pattern.risky"]);
-    expect(where({ layouts: [{ ...base, fields: [{ pdfField: "f", source: { kind: "expression", expression: risky("matches", "(a+)+$") } }] }] })).toEqual(["pdf:l:field:0 pattern.risky"]);
-    expect(where({ layouts: [{ ...base, fields: [], areas: [{ id: "ar", source: { kind: "expression", expression: { expression: risky("matches", "(a+)+$") } } }] }] })).toEqual(["pdf:l:area:0 pattern.risky"]);
-    const dropped = compile({ layouts: [{ ...base, fields: [{ pdfField: "f", source: { kind: "expression", expression: risky("matches", "(a+)+$") } }] }] }).definition.pdf as { layouts: { fields: { source: Record<string, unknown> }[] }[] };
+    expect(where({ layouts: [{ ...base, fields: [], areas: [{ id: "ar", source: { kind: "expression", expression: { formula: text } } }] }] })).toEqual(["pdf:l:area:0 pattern.risky"]);
+    expect(where({ layouts: [{ ...base, fields: [{ pdfField: "f", source: { kind: "expression", expression: risky("matches", "(a+)+$") } }] }] })).toEqual(["pdf:l:field:0 invalidRule"]);
+    const dropped = compile({ layouts: [{ ...base, fields: [{ pdfField: "f", source: { kind: "expression", expression: text } }] }] }).definition.pdf as { layouts: { fields: { source: Record<string, unknown> }[] }[] };
     expect(dropped.layouts[0]?.fields[0]?.source.expression).toBeUndefined();
   });
 
-  it("a layout when as a tree, and the expression and rules of a block in the layout tree", () => {
-    expect(where({ layouts: [{ id: "l", kind: "generated", when: risky("matches", "(a+)+$") }] })).toEqual(["pdf:l pattern.risky"]);
-    const nested: ComponentNode = { id: "box", type: "pdf-box", configuration: {}, children: { content: [{ id: "t", type: PDF_TEXT_COMPONENT_TYPE, configuration: { expression: risky("matches", "(a+)+$") }, rules: { visibleWhen: 'matches(a, "(b*)*")', readonlyWhen: risky("matches", "(c+)+") } }] } };
+  it("a layout when, and the expression and rules of a block in the layout tree", () => {
+    expect(where({ layouts: [{ id: "l", kind: "generated", when: 'matches(a, "(a+)+$")' }] })).toEqual(["pdf:l pattern.risky"]);
+    const nested: ComponentNode = { id: "box", type: "pdf-box", configuration: {}, children: { content: [{ id: "t", type: PDF_TEXT_COMPONENT_TYPE, configuration: { expression: risky("matches", "(a+)+$") }, rules: { visibleWhen: 'matches(a, "(b*)*")', readonlyWhen: risky("matches", "(c+)+") as unknown as RuleSource } }] } };
     expect(where({ layouts: [generated("g", [nested])] })).toEqual(["pdf:g:node:t:expression pattern.risky", "pdf:g:node:t:rules:visibleWhen pattern.risky", "pdf:g:node:t:rules:readonlyWhen pattern.risky"]);
   });
 
   it("an ordinary pattern, and any pattern under allow, make no problem", () => {
-    const pdf = { layouts: [{ id: "l", kind: "generated", when: risky("matches", "^(a|b)+$") }, generated("g", [{ id: "t", type: PDF_TEXT_COMPONENT_TYPE, configuration: { expression: risky("matches", "(a+)+$") } }])] };
+    const pdf = { layouts: [{ id: "l", kind: "generated", when: 'matches(a, "^(a|b)+$")' }, generated("g", [{ id: "t", type: PDF_TEXT_COMPONENT_TYPE, configuration: { expression: risky("matches", "(a+)+$") } }])] };
     expect(compile(pdf, "allow").problems).toEqual([]);
     expect(where(pdf)).toEqual(["pdf:g:node:t:expression pattern.risky"]);
   });

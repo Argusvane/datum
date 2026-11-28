@@ -3,7 +3,6 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ComponentNode, FormDefinition } from "../form-engine/core/schema/types.js";
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import type { Journey, JourneyConfiguration } from "../form-engine/core/schema/journey.js";
 import type { JourneyTrace } from "../form-engine/core/journey/journey-types.js";
 import { SubmissionModeRegistry } from "../form-engine/core/submission/submission-modes.js";
@@ -40,10 +39,6 @@ import * as engineRoot from "../form-engine/index.js";
  * here passes its engine explicitly.
  */
 
-const path = (name: string): Expression => ({ kind: "path", path: name });
-const literal = (value: string | number | boolean | null): Expression => ({ kind: "literal", value });
-const eq = (name: string, value: string | number | boolean): Expression => ({ kind: "binary", operator: "eq", left: path(name), right: literal(value) });
-
 function root(): ComponentNode {
   return {
     id: "root",
@@ -64,7 +59,7 @@ function residentJourney(): Journey {
   return {
     id: "apply",
     pages: [
-      { id: "about", components: ["name", "resident"], routes: [{ when: ({ ...eq("resident", true), operator: "neq" } as Expression), to: "details" }] },
+      { id: "about", components: ["name", "resident"], routes: [{ when: "resident != true", to: "details" }] },
       { id: "residence", components: ["province"] },
       { id: "details", components: ["notes"] }
     ]

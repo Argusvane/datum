@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import type { Expression } from "../form-engine/core/expressions/expression.js";
+import { kernelCompileNode } from "../form-engine/core/expressions/compile.js";
+import { kernelParseFormula } from "../form-engine/core/expressions/formula.js";
+import { formulaFunctionSignatures } from "../form-engine/core/expressions/function-table.js";
 import type { ComponentNode } from "../form-engine/core/schema/types.js";
 import { kernelFoldHoldsOwnAnswer } from "../form-engine/core/state/submittable-fold.js";
 import { readSourceId } from "../form-engine/core/schema/data-source-capability.js";
@@ -51,8 +53,8 @@ function unavailable(componentId: string, path: string, keys: string[], sourceId
   return { code: "option.sourceUnavailable", componentId, path, stage: "options", source: "wasm", parameters: { keys, sourceId } };
 }
 
-function eq(path: string, value: string): Expression {
-  return { kind: "binary", operator: "eq", left: { kind: "path", path }, right: { kind: "literal", value } };
+function eq(path: string, value: string): string {
+  return `${path} = ${JSON.stringify(value)}`;
 }
 
 const check = kernelCheckOptions;
@@ -627,15 +629,17 @@ describe("kernelCheckOptions over the fold's values", () => {
     leaf("kept", "select", { options: options("a"), hiddenValueBehavior: "retain" }, { rules: hidden }),
     leaf("dropped", "select", { options: options("a"), hiddenValueBehavior: "exclude-from-submission" }, { rules: hidden })
   );
+  // The fold reads the compiled copy, as the kernel's run hands it.
+  const compiled = kernelCompileNode(root, kernelParseFormula, formulaFunctionSignatures(), []);
 
   it("refuses a hidden answer the form still submits, and has nothing to say of one the fold withheld", () => {
-    const fold = kernelFoldSubmission(root, { show: "no", kept: "zz", dropped: "zz" }, undefined);
+    const fold = kernelFoldSubmission(compiled, { show: "no", kept: "zz", dropped: "zz" }, undefined);
     expect(Object.keys(fold.submittable).sort()).toEqual(["kept", "show"]);
     expect(check(root, { ...fold.submittable }, undefined)).toEqual([refused("kept", "kept", ["kept"])]);
   });
 
   it("holds a visible answer just the same", () => {
-    const fold = kernelFoldSubmission(root, { show: "yes", kept: "a", dropped: "zz" }, undefined);
+    const fold = kernelFoldSubmission(compiled, { show: "yes", kept: "a", dropped: "zz" }, undefined);
     expect(check(root, { ...fold.submittable }, undefined)).toEqual([refused("dropped", "dropped", ["dropped"])]);
   });
 });

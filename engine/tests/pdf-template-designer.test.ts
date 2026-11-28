@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import { BuilderController } from "../form-engine/builder/controller/builder-controller.js";
 import { createPdfTemplateDesigner, followRenameInTemplateTree, widgetNodeId } from "../form-engine/builder/pdf-designer/pdf-template-designer.js";
 import { pdfConditionFieldOptions, pdfLayoutConditionFindings } from "../form-engine/builder/pdf-designer/layout-conditions.js";
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import { PDF_DOCUMENT_COMPONENT_TYPE, type PdfGeneratedLayout, type PdfTemplateLayout } from "../form-engine/core/schema/pdf-layout.js";
 import type { ComponentNode } from "../form-engine/core/schema/types.js";
 import type { PdfTemplateInfo } from "../form-engine/render/pdf/pdf-abi.js";
@@ -208,7 +207,7 @@ describe("createPdfTemplateDesigner", () => {
   });
 
   it("round-trips the layout's when and any root key it has no box for: nothing is lost on the first edit", () => {
-    const quebec = { kind: "binary", operator: "eq", left: { kind: "path", path: "province" }, right: { kind: "literal", value: "QC" } } as const;
+    const quebec = 'province = "QC"';
     // A key from a later layout version, say — the designer has no box for it, and keeps it.
     const conditional = { ...layout({ when: quebec, options: { flatten: true } }), futureKey: { keep: [1, 2] } } as PdfTemplateLayout;
     const designer = createPdfTemplateDesigner({ layout: conditional, inspection: INSPECTION, formRoot: FORM });
@@ -278,7 +277,6 @@ describe("a source naming something the form no longer has", () => {
     expect(flagged({ kind: "path", path: "gone" })).toBe(true);
     expect(flagged({ kind: "path", path: "gone.first" })).toBe(true);
     expect(flagged({ kind: "expression", expression: "gone + 1" })).toBe(true);
-    expect(flagged({ kind: "expression", expression: { kind: "path", path: "gone" } })).toBe(true);
   });
 
   it("does not flag a path or expression the form holds, a scoped path, or a formula that does not parse", () => {
@@ -489,7 +487,7 @@ describe("a layout's condition over a form with a data grid", () => {
       ].map((node) => (node.id === "lines" ? { ...node, type } : node))
     }
   });
-  const generated = (id: string, when?: Expression): PdfGeneratedLayout => ({
+  const generated = (id: string, when?: string): PdfGeneratedLayout => ({
     id,
     kind: "generated",
     name: id === "std" ? "Standard" : "Grid copy",
@@ -504,8 +502,8 @@ describe("a layout's condition over a form with a data grid", () => {
   });
 
   it("says a condition cannot count the grid's rows or read a cell, with the same findings as a section", () => {
-    const count: Expression = { kind: "call", name: "len", args: [{ kind: "path", path: "lines" }] };
-    const cell: Expression = { kind: "path", path: "sku" };
+    const count = "len(lines)";
+    const cell = "sku";
     for (const type of ["dataGrid", "panel"]) {
       const context = { formRoot: form(type), locale: "en" };
       const counted = pdfLayoutConditionFindings(context, { layouts: [generated("g", count), generated("std")], defaultLayoutId: "std" });

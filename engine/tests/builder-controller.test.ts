@@ -611,14 +611,14 @@ describe("BuilderController", () => {
       const id = ctrl.selectedComponentId()!;
 
       ctrl.setDraftProperty(id, "label", "Email");
-      ctrl.setDraftRules(id, { visibleWhen: { kind: "path", path: "opt_in" } });
-      expect(ctrl.draftRules(id)).toEqual({ visibleWhen: { kind: "path", path: "opt_in" } });
+      ctrl.setDraftRules(id, { visibleWhen: "opt_in" });
+      expect(ctrl.draftRules(id)).toEqual({ visibleWhen: "opt_in" });
       expect(ctrl.snapshot().children!.content![0]!.rules).toBeUndefined();
 
       ctrl.commitDraft();
       const saved = ctrl.snapshot().children!.content![0]!;
       expect(saved.configuration).toMatchObject({ label: "Email" });
-      expect(saved.rules).toEqual({ visibleWhen: { kind: "path", path: "opt_in" } });
+      expect(saved.rules).toEqual({ visibleWhen: "opt_in" });
 
       // One entry: configuration and rules land together.
       ctrl.undo();
@@ -636,7 +636,7 @@ describe("BuilderController", () => {
               id: "email",
               type: "text",
               configuration: {},
-              rules: { visibleWhen: { kind: "path", path: "opt_in" } }
+              rules: { visibleWhen: "opt_in" }
             }
           ]
         }
@@ -1877,7 +1877,6 @@ describe("a rename followed into the tree's rules", () => {
   const ruledForm = (...content: ComponentNode[]): ComponentNode => ({ id: "root", type: "form", configuration: {}, children: { content } });
 
   it("rewrites every rule of every component that reads the old id, in every shape and under every key, and nothing else", () => {
-    const tree: ComponentNode = { kind: "binary", operator: "gt", left: { kind: "path", path: "amount" }, right: { kind: "literal", value: 2 } } as unknown as ComponentNode;
     const ctrl = controller(
       ruledForm(
         { id: "amount", type: "number", configuration: {}, rules: { requiredWhen: "amount > 0 or other = 1" } },
@@ -1888,7 +1887,7 @@ describe("a rename followed into the tree's rules", () => {
           rules: {
             visibleWhen: "amount  = 1",
             requiredWhen: { formula: "amount > 2", run: "server" },
-            enabledWhen: tree as never,
+            enabledWhen: "not(amount > 2)",
             readonlyWhen: "`amount` = 3",
             value: "amount.city",
             defaultValue: "row.amount + ancestor.amount",
@@ -1909,7 +1908,7 @@ describe("a rename followed into the tree's rules", () => {
     expect(rules(ctrl, "b")).toEqual({
       visibleWhen: "total  = 1",
       requiredWhen: { formula: "total > 2", run: "server" },
-      enabledWhen: { kind: "binary", operator: "gt", left: { kind: "path", path: "total" }, right: { kind: "literal", value: 2 } },
+      enabledWhen: "not(total > 2)",
       readonlyWhen: "total = 3",
       value: "total.city",
       // A row read names a key within a grid's row, never an id: `amount` sits in no row, so no
@@ -2285,13 +2284,13 @@ describe("undo and redo of a property-only step re-set its paths into an open dr
   it("re-sets a rule the step touched and keeps the rule the draft changed", () => {
     const ctrl = controller({ id: "root", type: "form", configuration: {}, children: { content: [field("a"), field("b")] } });
     ctrl.select("a");
-    ctrl.setDraftRules("a", { requiredWhen: { kind: "path", path: "b" } } as ComponentRules);
-    ctrl.setProperties([{ componentId: "a", propertyPath: "visibleWhen", value: { kind: "path", path: "b" }, target: "rules" }]);
+    ctrl.setDraftRules("a", { requiredWhen: "b" } as ComponentRules);
+    ctrl.setProperties([{ componentId: "a", propertyPath: "visibleWhen", value: "b", target: "rules" }]);
     ctrl.undo();
     expect(ctrl.snapshot().children?.content?.[0]?.rules).toBeUndefined();
-    expect(ctrl.draftRules("a")).toEqual({ requiredWhen: { kind: "path", path: "b" } });
+    expect(ctrl.draftRules("a")).toEqual({ requiredWhen: "b" });
     ctrl.redo();
-    expect(ctrl.draftRules("a")).toEqual({ requiredWhen: { kind: "path", path: "b" }, visibleWhen: { kind: "path", path: "b" } });
+    expect(ctrl.draftRules("a")).toEqual({ requiredWhen: "b", visibleWhen: "b" });
   });
 
   it("still discards the draft when the step changed the tree's structure", () => {
@@ -2342,7 +2341,7 @@ describe("an add with no position keeps a seeded Submit last (new-user defect 1)
     edited.add("text");
     expect(content(edited)).toEqual(["submit", edited.selectedComponentId()]);
 
-    const ruled = fresh({ ...SUBMIT, rules: { visibleWhen: { kind: "path", path: "a" } } as ComponentRules });
+    const ruled = fresh({ ...SUBMIT, rules: { visibleWhen: "a" } });
     ruled.add("text");
     expect(content(ruled)).toEqual(["submit", ruled.selectedComponentId()]);
 

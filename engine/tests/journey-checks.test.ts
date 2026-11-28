@@ -234,12 +234,7 @@ describe("checkJourneyTree", () => {
   });
 
   it("marks a route condition that reads a field of a journey's own as the route's error", () => {
-    const ownKey = (key: string): { kind: "binary"; operator: "eq"; left: { kind: "path"; path: string }; right: { kind: "literal"; value: string } } => ({
-      kind: "binary",
-      operator: "eq",
-      left: { kind: "path", path: key },
-      right: { kind: "literal", value: "x" }
-    });
+    const ownKey = (key: string): string => `\`${key}\` = "x"`;
     const tree = treeFromJourney({
       id: "j",
       pages: [
@@ -419,7 +414,7 @@ describe("findings about a journey's own nodes", () => {
             ],
             routes: [{ to: "money" }]
           },
-          { id: "money", components: [{ id: "m1", type: "number" }, { id: "total", type: "journey-value", configuration: { to: "income", value: { kind: "path", path: "m1" } } }] }
+          { id: "money", components: [{ id: "m1", type: "number" }, { id: "total", type: "journey-value", configuration: { to: "income", value: "m1" } }] }
         ]
       })
     ) as Journey;
@@ -584,7 +579,7 @@ describe("the findings card's entries and the Form fields panel's rows", () => {
             id: "a",
             components: [
               { id: "m1", type: "number" },
-              { id: "one", type: "journey-value", configuration: { to: "income", value: { kind: "path", path: "m1" } } },
+              { id: "one", type: "journey-value", configuration: { to: "income", value: "m1" } },
               { id: "typed", type: "number", configuration: { label: "Income", fills: "income" } },
               { id: "nick", type: "text", configuration: { label: "Nick" } },
               "notes"

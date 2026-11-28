@@ -237,8 +237,6 @@ describe("submission service hardening", () => {
   });
 
   it("keeps the delivered document raw and the judged values folded: record.document is the signed input, record.values the fold", async () => {
-    const lit = (value: unknown) => ({ kind: "literal", value });
-    const path = (p: string) => ({ kind: "path", path: p });
     const journeyed = {
       id: "j9",
       version: "1",
@@ -249,7 +247,7 @@ describe("submission service hardening", () => {
         { id: "email", type: "text", configuration: { required: true } }
       ] } },
       journey: { journeys: [{ id: "j", pages: [
-        { id: "a", components: ["employed"], routes: [{ when: { kind: "binary", operator: "eq", left: path("employed"), right: lit(true) }, to: "b" }, { to: "c" }] },
+        { id: "a", components: ["employed"], routes: [{ when: "employed = true", to: "b" }, { to: "c" }] },
         { id: "b", components: ["employer"], routes: [{ to: "c" }] },
         { id: "c", components: ["email"], routes: [{ to: "$end" }] }
       ] }] }

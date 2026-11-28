@@ -16,7 +16,7 @@ const field: ComponentNode = {
   id: "fullName",
   type: "text-field",
   configuration: { label: "Full name", placeholder: "First Last" },
-  rules: { requiredWhen: { kind: "literal", value: true } }
+  rules: { requiredWhen: "true" }
 };
 
 const section: ComponentNode = {
@@ -34,7 +34,7 @@ describe("componentJsonText", () => {
       id: "fullName",
       type: "text-field",
       configuration: { label: "Full name", placeholder: "First Last" },
-      rules: { requiredWhen: { kind: "literal", value: true } }
+      rules: { requiredWhen: "true" }
     });
     expect(JSON.parse(componentJsonText(section))).toEqual({ id: "address", type: "section", configuration: { title: "Address" } });
     expect(Object.keys(JSON.parse(componentJsonText(field)))).toEqual(["id", "type", "configuration", "rules"]);
@@ -71,7 +71,7 @@ describe("readComponentJson", () => {
     expect(problem('{ "id": "fullName" }')).toMatch(/needs a "configuration" object/);
     expect(problem('{ "id": "fullName", "configuration": [] }')).toMatch(/"configuration" must be an object/);
     expect(problem('{ "id": "fullName", "configuration": { "a.b": 1 } }')).toMatch(/cannot be a configuration key/);
-    expect(problem('{ "id": "fullName", "configuration": {}, "rules": { "visibleWhen": { "nope": 1 } } }')).toMatch(/"visibleWhen" is not a valid expression/);
+    expect(problem('{ "id": "fullName", "configuration": {}, "rules": { "visibleWhen": { "nope": 1 } } }')).toMatch(/"visibleWhen" is not a valid rule/);
     expect(problem('{ "id": "address", "configuration": {}, "children": { "content": [] } }', section)).toMatch(/children are edited on the canvas/);
   });
 
@@ -88,13 +88,11 @@ describe("readComponentJson", () => {
     expect(result.ok && componentJsonChanges(section, result.value).set).toEqual([{ key: "title", value: "Where you live" }]);
   });
 
-  it("takes a tree calling a plugin function when the host's names are given", () => {
-    const text = '{ "id": "fullName", "configuration": {}, "rules": { "visibleWhen": { "kind": "call", "name": "regionTax", "args": [] } } }';
-    expect(readComponentJson(text, field, { idEditable: true }).ok).toBe(false);
-    const read = readComponentJson(text, field, { idEditable: true, knownFunctions: ["regionTax"] });
-    expect(read.ok).toBe(true);
+  it("takes a formula whatever it calls, and refuses an expression tree", () => {
     // A formula string is a rule whatever it calls: the parser, not this check, reads it.
     expect(readComponentJson('{ "id": "fullName", "configuration": {}, "rules": { "visibleWhen": "regionTax() > 1" } }', field, { idEditable: true }).ok).toBe(true);
+    const tree = '{ "id": "fullName", "configuration": {}, "rules": { "visibleWhen": { "kind": "call", "name": "regionTax", "args": [] } } }';
+    expect(readComponentJson(tree, field, { idEditable: true }).ok).toBe(false);
   });
 
   it("keeps a rule the component already carries as it is, even one it cannot check", () => {

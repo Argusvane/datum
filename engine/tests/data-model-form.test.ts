@@ -22,12 +22,12 @@ function form(): ComponentNode {
         { id: "fullName", type: "text", configuration: { label: "Full name", required: true, pattern: "[A-Za-z ]+", minLength: 2, maxLength: 40 } },
         { id: "notes", type: "textarea", configuration: { label: "Notes" } },
         { id: "age", type: "number", configuration: { label: "Age", min: 0, max: 130 } },
-        { id: "agree", type: "checkbox", configuration: { label: "I agree" }, rules: { requiredWhen: { kind: "literal", value: true } } },
+        { id: "agree", type: "checkbox", configuration: { label: "I agree" }, rules: { requiredWhen: "true" } },
         {
           id: "country",
           type: "select",
           configuration: { label: "Country", options: [{ value: "CA", label: "Canada" }, { value: "FR", label: "France" }] },
-          rules: { defaultValue: { kind: "literal", value: "CA" } }
+          rules: { defaultValue: '"CA"' }
         },
         { id: "province", type: "radio", configuration: { label: "Province", data: { sourceId: "provinces" } } },
         { id: "contact", type: "checkboxes", configuration: { label: "Contact by", options: [{ value: "email", label: "Email" }, { value: "phone", label: "Phone" }] } },

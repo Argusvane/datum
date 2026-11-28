@@ -11,7 +11,6 @@ import { journeyFlow } from "../form-engine/core/journey/journey-flow.js";
 import { findingsSummary } from "../form-engine/builder/journey-designer/journey-checks.js";
 import { conditionTerms, mapSource, mapWords } from "./flowmap-words.js";
 import { applyJourney, presentationRoot } from "./fixtures/presentation-form.js";
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import type { Journey } from "../form-engine/core/schema/journey.js";
 import type { ComponentNode } from "../form-engine/core/schema/types.js";
 
@@ -21,8 +20,8 @@ import type { ComponentNode } from "../form-engine/core/schema/types.js";
  * for the jsdom environment, which the SVG markup tests in flowmap-svg.test.ts do without.
  */
 
-function eq(path: string, value: string): Expression {
-  return { kind: "binary", operator: "eq", left: { kind: "path", path }, right: { kind: "literal", value } };
+function eq(path: string, value: string): string {
+  return `${path} = ${JSON.stringify(value)}`;
 }
 
 const FORM: ComponentNode = {
@@ -52,7 +51,7 @@ const WORDS: JourneyMapWords = {
 const APPLY: Journey = {
   id: "apply",
   pages: [
-    { id: "start", title: "Eligibility <script>alert(1)</script>", components: ["age"], routes: [{ when: ({ ...eq("age", "child"), operator: "neq" } as Expression), to: "about" }] },
+    { id: "start", title: "Eligibility <script>alert(1)</script>", components: ["age"], routes: [{ when: 'age != "child"', to: "about" }] },
     { id: "too-young", kind: "exit", title: "Too young", components: ["bye"] },
     {
       id: "about",

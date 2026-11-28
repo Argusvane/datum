@@ -149,32 +149,8 @@ function formulaTexts(rule: unknown): string[] {
   return isRecord(rule) && typeof rule.formula === "string" ? [rule.formula] : [];
 }
 
-/** Whether a rule tree's `path` node reads the field `id` (by id, or as an ancestor's) or, as `row.<key>`, the row key `key`. */
-function pathReadsAny(path: string, ids: ReadonlySet<string>, rowKeys: readonly string[]): boolean {
-  for (const id of ids) {
-    if ((renameIdInRuleSource({ kind: "path", path }, id, id + PROBE) as { path: string }).path !== path) {
-      return true;
-    }
-  }
-  return rowKeys.some((key) => (renameRowKeysInRuleSource({ kind: "path", path }, [{ from: key, to: key + PROBE }]) as { path: string }).path !== path);
-}
-
-/** Whether a stored tree has a `path` node that reads any of `ids` or `rowKeys`; one walk, no parsing. */
-function treeReads(tree: unknown, ids: ReadonlySet<string>, rowKeys: readonly string[]): boolean {
-  if (Array.isArray(tree)) {
-    return tree.some((item) => treeReads(item, ids, rowKeys));
-  }
-  if (!isRecord(tree)) {
-    return false;
-  }
-  if (tree.kind === "path" && typeof tree.path === "string" && pathReadsAny(tree.path, ids, rowKeys)) {
-    return true;
-  }
-  return Object.values(tree).some((item) => treeReads(item, ids, rowKeys));
-}
-
 /**
- * Whether a stored rule (formula, tree or object form) reads any of `ids`, or spells one in a
+ * Whether a stored rule (formula or object form) reads any of `ids`, or spells one in a
  * formula that does not parse. `rowKeys` are the keys, in the row the rule sits in, of the
  * fields among `ids`: a rule reads a field of its row as `row.<key>`, never as `row.<id>`. A
  * formula is looked at lexically first, once per id and without parsing, and only the ids it
@@ -196,9 +172,6 @@ function ruleReads(rule: unknown, ids: ReadonlySet<string>, rowKeys: readonly st
         return true;
       }
     }
-  }
-  if (isRecord(rule)) {
-    return treeReads(typeof rule.kind === "string" ? rule : rule.expression, ids, rowKeys);
   }
   return false;
 }

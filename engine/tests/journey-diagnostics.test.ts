@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Expression } from "../form-engine/core/expressions/expression.js";
+import type { RuleObject } from "../form-engine/core/expressions/expression.js";
 import type { ComponentNode, FormDefinition } from "../form-engine/core/schema/types.js";
 import { validateJourneyShape, type Journey, type JourneyPage, type JourneyPageEntry } from "../form-engine/core/schema/journey.js";
 import { SubmissionModeRegistry } from "../form-engine/core/submission/submission-modes.js";
@@ -40,8 +40,8 @@ function group(id: string, type: string, children: ComponentNode[], extra: Parti
   return { id, type, configuration: { label: id }, children: { content: children }, ...extra };
 }
 
-function eq(path: string, value: string | number | boolean | null): Expression {
-  return { kind: "binary", operator: "eq", left: { kind: "path", path }, right: { kind: "literal", value } };
+function eq(name: string, value: string | number | boolean | null): string {
+  return `${path(name)} = ${JSON.stringify(value)}`;
 }
 
 const tree = group("form", "form", [
@@ -60,16 +60,17 @@ function journeyOf(...pages: JourneyPage[]): Journey {
   return { id: "apply", pages };
 }
 
-function path(name: string): Expression {
-  return { kind: "path", path: name };
+/** A path as formula text: in backticks unless it is a plain dotted name. */
+function path(name: string): string {
+  return /^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$/.test(name) ? name : `\`${name}\``;
 }
 
-function times2(name: string): Expression {
-  return { kind: "arithmetic", operator: "multiply", left: path(name), right: { kind: "literal", value: 2 } };
+function times2(name: string): string {
+  return `${path(name)} * 2`;
 }
 
-function call(name: "sum" | "coalesce" | "concat" | "round", ...args: Expression[]): Expression {
-  return { kind: "call", name, args };
+function call(name: "sum" | "coalesce" | "concat" | "round", ...args: string[]): string {
+  return `${name}(${args.join(", ")})`;
 }
 
 /**
@@ -190,7 +191,7 @@ describe("diagnoseJourney", () => {
       const diagnostics = diagnoseJourney(
         tree,
         journeyOf(
-          { ...start, routes: [{ when: { kind: "logical", operator: "or", left: { kind: "path", path: "host.region" }, right: { kind: "path", path: "component" } }, to: "money" }] },
+          { ...start, routes: [{ when: "host.region or component", to: "money" }] },
           about,
           { ...money, routes: [{ when: eq("row.sku", "A"), to: "$end" }, { when: eq("ancestor.items", 1), to: "$end" }] }
         )
@@ -204,13 +205,13 @@ describe("diagnoseJourney", () => {
       const diagnostics = diagnoseJourney(
         tree,
         journeyOf(
-          { ...start, routes: [{ when: { kind: "binary", operator: "equals", left: { kind: "path", path: "eligible" }, right: { kind: "literal", value: "yes" } } as unknown as Expression, to: "money" }] },
+          { ...start, routes: [{ when: 'eligible equals "yes"', to: "money" }] },
           about,
           {
             ...money,
             routes: [
-              { when: { kind: "call", name: "now", args: [] } as unknown as Expression, to: "$end" },
-              { when: { kind: "unary", operator: "not" } as unknown as Expression, to: "$end" }
+              { when: "now()", to: "$end" },
+              { when: "not()", to: "$end" }
             ]
           }
         )
@@ -227,7 +228,7 @@ describe("diagnoseJourney", () => {
         field("eligible", "radio"),
         field("notes"),
         field("secret", "text", { configuration: { label: "secret", hidden: true } }),
-        field("score", "number", { rules: { value: { kind: "literal", value: 1 } } }),
+        field("score", "number", { rules: { value: "1" } }),
         field("send", "button"),
         group("panel", "fieldset", [field("phone")]),
         group("address", "container", [field("street"), field("city")]),
@@ -318,42 +319,37 @@ describe("diagnoseJourney", () => {
     it("component.unassigned: a required field answered by a non-empty literal default is a warning, the rule met without asking; an empty or worked-out default lifts nothing", () => {
       const wider = group("form", "form", [
         field("eligible", "radio"),
-        field("channel", "text", { configuration: { label: "channel", required: true }, rules: { defaultValue: { kind: "literal", value: "web" } } }),
-        field("zero", "number", { configuration: { label: "zero", required: true }, rules: { defaultValue: { kind: "literal", value: 0 } } }),
-        field("picks", "checkboxes", { configuration: { label: "picks", required: true }, rules: { defaultValue: { kind: "literal", value: { a: true } } as unknown as Expression } }),
-        field("stamp", "text", { configuration: { label: "stamp", required: true }, rules: { defaultValue: { kind: "path", path: "host.today" } } }),
-        field("blank", "text", { configuration: { label: "blank", required: true }, rules: { defaultValue: { kind: "literal", value: "" } } }),
-        field("spaces", "text", { configuration: { label: "spaces", required: true }, rules: { defaultValue: { kind: "literal", value: "  " } } }),
-        field("agree", "checkbox", { configuration: { label: "agree", required: true }, rules: { defaultValue: { kind: "literal", value: false } } }),
-        field("none", "checkboxes", { configuration: { label: "none", required: true }, rules: { defaultValue: { kind: "literal", value: { a: false } } as unknown as Expression } })
+        field("channel", "text", { configuration: { label: "channel", required: true }, rules: { defaultValue: '"web"' } }),
+        field("zero", "number", { configuration: { label: "zero", required: true }, rules: { defaultValue: "0" } }),
+        field("stamp", "text", { configuration: { label: "stamp", required: true }, rules: { defaultValue: "host.today" } }),
+        field("blank", "text", { configuration: { label: "blank", required: true }, rules: { defaultValue: '""' } }),
+        field("spaces", "text", { configuration: { label: "spaces", required: true }, rules: { defaultValue: '"  "' } }),
+        field("agree", "checkbox", { configuration: { label: "agree", required: true }, rules: { defaultValue: "false" } })
       ]);
       const diagnostics = diagnoseJourney(wider, journeyOf(start));
-      // A literal the fold reads as an answer (`isEmptyValue`: a 0, a ticked box) is submitted
-      // unchanged and meets the rule. An empty one — blank or white space, `false` on a checkbox,
-      // no box ticked — answers nothing, and every side refuses `required`. A default worked out
+      // A literal the fold reads as an answer (`isEmptyValue`: a 0) is submitted unchanged and
+      // meets the rule. An empty one — blank or white space, `false` on a checkbox — answers nothing, and every side refuses `required`. A default worked out
       // from other answers (`host.today` with no host, an unanswered field) may seed nothing, so it
       // is the error too, worded for what it needs.
       expect(diagnostics.map((diagnostic) => [diagnostic.code, diagnostic.severity, diagnostic.componentId, diagnostic.required])).toEqual([
         ["component.unassigned", "warning", "channel", false],
         ["component.unassigned", "warning", "zero", false],
-        ["component.unassigned", "warning", "picks", false],
         ["component.unassigned", "error", "stamp", true],
         ["component.unassigned", "error", "blank", true],
         ["component.unassigned", "error", "spaces", true],
         ["component.unassigned", "error", "agree", true],
-        ["component.unassigned", "error", "none", true],
         ["presentation.fields-left-out", "warning", undefined, undefined]
       ]);
       expect(diagnostics[0]?.message).toBe(
         'channel is required by the form and on no page of journey "apply": its default answer is submitted unchanged, so the form\'s rule is met without asking.'
       );
-      expect(diagnostics[3]?.message).toBe(
+      expect(diagnostics[2]?.message).toBe(
         'stamp is required by the form and on no page of journey "apply", so its default, worked out from other answers, must come to one, or no submission through the journey can pass until it is asked.'
       );
-      expect(diagnostics[3]?.requiredField).toBe("stamp");
-      expect(diagnostics[6]?.message).toBe('agree is required by the form and on no page of journey "apply", so no submission through the journey can pass until it is asked.');
+      expect(diagnostics[2]?.requiredField).toBe("stamp");
+      expect(diagnostics[5]?.message).toBe('agree is required by the form and on no page of journey "apply", so no submission through the journey can pass until it is asked.');
       // Counted with the fields left out: the server still holds the default to the form's rules.
-      expect(diagnostics[8]?.message).toContain('3 form fields are not asked in journey "apply": "channel", "zero" and "picks".');
+      expect(diagnostics[6]?.message).toContain('2 form fields are not asked in journey "apply": "channel" and "zero".');
     });
 
     it("reads an empty default as the fold reads an empty answer: journeyEmptyAnswer agrees with isEmptyValue and kernelIsEmptyValue", () => {
@@ -487,7 +483,7 @@ describe("diagnoseJourney", () => {
         group("half_wrap", "fieldset", [field("half_inner", "text", { configuration: { label: "half_inner", required: true, hiddenRequiredBehavior: "required" } })], {
           configuration: { label: "half_wrap", hidden: true }
         }),
-        field("seeded", "text", { configuration: { label: "seeded", ...optIn }, rules: { defaultValue: { kind: "literal", value: "S-1" } } })
+        field("seeded", "text", { configuration: { label: "seeded", ...optIn }, rules: { defaultValue: '"S-1"' } })
       ]);
       const diagnostics = diagnoseJourney(wider, journeyOf(start));
       // The fold holds an opt-in to its Required off screen, on the whole form and through the
@@ -638,14 +634,14 @@ describe("diagnoseJourney", () => {
       });
 
       it("is a warning, in the words a default gets, when the input's non-empty literal default answers it", async () => {
-        const form = costForm({ rules: { defaultValue: { kind: "literal", value: 3 } } });
+        const form = costForm({ rules: { defaultValue: "3" } });
         const found = calc(diagnoseJourney(form, journeyOf(start)));
         expect(found.map((diagnostic) => [diagnostic.severity, diagnostic.componentId, diagnostic.required, diagnostic.requiredField])).toEqual([["warning", "cost", false, undefined]]);
         expect(found[0]?.message).toBe(
           'total is required by the form and worked out from cost, which journey "apply" never asks: its default answer is submitted unchanged, so the form\'s rule is met without asking.'
         );
         // An empty default answers nothing: the error stands.
-        const blank = costForm({ rules: { defaultValue: { kind: "literal", value: null } } });
+        const blank = costForm({ rules: { defaultValue: "null" } });
         expect(calc(diagnoseJourney(blank, journeyOf(start))).map((diagnostic) => diagnostic.severity)).toEqual(["error"]);
       });
 
@@ -673,10 +669,10 @@ describe("diagnoseJourney", () => {
         // A sum leaves out what is unanswered and a coalesce falls back: neither comes out empty.
         // (A sum over an answered text, `sum(cost, eligible)` with eligible "yes", is no answer since
         // arithmetic follows DMN FEEL; the fixture sums a number.)
-        const summed = costForm({}, { rules: { value: call("sum", path("cost"), { kind: "literal", value: 1 }) } });
+        const summed = costForm({}, { rules: { value: call("sum", path("cost"), "1") } });
         expect(calc(diagnoseJourney(summed, journey))).toEqual([]);
         expect(await refused(summed, journey, { eligible: "yes" })).toEqual([]);
-        const fallback = costForm({}, { rules: { value: call("coalesce", path("cost"), { kind: "literal", value: 0 }) } });
+        const fallback = costForm({}, { rules: { value: call("coalesce", path("cost"), "0") } });
         expect(calc(diagnoseJourney(fallback, journey))).toEqual([]);
         expect(await refused(fallback, journey, { eligible: "yes" })).toEqual([]);
         // Not required; hidden for good without opting in; on no page with a visibility only the host decides.
@@ -734,7 +730,7 @@ describe("diagnoseJourney", () => {
         // A calculated checkbox is unticked — no answer — when its condition is false, so any
         // input the condition reads may leave it so; on any other field a condition always comes
         // to a value, true or false.
-        const both: Expression = { kind: "logical", operator: "and", left: path("eligible"), right: path("second") };
+        const both = "eligible and second";
         const ticked = (type: string): ComponentNode =>
           group("form", "form", [field("eligible", "radio"), field("second", "checkbox"), field("ok", type, { configuration: { label: "ok", required: true }, rules: { value: both } })]);
         expect(calc(diagnoseJourney(ticked("checkbox"), journey)).map((diagnostic) => [diagnostic.componentId, diagnostic.requiredField])).toEqual([["second", "ok"]]);
@@ -803,7 +799,7 @@ describe("diagnoseJourney", () => {
       });
 
       it("says nothing on a page of one answered by its default, one that does not opt in to both, or one a rule may show", async () => {
-        const seeded = field("seeded", "text", { configuration: { label: "seeded", ...optIn }, rules: { defaultValue: { kind: "literal", value: "S-1" } } });
+        const seeded = field("seeded", "text", { configuration: { label: "seeded", ...optIn }, rules: { defaultValue: '"S-1"' } });
         const half = field("half", "text", { configuration: { label: "half", hidden: true, required: true, hiddenRequiredBehavior: "required" } });
         const reveal = field("reveal", "text", { configuration: { label: "reveal", ...optIn }, rules: { visibleWhen: eq("eligible", "yes") } });
         const form = group("form", "form", [field("eligible", "radio"), container(seeded, half, reveal)]);
@@ -917,8 +913,8 @@ describe("diagnoseJourney", () => {
         field("name"),
         field("email"),
         group("extra", "fieldset", [field("income", "number")]),
-        field("total", "number", { rules: { value: { kind: "arithmetic", operator: "multiply", left: { kind: "path", path: "income" }, right: { kind: "literal", value: 12 } } } }),
-        field("band", "number", { rules: { value: { kind: "path", path: "total" } } })
+        field("total", "number", { rules: { value: "income * 12" } }),
+        field("band", "number", { rules: { value: "total" } })
       ]);
       const diagnostics = diagnoseJourney(calculated, journeyOf({ ...start, routes: [{ when: eq("band", 1), to: "money" }] }, about, money));
       expect(codes(diagnostics)).toEqual(["condition.reads-later-page"]);
@@ -934,7 +930,7 @@ describe("diagnoseJourney", () => {
         field("name"),
         field("email"),
         group("extra", "fieldset", [field("income", "number")]),
-        field("total", "number", { rules: { value: { kind: "call", name: "sum", args: [{ kind: "path", path: "income" }, { kind: "path", path: "eligible" }] } } })
+        field("total", "number", { rules: { value: "sum(income, eligible)" } })
       ]);
       const conditional = diagnoseJourney(calculated, journeyOf(start, { ...about, routes: [{ when: eq("eligible", "no"), to: "$end" }] }, money));
       expect(codes(conditional)).toEqual(["calc.reads-branch"]);
@@ -953,7 +949,7 @@ describe("diagnoseJourney", () => {
       const calculated = group("form", "form", [
         field("eligible", "radio"),
         field("income", "number"),
-        field("total", "number", { rules: { value: { kind: "path", path: "income" } } })
+        field("total", "number", { rules: { value: "income" } })
       ]);
       const eitherBranch = journeyOf(
         { ...start, routes: [{ when: eq("eligible", "no"), to: "low" }] },
@@ -1011,7 +1007,7 @@ describe("diagnoseJourney", () => {
       const hosted = group("form", "form", [
         field("eligible", "radio", { rules: { visibleWhen: eq("host.region", "north") } }),
         field("name", "text", { rules: { enabledWhen: eq("host.role", "staff"), requiredWhen: eq("host.role", "public") } }),
-        field("email", "text", { rules: { readonlyWhen: { kind: "path", path: "host.locked" } } }),
+        field("email", "text", { rules: { readonlyWhen: "host.locked" } }),
         group("extra", "fieldset", [field("income", "number")])
       ]);
       const diagnostics = diagnoseJourney(hosted, journeyOf(start, about, money));
@@ -1055,7 +1051,7 @@ describe("diagnoseJourney over pages holding nodes of their own", () => {
   const reference = (componentId: string): JourneyPageEntry => ({ type: "journey-field", configuration: { componentId } });
   const own = (id: string, type = "text", configuration: Record<string, unknown> = { label: id }, extra: Record<string, unknown> = {}): JourneyPageEntry =>
     ({ id, type, configuration, ...extra }) as unknown as JourneyPageEntry;
-  const workedOut = (id: string, to: string): JourneyPageEntry => own(id, "journey-value", { to, value: { kind: "path", path: "m1" } });
+  const workedOut = (id: string, to: string): JourneyPageEntry => own(id, "journey-value", { to, value: "m1" });
   /** A journey asking every field of the fixture's form, plus `entries` on a page of their own, first. */
   const withEntries = (...entries: JourneyPageEntry[]): Journey => ({
     id: "apply",
@@ -1136,7 +1132,7 @@ describe("diagnoseJourney over pages holding nodes of their own", () => {
       const tree = presentationRoot();
       tree.children!.content!.push(
         group("people", "panel", [field("person")], { collection: { collectionPath: "people", itemFields: ["person"] } }),
-        field("total", "number", { rules: { value: { kind: "literal", value: 1 } } })
+        field("total", "number", { rules: { value: "1" } })
       );
       return tree;
     };
@@ -1442,8 +1438,8 @@ describe("diagnoseJourney over pages holding nodes of their own", () => {
       const journey = applyJourney();
       journey.pages[0]!.routes = [{ when: eq("work_email", "x"), to: "assist" }];
       journey.pages[1]!.routes = [
-        { when: { kind: "binary", operator: "gt", left: path("m1"), right: { kind: "literal", value: 0 } }, to: "assist" },
-        { when: { kind: "binary", operator: "gt", left: path("@apply.income_total"), right: { kind: "literal", value: 0 } }, to: "assist" },
+        { when: "m1 > 0", to: "assist" },
+        { when: "`@apply.income_total` > 0", to: "assist" },
         { when: eq("@other.thing", "x"), to: "assist" },
         { to: "$end" }
       ];
@@ -1553,7 +1549,7 @@ describe("diagnoseJourney over pages holding nodes of their own", () => {
 });
 
 describe("the pages every submittable path takes (journeyCertainWalk)", () => {
-  const not = (path: string): Expression => ({ kind: "unary", operator: "not", operand: { kind: "path", path } }) as Expression;
+  const not = (name: string): string => `not(${name})`;
   const form: ComponentNode = {
     id: "root",
     type: "form",
@@ -1586,7 +1582,7 @@ describe("the pages every submittable path takes (journeyCertainWalk)", () => {
       journeyCertainWalk({
         id: "j",
         pages: [
-          { id: "p1", components: ["fullName"], routes: [{ when: { kind: "path", path: "eligible" } as Expression, to: "end" }] },
+          { id: "p1", components: ["fullName"], routes: [{ when: "eligible", to: "end" }] },
           { id: "partner", components: ["partnerName"] },
           { id: "end", components: ["notes"] }
         ]
@@ -1614,21 +1610,20 @@ describe("the pages every submittable path takes (journeyCertainWalk)", () => {
 });
 
 describe("formulas, if, the clock and run scopes", () => {
-  const lit = (value: string | number | boolean | null): Expression => ({ kind: "literal", value });
-  const fn = (name: string, ...args: Expression[]): Expression => ({ kind: "call", name, args }) as Expression;
-  const ifExpr = (cases: Array<[Expression, Expression]>, otherwise?: Expression): Expression =>
-    ({ kind: "if", cases: cases.map(([when, then]) => ({ when, then })), ...(otherwise !== undefined ? { else: otherwise } : {}) }) as Expression;
+  const lit = (value: string | number | boolean | null): string => JSON.stringify(value);
+  const fn = (name: string, ...args: string[]): string => `${name}(${args.join(", ")})`;
+  const ifExpr = (cases: Array<[string, string]>, otherwise?: string): string =>
+    cases.map(([when, then]) => `if ${when} then ${then}`).join(" else ") + (otherwise !== undefined ? ` else ${otherwise}` : "");
   /** The object form of a rule, as a definition writes one with a run scope. */
-  const scoped = (expression: Expression, run: "both" | "browser" | "server" | "server-secret"): Expression => ({ expression, run }) as unknown as Expression;
-  const formula = (text: string): Expression => text as unknown as Expression;
-  const isToday = (day: string): Expression => ({ kind: "binary", operator: "eq", left: fn("today"), right: lit(day) });
+  const scoped = (formula: string, run: "both" | "browser" | "server" | "server-secret"): RuleObject => ({ formula, run });
+  const isToday = (day: string): string => `${fn("today")} = ${lit(day)}`;
   const of = (diagnostics: JourneyDiagnostic[], code: string): JourneyDiagnostic[] => diagnostics.filter((diagnostic) => diagnostic.code === code);
 
   describe("map.shape-mismatch reads a function's shape from the table and an if's from its branches", () => {
     const own = (id: string, type: string, configuration: Record<string, unknown>): JourneyPageEntry => ({ id, type, configuration }) as unknown as JourneyPageEntry;
-    const workedOut = (to: string, value: Expression): JourneyPageEntry => own("calc", "journey-value", { to, value, label: "calc" });
+    const workedOut = (to: string, value: string): JourneyPageEntry => own("calc", "journey-value", { to, value, label: "calc" });
     const typed = group("form", "form", [field("eligible", "radio"), field("name"), field("start", "date"), field("amount", "number")]);
-    const mismatches = (to: string, value: Expression): number => {
+    const mismatches = (to: string, value: string): number => {
       const first: JourneyPage = { id: "first", title: "First", components: [own("flag", "checkbox", { label: "flag" }), workedOut(to, value)] };
       const rest: JourneyPage = { id: "rest", title: "Rest", components: ["eligible", "name", "start", "amount"].filter((id) => id !== to) };
       return of(diagnoseJourney(typed, journeyOf(first, rest)), "map.shape-mismatch").length;
@@ -1660,7 +1655,7 @@ describe("formulas, if, the clock and run scopes", () => {
       const form = group("form", "form", [
         field("eligible", "radio"),
         field("name", "text", { rules: { visibleWhen: isToday("2026-01-01"), value: fn("today") } }),
-        field("email", "text", { rules: { enabledWhen: { kind: "binary", operator: "gt", left: fn("age", path("eligible")), right: lit(18) } } })
+        field("email", "text", { rules: { enabledWhen: `${fn("age", path("eligible"))} > ${lit(18)}` } })
       ]);
       const diagnostics = diagnoseJourney(
         form,
@@ -1774,28 +1769,26 @@ describe("formulas, if, the clock and run scopes", () => {
   });
 
   describe("string rules", () => {
-    it("a formula rule is diagnosed as its tree is, with the same words", () => {
-      const asTree = group("form", "form", [field("eligible", "radio"), field("name", "text", { rules: { visibleWhen: eq("host.region", "north") } }), field("email")]);
-      const asText = group("form", "form", [field("eligible", "radio"), field("name", "text", { rules: { visibleWhen: formula('host.region = "north"') } }), field("email")]);
+    it("a formula rule and its object form are diagnosed alike, with the same words", () => {
+      const asText = group("form", "form", [field("eligible", "radio"), field("name", "text", { rules: { visibleWhen: 'host.region = "north"' } }), field("email")]);
       const asObject = group("form", "form", [
         field("eligible", "radio"),
-        field("name", "text", { rules: { visibleWhen: { formula: 'host.region = "north"', run: "both" } as unknown as Expression } }),
+        field("name", "text", { rules: { visibleWhen: { formula: 'host.region = "north"', run: "both" } } }),
         field("email")
       ]);
-      const expected = of(diagnoseJourney(asTree, journeyOf(start, about)), "rule.reads-host");
+      const expected = of(diagnoseJourney(asText, journeyOf(start, about)), "rule.reads-host");
       expect(expected.map((diagnostic) => diagnostic.message)).toEqual([
         "The visibility rule of name reads host.region, which a server checking the submission does not have, so the server treats name as shown."
       ]);
-      expect(diagnoseJourney(asText, journeyOf(start, about))).toEqual(diagnoseJourney(asTree, journeyOf(start, about)));
-      expect(diagnoseJourney(asObject, journeyOf(start, about))).toEqual(diagnoseJourney(asTree, journeyOf(start, about)));
+      expect(diagnoseJourney(asObject, journeyOf(start, about))).toEqual(diagnoseJourney(asText, journeyOf(start, about)));
     });
 
-    it("a formula condition that does not parse is condition.invalid; one that parses reads its fields as a tree does", () => {
-      const broken = diagnoseJourney(tree, journeyOf({ ...start, routes: [{ when: formula("eligible = "), to: "money" }] }, about, money));
+    it("a formula condition that does not parse is condition.invalid; one that parses has its fields and its clock read", () => {
+      const broken = diagnoseJourney(tree, journeyOf({ ...start, routes: [{ when: "eligible = ", to: "money" }] }, about, money));
       expect(of(broken, "condition.invalid").map((diagnostic) => [diagnostic.pageId, diagnostic.message])).toEqual([
         ["start", 'Route 1 of page "start" is not a condition the engine can evaluate, or a formula that does not parse.']
       ]);
-      const fine = diagnoseJourney(tree, journeyOf({ ...start, routes: [{ when: formula("ghost = 1 and today() > start"), to: "money" }] }, about, money));
+      const fine = diagnoseJourney(tree, journeyOf({ ...start, routes: [{ when: "ghost = 1 and today() > start", to: "money" }] }, about, money));
       expect(of(fine, "condition.invalid")).toEqual([]);
       expect(of(fine, "condition.unknown-field").map((diagnostic) => diagnostic.message)).toEqual([
         'Route 1 of page "start" reads ghost, which is not a component of the form, so it always reads as unanswered.',
@@ -1845,15 +1838,9 @@ describe("browser-only rules the server skips", () => {
 // dependency walk already do; a 20,000-term chain costs no call-stack depth.
 describe("a 20,000-term chain in a journey", () => {
   const TERMS = 20_000;
-  function chain(kind: "logical" | "arithmetic", from = "eligible"): Expression {
-    let expression: Expression = path(from);
-    for (let at = 0; at < TERMS; at += 1) {
-      expression =
-        kind === "logical"
-          ? { kind: "logical", operator: "or", left: expression, right: eq("eligible", "no") }
-          : { kind: "arithmetic", operator: "add", left: expression, right: { kind: "literal", value: 1 } };
-    }
-    return expression;
+  function chain(kind: "logical" | "arithmetic", from = "eligible"): string {
+    const term = kind === "logical" ? ` or ${eq("eligible", "no")}` : " + 1";
+    return path(from) + term.repeat(TERMS);
   }
 
   it("a route condition of 20,000 terms is diagnosed without overflowing", () => {

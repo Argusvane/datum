@@ -4,11 +4,11 @@
  * from the form's data model (`dataModelFromForm`), with the step and the journey
  * pages each answer is on, for the table's filters. Pure: the surface draws it, node tests it.
  */
-import type { Expression } from "../../core/expressions/expression.js";
 import { journeyPageFormIds } from "../../core/schema/journey.js";
 import type { ComponentNode, FormDefinition } from "../../core/schema/types.js";
 import { dataModelFromForm, walkDataModel, type DataModelNode } from "../data-model/index.js";
 import { expressionText } from "../logic/logic-model.js";
+import { ruleExpression } from "../property-editor/rule-source.js";
 import type { BuilderWords } from "../logic/builder-texts.js";
 import { areaWords } from "./data-texts-en.js";
 
@@ -215,7 +215,7 @@ export function buildSchemaTable(root: ComponentNode, options: SchemaTableOption
     const own = rulesOf(component);
     const calculated = own.value !== undefined;
     const ruleShown = chain.some((id) => rulesOf(nodeById.get(id)).visibleWhen !== undefined);
-    const requiredWhen = own.requiredWhen as Expression | undefined;
+    const requiredWhen = ruleExpression(own.requiredWhen);
     const required: SchemaRequired = calculated ? "calculated" : node.required ? "yes" : requiredWhen !== undefined ? "when" : "no";
     const requiredText =
       required === "calculated"

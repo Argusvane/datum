@@ -160,7 +160,7 @@ describe("the bundled program", () => {
           {
             id: "quebec",
             kind: "generated",
-            when: { kind: "binary", operator: "eq", left: { kind: "path", path: "province" }, right: { kind: "literal", value: "QC" } },
+            when: 'province = "QC"',
             root: { id: "d2", type: "pdf-document", configuration: {}, children: { body: [] } }
           }
         ],

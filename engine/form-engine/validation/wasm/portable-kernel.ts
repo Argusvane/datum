@@ -706,7 +706,7 @@ function kernelStableKeys(object: Record<string, unknown>): string[] {
 /**
  * The recursive writer. Past 200 levels the rest of the value goes to {@link
  * kernelStableWriteDeep}, which keeps its own stack: a request nested thousands of levels deep
- * (an author's expression tree) is written whole, for the host's limits to refuse it typed,
+ * (a deep literal an author wrote) is written whole, for the host's limits to refuse it typed,
  * never a stack overflow in the host before them.
  */
 function kernelStableWrite(input: unknown, depth?: number): string | undefined {

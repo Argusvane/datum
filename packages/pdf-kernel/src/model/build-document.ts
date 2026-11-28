@@ -122,7 +122,8 @@ export function computeEffectiveStates(
 export async function buildFromInputs(inputs: PdfDocumentInputs, renditions?: PdfRenditionResolver, functions?: PdfFormulaFunctions): Promise<PdfRenderModel> {
   // The definition's `kinds` map reads a plugin's or a binding's type as its base from here on:
   // the effective states and the render model below see the compiled tree with base types.
-  const compiled = compilePdfDefinition(inputs.form, inputs.pdf, inputs.layout, { formulaErrors: inputs.formulaErrors, functions, riskyPatterns: inputs.riskyPatterns, kinds: inputs.kinds });
+  // The layout handed over is compiled once, by the render model below, which reads it as authored.
+  const compiled = compilePdfDefinition(inputs.form, inputs.pdf, undefined, { formulaErrors: inputs.formulaErrors, functions, riskyPatterns: inputs.riskyPatterns, kinds: inputs.kinds });
   const effectiveStates = inputs.effectiveStates
     ? new Map(Object.entries(inputs.effectiveStates))
     : computeEffectiveStates(compiled.root, inputs.values, inputs.locale, inputs.hostContext ?? {}, inputs.today, functions);
@@ -137,7 +138,7 @@ export async function buildFromInputs(inputs: PdfDocumentInputs, renditions?: Pd
       translationCatalog: inputs.translations
     },
     {
-      layout: compiled.layout,
+      layout: inputs.layout,
       pdf: compiled.pdf,
       layoutId: inputs.layoutId,
       theme: inputs.theme,
@@ -152,6 +153,7 @@ export async function buildFromInputs(inputs: PdfDocumentInputs, renditions?: Pd
       functions
     }
   );
-  // The render model compiles again; a tree passes through unchanged, so a problem is reported once.
+  // The render model compiles the tree and the `pdf` block again, as the compiled copy they are, so
+  // a problem of theirs is reported once; the layout's are the render model's alone.
   return compiled.warnings.length > 0 ? { ...model, warnings: [...compiled.warnings, ...model.warnings] } : model;
 }

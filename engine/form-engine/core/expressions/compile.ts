@@ -1,10 +1,13 @@
 /**
  * Compiling the formulas a definition carries. A component rule, a journey route condition, a
- * worked-out value and a PDF layout condition or field source accept a FEEL-subset
- * string beside an expression tree, and the object form `{ formula, expression, run }` beside
- * both. Before anything reads a rule, a runtime compiles the definition into a copy whose
- * strings are trees and reads the copy. The author's object is never changed: hosts hash the
- * stored JSON, and the submissions validator hands the catalog's definition to the kernel as is.
+ * worked-out value and a PDF layout condition or field source is a FEEL-subset string, or the
+ * object form `{ formula, run }`. Before anything reads a rule, a runtime compiles the
+ * definition into a copy whose formulas are trees (a bare tree, or `{ expression, run }`) and
+ * reads the copy. The author's object is never changed: hosts hash the stored JSON, and the
+ * submissions validator hands the catalog's definition to the kernel as is. A tree is the
+ * compiled copy's shape alone: an authored rule written as one is reported as `invalidRule`
+ * and read as no rule. The PDF render compiles a copy it is handed again (`compiled`), where a
+ * tree passes through.
  *
  * What compiles, and where a server scope may stand:
  * - A form component's `rules`: the eleven {@link ComponentRules} keys compile; any other key is
@@ -16,9 +19,9 @@
  *   `when`, a PDF layout `when` and a PDF field or area expression source: the browser
  *   alone applies these, so `run` may only be `both` or `browser`.
  * A `run` a site may not take is reported as `runScope` and the rule runs on both sides. A rule
- * value that is neither a formula string, a tree nor the object form is reported as
- * `invalidRule`: under `rules` the key is dropped; at a `when`, `value` or source site the value
- * stays as written so the shape validators refuse it the way they always did.
+ * value that is neither a formula string nor the object form is reported as `invalidRule`:
+ * under `rules` the key is dropped; at a `when`, `value` or source site a tree is dropped too,
+ * and any other value stays as written so the shape validators refuse it.
  *
  * Kernel-shaped (see `validation/wasm/portable-kernel.ts`): top-level `kernel*` function
  * declarations that reference only each other and standard globals, no module constants, nothing
@@ -64,77 +67,30 @@ export function kernelIsExpressionTree(value: unknown): value is Expression {
 }
 
 /**
- * The deepest an expression tree written as JSON may nest, in JSON levels: the tree's own record
- * is level 1, and every record and list under it is one more (a `not`'s operand, either side of
- * a comparison, `and`/`or` or arithmetic, a call's list of arguments and each argument, an `if`'s
- * list of cases, each case and its `when` and `then`, a literal's value and what it holds). The
- * QuickJS host refuses a request nested past 320 levels before it parses it, and the tree sits
- * under the definition: the request's own record, the form's, three levels per layer of
- * components down to the 32nd ({@link kernelMaxComponentDepth}), the rules record and the
- * object form's record take 99 of them, so a tree within this cap reaches the sandbox on every
- * host. A tree the parser built from a formula travels as the formula's text and is never
- * measured against it.
- */
-export function kernelExpressionMaxDepth(): number {
-  return 200;
-}
-
-/**
- * What keeps the evaluator from reading a tree an author wrote as JSON, or `undefined` when
- * nothing does: the parser builds every tree it returns to this shape, but a tree given as is was
- * never looked at, and the evaluator reads a node of the wrong shape as a raw `TypeError` (an
- * `and` with no right side) or as `undefined` (a call to a function this side lacks), which
- * silently hides a field the other side shows. Read as the builder's `isExpression` reads one,
- * save that a literal may hold any value (a choice's default ticks a record or a list of
- * options): a path holds a non-empty text; a `unary` is a
- * `not` over a tree; a comparison, `and`/`or` or arithmetic has an operator text and two trees;
- * a call a name and a list of trees; an `if` a list of `{ when, then }` trees and an optional
- * `else` tree. The faults, in this order of precedence:
- * - `invalidRule` for the first node, in reading order, of no such shape;
- * - `tooDeep` for the first record or list past `max` JSON levels (by default
- *   {@link kernelExpressionMaxDepth}; `Infinity` checks the shape alone, for a tree the parser
- *   built, and leaves a literal's value unread);
- *   either stops the walk;
- * - `unknownFunction`, only when the tree has neither, for the first call naming no function in
+ * What keeps the evaluator from reading a tree, or `undefined` when nothing does. The parser
+ * builds every tree it returns to this shape; a tree reaches a reader as is only from a compiled
+ * copy (a copy compiled again, a rule read from one), and the evaluator reads a node of the wrong
+ * shape as a raw `TypeError` (an `and` with no right side) or as `undefined` (a call to a function
+ * this side lacks), which silently hides a field the other side shows. Read as the builder's
+ * `isExpression` reads one, save that a literal may hold any value (a choice's default ticks a
+ * record or a list of options): a path holds a non-empty text; a `unary` is a `not` over a tree;
+ * a comparison, `and`/`or` or arithmetic has an operator text and two trees; a call a name and a
+ * list of trees; an `if` a list of `{ when, then }` trees and an optional `else` tree. The faults,
+ * in this order of precedence:
+ * - `invalidRule` for the first node, in reading order, of no such shape, which stops the walk;
+ * - `unknownFunction`, only when the tree has none, for the first call naming no function in
  *   `signatures` (the side's own list, plugins included, exactly what its parser checks a
  *   formula against). With `signatures` absent the names are not looked at.
  * Walked with an explicit stack, so a chain of any length is read without recursion.
  */
 export function kernelExpressionFault(
   tree: unknown,
-  signatures: FormulaFunctionSignature[] | undefined,
-  max?: number
-): { code: "invalidRule" | "tooDeep" | "unknownFunction"; message: string; params: Record<string, string | number> } | undefined {
-  const limit = typeof max === "number" ? max : kernelExpressionMaxDepth();
-  const tooDeep = { code: "tooDeep" as const, message: "The expression tree nests more than " + limit + " levels deep.", params: { max: limit } };
+  signatures: FormulaFunctionSignature[] | undefined
+): { code: "invalidRule" | "unknownFunction"; message: string; params: Record<string, string | number> } | undefined {
   let unknown: string | undefined;
-  // `value` marks what a literal holds: plain JSON, measured but never read as a tree.
-  const stack: Array<{ node: unknown; depth: number; value: boolean }> = [{ node: tree, depth: 1, value: false }];
+  const stack: unknown[] = [tree];
   while (stack.length > 0) {
-    const top = stack.pop() as { node: unknown; depth: number; value: boolean };
-    const node = top.node;
-    const depth = top.depth;
-    if (top.value) {
-      if (node !== null && typeof node === "object") {
-        if (depth > limit) {
-          return tooDeep;
-        }
-        if (Array.isArray(node)) {
-          for (let m = 0; m < node.length; m += 1) {
-            stack.push({ node: node[m], depth: depth + 1, value: true });
-          }
-        } else {
-          const keys = Object.keys(node);
-          for (let k = 0; k < keys.length; k += 1) {
-            stack.push({ node: (node as Record<string, unknown>)[keys[k] as string], depth: depth + 1, value: true });
-          }
-        }
-      }
-      continue;
-    }
-    if (depth > limit) {
-      return tooDeep;
-    }
+    const node = stack.pop();
     let fault: string | undefined;
     if (!kernelIsPlainRecord(node) || typeof node.kind !== "string") {
       fault = "a node that is not an expression";
@@ -142,10 +98,7 @@ export function kernelExpressionFault(
       const kind = node.kind;
       if (kind === "literal") {
         // Any value: the evaluator hands a literal back as written, and a choice's default is a
-        // record or a list of the options it ticks. It is as deep in the request as it nests.
-        if (limit !== Infinity) {
-          stack.push({ node: node.value, depth: depth + 1, value: true });
-        }
+        // record or a list of the options it ticks.
       } else if (kind === "path") {
         if (typeof node.path !== "string" || node.path === "") {
           fault = "a path with no path text";
@@ -154,15 +107,15 @@ export function kernelExpressionFault(
         if (node.operator !== "not") {
           fault = "a unary node that is not a not";
         } else {
-          stack.push({ node: node.operand, depth: depth + 1, value: false });
+          stack.push(node.operand);
         }
       } else if (kind === "binary" || kind === "logical" || kind === "arithmetic") {
         if (typeof node.operator !== "string") {
           fault = "a " + kind + " node with no operator";
         } else {
           // Right first, so the left is read first.
-          stack.push({ node: node.right, depth: depth + 1, value: false });
-          stack.push({ node: node.left, depth: depth + 1, value: false });
+          stack.push(node.right);
+          stack.push(node.left);
         }
       } else if (kind === "call") {
         if (typeof node.name !== "string" || !Array.isArray(node.args)) {
@@ -181,33 +134,24 @@ export function kernelExpressionFault(
               unknown = node.name;
             }
           }
-          if (depth + 1 > limit) {
-            return tooDeep;
-          }
           for (let a = node.args.length - 1; a >= 0; a -= 1) {
-            stack.push({ node: node.args[a], depth: depth + 2, value: false });
+            stack.push(node.args[a]);
           }
         }
       } else if (kind === "if") {
         if (!Array.isArray(node.cases)) {
           fault = "an if with no list of cases";
         } else {
-          if (depth + 1 > limit) {
-            return tooDeep;
-          }
           if (node.else !== undefined) {
-            stack.push({ node: node.else, depth: depth + 1, value: false });
+            stack.push(node.else);
           }
           for (let c = node.cases.length - 1; c >= 0 && fault === undefined; c -= 1) {
             const entry: unknown = node.cases[c];
             if (!kernelIsPlainRecord(entry)) {
               fault = "an if case that is not a when and a then";
             } else {
-              if (depth + 2 > limit) {
-                return tooDeep;
-              }
-              stack.push({ node: entry.then, depth: depth + 3, value: false });
-              stack.push({ node: entry.when, depth: depth + 3, value: false });
+              stack.push(entry.then);
+              stack.push(entry.when);
             }
           }
         }
@@ -226,8 +170,9 @@ export function kernelExpressionFault(
 }
 
 /**
- * The rule's object form: a record with no `kind` that carries a `formula` string or an
- * `expression` tree. `{}`, `{ run: "server" }` and `{ kind: 5 }` are none of the shapes.
+ * The rule's object form: a record with no `kind` that carries a `formula` string, or, in a
+ * compiled copy, an `expression` tree. `{}`, `{ run: "server" }` and `{ kind: 5 }` are none of
+ * the shapes.
  */
 export function kernelIsRuleObject(value: unknown): value is Record<string, unknown> {
   return kernelIsPlainRecord(value) && value.kind === undefined && (typeof value.formula === "string" || kernelIsExpressionTree(value.expression));
@@ -235,8 +180,9 @@ export function kernelIsRuleObject(value: unknown): value is Record<string, unkn
 
 /**
  * How a rule site is written: `absent` (undefined, or `null` as JSON writes a cleared rule), a
- * `formula` string, a `tree`, the `object` form, or `invalid` for anything else (a boolean, a
- * number, an array, an object that is none of the shapes).
+ * `formula` string, a `tree` (a compiled copy's shape, which an authored rule may not take), the
+ * `object` form, or `invalid` for anything else (a boolean, a number, an array, an object that is
+ * none of the shapes).
  */
 export function kernelRuleShape(value: unknown): RuleShape {
   if (value === undefined || value === null) {
@@ -287,10 +233,11 @@ export function kernelIsRuleKey(key: string): boolean {
 }
 
 /**
- * The tree a rule source stands for, or `undefined` when there is none: a tree passes through
- * when the evaluator can read its shape ({@link kernelExpressionFault}), a string parses, the object
- * form uses its `expression` else parses its `formula`. A failed parse reads as no rule, which is
- * the evaluation-time reading under every policy.
+ * The tree a rule source stands for, or `undefined` when there is none: a string parses, the
+ * object form parses its `formula`, and a compiled copy's tree (bare, or the object form's
+ * `expression`) passes through when the evaluator can read its shape
+ * ({@link kernelExpressionFault}). A failed parse reads as no rule, which is the evaluation-time
+ * reading under every policy.
  */
 export function kernelRuleExpression(
   source: unknown,
@@ -302,18 +249,15 @@ export function kernelRuleExpression(
     return parsed.ok ? parsed.expression : undefined;
   }
   // A tree the evaluator cannot read (a node of no shape) reads as no rule, as a formula that
-  // does not parse does; the names it calls are the compile's to judge. Its depth is the
-  // compile's too: what reaches here is often the compiled copy, whose trees the parser built
-  // from formulas and the JSON cap never measured, and the evaluator walks any depth the parser
-  // allows.
+  // does not parse does; the names it calls are the compile's to judge.
   if (kernelIsExpressionTree(source)) {
-    return kernelExpressionFault(source, undefined, Infinity) === undefined ? source : undefined;
+    return kernelExpressionFault(source, undefined) === undefined ? source : undefined;
   }
   if (!kernelIsRuleObject(source)) {
     return undefined;
   }
   if (kernelIsExpressionTree(source.expression)) {
-    return kernelExpressionFault(source.expression, undefined, Infinity) === undefined ? source.expression : undefined;
+    return kernelExpressionFault(source.expression, undefined) === undefined ? source.expression : undefined;
   }
   if (typeof source.formula === "string") {
     const parsed = parse(source.formula, signatures);
@@ -360,7 +304,8 @@ export function kernelRuleText(source: unknown): string {
 /**
  * Compiles one formula site to its tree, pushing a problem at `where` when the formula does not
  * parse. `undefined` means the site holds no rule: absent, blank, unparseable (reported) or of a
- * shape no reader accepts ({@link kernelCompileSite} reports that; this reads the three shapes).
+ * shape no reader accepts ({@link kernelCompileSite} reports that). A compiled copy's tree passes
+ * through; {@link kernelCompileSite} lets one reach here only when it compiles such a copy again.
  */
 export function kernelCompileSource(
   source: unknown,
@@ -415,10 +360,14 @@ export function kernelJsonTypeOf(value: unknown): string {
 /**
  * Compiles one rule site with its shape and scope checks. `key` names the rule for the problem
  * (`visibleWhen`, `when`, `value`, `expression`); `serverAllowed` says whether `server` and
- * `server-secret` may stand here (only a form component's eight kernel-applied rules). A value of
- * none of the three shapes is reported as `invalidRule` and comes back `invalid`; a scope the
- * site may not take is reported as `runScope` and comes back as `both`. `run` is set only when
- * the object form wrote a valid scope word, so the compiled object omits what was not written.
+ * `server-secret` may stand here (only a form component's eight kernel-applied rules). A value
+ * that is neither a formula nor the object form is reported as `invalidRule`: a tree (bare, or
+ * the object form's `expression`) comes back as no rule, as a formula that does not parse does;
+ * anything else comes back `invalid`. With `recompile` the source is a compiled copy's, compiled
+ * again (the PDF render's read of the copy it is handed), and a tree is read as the compiled rule
+ * it is. A scope the site may not take is reported as `runScope` and comes back as `both`. `run`
+ * is set only when the object form wrote a valid scope word, so the compiled object omits what
+ * was not written.
  */
 export function kernelCompileSite(
   source: unknown,
@@ -427,27 +376,30 @@ export function kernelCompileSite(
   serverAllowed: boolean,
   parse: FormulaParser,
   signatures: FormulaFunctionSignature[],
-  problems: FormulaProblem[]
+  problems: FormulaProblem[],
+  recompile?: boolean
 ): CompiledSite {
   const shape = kernelRuleShape(source);
   if (shape === "absent") {
     return { expression: undefined, run: undefined, invalid: false };
   }
-  if (shape === "invalid") {
+  const tree = shape === "tree" || (shape === "object" && kernelIsPlainRecord(source) && kernelIsExpressionTree(source.expression));
+  if (shape === "invalid" || (tree && recompile !== true)) {
+    const got = tree ? "tree" : kernelJsonTypeOf(source);
     problems.push({
       where,
       code: "invalidRule",
-      message: "A " + key + " rule is a formula, an expression tree or an object with a formula or an expression; this one is " + kernelJsonTypeOf(source),
-      params: { key, got: kernelJsonTypeOf(source) }
+      message: "A " + key + " rule is a formula or an object with a formula; this one is " + (tree ? "an expression tree" : got),
+      params: { key, got }
     });
-    return { expression: undefined, run: undefined, invalid: true };
+    return { expression: undefined, run: undefined, invalid: !tree };
   }
   let expression = kernelCompileSource(source, where, parse, signatures, problems);
-  // A tree written as is goes through the guards a formula's parse applies: its shape,
-  // its depth and the functions it calls, against this side's own list. A tree that fails is
-  // dropped as a formula that does not parse is, so the policy and the server-run refusal of an
-  // unknown function judge both shapes alike. A tree has no text, so the problem carries none.
-  if (expression !== undefined && (shape === "tree" || (shape === "object" && kernelIsPlainRecord(source) && kernelIsExpressionTree(source.expression)))) {
+  // A compiled copy's tree, compiled again, goes through the guards a formula's parse applies on
+  // this side: its shape and the functions it calls, against this side's own list (a PDF's may
+  // lack a function the runtime that compiled the copy knows). A tree that fails is dropped as a
+  // formula that does not parse is. A tree has no text, so the problem carries none.
+  if (expression !== undefined && tree) {
     const fault = kernelExpressionFault(expression, signatures);
     if (fault !== undefined) {
       const params = fault.params;
@@ -481,10 +433,11 @@ export function kernelCompileSite(
 }
 
 /**
- * Compiles a `rules` record into a new one: a string becomes its tree, a tree passes through, the
- * object form becomes `{ expression, run? }` with the formula dropped. Only the eleven
- * `ComponentRules` keys compile; any other key is copied as written. A key whose formula fails
- * to parse, or whose value is none of the shapes, is left out and reported at `<where>:<key>`. A
+ * Compiles a `rules` record into a new one: a string becomes its tree, the object form becomes
+ * `{ expression, run? }` with the formula dropped (with `recompile`, a compiled copy's tree passes
+ * through). Only the eleven `ComponentRules` keys compile; any other key is copied as written. A
+ * key whose formula fails to parse, or whose value is none of the shapes, is left out and
+ * reported at `<where>:<key>`. A
  * scope the key may not take (`serverAllowed` false, or a browser-only key) is reported as
  * `runScope` and the key kept as running on both sides.
  */
@@ -494,7 +447,8 @@ export function kernelCompileRules(
   serverAllowed: boolean,
   parse: FormulaParser,
   signatures: FormulaFunctionSignature[],
-  problems: FormulaProblem[]
+  problems: FormulaProblem[],
+  recompile?: boolean
 ): Record<string, unknown> {
   const compiled: Record<string, unknown> = {};
   if (!kernelIsPlainRecord(rules)) {
@@ -507,7 +461,7 @@ export function kernelCompileRules(
       continue;
     }
     const reported = problems.length;
-    const site = kernelCompileSite(source, where + ":" + key, key, serverAllowed && kernelIsServerRuleKey(key), parse, signatures, problems);
+    const site = kernelCompileSite(source, where + ":" + key, key, serverAllowed && kernelIsServerRuleKey(key), parse, signatures, problems, recompile);
     if (site.expression === undefined) {
       // A check that cannot be read refuses rather than vanishes: a
       // `validWhen` the compile reported (a formula that does not parse, a value of none of the
@@ -598,12 +552,13 @@ export function kernelCompileNode(
   node: ComponentNode,
   parse: FormulaParser,
   signatures: FormulaFunctionSignature[],
-  problems: FormulaProblem[]
+  problems: FormulaProblem[],
+  recompile?: boolean
 ): ComponentNode {
   return kernelCopyTree(node, function (one: Record<string, unknown>): Record<string, unknown> {
     const copy: Record<string, unknown> = { ...one };
     if (one.rules !== undefined) {
-      copy.rules = kernelCompileRulesOf(one.rules, "rules:" + (typeof one.id === "string" ? one.id : ""), true, parse, signatures, problems);
+      copy.rules = kernelCompileRulesOf(one.rules, "rules:" + (typeof one.id === "string" ? one.id : ""), true, parse, signatures, problems, recompile);
     }
     return copy;
   }) as ComponentNode;
@@ -618,14 +573,15 @@ export function kernelCompileJourneyEntry(
   where: string,
   parse: FormulaParser,
   signatures: FormulaFunctionSignature[],
-  problems: FormulaProblem[]
+  problems: FormulaProblem[],
+  recompile?: boolean
 ): unknown {
   return kernelCopyTree(entry, function (one: Record<string, unknown>): Record<string, unknown> {
     const copy: Record<string, unknown> = { ...one };
     const nodeWhere = where + ":node:" + (typeof one.id === "string" ? one.id : "");
     if (one.type === "journey-value" && kernelIsPlainRecord(one.configuration)) {
       const configuration: Record<string, unknown> = { ...one.configuration };
-      const site = kernelCompileSite(one.configuration.value, nodeWhere, "value", false, parse, signatures, problems);
+      const site = kernelCompileSite(one.configuration.value, nodeWhere, "value", false, parse, signatures, problems, recompile);
       if (site.expression !== undefined) {
         configuration.value = site.expression;
       } else if (!site.invalid) {
@@ -634,7 +590,7 @@ export function kernelCompileJourneyEntry(
       copy.configuration = configuration;
     }
     if (one.rules !== undefined) {
-      copy.rules = kernelCompileRulesOf(one.rules, nodeWhere, false, parse, signatures, problems);
+      copy.rules = kernelCompileRulesOf(one.rules, nodeWhere, false, parse, signatures, problems, recompile);
     }
     return copy;
   });
@@ -651,10 +607,11 @@ export function kernelCompileRulesOf(
   serverAllowed: boolean,
   parse: FormulaParser,
   signatures: FormulaFunctionSignature[],
-  problems: FormulaProblem[]
+  problems: FormulaProblem[],
+  recompile?: boolean
 ): unknown {
   if (kernelIsPlainRecord(rules)) {
-    return kernelCompileRules(rules, where, serverAllowed, parse, signatures, problems);
+    return kernelCompileRules(rules, where, serverAllowed, parse, signatures, problems, recompile);
   }
   if (rules === null) {
     // A null rules block is no rules, as the 2.5 program read it; nothing to say.
@@ -681,9 +638,10 @@ export function kernelCompileWhen(
   where: string,
   parse: FormulaParser,
   signatures: FormulaFunctionSignature[],
-  problems: FormulaProblem[]
+  problems: FormulaProblem[],
+  recompile?: boolean
 ): void {
-  const site = kernelCompileSite(copy[key], where, key, false, parse, signatures, problems);
+  const site = kernelCompileSite(copy[key], where, key, false, parse, signatures, problems, recompile);
   if (site.expression !== undefined) {
     copy[key] = site.expression;
   } else if (!site.invalid) {
@@ -696,7 +654,8 @@ export function kernelCompileJourney(
   journey: unknown,
   parse: FormulaParser,
   signatures: FormulaFunctionSignature[],
-  problems: FormulaProblem[]
+  problems: FormulaProblem[],
+  recompile?: boolean
 ): unknown {
   if (!kernelIsPlainRecord(journey) || !Array.isArray(journey.journeys)) {
     return journey;
@@ -721,7 +680,7 @@ export function kernelCompileJourney(
       if (Array.isArray(page.components)) {
         const entries: unknown[] = [];
         for (let e = 0; e < page.components.length; e += 1) {
-          entries.push(kernelCompileJourneyEntry(page.components[e], "journey:" + journeyId, parse, signatures, problems));
+          entries.push(kernelCompileJourneyEntry(page.components[e], "journey:" + journeyId, parse, signatures, problems, recompile));
         }
         pageCopy.components = entries;
       }
@@ -734,7 +693,7 @@ export function kernelCompileJourney(
             continue;
           }
           const routeCopy: Record<string, unknown> = { ...route };
-          kernelCompileWhen(routeCopy, "when", pageWhere + ":route:" + r, parse, signatures, problems);
+          kernelCompileWhen(routeCopy, "when", pageWhere + ":route:" + r, parse, signatures, problems, recompile);
           routes.push(routeCopy);
         }
         pageCopy.routes = routes;
@@ -747,9 +706,10 @@ export function kernelCompileJourney(
 }
 
 /**
- * Whether a rule an author wrote as a tree (a bare tree, or the object form with an
- * `expression`) holds a `matches` call with a literal pattern of a catastrophic shape: the parse
- * guard ({@link kernelRiskGuardParser}) only sees formula text. When it does, the problem
+ * Whether a rule that reaches the compile as a tree (a bare tree, or the object form with an
+ * `expression`: a compiled copy compiled again, or a block of a layout's own tree) holds a
+ * `matches` call with a literal pattern of a catastrophic shape: the parse guard
+ * ({@link kernelRiskGuardParser}) only sees formula text. When it does, the problem
  * `pattern.risky` is pushed at `where` and the answer is `true` (the caller drops the site, as it
  * does one the parser rejects). Nothing is looked at under `riskyPatterns: "allow"`.
  */
@@ -775,13 +735,14 @@ export function kernelCompilePdfBinding(
   parse: FormulaParser,
   signatures: FormulaFunctionSignature[],
   problems: FormulaProblem[],
-  riskyPatterns?: unknown
+  riskyPatterns?: unknown,
+  recompile?: boolean
 ): unknown {
   if (!kernelIsPlainRecord(binding) || !kernelIsPlainRecord(binding.source) || binding.source.kind !== "expression") {
     return binding;
   }
   const source: Record<string, unknown> = { ...binding.source };
-  kernelCompileWhen(source, "expression", where, parse, signatures, problems);
+  kernelCompileWhen(source, "expression", where, parse, signatures, problems, recompile);
   if (kernelRiskyTreeSite(binding.source.expression, source.expression, where, riskyPatterns, problems)) {
     delete source.expression;
   }
@@ -851,7 +812,8 @@ export function kernelCompilePdf(
   parse: FormulaParser,
   signatures: FormulaFunctionSignature[],
   problems: FormulaProblem[],
-  riskyPatterns?: unknown
+  riskyPatterns?: unknown,
+  recompile?: boolean
 ): unknown {
   if (!kernelIsPlainRecord(pdf) || !Array.isArray(pdf.layouts)) {
     return pdf;
@@ -866,7 +828,7 @@ export function kernelCompilePdf(
     const layoutWhere = "pdf:" + (typeof layout.id === "string" ? layout.id : "");
     const copy: Record<string, unknown> = { ...layout };
     if (layout.when !== undefined) {
-      kernelCompileWhen(copy, "when", layoutWhere, parse, signatures, problems);
+      kernelCompileWhen(copy, "when", layoutWhere, parse, signatures, problems, recompile);
       if (kernelRiskyTreeSite(layout.when, copy.when, layoutWhere, riskyPatterns, problems)) {
         delete copy.when;
       }
@@ -875,14 +837,14 @@ export function kernelCompilePdf(
     if (Array.isArray(layout.fields)) {
       const fields: unknown[] = [];
       for (let f = 0; f < layout.fields.length; f += 1) {
-        fields.push(kernelCompilePdfBinding(layout.fields[f], layoutWhere + ":field:" + f, parse, signatures, problems, riskyPatterns));
+        fields.push(kernelCompilePdfBinding(layout.fields[f], layoutWhere + ":field:" + f, parse, signatures, problems, riskyPatterns, recompile));
       }
       copy.fields = fields;
     }
     if (Array.isArray(layout.areas)) {
       const areas: unknown[] = [];
       for (let a = 0; a < layout.areas.length; a += 1) {
-        areas.push(kernelCompilePdfBinding(layout.areas[a], layoutWhere + ":area:" + a, parse, signatures, problems, riskyPatterns));
+        areas.push(kernelCompilePdfBinding(layout.areas[a], layoutWhere + ":area:" + a, parse, signatures, problems, riskyPatterns, recompile));
       }
       copy.areas = areas;
     }
@@ -894,9 +856,12 @@ export function kernelCompilePdf(
 /**
  * A compiled copy of a definition's three rule-bearing parts, with every formula site compiled
  * and the problems in document order: the form tree, then the journeys, then the PDF layouts.
- * The inputs are never changed; the copy shares configuration objects and existing trees.
+ * The inputs are never changed; the copy shares configuration objects.
  * `riskyPatterns` (`"refuse"`, the default, or `"allow"`) says what a literal `matches` pattern
  * with a catastrophic shape does: refused as `pattern.risky`, like a formula that does not parse.
+ * `recompile` says the parts are a compiled copy (the PDF render compiling the copy a runtime or
+ * the program hands it): its trees pass through. Without it a rule written as a tree is
+ * `invalidRule`.
  */
 export function kernelCompileDefinition(
   root: ComponentNode,
@@ -904,14 +869,15 @@ export function kernelCompileDefinition(
   pdf: unknown,
   parse: FormulaParser,
   signatures: FormulaFunctionSignature[],
-  riskyPatterns?: unknown
+  riskyPatterns?: unknown,
+  recompile?: boolean
 ): CompiledDefinition<{ root: ComponentNode; journey: unknown; pdf: unknown }> {
   const problems: FormulaProblem[] = [];
   // A literal risky `matches` pattern is refused unless the host allows it (`riskyPatterns`).
   parse = kernelRiskGuardParser(parse, riskyPatterns);
-  const compiledRoot = kernelCompileNode(root, parse, signatures, problems);
-  const compiledJourney = kernelCompileJourney(journey, parse, signatures, problems);
-  const compiledPdf = kernelCompilePdf(pdf, parse, signatures, problems, riskyPatterns);
+  const compiledRoot = kernelCompileNode(root, parse, signatures, problems, recompile);
+  const compiledJourney = kernelCompileJourney(journey, parse, signatures, problems, recompile);
+  const compiledPdf = kernelCompilePdf(pdf, parse, signatures, problems, riskyPatterns, recompile);
   return {
     definition: { root: compiledRoot, journey: compiledJourney, pdf: compiledPdf },
     problems,
@@ -1127,7 +1093,7 @@ export function kernelPushConditionWarning(source: unknown, where: string, key: 
  * `validWhen` and `navigationGating` (`rules:<id>:<key>`), a journey's own nodes the same way, a journey
  * route `when` and a PDF layout `when`, each whose result is provably not a yes-or-no
  * ({@link kernelConditionKind}). A warning never refuses a run, whatever `formulaErrors` says: the
- * condition simply never holds. Reads the compiled copy, so a rule written as a tree is checked too.
+ * condition simply never holds. Reads the compiled copy.
  */
 export function kernelConditionWarnings(root: unknown, journey: unknown, pdf: unknown): FormulaProblem[] {
   const warnings: FormulaProblem[] = [];
@@ -2506,7 +2472,7 @@ export function kernelRiskyPatternMessage(pattern: string): string {
  * A parser that refuses a formula holding a `matches` call with a literal risky pattern
  * (`pattern.risky`, params `pattern`, spanning the word `matches`) unless the host allows them
  * (`riskyPatterns: "allow"`; anything else reads as `"refuse"`). Wraps `parse` and nothing else;
- * a rule written as a tree rather than text is not looked at.
+ * a tree is not looked at.
  */
 export function kernelRiskGuardParser(parse: FormulaParser, riskyPatterns: unknown): FormulaParser {
   if (riskyPatterns === "allow") {
@@ -2538,7 +2504,6 @@ export const COMPILE_FUNCTIONS: readonly ((...args: never[]) => unknown)[] = [
   kernelCompileRulesOf,
   kernelIsPlainRecord,
   kernelIsExpressionTree,
-  kernelExpressionMaxDepth,
   kernelExpressionFault,
   kernelIsRuleObject,
   kernelRuleShape,

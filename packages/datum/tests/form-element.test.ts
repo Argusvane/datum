@@ -15,7 +15,6 @@ import type {
 import {
   type ComponentDefinition,
   type DraftStore,
-  type Expression,
   type FormDefinition,
   type FormDraft,
   RemoteDataSourceProvider,
@@ -797,7 +796,7 @@ describe("<datum-form> PDFs", () => {
 
   it("prints the layout the answers choose from a pdf button: datum-pdf's layoutId follows setValue", async () => {
     const seen: unknown[] = [];
-    const layout = (id: string, when?: Expression) => ({
+    const layout = (id: string, when?: string) => ({
       id,
       kind: "generated" as const,
       ...(when ? { when } : {}),
@@ -818,7 +817,7 @@ describe("<datum-form> PDFs", () => {
         pdf: {
           layouts: [
             layout("standard"),
-            layout("alternate", { kind: "binary", operator: "eq", left: { kind: "path", path: "fullName" }, right: { kind: "literal", value: "Other" } })
+            layout("alternate", 'fullName = "Other"')
           ],
           defaultLayoutId: "standard"
         }

@@ -233,9 +233,9 @@ The caps behind the `tooMany` and `tooLong` codes are tabled in [Limits](/limits
 | `chainedCompare` | `a < b < c`, which the grammar refuses |
 | `numberTooLarge` | A number literal past the range of a double |
 | `badUnit` | `dateAdd` or `dateDiff` with a literal unit other than days, weeks, months or years |
-| `tooDeep` | Nesting past 100 levels in a formula, or past 200 levels in a rule written as a tree (`max`) |
+| `tooDeep` | Nesting past 100 levels in a formula (`max`) |
 | `pattern.risky` | A `matches` call with a literal pattern of a runaway shape, while `riskyPatterns` is `refuse` (`pattern`) |
-| `invalidRule` | A rule that is not a formula, a tree or the object form. The key is dropped |
+| `invalidRule` | A rule that is not a formula or the object form, an expression tree among them (`got` is `tree`). The key is dropped |
 | `runScope` | A `run` the rule's place may not take. The rule runs on both sides |
 | `condition.notBoolean`, `rule.unsupportedScope` | Findings that never refuse: a condition that is provably not yes or no, and a `validWhen` on a field inside a repeating section, which neither side runs |
 

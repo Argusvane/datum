@@ -22,7 +22,7 @@ function controller(): BuilderController {
     children: {
       content: [
         { id: "name", type: "text", configuration: { label: "Name" } },
-        { id: "email", type: "text", configuration: { label: "Email" }, rules: { visibleWhen: { kind: "path", path: "name" } } },
+        { id: "email", type: "text", configuration: { label: "Email" }, rules: { visibleWhen: "name" } },
         {
           id: "box",
           type: "fieldset",
@@ -127,7 +127,7 @@ describe("a selection change with a draft pending", () => {
     expect(ctrl.snapshot().children?.content?.[0]?.rules).toBeUndefined();
     ctrl.undo();
     expect(ids(ctrl)).toEqual(["name", "email", "box"]);
-    expect(ctrl.snapshot().children?.content?.[1]?.rules).toEqual({ visibleWhen: { kind: "path", path: "name" } });
+    expect(ctrl.snapshot().children?.content?.[1]?.rules).toEqual({ visibleWhen: "name" });
   });
 
   it("puts a prompt down when an Undo takes away the draft it asks about", () => {

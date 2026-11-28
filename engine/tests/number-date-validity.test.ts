@@ -487,7 +487,7 @@ describe("FormRuntime input states", () => {
   });
 
   it("drops what a control says about a hidden field's empty answer, but keeps a hidden answer's format checks", async () => {
-    const byEmail = { visibleWhen: { kind: "binary", operator: "eq", left: { kind: "path", path: "shown" }, right: { kind: "literal", value: true } } } as const;
+    const byEmail = { visibleWhen: "shown = true" };
     const form = definitionOf([
       { id: "shown", type: "checkbox", configuration: {} },
       { id: "age", type: "number", configuration: { required: true, hiddenValueBehavior: "retain" }, rules: byEmail },
@@ -515,7 +515,7 @@ describe("FormRuntime input states", () => {
   });
 
   it("drops them for a hidden field its policy still validates, as the server hears nothing of them", async () => {
-    const shown = { visibleWhen: { kind: "binary", operator: "eq", left: { kind: "path", path: "shown" }, right: { kind: "literal", value: true } } } as const;
+    const shown = { visibleWhen: "shown = true" };
     const validated = { required: true, hiddenValidationBehavior: "validate" };
     const form = definitionOf([
       { id: "shown", type: "checkbox", configuration: {} },

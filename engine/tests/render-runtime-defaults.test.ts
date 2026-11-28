@@ -116,11 +116,13 @@ describe("a validation code is worded, never shown bare", () => {
 
 describe("the target of a calculation the browser runs is read-only", () => {
   function orchestratorFor(children: ComponentNode[]): RuntimeOrchestrator {
-    const orchestrator = new RuntimeOrchestrator(new ComponentTree(formRoot(children)), { eventBus: new EventBus(), formId: "f" });
+    // The orchestrator reads the compiled copy, as the runtime hands it over.
+    const { root } = compileFormDefinition({ id: "f", version: "1", schemaVersion: "1", root: formRoot(children) }).definition;
+    const orchestrator = new RuntimeOrchestrator(new ComponentTree(root), { eventBus: new EventBus(), formId: "f" });
     orchestrator.recompute(new FormStateStore("en").snapshot());
     return orchestrator;
   }
-  const sum = { kind: "arithmetic", operator: "add", left: { kind: "literal", value: 1 }, right: { kind: "literal", value: 2 } } as const;
+  const sum = "1 + 2";
 
   it("reads a calculated field read-only and its neighbours editable", () => {
     const orchestrator = orchestratorFor([
@@ -135,12 +137,12 @@ describe("the target of a calculation the browser runs is read-only", () => {
   });
 
   it("keeps a calculation scoped to the server editable in the browser, which does not run it", () => {
-    const orchestrator = orchestratorFor([{ id: "total", type: "number", configuration: {}, rules: { value: { expression: sum, run: "server" } as never } }]);
+    const orchestrator = orchestratorFor([{ id: "total", type: "number", configuration: {}, rules: { value: { formula: sum, run: "server" } } }]);
     expect(orchestrator.effectiveStateFor("total")?.readonly).toBe(false);
   });
 
   it("stays read-only whatever readonlyWhen says", () => {
-    const never = { kind: "literal", value: false } as const;
+    const never = "false";
     const orchestrator = orchestratorFor([{ id: "total", type: "number", configuration: {}, rules: { value: sum, readonlyWhen: never } }]);
     expect(orchestrator.effectiveStateFor("total")?.readonly).toBe(true);
   });

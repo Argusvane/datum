@@ -23,7 +23,6 @@ import { journeyMapSvg } from "../form-engine/builder/journey-map/journey-map-sv
 import { journeyFlow } from "../form-engine/core/journey/journey-flow.js";
 import { conditionTerms, mapSource, mapWords } from "./flowmap-words.js";
 import { applyJourney, presentationRoot, publicVariant } from "./fixtures/presentation-form.js";
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import type { Journey } from "../form-engine/core/schema/journey.js";
 import type { ComponentNode } from "../form-engine/core/schema/types.js";
 
@@ -32,16 +31,16 @@ import type { ComponentNode } from "../form-engine/core/schema/types.js";
  * words and stubs the map draws, tied to the tree's node ids.
  */
 
-function eq(path: string, value: string): Expression {
-  return { kind: "binary", operator: "eq", left: { kind: "path", path }, right: { kind: "literal", value } };
+function eq(path: string, value: string): string {
+  return `${path} = "${value}"`;
 }
 
-function neq(path: string, value: string): Expression {
-  return { kind: "binary", operator: "neq", left: { kind: "path", path }, right: { kind: "literal", value } };
+function neq(path: string, value: string): string {
+  return `${path} != "${value}"`;
 }
 
 // A condition the sentence cannot word: said as the printed formula.
-const CUSTOM: Expression = { kind: "literal", value: true };
+const CUSTOM = "true";
 
 const FORM: ComponentNode = {
   id: "root",
@@ -599,7 +598,7 @@ describe("journeyMapGraph", () => {
           components: ["home"],
           routes: [
             { when: eq("home", "no"), to: "ineligible" },
-            { when: { kind: "logical", operator: "and", left: eq("home", "yes"), right: eq("tenure", "rent") }, to: "long" }
+            { when: `${eq("home", "yes")} and ${eq("tenure", "rent")}`, to: "long" }
           ]
         },
         { id: "both", components: ["maybe"] },
@@ -1323,7 +1322,7 @@ describe("journeyMapGraph: presentations' own nodes", () => {
 
   it("names only what the shared ownership fills or works out, and counts only the entries it uses", () => {
     const form = presentationRoot();
-    form.children!.content!.push({ id: "calc", type: "number", configuration: { label: "Calculated" }, rules: { value: { kind: "literal", value: 1 } } } as ComponentNode);
+    form.children!.content!.push({ id: "calc", type: "number", configuration: { label: "Calculated" }, rules: { value: "1" } } as ComponentNode);
     const firstCard = (first: unknown[], rest = ["email", "name", "money", "approved_amount"]): { card: JourneyMapPage; view: JourneyMapSource } => {
       const journey = { id: "apply", pages: [{ id: "first", title: "First", components: first }, { id: "rest", title: "Rest", components: rest }] } as unknown as Journey;
       const { view, flow } = mapSource(form, journey);
@@ -1340,7 +1339,7 @@ describe("journeyMapGraph: presentations' own nodes", () => {
     // A worked-out value whose field another page lists (rule G): ignored, so nothing is worked out.
     const ignored = firstCard([
       { id: "m1", type: "number", configuration: { label: "Month" } },
-      { id: "total", type: "journey-value", configuration: { to: "annual_income", value: { kind: "path", path: "m1" } } }
+      { id: "total", type: "journey-value", configuration: { to: "annual_income", value: "m1" } }
     ]);
     expect(Object.keys(ignored.view.check.ownership?.workedOutOf ?? {})).toEqual([]);
     expect(ignored.card).toMatchObject({ meta: "first · 1 question", notes: [] });

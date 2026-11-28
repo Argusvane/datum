@@ -10,7 +10,6 @@ import {
   createFieldConstraintsStage,
   createInProcessWasmValidationHost,
   type ComponentNode,
-  type Expression,
   type FormDefinition,
   type Journey
 } from "@argusvane/datum-engine";
@@ -35,8 +34,8 @@ function rng(seed: number) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-const path = (p: string): Expression => ({ kind: "path", path: p });
-const eq = (p: string, v: string): Expression => ({ kind: "binary", operator: "eq", left: path(p), right: { kind: "literal", value: v } });
+/** The formula `<p> = "<v>"`, the one condition the oracle below reads back. */
+const eq = (p: string, v: string): string => `${p} = "${v}"`;
 
 interface Case {
   form: FormDefinition;
@@ -153,7 +152,10 @@ function oracle(c: Case) {
   const pages = c.journey.pages as any[];
   const idx = new Map<string, number>();
   pages.forEach((p, i) => { if (!idx.has(p.id)) idx.set(p.id, i); });
-  const test = (e: any) => Object.hasOwn(view, e.left.path) && view[e.left.path] === e.right.value;
+  const test = (when: string) => {
+    const [, p, v] = /^(\S+) = "(.*)"$/.exec(when) as RegExpExecArray;
+    return Object.hasOwn(view, p as string) && view[p as string] === v;
+  };
   const onPath: string[] = [];
   let end = "end";
   let i = 0;
@@ -202,9 +204,8 @@ function runtimeVerdict(form: FormDefinition, values: Record<string, unknown>) {
 // Browser envelope == server over the raw honest answers == server over the envelope, unsettled
 // agreeing on both sides, in-process == QuickJS byte for byte on a slice, and a filler who forges
 // the derived values gets the honest verdict.
-const num = (v: number): Expression => ({ kind: "literal", value: v });
-const bin = (operator: string, left: Expression, right: Expression): Expression =>
-  ({ kind: ["add", "subtract", "multiply"].includes(operator) ? "arithmetic" : "binary", operator, left, right }) as never;
+const SYMBOL: Record<string, string> = { gt: ">", lt: "<", eq: "=", add: "+", subtract: "-", multiply: "*" };
+const bin = (operator: string, left: string | number, right: string | number): string => `${left} ${SYMBOL[operator]} ${right}`;
 
 function genCalc(seed: number, rich: boolean) {
   const r = rng(seed);
@@ -217,7 +218,7 @@ function genCalc(seed: number, rich: boolean) {
     const node: any = { id, type: "number", configuration };
     if (rich) {
       if (r() < 0.3) configuration.hiddenValueBehavior = pick(["retain", "clear", "exclude-from-submission"]);
-      if (r() < 0.3) node.rules = { visibleWhen: bin("gt", path(pick(fields)), num(pick([1, 2, 3]))) };
+      if (r() < 0.3) node.rules = { visibleWhen: bin("gt", pick(fields), pick([1, 2, 3])) };
     }
     nodes.push(node);
   }
@@ -226,7 +227,7 @@ function genCalc(seed: number, rich: boolean) {
     const a = pick(reads);
     const b = pick(reads);
     const op = pick(["add", "subtract", "multiply"]);
-    nodes.push({ id, type: "number", configuration: { required: false }, rules: { value: r() < 0.3 ? bin(op, path(a), num(2)) : bin(op, path(a), path(b)) } } as never);
+    nodes.push({ id, type: "number", configuration: { required: false }, rules: { value: r() < 0.3 ? bin(op, a, 2) : bin(op, a, b) } } as never);
     reads.push(id);
   }
   nodes.push({ id: "tail", type: "text", configuration: { required: false } } as never);
@@ -242,7 +243,7 @@ function genCalc(seed: number, rich: boolean) {
     // the one it was with those conditions left out.
     if (i > 0 && r() < 0.6) void [pick(["gt", "lt", "eq"]), pick(reads), pick([0, 1, 2, 3, 4, 5, 6])];
     if (r() < 0.3) {
-      p.routes = [{ ...(r() < 0.8 ? { when: bin("gt", path(pick(reads)), num(pick([1, 2, 3]))) } : {}), to: pick([...pages.map((x) => x.id), "$end"]) }];
+      p.routes = [{ ...(r() < 0.8 ? { when: bin("gt", pick(reads), pick([1, 2, 3])) } : {}), to: pick([...pages.map((x) => x.id), "$end"]) }];
     }
   });
   const journey = { id: "j", pages, ...(r() < 0.4 ? { offPathValues: pick(["retain", "clear", "exclude-from-submission"]) } : {}) } as unknown as Journey;

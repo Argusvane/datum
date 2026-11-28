@@ -129,7 +129,7 @@ import {
 } from "../tree-editor/tree-editor.js";
 import type { BuilderCommand } from "../history/command-history.js";
 import { RenameStep } from "../history/rename-step.js";
-import { renameIdInRuleSource, renameRowKeysInRuleSource, rowKeyMoveOf, unparsedFormulaNaming, type ValuePathMove } from "../formula/rename.js";
+import { mapRuleSourcePaths, renameIdInRuleSource, renameRowKeysInRuleSource, rowKeyMoveOf, unparsedFormulaNaming, type ValuePathMove } from "../formula/rename.js";
 import { canAcceptInSlot, type ParentConstraintsResolver } from "../tree-editor/slot-constraints.js";
 import { buildNestedTreeView, type NestedTreeNodeLabeler, type NestedTreeNodeView } from "../tree-editor/nested-tree-view.js";
 import type { JourneyView } from "../../core/journey/journey-types.js";
@@ -1021,33 +1021,24 @@ function collectNodes(node: ComponentNode): ComponentNode[] {
 /**
  * `rules` with every form-scoped path whose leading segment (up to the first `.` or `[`) is a
  * key of `renames` led by its new id instead; paths read from elsewhere (`row.`, `ancestor.`,
- * `host.`, `component`) and every other path are left as written.
+ * `host.`, `component`) and every other path are left as written, and so is a formula that does
+ * not parse.
  */
 function repointRulePaths(rules: ComponentRules, renames: ReadonlyMap<string, string>): ComponentRules {
-  const visit = (value: unknown): unknown => {
-    if (Array.isArray(value)) {
-      return value.map(visit);
-    }
-    if (!isPlainObject(value)) {
-      return value;
-    }
-    if (value.kind === "path" && typeof value.path === "string") {
-      const path = value.path;
-      const end = path.search(/[.[]/);
-      const lead = end < 0 ? path : path.slice(0, end);
-      const scoped = lead === "component" || lead === "row" || lead === "ancestor" || lead === "host";
-      const to = scoped ? undefined : renames.get(lead);
-      return to === undefined ? value : { ...value, path: `${to}${path.slice(lead.length)}` };
-    }
-    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, visit(item)]));
+  const map = (path: string): string => {
+    const end = path.search(/[.[]/);
+    const lead = end < 0 ? path : path.slice(0, end);
+    const scoped = lead === "component" || lead === "row" || lead === "ancestor" || lead === "host";
+    const to = scoped ? undefined : renames.get(lead);
+    return to === undefined ? path : `${to}${path.slice(lead.length)}`;
   };
-  return visit(rules) as ComponentRules;
+  return Object.fromEntries(Object.entries(rules).map(([key, rule]) => [key, mapRuleSourcePaths(rule, map)])) as ComponentRules;
 }
 
 /**
  * `rules` with every rule that reads `from` rewritten to read `to` (`renameIdInRuleSource`: a
- * formula string over the parser's spans, a tree through its path nodes, the object form through
- * both), the same object when none does; and, per rule, a formula that spells `from` but does
+ * formula string over the parser's spans, the object form through its formula), the same object
+ * when none does; and, per rule, a formula that spells `from` but does
  * not parse, left as written. Every key of the object is a rule, so every key is read. A read of
  * a row's key (`row.sku`) is not the id's: it follows the keys the rename moved instead.
  */
@@ -7198,7 +7189,7 @@ export class BuilderController {
 
   /**
    * Every rule of every component that reads `from` rewritten to read `to` (a string formula
-   * over the parser's spans, a tree through its path nodes, the object form through both) in
+   * over the parser's spans, the object form through its formula) in
    * the tree and in the open drafts alike, whatever the rule's key (`visibleWhen`, `value`,
    * `defaultValue`, `filter`, `navigationGating` and the rest). A read of a grid row's key
    * (`row.sku`) is not the id's and is left to {@link followRowKeys}. Written to the tree as one

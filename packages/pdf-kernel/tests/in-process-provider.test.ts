@@ -33,7 +33,7 @@ function form(): ComponentNode {
           id: "vipCode",
           type: "text",
           configuration: { label: "VIP code" },
-          rules: { visibleWhen: { kind: "path", path: "vip" } }
+          rules: { visibleWhen: "vip" }
         },
         { id: "country", type: "select", configuration: { label: "Country", data: { sourceId: "countries" } } }
       ]
@@ -130,7 +130,7 @@ describe("in-process provider", () => {
             configuration: { label: "Membership", dataKey: "membership" },
             children: { content: [{ id: "vip_flag", type: "checkbox", configuration: { label: "VIP", dataKey: "vip" } }] }
           },
-          { id: "vipCode", type: "text", configuration: { label: "VIP code" }, rules: { visibleWhen: { kind: "path", path: "vip_flag" } } },
+          { id: "vipCode", type: "text", configuration: { label: "VIP code" }, rules: { visibleWhen: "vip_flag" } },
           {
             id: "order",
             type: "container",

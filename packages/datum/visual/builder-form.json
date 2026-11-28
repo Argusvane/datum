@@ -90,10 +90,7 @@
                   "patternMessage": "Enter an email address."
                 },
                 "rules": {
-                  "visibleWhen": {
-                    "kind": "path",
-                    "path": "subscribe"
-                  }
+                  "visibleWhen": "subscribe"
                 }
               }
             ]
@@ -306,18 +303,7 @@
             ],
             "routes": [
               {
-                "when": {
-                  "kind": "binary",
-                  "operator": "neq",
-                  "left": {
-                    "kind": "path",
-                    "path": "country"
-                  },
-                  "right": {
-                    "kind": "literal",
-                    "value": "CA"
-                  }
-                },
+                "when": "country != \"CA\"",
                 "to": "$end"
               }
             ]

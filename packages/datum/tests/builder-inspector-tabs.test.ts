@@ -244,7 +244,7 @@ describe("inspector JSON editing", () => {
       id: "email",
       type: "text",
       configuration: { label: "Email" },
-      rules: { visibleWhen: { kind: "path", path: "subscribe" } }
+      rules: { visibleWhen: "subscribe" }
     });
     expect(box(inspector(element)).getAttribute("aria-label")).toBe("The component's JSON");
     // The editor takes the box's place once its chunk loads, under the same name.

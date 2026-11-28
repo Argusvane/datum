@@ -352,11 +352,11 @@ describe("a journey with page-only fields", () => {
     // Nothing shared: changing the copy's alias, its worked-out value or a nested reference leaves the original alone.
     const original = configuration.journeys?.[0] as Journey;
     const alias = copy.pages[0]?.components?.[0] as unknown as { configuration: { fills: string } };
-    const total = copy.pages[1]?.components?.[3] as unknown as { configuration: { value: { args: unknown[] } } };
+    const total = copy.pages[1]?.components?.[3] as unknown as { configuration: { value: string } };
     expect(alias).not.toBe(original.pages[0]?.components?.[0]);
     expect(alias.configuration).not.toBe((original.pages[0]?.components?.[0] as unknown as { configuration: unknown }).configuration);
     alias.configuration.fills = "name";
-    total.configuration.value.args.length = 0;
+    total.configuration.value = "0";
     expect(JSON.stringify(original)).toBe(JSON.stringify(applyJourney()));
     expect(copied.journeys?.[0]).toBe(original);
 

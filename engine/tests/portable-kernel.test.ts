@@ -41,7 +41,6 @@ import {
   valuesByComponentId
 } from "../form-engine/core/tree/data-scope.js";
 import { ComponentTree } from "../form-engine/core/tree/component-tree.js";
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import type { Journey } from "../form-engine/core/schema/journey.js";
 import { RulesSemanticStateResolver } from "../form-engine/runtime/browser/runtime-orchestrator.js";
 import { FormRuntime, NonScalarAnswerError } from "../form-engine/runtime/browser/form-runtime.js";
@@ -56,6 +55,12 @@ import { kernelCompileDefinition } from "../form-engine/core/expressions/compile
 import { dataGridSettingsOf, resolveDataGridRowBounds } from "../form-engine/core/schema/data-grid.js";
 import { kernelParseFormula } from "../form-engine/core/expressions/formula.js";
 import { formulaFunctionSignatures } from "../form-engine/core/expressions/function-table.js";
+
+/** The compiled copy of an authored form and journey: the trees the fold, the resolver and the recompute read. */
+const compiledOf = (root: ComponentNode, journey?: Journey): { root: ComponentNode; journey: Journey | undefined } => {
+  const { definition } = kernelCompileDefinition(root, journey && { journeys: [journey] }, undefined, kernelParseFormula, formulaFunctionSignatures());
+  return { root: definition.root, journey: journey && (definition.journey as { journeys: Journey[] }).journeys[0] };
+};
 
 /** A representative tree: flat fields, a data-scoping container, a visual container, and a
  * collection with row fields. */
@@ -214,14 +219,8 @@ describe("portable kernel: data-scope readings the fold keys by", () => {
 });
 
 describe("portable kernel: semantic state parity with RulesSemanticStateResolver", () => {
-  const read = (name: string): Expression => ({ kind: "path", path: name });
-  const is = (name: string, value: string | number | boolean): Expression => ({
-    kind: "binary",
-    operator: "eq",
-    left: read(name),
-    right: { kind: "literal", value }
-  });
-  const ruled: ComponentNode = {
+  const is = (name: string, value: string | number | boolean): string => `${name} = ${JSON.stringify(value)}`;
+  const ruled: ComponentNode = compiledOf({
     id: "form",
     type: "form",
     configuration: {},
@@ -241,8 +240,8 @@ describe("portable kernel: semantic state parity with RulesSemanticStateResolver
                 type: "text",
                 configuration: { readOnly: true, hiddenValidationBehavior: "validate" },
                 rules: {
-                  visibleWhen: { kind: "call", name: "len", args: [read("component")] },
-                  enabledWhen: { kind: "binary", operator: "neq", left: read("ancestor.billing_address"), right: { kind: "literal", value: null } }
+                  visibleWhen: "len(component)",
+                  enabledWhen: "ancestor.billing_address != null"
                 }
               },
               { id: "postcode", type: "text", configuration: { dataKey: "code" }, rules: { enabledWhen: is("street", "Main") } }
@@ -251,7 +250,7 @@ describe("portable kernel: semantic state parity with RulesSemanticStateResolver
         }
       ]
     }
-  };
+  }).root;
 
   it("resolves the same state for every node over the same answers", () => {
     const resolver = new RulesSemanticStateResolver();
@@ -963,9 +962,7 @@ describe("portable kernel — a collection path written with brackets", () => {
 });
 
 describe("portable kernel: requiredness parity with the browser runtime", () => {
-  const read = (name: string): Expression => ({ kind: "path", path: name });
-  const literal = (value: string | number | boolean | null): Expression => ({ kind: "literal", value });
-  const is = (name: string, value: string | number | boolean | null): Expression => ({ kind: "binary", operator: "eq", left: read(name), right: literal(value) });
+  const is = (name: string, value: string | number | boolean | null): string => `${name} = ${JSON.stringify(value)}`;
   /** Rules reading an id, the component's own value, an ancestor and a keyed field; a tick; two nodes the fold never reads. */
   const root: ComponentNode = {
     id: "form",
@@ -981,7 +978,7 @@ describe("portable kernel: requiredness parity with the browser runtime", () => 
           configuration: { dataKey: "billing" },
           children: {
             content: [
-              { id: "street", type: "text", configuration: {}, rules: { requiredWhen: { kind: "binary", operator: "gt", left: { kind: "call", name: "len", args: [read("component")] }, right: literal(0) } } },
+              { id: "street", type: "text", configuration: {}, rules: { requiredWhen: "len(component) > 0" } },
               { id: "postcode", type: "text", configuration: { dataKey: "code" }, rules: { requiredWhen: is("street", "Main") } },
               { id: "country", type: "text", configuration: {}, rules: { requiredWhen: is("ancestor.billing_address", "corporate") } }
             ]
@@ -993,6 +990,7 @@ describe("portable kernel: requiredness parity with the browser runtime", () => 
       ]
     }
   };
+  const compiled = compiledOf(root).root;
   const definition: FormDefinition = { id: "f", version: "1", schemaVersion: "1", root };
   const cases: Array<Record<string, unknown>> = [
     {},
@@ -1015,21 +1013,21 @@ describe("portable kernel: requiredness parity with the browser runtime", () => 
     for (const values of cases) {
       const label = JSON.stringify(values);
       const runtime = runtimeOver(values);
-      const fold = kernelFoldSubmission(root, values, undefined);
+      const fold = kernelFoldSubmission(compiled, values, undefined);
       expect({ ...fold.required }, label).toEqual(Object.fromEntries(runtime.requiredMap()));
       for (const id of Object.keys(fold.required)) {
         expect(fold.required[id], `${id} over ${label}`).toBe(runtime.isRequired(id));
       }
     }
     // The cases exercise each reading at least once.
-    expect(kernelFoldSubmission(root, cases[2]!, undefined).requiredByRule).toEqual(["phone", "street", "postcode"]);
-    expect(kernelFoldSubmission(root, cases[4]!, undefined).requiredByRule).toEqual(["country"]);
-    expect(kernelFoldSubmission(root, {}, undefined).requiredByRule).toEqual([]);
+    expect(kernelFoldSubmission(compiled, cases[2]!, undefined).requiredByRule).toEqual(["phone", "street", "postcode"]);
+    expect(kernelFoldSubmission(compiled, cases[4]!, undefined).requiredByRule).toEqual(["country"]);
+    expect(kernelFoldSubmission(compiled, {}, undefined).requiredByRule).toEqual([]);
   });
 
   it("reads a host. rule as false, where the browser with a host context reads it", () => {
     const hosted: ComponentNode = { id: "staff_note", type: "text", configuration: {}, rules: { requiredWhen: is("host.role", "staff") } };
-    expect(kernelRuleRequired(hosted, {}, {}, {}, {})).toBe(false);
+    expect(kernelRuleRequired(compiledOf(hosted).root, {}, {}, {}, {})).toBe(false);
     const browser = new FormRuntime(
       { id: "h", version: "1", schemaVersion: "1", root: { id: "form", type: "form", configuration: {}, children: { content: [hosted] } } },
       { submissionModes: new SubmissionModeRegistry(), validationPipeline: new ValidationPipeline([]), hostContext: { role: "staff" } }
@@ -1042,22 +1040,22 @@ describe("portable kernel: requiredness parity with the browser runtime", () => 
     const strip = (errors: ReadonlyArray<{ code: string; componentId?: string | undefined; path?: string | undefined }>) =>
       errors.map(({ code, componentId, path }) => ({ code, componentId, path }));
     for (const values of [...cases, { mode: "post", "billing.street": "Main", "billing.code": "K1A", phone: "555", ticked: "t" }]) {
-      const fold = kernelFoldSubmission(root, values, undefined);
+      const fold = kernelFoldSubmission(compiled, values, undefined);
       const engine = await stage.validate({ formId: "f", values, locale: "en", requiredComponents: { ...fold.required } });
-      const kernel = kernelRunFieldConstraints(root, values, "en", fold.effective, fold.required);
+      const kernel = kernelRunFieldConstraints(compiled, values, "en", fold.effective, fold.required);
       expect(strip(kernel), JSON.stringify(values)).toEqual(strip(engine.errors));
     }
     // Neither side holds anything to the rule without the record: the tick alone.
     const bare = await stage.validate({ formId: "f", values: { mode: "post" }, locale: "en" });
-    expect(strip(bare.errors)).toEqual(strip(kernelRunFieldConstraints(root, { mode: "post" }, "en")));
+    expect(strip(bare.errors)).toEqual(strip(kernelRunFieldConstraints(compiled, { mode: "post" }, "en")));
     expect(bare.errors.map((error) => error.componentId)).toEqual(["ticked"]);
     // Nor to a record that only inherits `true`: both read the record's own keys, so a
     // prototype-carried entry (a host's map built over a template) counts for nothing.
     const inherited = Object.create({ phone: true, street: true, ticked: true }) as Record<string, boolean>;
-    const fold = kernelFoldSubmission(root, { mode: "post" }, undefined);
+    const fold = kernelFoldSubmission(compiled, { mode: "post" }, undefined);
     const engineInherited = await stage.validate({ formId: "f", values: { mode: "post" }, locale: "en", requiredComponents: inherited });
     expect(engineInherited.errors.map((error) => error.componentId)).toEqual(["ticked"]);
-    expect(kernelRunFieldConstraints(root, { mode: "post" }, "en", fold.effective, inherited).map((error) => error.componentId)).toEqual(["ticked"]);
+    expect(kernelRunFieldConstraints(compiled, { mode: "post" }, "en", fold.effective, inherited).map((error) => error.componentId)).toEqual(["ticked"]);
   });
 
   it("holds a component called __proto__ or constructor to its rule in the browser as the kernel does", async () => {
@@ -1076,7 +1074,7 @@ describe("portable kernel: requiredness parity with the browser runtime", () => 
       }
     };
     const values = JSON.parse('{"mode": "post"}') as Record<string, unknown>;
-    const fold = kernelFoldSubmission(tricky, values, undefined);
+    const fold = kernelFoldSubmission(compiledOf(tricky).root, values, undefined);
     expect(fold.requiredByRule).toEqual(["__proto__", "constructor"]);
     const runtime = new FormRuntime(
       { id: "p", version: "1", schemaVersion: "1", root: tricky },
@@ -1112,9 +1110,7 @@ describe("portable kernel: requiredness parity with the browser runtime", () => 
 });
 
 describe("portable kernel: runKernel enforces requiredWhen", () => {
-  const read = (name: string): Expression => ({ kind: "path", path: name });
-  const literal = (value: string | number | boolean | null): Expression => ({ kind: "literal", value });
-  const is = (name: string, value: string | number | boolean | null): Expression => ({ kind: "binary", operator: "eq", left: read(name), right: literal(value) });
+  const is = (name: string, value: string | number | boolean | null): string => `${name} = ${JSON.stringify(value)}`;
   const byPhone = is("contact", "phone");
   const contact: ComponentNode = { id: "contact", type: "radio", configuration: { options: [{ value: "phone", label: "phone" }, { value: "email", label: "email" }, { value: "post", label: "post" }, { value: "on", label: "on" }] } };
   const formOf = (...children: ComponentNode[]): ComponentNode => ({ id: "form", type: "form", configuration: {}, children: { content: children } });
@@ -1172,8 +1168,8 @@ describe("portable kernel: runKernel enforces requiredWhen", () => {
   it("reads a calculation the kernel worked out again, not the one submitted", () => {
     const calc = formOf(
       { id: "birth_year", type: "number", configuration: {} },
-      { id: "age", type: "number", configuration: {}, rules: { value: { kind: "arithmetic", operator: "subtract", left: literal(2026), right: read("birth_year") } } },
-      { id: "guardian", type: "text", configuration: {}, rules: { requiredWhen: { kind: "binary", operator: "lt", left: read("age"), right: literal(18) } } }
+      { id: "age", type: "number", configuration: {}, rules: { value: "2026 - birth_year" } },
+      { id: "guardian", type: "text", configuration: {}, rules: { requiredWhen: "age < 18" } }
     );
     // A forged adult age beside a child's birth year: the server's own age asks for the guardian.
     expect(codesOf(runKernel({ formId: "f", values: { birth_year: 2015, age: 40 }, locale: "en", form: calc }, []))).toEqual(["guardian:required"]);
@@ -1202,9 +1198,7 @@ describe("portable kernel: runKernel enforces requiredWhen", () => {
 });
 
 describe("portable kernel: runKernel judges a field a journey places on no page as the whole form judges it", () => {
-  const read = (name: string): Expression => ({ kind: "path", path: name });
-  const literal = (value: string | number | boolean | null): Expression => ({ kind: "literal", value });
-  const is = (name: string, value: string | number | boolean | null): Expression => ({ kind: "binary", operator: "eq", left: read(name), right: literal(value) });
+  const is = (name: string, value: string | number | boolean | null): string => `${name} = ${JSON.stringify(value)}`;
   const staff = is("host.role", "staff");
   const codesOf = (outcome: { errors: ReadonlyArray<{ code: string; componentId?: string | undefined }> }): string[] =>
     outcome.errors.map((error) => `${error.componentId ?? "-"}:${error.code}`).sort();
@@ -1229,7 +1223,7 @@ describe("portable kernel: runKernel judges a field a journey places on no page 
         { id: "staff_box", type: "fieldset", configuration: {}, rules: { visibleWhen: staff }, children: { content: [{ id: "nested_ref", type: "text", configuration: { required: true } }] } },
         { id: "opt_in", type: "text", configuration: { hidden: true, required: true, hiddenRequiredBehavior: "required", hiddenValidationBehavior: "validate" } },
         { id: "cost", type: "number", configuration: {} },
-        { id: "total", type: "number", configuration: {}, rules: { value: { kind: "arithmetic", operator: "multiply", left: read("cost"), right: literal(2) } } },
+        { id: "total", type: "number", configuration: {}, rules: { value: "cost * 2" } },
         { id: "code", type: "text", configuration: { pattern: "[A-Z]{3}" } }
       ]
     }
@@ -1237,7 +1231,7 @@ describe("portable kernel: runKernel judges a field a journey places on no page 
   const journey: Journey = {
     id: "short",
     pages: [
-      { id: "start", components: ["resident"], routes: [{ when: { kind: "unary", operator: "not", operand: is("resident", "yes") }, to: "$end" }] },
+      { id: "start", components: ["resident"], routes: [{ when: `not(${is("resident", "yes")})`, to: "$end" }] },
       { id: "more", components: ["extra"] }
     ]
   };
@@ -1289,8 +1283,9 @@ describe("portable kernel: runKernel judges a field a journey places on no page 
     expect(codesOf(runKernel({ formId: "f", values: bare, locale: "en", form: root }, []))).toEqual(["extra:required"]);
     // Every other field on no page has exactly the state the whole form gives it on the server;
     // the host-bound ones are hidden and skipped, their answers retained.
-    const fold = kernelFoldSubmission(root, FILLED, journey);
-    const whole = kernelFoldSubmission(root, FILLED, undefined);
+    const compiled = compiledOf(root, journey);
+    const fold = kernelFoldSubmission(compiled.root, FILLED, compiled.journey);
+    const whole = kernelFoldSubmission(compiled.root, FILLED, undefined);
     for (const id of ["ref", "secret", "opt_in", "cost", "total", "code"]) {
       expect(fold.placements?.[id], id).toBe("unassigned");
       expect(fold.semantic[id], id).toEqual(whole.semantic[id]);
@@ -1340,7 +1335,7 @@ describe("portable kernel: runKernel judges a field a journey places on no page 
       // An answer sent for it is kept, as the earlier fold kept it.
       expect(runKernel({ formId: "f", values: { name: "N", sibling: "s" }, locale: "en", form: boxed, journey: short, ...extra }, []).values, JSON.stringify(extra)).toEqual({ name: "N", sibling: "s" });
     }
-    const fold = kernelFoldSubmission(boxed, { name: "N" }, short);
+    const fold = kernelFoldSubmission(compiledOf(boxed).root, { name: "N" }, short);
     expect(fold.placements).toMatchObject({ name: "on", listed: "on", sibling: "unassigned" });
     expect(fold.placements?.hbox).toBeUndefined();
     expect(fold.effective.hbox?.visible).toBe(true);
@@ -1375,10 +1370,7 @@ describe("portable kernel: runKernel judges a field a journey places on no page 
 
 // --- Components on no page -----------------------------------------------------
 
-const path27 = (name: string): Expression => ({ kind: "path", path: name });
-const literal27 = (value: string | number | boolean | null): Expression => ({ kind: "literal", value });
-const is27 = (name: string, value: string | number | boolean | null): Expression => ({ kind: "binary", operator: "eq", left: path27(name), right: literal27(value) });
-const plus27 = (left: Expression, right: Expression): Expression => ({ kind: "arithmetic", operator: "add", left, right });
+const is27 = (name: string, value: string | number | boolean | null): string => `${name} = ${JSON.stringify(value)}`;
 const formOf27 = (...children: ComponentNode[]): ComponentNode => ({ id: "form", type: "form", configuration: {}, children: { content: children } });
 const codes27 = (outcome: { errors: ReadonlyArray<{ code: string; componentId?: string | undefined; parameters?: Record<string, unknown> | undefined }> }): string[] =>
   outcome.errors.map((error) => `${error.componentId ?? error.parameters?.field ?? "-"}:${error.code}`);
@@ -1465,9 +1457,9 @@ describe("portable kernel: a node that holds no data defines no key", () => {
   it("works no calculation out for such a node: there is nowhere in the values for its result", () => {
     const calculated = formOf27(
       { id: "count", type: "number", configuration: {} },
-      { id: "banner", type: "html", configuration: {}, rules: { value: plus27(path27("count"), literal27(1)) } },
-      { id: "group", type: "fieldset", configuration: {}, rules: { value: literal27("g") }, children: { content: [] } },
-      { id: "double", type: "number", configuration: {}, rules: { value: plus27(path27("count"), path27("count")) } }
+      { id: "banner", type: "html", configuration: {}, rules: { value: "count + 1" } },
+      { id: "group", type: "fieldset", configuration: {}, rules: { value: '"g"' }, children: { content: [] } },
+      { id: "double", type: "number", configuration: {}, rules: { value: "count + count" } }
     );
     const stripped = runKernel({ formId: "f", values: { count: 2, banner: 99 }, locale: "en", form: calculated }, []);
     expect(stripped.values).toEqual({ count: 2, double: 4 });
@@ -1490,7 +1482,7 @@ describe("portable kernel: a data grid's rows follow their grid", () => {
   });
   const EXCLUDED = { hiddenValueBehavior: "exclude-from-submission" };
   const RETAINED = { hiddenValueBehavior: "retain" };
-  const bigOrder: Expression = { kind: "binary", operator: "gt", left: path27("orders[0].qty"), right: literal27(5) };
+  const bigOrder = "`orders[0].qty` > 5";
   const rows = { "orders[0].qty": 10, "orders[0].sku": "A1", "orders[1].qty": 1, "orders[1].sku": "B2" };
   const whenFull = { rules: { visibleWhen: is27("kind", "full") } };
   const kind: ComponentNode = { id: "kind", type: "select", configuration: { options: [{ value: "short", label: "short" }, { value: "full", label: "full" }, { value: "skip", label: "skip" }, { value: "next", label: "next" }, { value: "route", label: "route" }, { value: "summary", label: "summary" }, { value: "questions", label: "questions" }] } };
@@ -1541,7 +1533,7 @@ describe("portable kernel: a data grid's rows follow their grid", () => {
     const journey: Journey = {
       id: "ordering",
       pages: [
-        { id: "start", components: ["kind"], routes: [{ when: bigOrder, to: "reach" }, { when: { kind: "unary", operator: "not", operand: is27("kind", "full") }, to: "why" }] },
+        { id: "start", components: ["kind"], routes: [{ when: bigOrder, to: "reach" }, { when: `not(${is27("kind", "full")})`, to: "why" }] },
         { id: "order", components: ["orders_grid"] },
         { id: "why", components: ["reason"] },
         { id: "reach", components: ["contact"] }
@@ -1553,12 +1545,13 @@ describe("portable kernel: a data grid's rows follow their grid", () => {
     const answered = runKernel({ formId: "f", values: { kind: "short", ...rows, reason: "restock" }, locale: "en", form, journey }, []);
     expect(answered.errors).toEqual([]);
     expect(answered.values).toEqual({ kind: "short", reason: "restock" });
-    const fold = kernelFoldSubmission(form, { kind: "short", ...rows }, journey);
+    const compiled = compiledOf(form, journey);
+    const fold = kernelFoldSubmission(compiled.root, { kind: "short", ...rows }, compiled.journey);
     expect(fold.trace?.pages).toEqual(["start", "why", "reach"]);
     // On the path: submitted, and read once the grid's page is on it — not by the first page's route.
     const taken = runKernel({ formId: "f", values: { kind: "full", ...rows, reason: "restock" }, locale: "en", form, journey }, []);
     expect(taken.values).toEqual({ kind: "full", ...rows, reason: "restock" });
-    expect(kernelFoldSubmission(form, { kind: "full", ...rows }, journey).trace?.pages).toEqual(["start", "order", "why", "reach"]);
+    expect(kernelFoldSubmission(compiled.root, { kind: "full", ...rows }, compiled.journey).trace?.pages).toEqual(["start", "order", "why", "reach"]);
   });
 
   it("judges a grid whose id is its collection path", () => {
@@ -1569,7 +1562,7 @@ describe("portable kernel: a data grid's rows follow their grid", () => {
 });
 
 describe("portable kernel: answers worked out in the browser and kept as sent (clientDerived)", () => {
-  const number = (id: string, value?: Expression, configuration: Record<string, unknown> = {}): ComponentNode => ({
+  const number = (id: string, value?: string, configuration: Record<string, unknown> = {}): ComponentNode => ({
     id,
     type: "number",
     configuration,
@@ -1580,13 +1573,13 @@ describe("portable kernel: answers worked out in the browser and kept as sent (c
 
   it("lists a calculation it kept unrecomputed while a value was there: one reading host., one with an unanswered read the browser may have withheld", () => {
     const form = formOf27(
-      number("seeded", path27("host.limit")),
+      number("seeded", "host.limit"),
       // only an input that can be hidden and left out of the submission
       // makes its absence untrustworthy; an optional input never hidden is the person's own empty answer.
-      { id: "nickname", type: "text", configuration: { hiddenValueBehavior: "exclude-from-submission" }, rules: { visibleWhen: literal27(true) } },
-      { id: "greeting", type: "text", configuration: {}, rules: { value: { kind: "call", name: "concat", args: [literal27("Hi "), path27("nickname")] } } },
+      { id: "nickname", type: "text", configuration: { hiddenValueBehavior: "exclude-from-submission" }, rules: { visibleWhen: "true" } },
+      { id: "greeting", type: "text", configuration: {}, rules: { value: 'concat("Hi ", nickname)' } },
       number("cost"),
-      number("total", plus27(path27("cost"), literal27(1)))
+      number("total", "cost + 1")
     );
     const outcome = run(form, { seeded: 5, greeting: "Hi ", cost: 2, total: 3 });
     expect(outcome.errors).toEqual([]);
@@ -1603,8 +1596,8 @@ describe("portable kernel: answers worked out in the browser and kept as sent (c
     const form = formOf27(
       number("income"),
       number("members"),
-      number("ratio", { kind: "arithmetic", operator: "divide", left: path27("income"), right: path27("members") }),
-      number("per_person", { kind: "call", name: "coalesce", args: [path27("ratio"), literal27(0)] })
+      number("ratio", "income / members"),
+      number("per_person", "coalesce(ratio, 0)")
     );
     // `members` is an optional input never hidden, so its absence is the person's:
     // `ratio` is worked out over it to no answer, and the `null` is dropped.
@@ -1619,9 +1612,9 @@ describe("portable kernel: answers worked out in the browser and kept as sent (c
     // one: a number sent for the calculation with that input missing is taken on trust, and so is what reads it.
     const withheld = formOf27(
       number("income"),
-      { id: "members", type: "number", configuration: { hiddenValueBehavior: "exclude-from-submission" }, rules: { visibleWhen: literal27(true) } },
-      number("ratio", { kind: "arithmetic", operator: "divide", left: path27("income"), right: path27("members") }),
-      number("per_person", { kind: "call", name: "coalesce", args: [path27("ratio"), literal27(0)] })
+      { id: "members", type: "number", configuration: { hiddenValueBehavior: "exclude-from-submission" }, rules: { visibleWhen: "true" } },
+      number("ratio", "income / members"),
+      number("per_person", "coalesce(ratio, 0)")
     );
     const trusted = run(withheld, { income: 1200, ratio: 7, per_person: 7 });
     expect(trusted.values).toEqual({ income: 1200, ratio: 7, per_person: 7 });
@@ -1632,8 +1625,8 @@ describe("portable kernel: answers worked out in the browser and kept as sent (c
     const form = formOf27(
       number("income"),
       number("members"),
-      number("ratio", { kind: "arithmetic", operator: "divide", left: path27("income"), right: path27("members") }),
-      number("fee", { kind: "arithmetic", operator: "multiply", left: path27("members"), right: literal27(2) })
+      number("ratio", "income / members"),
+      number("fee", "members * 2")
     );
     // Division by zero, reproduced here: no answer, and no `ratio` key in the values.
     const zero = run(form, { income: 1200, members: 0 });
@@ -1651,7 +1644,7 @@ describe("portable kernel: answers worked out in the browser and kept as sent (c
     // Answered, both sides agree on the number.
     expect(run(form, { income: 1200, members: 3 }).values).toEqual({ income: 1200, members: 3, ratio: 400, fee: 6 });
     // Required, a calculation with no answer is unanswered.
-    const required = formOf27(number("members"), { id: "fee", type: "number", configuration: { required: true }, rules: { value: { kind: "arithmetic", operator: "multiply", left: path27("members"), right: literal27(2) } } });
+    const required = formOf27(number("members"), { id: "fee", type: "number", configuration: { required: true }, rules: { value: "members * 2" } });
     expect(codes27(run(required, {}))).toEqual(["fee:required"]);
     expect(codes27(run(required, { members: 0 }))).toEqual([]);
   });
@@ -1660,8 +1653,8 @@ describe("portable kernel: answers worked out in the browser and kept as sent (c
     const form = formOf27(
       number("income"),
       number("members"),
-      number("ratio", { kind: "arithmetic", operator: "divide", left: path27("income"), right: path27("members") }),
-      number("per_person", { kind: "call", name: "coalesce", args: [path27("ratio"), literal27(0)] })
+      number("ratio", "income / members"),
+      number("per_person", "coalesce(ratio, 0)")
     );
     // The ratio over a missing or zero household is no answer (no key sent); per_person reads it
     // and goes on to 0, worked out again here rather than kept as sent.
@@ -1679,14 +1672,14 @@ describe("portable kernel: answers worked out in the browser and kept as sent (c
       expect(forged.clientDerived, JSON.stringify(sent)).toBeUndefined();
     }
     // A read of a plain field with no answer is the person's empty answer: worked out over, not taken on trust.
-    const plain = formOf27(number("members"), number("fee", { kind: "call", name: "coalesce", args: [path27("members"), literal27(0)] }));
+    const plain = formOf27(number("members"), number("fee", "coalesce(members, 0)"));
     const worked = run(plain, { fee: 9 });
     expect(worked.values).toEqual({ fee: 0 });
     expect(worked.clientDerived).toBeUndefined();
     // …unless the field can be hidden and left out of the submission: then it is not reproducible, kept as sent, listed.
     const hideable = formOf27(
-      { id: "members", type: "number", configuration: { hiddenValueBehavior: "clear" }, rules: { visibleWhen: literal27(true) } },
-      number("fee", { kind: "call", name: "coalesce", args: [path27("members"), literal27(0)] })
+      { id: "members", type: "number", configuration: { hiddenValueBehavior: "clear" }, rules: { visibleWhen: "true" } },
+      number("fee", "coalesce(members, 0)")
     );
     const kept = run(hideable, { fee: 9 });
     expect(kept.values).toEqual({ fee: 9 });
@@ -1695,24 +1688,24 @@ describe("portable kernel: answers worked out in the browser and kept as sent (c
 
   it("lists every calculation that reads one of them, through any number of others, in document order", () => {
     const form = formOf27(
-      number("last", plus27(path27("middle"), literal27(1))),
-      number("base", path27("host.start")),
-      number("middle", plus27(path27("base"), literal27(1))),
+      number("last", "middle + 1"),
+      number("base", "host.start"),
+      number("middle", "base + 1"),
       number("cost"),
-      number("apart", plus27(path27("cost"), literal27(1))),
-      { id: "box", type: "container", configuration: {}, children: { content: [number("nested", plus27(path27("last"), path27("cost")), { dataKey: "deep" })] } }
+      number("apart", "cost + 1"),
+      { id: "box", type: "container", configuration: {}, children: { content: [number("nested", "last + cost", { dataKey: "deep" })] } }
     );
     const outcome = run(form, { base: 10, cost: 1 });
     expect(outcome.values).toEqual({ base: 10, cost: 1, middle: 11, last: 12, apart: 2, "box.deep": 13 });
     // As value paths, in the form's order — not the order they were found in.
     expect(outcome.clientDerived).toEqual(["last", "base", "middle", "box.deep"]);
-    const fold = kernelFoldSubmission(form, { base: 10, cost: 1 }, undefined);
+    const fold = kernelFoldSubmission(compiledOf(form).root, { base: 10, cost: 1 }, undefined);
     expect(fold.clientDerived).toEqual(["last", "base", "middle", "box.deep"]);
   });
 
   it("lists only what is submitted, but follows a withheld answer into what read it", () => {
     const hiddenAway = { hiddenValueBehavior: "exclude-from-submission", hidden: true };
-    const form = formOf27(number("base", path27("host.start"), hiddenAway), number("reads", plus27(path27("base"), literal27(1))), number("cleared", path27("host.other"), { hidden: true, hiddenValueBehavior: "clear" }));
+    const form = formOf27(number("base", "host.start", hiddenAway), number("reads", "base + 1"), number("cleared", "host.other", { hidden: true, hiddenValueBehavior: "clear" }));
     const outcome = run(form, { base: 10, cleared: 3 });
     // `base` is withheld and `cleared` cleared: neither is a judged value. `reads` was worked out from `base`.
     expect(outcome.values).toEqual({ reads: 11 });
@@ -1720,7 +1713,7 @@ describe("portable kernel: answers worked out in the browser and kept as sent (c
   });
 
   it("reports them on a run that blocked too: they describe the answers judged", () => {
-    const form = formOf27(number("seeded", path27("host.limit")), { id: "name", type: "text", configuration: { required: true } });
+    const form = formOf27(number("seeded", "host.limit"), { id: "name", type: "text", configuration: { required: true } });
     const outcome = run(form, { seeded: 5 });
     expect(codes27(outcome)).toEqual(["name:required"]);
     expect(outcome.values).toBeUndefined();
@@ -1733,7 +1726,7 @@ describe("portable kernel: answers worked out in the browser and kept as sent (c
       type: "repeatingSection",
       configuration: {},
       collection: { itemFields: ["qty", "double"] },
-      children: { content: [number("qty"), number("double", { kind: "arithmetic", operator: "multiply", left: path27("row.qty"), right: literal27(2) })] }
+      children: { content: [number("qty"), number("double", "row.qty * 2")] }
     });
     // A forged entry result is replaced , and nothing is taken on trust.
     const outcome = run(form, { "lines[0].qty": 2, "lines[0].double": 5 });
@@ -1747,15 +1740,16 @@ describe("portable kernel: answers worked out in the browser and kept as sent (c
 
   it("reports what the recompute kept: the value paths, in document order, a null and an absent one left out", () => {
     const form = formOf27(
-      number("b", path27("missing")),
-      number("a", path27("host.x")),
-      number("nothing", path27("host.y")),
-      number("empty", path27("host.z")),
-      number("fine", plus27(path27("n"), literal27(1))),
+      number("b", "missing"),
+      number("a", "host.x"),
+      number("nothing", "host.y"),
+      number("empty", "host.z"),
+      number("fine", "n + 1"),
       number("n")
     );
-    const index = kernelTreeIndex(form);
-    const result = kernelRecomputeCalculations(form, kernelJsonAnswers({ b: 1, a: 2, empty: null, n: 1, fine: 0 }), index, kernelValuePaths(form), kernelComponentIdsByPath(form));
+    const compiled = compiledOf(form).root;
+    const index = kernelTreeIndex(compiled);
+    const result = kernelRecomputeCalculations(compiled, kernelJsonAnswers({ b: 1, a: 2, empty: null, n: 1, fine: 0 }), index, kernelValuePaths(compiled), kernelComponentIdsByPath(compiled));
     expect(result.unreproduced).toEqual(["b", "a"]);
     expect(result.recalculated).toEqual(["fine"]);
     expect(result.converged).toBe(true);
@@ -1769,16 +1763,16 @@ describe("portable kernel: answers worked out in the browser and kept as sent (c
     const form = formOf27(
       { id: "email", type: "text", configuration: { required: true } },
       number("income", undefined, { required: true }),
-      number("tax", { kind: "arithmetic", operator: "multiply", left: path27("income"), right: literal27(2) }),
+      number("tax", "income * 2"),
       { id: "skip", type: "checkbox", configuration: {} }
     );
     const journey: Journey = {
       id: "apply",
       pages: [
-        { id: "you", components: ["skip", { id: "work_email", type: "text", configuration: { fills: "email" } }], routes: [{ when: path27("skip"), to: "$end" }] },
+        { id: "you", components: ["skip", { id: "work_email", type: "text", configuration: { fills: "email" } }], routes: [{ when: "skip", to: "$end" }] },
         {
           id: "money",
-          components: [{ id: "m1", type: "number" }, { id: "sum", type: "journey-value", configuration: { to: "income", value: path27("m1") } }]
+          components: [{ id: "m1", type: "number" }, { id: "sum", type: "journey-value", configuration: { to: "income", value: "m1" } }]
         }
       ]
     };
@@ -1804,16 +1798,17 @@ describe("portable kernel: answers worked out in the browser and kept as sent (c
     // Judged as the whole form, nothing is worked out by a presentation: the answer is the person's.
     expect(run(form, { email: "a@b.co", income: 100 }).clientDerived).toBeUndefined();
     // The list is worked out from the ownership alone: no own node's rule, no expression is read.
-    const index = kernelTreeIndex(form);
-    const fold = kernelFoldSubmission(form, { email: "a@b.co", income: 100 }, journey);
-    expect(kernelClientDerived(journeyOwnership(form, journey), fold, [], index, kernelValuePaths(form), kernelComponentIdsByPath(form))).toEqual(["income", "tax"]);
-    expect(kernelClientDerived(undefined, fold, [], index, kernelValuePaths(form), kernelComponentIdsByPath(form))).toEqual([]);
+    const compiled = compiledOf(form, journey);
+    const index = kernelTreeIndex(compiled.root);
+    const fold = kernelFoldSubmission(compiled.root, { email: "a@b.co", income: 100 }, compiled.journey);
+    expect(kernelClientDerived(journeyOwnership(compiled.root, journey), fold, [], index, kernelValuePaths(compiled.root), kernelComponentIdsByPath(compiled.root))).toEqual(["income", "tax"]);
+    expect(kernelClientDerived(undefined, fold, [], index, kernelValuePaths(compiled.root), kernelComponentIdsByPath(compiled.root))).toEqual([]);
   });
 
   it("crosses the ABI as part of the outcome, and an outcome without one is what it always was", () => {
     const abi = new JsonWasmAbi();
     const instance = new InProcessWasmHostAdapter().instantiate([], abi);
-    const form = formOf27(number("seeded", path27("host.limit")), number("plain"));
+    const form = formOf27(number("seeded", "host.limit"), number("plain"));
     const through = (values: Record<string, unknown>) => abi.deserializeOutcome(instance.run(abi.serializeContext({ formId: "f", values, locale: "en", form }, WasmValidationHost.STRICT_POLICY)) as string);
     expect(through({ seeded: 5, plain: 1 })).toEqual({
       errors: [],
@@ -1842,8 +1837,8 @@ describe("portable kernel: the components in scope for a journey page (context.p
       { id: "you", components: ["name", { id: "work_email", type: "text", configuration: { fills: "email" } }, { id: "where", type: "grid", children: { content: [{ type: "journey-field", configuration: { componentId: "address" } }] } }] },
       {
         id: "money-page",
-        components: [{ id: "m1", type: "number" }, { id: "sum", type: "journey-value", configuration: { to: "income", value: path27("m1") } }, "savings"],
-        routes: [{ when: { kind: "unary", operator: "not", operand: is27("name", "stop") }, to: "$end" }]
+        components: [{ id: "m1", type: "number" }, { id: "sum", type: "journey-value", configuration: { to: "income", value: "m1" } }, "savings"],
+        routes: [{ when: `not(${is27("name", "stop")})`, to: "$end" }]
       },
       { id: "bye", kind: "exit" }
     ]
@@ -2724,9 +2719,7 @@ describe("portable kernel: the gate gaps", () => {
     });
     it("lists the entry paths a recompute changed, in document order, through kernelRecomputeCalculations", () => {
       // The trees a compiled definition holds: this entry point reads no formula string.
-      const product: Expression = { kind: "arithmetic", operator: "multiply", left: { kind: "path", path: "row.qty" }, right: { kind: "path", path: "row.price" } };
-      const compiled = JSON.parse(JSON.stringify(rowsForm)) as ComponentNode;
-      compiled.children!.content![0]!.children!.content![2]!.rules = { value: product };
+      const compiled = compiledOf(rowsForm).root;
       const index = kernelTreeIndex(compiled);
       const result = kernelRecomputeCalculations(
         compiled,
@@ -3333,14 +3326,14 @@ describe("portable kernel: strict truthiness of rule verdicts", () => {
     children: {
       content: [
         { id: "v", type: "text", configuration: {} },
-        { id: "x", type: "text", configuration: {}, rules: { [rule]: { kind: "path", path: "v" } } }
+        { id: "x", type: "text", configuration: {}, rules: { [rule]: "v" } }
       ]
     }
   });
 
   it.each(answers)("reads %s as a verdict: only true holds, kernel and browser alike", (_label, answer) => {
     for (const rule of ["visibleWhen", "enabledWhen", "readonlyWhen"]) {
-      const root = verdictForm(rule);
+      const root = compiledOf(verdictForm(rule)).root;
       const values: Record<string, unknown> = answer === undefined ? {} : { v: answer };
       const componentTree = new ComponentTree(root);
       const enginePaths = buildValuePaths(root);
@@ -3382,7 +3375,7 @@ describe("portable kernel: strict truthiness of rule verdicts", () => {
       expect(runtime.formValues().v).toEqual(answer);
     }
     expect(runtime.isRequired("x")).toBe(answer === true);
-    expect(kernelFoldSubmission(root, values, undefined).required.x).toBe(answer === true);
+    expect(kernelFoldSubmission(compiledOf(root).root, values, undefined).required.x).toBe(answer === true);
   });
 
   it.each(answers.filter(([, answer]) => answer !== null && typeof answer === "object"))("refuses %s written to a text field: a text box holds one value", (_label, answer) => {
@@ -3472,7 +3465,7 @@ describe("kernelStableStringify as one writer", () => {
 describe("reportFold: the fold's results in the outcome", () => {
   const field = (id: string, configuration: Record<string, unknown> = {}, rules?: Record<string, unknown>): ComponentNode =>
     ({ id, type: "text", configuration, ...(rules ? { rules } : {}) }) as ComponentNode;
-  const shown: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "a" }, right: { kind: "literal", value: "show" } };
+  const shown = 'a = "show"';
   const root: ComponentNode = {
     id: "form",
     type: "form",
@@ -3491,7 +3484,7 @@ describe("reportFold: the fold's results in the outcome", () => {
   // The service's former computation, kept here as the reference.
   const former = (unknownFields: "strip" | "keep", input: Record<string, unknown>) => {
     const known = unknownFields === "keep" ? { ...input } : kernelPartitionValues(input, root).known;
-    const fold = kernelFoldSubmission(root, known, undefined, {});
+    const fold = kernelFoldSubmission(compiledOf(root).root, known, undefined, {});
     const judged = Object.fromEntries(Object.entries(fold.submittable).filter(([, value]) => value !== undefined));
     const defined = unknownFields === "keep" ? input : kernelPartitionValues(input, root).known;
     return {
@@ -3590,7 +3583,7 @@ describe("portable kernel: a data grid's row count", () => {
   });
 
   it("counts nothing for a grid a rule hides: its rows are not checked and it is not refused for having none", () => {
-    const show: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "kind" }, right: { kind: "literal", value: "full" } };
+    const show = 'kind = "full"';
     const form = formWith({ id: "kind", type: "text", configuration: {} }, gridOf({ minRows: 2 }, { rules: { visibleWhen: show } }));
     expect(rowErrors(run(form, { kind: "short" }))).toEqual([]);
     expect(rowErrors(run(form, { kind: "full" }))[0]?.parameters).toEqual({ min: 2, count: 0 });

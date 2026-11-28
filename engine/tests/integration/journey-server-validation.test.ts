@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ComponentNode, FormDefinition } from "../../form-engine/core/schema/types.js";
-import type { Expression } from "../../form-engine/core/expressions/expression.js";
 import type { Journey, JourneyConfiguration, JourneyPage } from "../../form-engine/core/schema/journey.js";
 import type {
   JourneyServerValidator,
@@ -28,10 +27,9 @@ import type {
  * remembered and what is shown.
  */
 
-const path = (name: string): Expression => ({ kind: "path", path: name });
-const literal = (value: string | number | boolean | null): Expression => ({ kind: "literal", value });
-const eq = (name: string, value: string | number | boolean): Expression => ({ kind: "binary", operator: "eq", left: path(name), right: literal(value) });
-const neq = (name: string, value: string | number | boolean): Expression => ({ kind: "binary", operator: "neq", left: path(name), right: literal(value) });
+const literal = (value: string | number | boolean | null): string => JSON.stringify(value);
+const eq = (name: string, value: string | number | boolean): string => `${name} = ${literal(value)}`;
+const neq = (name: string, value: string | number | boolean): string => `${name} != ${literal(value)}`;
 
 function root(): ComponentNode {
   return {

@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import type { Journey } from "../form-engine/core/schema/journey.js";
 import type { ComponentNode } from "../form-engine/core/schema/types.js";
 import { validateJourneyShape } from "../form-engine/core/schema/journey.js";
 import {
   kernelErrorPassesFold,
-  kernelFoldSubmission,
+  kernelFoldSubmission as kernelFold,
   kernelIsJourney,
+  kernelPrepareDefinition,
   runKernel as kernelRun,
   PORTABLE_KERNEL_FUNCTIONS,
   type KernelValidator
@@ -21,7 +21,7 @@ import type { FormulaProblem } from "../form-engine/core/expressions/formula-typ
 import { APPLY_ABOVE, APPLY_BELOW, applyJourney, presentationRoot, publicVariant } from "./fixtures/presentation-form.js";
 
 // A host hands the kernel the function table's signatures, as the in-process and sandbox hosts
-// do: a tree's calls are checked against them like a formula's. These runs do the same.
+// do: a formula's calls are checked against them. These runs do the same.
 const runKernel = (
   context: Parameters<typeof kernelRun>[0],
   validators: Parameters<typeof kernelRun>[1],
@@ -30,19 +30,20 @@ const runKernel = (
   cache?: Parameters<typeof kernelRun>[4]
 ): ReturnType<typeof kernelRun> => kernelRun(context, validators, functions, signatures, cache);
 
+// The fold reads a compiled copy, as runKernel hands it one: these folds compile the form and the
+// journey first.
+const kernelFoldSubmission = (root: ComponentNode, values: Record<string, unknown>, journey: Journey | undefined): ReturnType<typeof kernelFold> => {
+  const prepared = kernelPrepareDefinition(root, journey, undefined, "fail", undefined, formulaFunctionSignatures());
+  return kernelFold(prepared.root, values, prepared.journey as Journey | undefined);
+};
+
 /**
  * The validation kernel over a journey: the server works the path out from the
  * values alone, and judges only what the person was shown.
  */
 
-const path = (name: string): Expression => ({ kind: "path", path: name });
-const literal = (value: string | number | boolean | null): Expression => ({ kind: "literal", value });
-const eq = (name: string, value: string | number | boolean | null): Expression => ({
-  kind: "binary",
-  operator: "eq",
-  left: path(name),
-  right: literal(value)
-});
+/** The formula `name = value`, the value written as a FEEL literal. */
+const eq = (name: string, value: string | number | boolean | null): string => `${name} = ${JSON.stringify(value)}`;
 
 /** An eligibility form: a residency question, two branches on employment, contact details, a
  * note on no page, and an exit message. */
@@ -289,7 +290,7 @@ describe("journey kernel: context journeys the browser would drop", () => {
 /**
  * The kernel compiles the context's journey before it checks its shape, as the
  * browser's `readJourneys` reads the compiled definition. A page or route `when` that is not
- * a formula, a tree or the object form, or a formula that does not parse, is the compile's
+ * a formula or the object form, or a formula that does not parse, is the compile's
  * problem under the formula policy on both sides: dropped and reported under `warn`, refused
  * with `formula.invalid` under `fail`. `journey.invalid` is kept for the shapes the compile
  * leaves as it found them (the describe above).
@@ -404,7 +405,7 @@ describe("journey kernel: a malformed when is the compile's problem, not journey
 });
 
 describe("journey kernel: a hidden answer that is still submitted keeps its format", () => {
-  const byEmail: Expression = eq("by_email", true);
+  const byEmail = eq("by_email", true);
   const form: ComponentNode = {
     id: "form",
     type: "form",
@@ -468,8 +469,6 @@ describe("journey kernel: a hidden answer that is still submitted keeps its form
 });
 
 describe("journey kernel: calculations worked out again", () => {
-  const minus = (left: Expression, right: Expression): Expression => ({ kind: "arithmetic", operator: "subtract", left, right });
-  const lessThan = (name: string, value: number): Expression => ({ kind: "binary", operator: "lt", left: path(name), right: literal(value) });
   const form: ComponentNode = {
     id: "form",
     type: "form",
@@ -477,13 +476,13 @@ describe("journey kernel: calculations worked out again", () => {
     children: {
       content: [
         { id: "birth_year", type: "number", configuration: { required: true } },
-        { id: "age", type: "number", configuration: {}, rules: { value: minus(literal(2026), path("birth_year")) } },
-        { id: "minor", type: "checkbox", configuration: {}, rules: { value: lessThan("age", 18) } },
+        { id: "age", type: "number", configuration: {}, rules: { value: "2026 - birth_year" } },
+        { id: "minor", type: "checkbox", configuration: {}, rules: { value: "age < 18" } },
         { id: "guardian", type: "text", configuration: { required: true }, rules: { visibleWhen: eq("minor", true) } },
-        { id: "seeded", type: "number", configuration: {}, rules: { value: path("host.limit") } },
+        { id: "seeded", type: "number", configuration: {}, rules: { value: "host.limit" } },
         { id: "nickname", type: "text", configuration: {} },
-        { id: "greeting", type: "text", configuration: {}, rules: { value: { kind: "call", name: "concat", args: [literal("Hi "), path("nickname")] } } },
-        { id: "start", type: "number", configuration: {}, rules: { defaultValue: literal(1) } }
+        { id: "greeting", type: "text", configuration: {}, rules: { value: 'concat("Hi ", nickname)' } },
+        { id: "start", type: "number", configuration: {}, rules: { defaultValue: "1" } }
       ]
     }
   };
@@ -538,7 +537,7 @@ describe("journey kernel: calculations worked out again", () => {
             children: {
               content: [
                 { id: "qty", type: "number", configuration: {} },
-                { id: "double", type: "number", configuration: {}, rules: { value: { kind: "arithmetic", operator: "multiply", left: path("row.qty"), right: literal(2) } } }
+                { id: "double", type: "number", configuration: {}, rules: { value: "row.qty * 2" } }
               ]
             }
           }
@@ -557,7 +556,7 @@ describe("journey kernel: calculations worked out again", () => {
     const onNoPage: Journey = {
       id: "age-check",
       pages: [
-        { id: "you", components: ["birth_year"], routes: [{ when: { kind: "binary", operator: "gte", left: path("age"), right: literal(18) }, to: "done" }] },
+        { id: "you", components: ["birth_year"], routes: [{ when: "age >= 18", to: "done" }] },
         { id: "guardian-page", components: ["guardian"] },
         { id: "done", components: ["nickname"] }
       ]
@@ -579,7 +578,7 @@ describe("journey kernel: a repeating section's entries at its own collection pa
   const pick: Journey = {
     id: "order",
     pages: [
-      { id: "start", components: ["kind"], routes: [{ when: { ...eq("kind", "full"), operator: "neq" } as Expression, to: "$end" }] },
+      { id: "start", components: ["kind"], routes: [{ when: 'kind != "full"', to: "$end" }] },
       { id: "full", components: ["items"] }
     ]
   };
@@ -624,8 +623,8 @@ describe("journey kernel: a fold that does not settle", () => {
       children: {
         content: [
           // empty() keeps each rule a real yes or no: a condition holds only for true (strict truthiness).
-          { id: "a", type: "text", configuration: { required: true, hiddenValueBehavior: "exclude-from-submission" }, rules: { visibleWhen: { kind: "call", name: "empty", args: [path("b")] } } },
-          { id: "b", type: "text", configuration: { hiddenValueBehavior: "exclude-from-submission" }, rules: { visibleWhen: { kind: "unary", operator: "not", operand: { kind: "call", name: "empty", args: [path("a")] } } } }
+          { id: "a", type: "text", configuration: { required: true, hiddenValueBehavior: "exclude-from-submission" }, rules: { visibleWhen: "empty(b)" } },
+          { id: "b", type: "text", configuration: { hiddenValueBehavior: "exclude-from-submission" }, rules: { visibleWhen: "not(empty(a))" } }
         ]
       }
     };
@@ -678,7 +677,7 @@ describe("journey kernel: rules the server cannot evaluate", () => {
             id: "mixed",
             type: "text",
             configuration: { required: true },
-            rules: { visibleWhen: { kind: "logical", operator: "and", left: eq("host.role", "admin"), right: literal(false) } }
+            rules: { visibleWhen: `${eq("host.role", "admin")} and false` }
           },
           { id: "wants_more", type: "checkbox", configuration: {} },
           { id: "more", type: "text", configuration: { required: true }, rules: { visibleWhen: eq("wants_more", true) } }
@@ -1019,10 +1018,10 @@ describe("journey kernel: a presentation's own nodes place the form's fields", (
         if (typeof entry === "string") {
           continue;
         }
-        (entry as { rules?: unknown }).rules = { visibleWhen: literal(false), requiredWhen: literal(true), value: path("host.boom"), enabledWhen: path("m1") };
+        (entry as { rules?: unknown }).rules = { visibleWhen: "false", requiredWhen: "true", value: "host.boom", enabledWhen: "m1" };
         if (entry.type === "journey-value") {
           // A different expression, reading other fields, a page condition's worth of nonsense.
-          entry.configuration = { ...entry.configuration, value: { kind: "call", name: "coalesce", args: [path("host.x"), path("@apply.m1")] }, label: "Other" };
+          entry.configuration = { ...entry.configuration, value: "coalesce(host.x, `@apply.m1`)", label: "Other" };
         } else {
           entry.configuration = { ...entry.configuration, required: true, hidden: true, pattern: "[", minLength: 99, hiddenValueBehavior: "clear" };
         }
@@ -1070,7 +1069,7 @@ describe("journey kernel: a presentation's own nodes place the form's fields", (
             { id: "note", type: "html", configuration: { fills: "name" } }, // rule F
             { id: "work_email", type: "text", configuration: { fills: "email" } },
             "annual_income",
-            { id: "again", type: "journey-value", configuration: { to: "annual_income", value: literal(1) } } // rule G
+            { id: "again", type: "journey-value", configuration: { to: "annual_income", value: "1" } } // rule G
           ]
         }
       ]

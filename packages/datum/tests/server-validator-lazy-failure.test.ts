@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "../src/form.js";
 import type { DatumFormElement } from "../src/form.js";
-import type { Expression, FormDefinition } from "@argusvane/datum-engine";
+import type { FormDefinition } from "@argusvane/datum-engine";
 import type { DatumErrorDetail } from "../src/form.js";
 
 import { journeyTitleOf, until } from "./helpers.js";
@@ -30,12 +30,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const eq = (name: string, value: string): Expression => ({
-  kind: "binary",
-  operator: "eq",
-  left: { kind: "path", path: name },
-  right: { kind: "literal", value }
-});
+const eq = (name: string, value: string): string => `${name} = "${value}"`;
 
 function definition(): FormDefinition {
   return {

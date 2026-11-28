@@ -34,7 +34,8 @@ const refusedByJourney: Expectation = all(accepted(false), codes("journey.exit")
 const unknownOrInvalid: Expectation = all(accepted(false), any(codes("journey.unknown"), codes("journey.invalid")));
 const typed: Expectation = { op: "custom", name: "typed-outcome" };
 
-const eq = (path: string, value: string): Json => ({ kind: "binary", operator: "eq", left: { kind: "path", path }, right: { kind: "literal", value } });
+/** The formula `<path> = "<value>"`. */
+const eq = (path: string, value: string): Json => `${path} = ${JSON.stringify(value)}`;
 
 /** The fixture form's journey: `main`, whose first page routes the name STOPZZ to an exit page. */
 const MAIN = (BASE_DEFINITION.journey as { journeys: Json[] }).journeys[0] as { id: string; pages: Json[] };
@@ -205,7 +206,7 @@ export const JOURNEY_VECTORS: Vector[] = [
           content: [
             { id: "resident", type: "text", configuration: { required: true } },
             { id: "income", type: "number", configuration: {} },
-            { id: "eligible", type: "checkbox", configuration: {}, rules: { value: { kind: "binary", operator: "lt", left: { kind: "path", path: "income" }, right: { kind: "literal", value: 30000 } } } },
+            { id: "eligible", type: "checkbox", configuration: {}, rules: { value: "income < 30000" } },
             { id: "bonus", type: "text", configuration: { required: true } }
           ]
         }
@@ -217,7 +218,7 @@ export const JOURNEY_VECTORS: Vector[] = [
         pages: [
           { id: "who", components: ["resident"], routes: [{ when: eq("resident", "yes"), to: "money" }, { to: "result" }] },
           { id: "money", components: ["income"], routes: [{ to: "result" }] },
-          { id: "result", components: ["eligible"], routes: [{ when: { kind: "binary", operator: "eq", left: { kind: "path", path: "eligible" }, right: { kind: "literal", value: true } }, to: "extra" }, { to: "$end" }] },
+          { id: "result", components: ["eligible"], routes: [{ when: "eligible = true", to: "extra" }, { to: "$end" }] },
           { id: "extra", components: ["bonus"], routes: [{ to: "$end" }] }
         ]
       },

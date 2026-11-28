@@ -180,7 +180,8 @@ function settingsOf(node: { configuration?: unknown }): Record<string, unknown> 
 
 /**
  * Whether `value` reads as a rule source: what a worked-out value's `configuration.value` must
- * be. A formula string, an expression tree, or the object form (`RuleSource`); the shape only.
+ * be. A formula string or the object form (`RuleSource`), or the tree a compiled journey holds
+ * in its place; the shape only.
  */
 function isExpression(value: unknown): value is RuleSource {
   if (typeof value === "string") {

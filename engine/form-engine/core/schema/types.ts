@@ -45,11 +45,11 @@ import type { FormTranslations } from "../localization/translations.js";
 
 /**
  * Declarative rule attachments on a component. Each entry is a {@link RuleSource}: a
- * FEEL-subset formula string (`'session = "both" and not(empty(email))'`), an expression tree
- * (the engine's internal form, still accepted as written), or the object form
- * `{ formula | expression, run }` that also says where the rule runs (`"both"`, the default,
- * `"browser"`, `"server"` or `"server-secret"`). A runtime compiles the definition into a copy
- * whose formulas are trees before it reads a rule (`core/expressions/compile.ts`), and
+ * FEEL-subset formula string (`'session = "both" and not(empty(email))'`), or the object form
+ * `{ formula, run }` that also says where the rule runs (`"both"`, the default, `"browser"`,
+ * `"server"` or `"server-secret"`). A runtime compiles the definition into a copy whose formulas
+ * are trees before it reads a rule (`core/expressions/compile.ts`; a rule written as a tree is
+ * refused there as `invalidRule`), and
  * evaluates each against scoped contexts (form / ancestor / row / component / host) with the
  * day the host supplies (`today()`). A formula that does not parse reads as no rule, and the
  * form root's `configuration.formulaErrors` (`"warn" | "fail"`, default `"fail"`) says whether that is warned about or refused; a host's own

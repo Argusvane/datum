@@ -18,8 +18,8 @@ of `and`, `or`, `not`, comparisons and arithmetic cannot be read by hand, and th
 only draw flat rows with one join from it.
 
 So a rule is stored as a FEEL-subset string (`session = "both" and not(empty(email))`). The
-expression tree stays as the engine's internal runtime form and is still accepted in
-definitions. The language is a hand-written subset of DMN FEEL (OMG), `today()` reads a day the
+expression tree stays as the engine's internal runtime form, the shape of a compiled copy, and
+is no rule a definition may hold. The language is a hand-written subset of DMN FEEL (OMG), `today()` reads a day the
 host supplies, and the policy for a formula that does not parse is the author's and the host's
 to set. Hosts also need to serve a definition with its secret rules removed and to check a
 definition before storing it, from hosts that cannot run the engine's TypeScript (the Java, .NET
@@ -27,14 +27,15 @@ and Python hosts).
 
 ## Decision
 
-1. **Three rule shapes, one reading.** Everywhere an `Expression` is accepted a
-   `RuleSource = string | Expression | RuleObject` is accepted (`docs/formulas.md`, "Where a
-   formula is used"). A string is a formula. The object form is
-   `{ formula?: string; expression?: Expression; run?: RunScope }` and exists to carry `run`. A
-   tree is read as written. `kernelRuleExpression(source, parse, signatures)` is the one
-   reader: a tree passes through, a string parses, the object form yields its tree, and a failed
-   parse yields `undefined` (the rule is absent), which is the evaluation-time behaviour under
-   every policy.
+1. **Two rule shapes, one reading.** Every rule site takes a
+   `RuleSource = string | RuleObject` (`docs/formulas.md`, "Where a formula is used"). A string
+   is a formula. The object form is `{ formula?: string; run?: RunScope }` and exists to carry
+   `run`. A tree written where a rule goes (bare, or as an object form's `expression`) is
+   reported by the compile as `invalidRule` (`params.got` `"tree"`) and read as no rule, on
+   every side. `kernelRuleExpression(source, parse, signatures)` is the one reader: a string
+   parses, the object form parses its formula, a compiled copy's tree (bare, or
+   `{ expression, run }`) passes through, and a failed parse yields `undefined` (the rule is
+   absent), which is the evaluation-time behaviour under every policy.
 
 2. **The parser is engine core and kernel-shaped.** `core/expressions/formula.ts` holds
    `kernelParseFormula(text, signatures): FormulaParseResult` and its helper functions, all
@@ -83,17 +84,21 @@ and Python hosts).
    and children slot is new, `configuration` objects are shared, every string rule is replaced by
    its tree, and `problems` lists each failure in document order with a `where` address. The
    author's object is never mutated, so a host that hashes the stored JSON keeps the same hash.
-   A value of no shape is reported as `invalidRule`; it is dropped under `rules` but kept as
-   written at a journey `when`, a worked-out value, a PDF `when` or an expression source, so the
-   shape validators refuse it on both sides. Compile points, one each: the `FormRuntime` constructor (`compileFormDefinition`,
+   A value of no shape is reported as `invalidRule`; it is dropped under `rules`, a tree is
+   dropped at a journey `when`, a worked-out value, a PDF `when` or an expression source too, and
+   any other value is kept as written there, so the shape validators refuse it on both sides.
+   The PDF render model compiles the copy a runtime or the program hands it again
+   (`recompile`), where a tree passes through; a layout handed to it is read as authored. Compile points, one each: the `FormRuntime` constructor (`compileFormDefinition`,
    after plugins install so their functions are known; `definition()` returns the author's object
    and `formRoot()` the compiled root the runtime renders from), `runKernel`'s top (before the
    journey shape check, which runs on the compiled copy so both sides agree), the PDF render
    model's `compilePdfDefinition` (engine and program), the submissions service's `register()`
    (compiled copy stored beside the original; the original is served and hashed) and the
-   packages/datum `runtime-factory`'s constraints stage. A hand-built resolution context with no
-   `rule` reader still works: the browser orchestrator then reads a rule as written when it is a
-   tree, and never parses a string. The `where` addresses are in `docs/formulas.md`, "What is
+   packages/datum `runtime-factory`'s constraints stage. Every host hands the sandbox the
+   definition as authored (the browser its authored root and journey, the submissions service
+   the registered definition), and the kernel compiles it for itself. A hand-built resolution
+   context with no `rule` reader still works: the browser orchestrator then reads a compiled
+   copy's tree, and never parses a string. The `where` addresses are in `docs/formulas.md`, "What is
    stored".
 
 6. **The policy `formulaErrors: "warn" | "fail"`, default `fail` on every side.** Form level:
