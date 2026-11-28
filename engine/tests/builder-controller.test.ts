@@ -387,6 +387,17 @@ describe("BuilderController", () => {
       expect(ctrl.cssClassError).toMatch(/not a valid class name/);
     });
 
+    it("words the problems it already listed in the new language once lent other words", () => {
+      const ctrl = themed();
+      ctrl.add("text");
+      const id = ctrl.selectedComponentId()!;
+      ctrl.setDraftProperty(id, "cssClass", "bad!class");
+      expect(ctrl.problemsOf(id).find((problem) => problem.target === "cssClass")?.message).toBe('"bad!class" is not a valid class name.');
+      ctrl.setTextWords({ locale: "fr", catalog: { fr: { "themeClasses.invalid.one": "FR: {list} invalide." } } });
+      expect(ctrl.cssClassError).toBe('FR: "bad!class" invalide.');
+      expect(ctrl.problemsOf(id).find((problem) => problem.target === "cssClass")?.message).toBe('FR: "bad!class" invalide.');
+    });
+
     it("refuses to commit a malformed token — the renderer would drop it silently", () => {
       const ctrl = themed();
       ctrl.add("text");

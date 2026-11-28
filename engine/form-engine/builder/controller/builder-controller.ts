@@ -3594,6 +3594,8 @@ export class BuilderController {
   public setTextWords(words: { locale?: string | undefined; catalog?: BuilderTextCatalog | (() => BuilderTextCatalog | undefined) | undefined }): void {
     this.textLocaleValue = words.locale;
     this.textCatalogValue = words.catalog;
+    // The problems kept for the panels (problemsOf) are worded in these words: kept no longer.
+    this.revision += 1;
     if (this.selectedId) {
       this.refreshCssClassChecks();
     }
