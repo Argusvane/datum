@@ -700,20 +700,30 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
   }
 
   /**
-   * A clean copy takes the stored rule's text, run scope and kind when they moved under it (an
-   * undo, an edit in Form). The kind is compared on its own: a Show over `c` and a Hide over
-   * `not(c)` open with the same box text, and Apply wraps the box by the copy's kind.
+   * A clean copy takes the stored rule's text, run scope and kind, and its field's "When hidden",
+   * "On paper" and check words, when they moved under it (an undo, an edit in Form). The kind is
+   * compared on its own: a Show over `c` and a Hide over `not(c)` open with the same box text, and
+   * Apply wraps the box by the copy's kind.
    */
   private followStored(working: Working, rule: LogicRule): void {
     if (working.route !== undefined) {
       this.followStoredRoute(working, working.route, rule);
       return;
     }
-    // What a hidden answer does is the component's key, which the inspector's "When hidden" row
-    // writes too: a clean copy shows what is stored now.
+    // What a hidden answer does, whether it prints on paper and a check's words are the
+    // component's keys, which the inspector writes too: a clean copy shows what is stored now.
+    // Apply compares "On paper" with the live `print.show`, so a stale tick would write it again.
     const hidden = rule.hiddenValueBehavior ?? this.hiddenDefaultOf(working.componentId);
     if ((working.kind === "show" || working.kind === "hide") && hidden !== working.hidden) {
       working.hidden = hidden;
+      working.baseline = this.serialize(working);
+    }
+    const paper = working.componentId !== undefined && this.printShowOf(working.componentId) === "always";
+    const message = typeof rule.message === "string" ? rule.message : "";
+    if (paper !== working.paper || message !== working.openedMessage) {
+      working.paper = paper;
+      working.message = message;
+      working.openedMessage = message;
       working.baseline = this.serialize(working);
     }
     const text = openedTextOf(rule);

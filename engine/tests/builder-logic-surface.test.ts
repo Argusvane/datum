@@ -145,4 +145,36 @@ describe("a clean copy follows the stored rule", () => {
     apply(surface);
     expect(node(ctrl, "x").rules?.visibleWhen).toBe('a = "2"');
   });
+
+  it("unticks On paper when an undo takes print.show away, so the next Apply does not write it again", async () => {
+    const { surface, ctrl } = await mountInLogic();
+    openCard(surface, "form:x:visibleWhen");
+    const paper = inside(surface).querySelector<HTMLInputElement>("[data-logic-paper]")!;
+    paper.checked = true;
+    paper.dispatchEvent(new Event("change", { bubbles: true }));
+    apply(surface);
+    expect((node(ctrl, "x").configuration as Record<string, unknown>).print).toMatchObject({ show: "always" });
+    ctrl.undo();
+    expect((node(ctrl, "x").configuration as Record<string, unknown>).print).toBeUndefined();
+    expect(inside(surface).querySelector<HTMLInputElement>("[data-logic-paper]")!.checked).toBe(false);
+    expect(surface.dirty).toBe(false);
+    type(surface, 'a = "2"');
+    apply(surface);
+    expect(node(ctrl, "x").rules?.visibleWhen).toBe('a = "2"');
+    expect((node(ctrl, "x").configuration as Record<string, unknown>).print).toBeUndefined();
+  });
+
+  it("shows a check's words an undo puts back", async () => {
+    const { surface, ctrl } = await mountInLogic();
+    openCard(surface, "form:v:validWhen");
+    const message = inside(surface).querySelector<HTMLInputElement>("[data-logic-message]")!;
+    message.value = "New";
+    message.dispatchEvent(new Event("input", { bubbles: true }));
+    apply(surface);
+    expect((node(ctrl, "v").configuration as { messages: { rule: string } }).messages.rule).toBe("New");
+    ctrl.undo();
+    expect((node(ctrl, "v").configuration as { messages: { rule: string } }).messages.rule).toBe("Old");
+    expect(inside(surface).querySelector<HTMLInputElement>("[data-logic-message]")!.value).toBe("Old");
+    expect(surface.dirty).toBe(false);
+  });
 });
