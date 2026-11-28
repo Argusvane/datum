@@ -164,6 +164,40 @@ describe("a mode switch given way to while it activates", () => {
     expect(slow.log.at(-1)).toBe("deactivate");
   });
 
+  it("gives way to the mode attribute set back to the mode on the page, or taken away", async () => {
+    for (const back of [(element: DatumBuilderElement) => element.setAttribute("mode", "form"), (element: DatumBuilderElement) => element.removeAttribute("mode")]) {
+      const element = mount();
+      const slow = gatedMode("slow");
+      element.addMode(slow.mode);
+      element.setAttribute("mode", "slow");
+      back(element);
+      await slow.finish();
+      expect(element.mode).toBe("form");
+      expect(element.getAttribute("mode") ?? "form").toBe("form");
+      expect(slow.active()).toBe(false);
+      element.remove();
+    }
+  });
+
+  it("gives way to the document already on the page, chosen again", async () => {
+    const element = mount();
+    element.addMode({
+      id: "docs",
+      label: "Docs",
+      controller: new BuilderController({ initialRoot: formRoot() }),
+      documents: { list: () => [{ id: "a", label: "A" }], selectedId: () => "a", select: () => undefined, subscribe: () => () => undefined }
+    });
+    expect(element.setMode("docs")).toBe(true);
+    await until(() => element.mode === "docs");
+    const slow = gatedMode("slow");
+    element.addMode(slow.mode);
+    expect(element.setMode("slow")).toBe(true);
+    expect(element.selectDocument("docs", "a")).toBe(true);
+    await slow.finish();
+    expect(element.mode).toBe("docs");
+    expect(slow.active()).toBe(false);
+  });
+
   it("takes down a mode whose document could not be opened after its activate ran", async () => {
     const element = mount();
     const log: string[] = [];

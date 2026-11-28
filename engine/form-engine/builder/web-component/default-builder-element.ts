@@ -1739,6 +1739,8 @@ export class DatumBuilderElement extends HTMLElementBase {
   private overviewAddDown: (() => void) | undefined;
   /** The mode a switch is activating, until it lands or another choice supersedes it. */
   private activating: BuilderMode | undefined;
+  /** Set while {@link reflectMode} writes the `mode` attribute, which is the shell's own write and no host's choice. */
+  private reflectingMode = false;
   /** The document whose card takes focus once the overview is drawn (its chunk was still loading). */
   private pendingOverviewFocus: { documentId: string | undefined } | undefined;
   /** Data's surface, once its chunk has loaded. */
@@ -1941,6 +1943,11 @@ export class DatumBuilderElement extends HTMLElementBase {
     if (name === "mode") {
       const id = value ?? PRIMARY_BUILDER_MODE;
       if (id === this.activeMode.id) {
+        // The host naming the mode on the page again: a switch still activating gives way to it,
+        // as in setMode. The shell's own write of the attribute (reflectMode) is no choice.
+        if (!this.reflectingMode) {
+          this.supersedeActivation();
+        }
         return;
       }
       // A mode not registered yet is honoured when it is (see addMode). A switch held by the
@@ -2215,6 +2222,8 @@ export class DatumBuilderElement extends HTMLElementBase {
       });
     }
     if (!mode.documents || mode.documents.selectedId() === documentId) {
+      // The document already on the page, as setMode's mode: a switch still activating gives way to it.
+      this.supersedeActivation();
       return true;
     }
     return mode.controller.requestLeave(() => {
@@ -9851,7 +9860,12 @@ export class DatumBuilderElement extends HTMLElementBase {
   /** Mirrors the mode on the page onto the `mode` attribute. */
   private reflectMode(): void {
     if (this.getAttribute("mode") !== this.activeMode.id) {
-      this.setAttribute("mode", this.activeMode.id);
+      this.reflectingMode = true;
+      try {
+        this.setAttribute("mode", this.activeMode.id);
+      } finally {
+        this.reflectingMode = false;
+      }
     }
     // The workspace follows a mode change from anywhere: the dropdown, setMode, the
     // mode attribute, a host's removeMode. A designer's mode has its own workspace; the
