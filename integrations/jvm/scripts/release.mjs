@@ -11,7 +11,9 @@
 //      older than the sources is refused), unless --allow-stale says the dist is already right. The files land in
 //      integrations/jvm/target/datum-assets; the Maven build below generates them again from the same dist
 //      (its root project runs the same script), with -Ddatum.assets.allowStale=true when --allow-stale was given;
-//   2. the security suite's program mode over the sandbox program this release ships, `--gate release`;
+//   2. the security suite's program mode over the sandbox program this release ships, `--gate release`, on quickjs-emscripten
+//      (the page's engine); after 3a it runs again on the qjs-wasi.wasm the build compiled, held to the pom's qjs.sha256
+//      (the engine of the jars), and either failure stops the release before anything is uploaded;
 //   3. Maven from integrations/jvm, in two runs so that the checks of step 4 GATE the upload (Central releases cannot
 //      be deleted, so nothing may be uploaded before the checks pass):
 //        a. `./mvnw -B -ntp -Prelease -Drevision=<v> clean verify`: builds and, in verify, signs (the GPG key is in
@@ -60,6 +62,8 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+
+import { readJvmPin } from "../../shared/scripts/pin-runtime.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 // DATUM_RELEASE_REPO names the checkout to build and check when the script runs from another one: the Release Maven workflow
@@ -294,6 +298,29 @@ export const realRunProblems = ({ version, allowStale = false, skipSecuritySuite
   ...(allowStale ? ["--allow-stale ships a dist this run did not build; a release builds its own"] : []),
   ...(skipSecuritySuite ? ["--skip-security-suite ships a program the suite did not check; a release runs it"] : [])
 ];
+
+/**
+ * The security suite's command line over the sandbox program, `--gate release`: on quickjs-emscripten (the page's engine),
+ * or, given `wasm` and `sha256`, on that qjs-wasi.wasm (the engine of the jars), which the suite refuses unless it has the
+ * sha256.
+ */
+export const securitySuiteArgs = ({ cli, program, manifest, wasm, sha256 }) => [
+  cli,
+  "--program", program,
+  "--manifest", manifest,
+  "--gate", "release",
+  ...(wasm !== undefined ? ["--qjs-wasm", wasm, "--qjs-sha256", sha256] : [])
+];
+
+/**
+ * The qjs-wasi.wasm the Maven build compiled: the pom's default under datum-sandbox-endive's target/, or the file a
+ * `-Dqjs.wasm.file=` option names (an air-gapped build), resolved as Maven does, against that module's folder.
+ */
+export const qjsWasmFile = (mavenArgs, root = jvm) => {
+  const module = join(root, "libs", "datum-sandbox-endive");
+  const named = mavenArgs.map((arg) => /^-Dqjs\.wasm\.file=(.+)$/.exec(arg)?.[1]).filter((path) => path !== undefined).at(-1);
+  return named !== undefined ? resolve(module, named) : join(module, "target", "qjs", "qjs-wasi.wasm");
+};
 
 /** Every refusal of step 0: the tree and tag, the origin, the CI run of HEAD and the changelog. */
 export const releaseGuardProblems = (tag, version, { cwd = repo, gh = ghRun, changelog } = {}) => {
@@ -566,6 +593,13 @@ const main = () => {
     fail(`release: --maven-args may carry only -D / -X options that are not -DautoPublish, -Dgpg.skip, -Drevision, -DskipTests or -DskipITs (got ${badArg}); goals and profiles are this script's.`);
   }
   const tag = `v${version}`;
+  const suite = join(repo, "packages", "conformance-suite");
+  const programs = join(jvm, "target", "datum-assets", "datum-programs");
+  const suiteProgram = {
+    cli: join(suite, "dist", "cli.mjs"),
+    program: join(programs, "programs", "datum-sandbox-program.js"),
+    manifest: join(programs, "manifest.json")
+  };
   const mavenRun = (goals) => run(join(jvm, "mvnw"), ["-B", "-ntp", "-Prelease", ...(allowStale ? ["-Ddatum.assets.allowStale=true"] : []), ...goals, ...mavenArgs], { cwd: jvm });
 
   // 0. The commit. A real release refuses; a dry run says what a real one would refuse and goes on.
@@ -593,24 +627,18 @@ const main = () => {
       fail("release: the asset build failed; nothing released.");
     }
 
-    // 2. The security suite over the program this release ships.
+    // 2. The security suite over the program this release ships, on quickjs-emscripten: the engine of the page the
+    // assets serve. The run on the server's engine follows the Maven build (3a), which fetches and compiles that module.
     if (argv.includes("--skip-security-suite")) {
       console.warn("release: --skip-security-suite given; the sandbox program was NOT checked by the security suite.");
     } else {
-      const suite = join(repo, "packages", "conformance-suite");
       if (!existsSync(join(suite, "dist", "cli.mjs"))) {
         const builtSuite = run(process.execPath, [join(suite, "scripts", "build-cli.mjs")], { cwd: suite });
         if (builtSuite.status !== 0) {
           fail("release: the security suite could not be built (npm install in packages/conformance-suite, or --skip-security-suite); nothing released.");
         }
       }
-      const programs = join(jvm, "target", "datum-assets", "datum-programs");
-      const checked = run(process.execPath, [
-        join(suite, "dist", "cli.mjs"),
-        "--program", join(programs, "programs", "datum-sandbox-program.js"),
-        "--manifest", join(programs, "manifest.json"),
-        "--gate", "release"
-      ]);
+      const checked = run(process.execPath, securitySuiteArgs(suiteProgram));
       if (checked.status !== 0) {
         fail(`release: the security suite did not pass the sandbox program (exit ${checked.status}); nothing released.`);
       }
@@ -628,6 +656,17 @@ const main = () => {
     const built = mavenRun([`-Drevision=${version}`, ...(dryRun || stage ? ["-Dgpg.skip=true"] : []), "clean", "verify"]);
     if (built.status !== 0) {
       fail(`release: Maven verify failed (exit ${built.status}); nothing uploaded.`);
+    }
+
+    // 3b. The security suite again, on the engine the jars run: the qjs-wasi.wasm this build compiled, which the suite refuses
+    // unless it has the pom's qjs.sha256, run as the server runs it (a fresh instance per call, the same run script).
+    if (!argv.includes("--skip-security-suite")) {
+      const pin = readJvmPin(join(jvm, "libs", "datum-sandbox-endive", "pom.xml"));
+      const checked = run(process.execPath, securitySuiteArgs({ ...suiteProgram, wasm: qjsWasmFile(mavenArgs), sha256: pin.sha256 }));
+      if (checked.status !== 0) {
+        // Exit 2 is a usage or configuration error: a module that is not the pinned one, or a tree whose suite predates --qjs-wasm.
+        fail(`release: the security suite did not pass the sandbox program on qjs-wasi.wasm (exit ${checked.status}${checked.status === 2 ? ": the module is not the pinned one, or this tree's suite cannot run it" : ""}); nothing uploaded.`);
+      }
     }
   }
 

@@ -14,6 +14,8 @@ export { loadProgram, programFromText, ProgramLoadError, type LoadedProgram } fr
 export { ProgramRunner, type ProgramRunConfig, type BudgetProfile } from "./runners/program/program-runner.js";
 export { ProgramSession, StartupError, verdictFrom, refusalFrom, type SessionOptions, type RunOutput } from "./runners/program/session.js";
 export { detectAbi, compareAbi, type AbiDetection } from "./runners/program/detect-abi.js";
+export { loadQjsWasiModule, QjsWasiLoadError, runScript, framed, type QjsWasiModule } from "./runners/program/qjs-wasi.js";
+export { QjsWasiHost, QJS_WASI_BUDGET_MS, type QjsWasiHostOptions } from "./runners/program/qjs-wasi-host.js";
 export { canonicalText, referenceDigest, sha256Hex } from "./reference/canonical.js";
 export { chooseGolden, BUNDLED_GOLDEN, BUNDLED_GOLDEN_ABI, type GoldenFile } from "./fixtures/golden.js";
 export { SUITE_NAME, SUITE_VERSION, VECTOR_SET_ID, DEFAULT_ABI_FLOOR } from "./version.js";

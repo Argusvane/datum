@@ -14,6 +14,8 @@ import type { ProgramReport, ResultStatus, VariantResult, VectorResult } from ".
 import type { Fixture, PluginSource, Vector, VectorInput } from "../../vectors/schema.js";
 import { detectAbi, type AbiDetection } from "./detect-abi.js";
 import type { LoadedProgram } from "./load-program.js";
+import type { QjsWasiModule } from "./qjs-wasi.js";
+import { QJS_WASI_BUDGET_MS } from "./qjs-wasi-host.js";
 import { loadWorkerModule, ProgramSession, StartupError, type RunOutput } from "./session.js";
 
 export type BudgetProfile = "node" | "browser";
@@ -36,6 +38,8 @@ export interface ProgramRunConfig {
   freezeIntrinsics?: boolean;
   /** `release` skips the rows that are still pending (a variant with its own pending gate); `full` (or left out) runs them. */
   gate?: "release" | "full";
+  /** The server hosts' engine (`qjs-wasi.wasm`, checked against its pin) instead of quickjs-emscripten. */
+  engine?: QjsWasiModule;
 }
 
 /** The status of a vector whose rows were judged under different gates: a failure anywhere counts, then what is still pending, then warnings and promotions. */
@@ -148,7 +152,8 @@ export class ProgramRunner {
         gate: variant.gate ?? vector.gate
       }))
     ];
-    if (rows.some((row) => row.fixture.host === "worker") && (await loadWorkerModule()) === undefined) {
+    // Under qjs-wasi every call is a guest of its own, with its own clock: no row needs the worker host.
+    if (this.config.engine === undefined && rows.some((row) => row.fixture.host === "worker") && (await loadWorkerModule()) === undefined) {
       return { ...base, status: "SKIP", expected: expectedText, observed: null, durationMs: 0, limitMs: null, notes: "needs the Node worker host (@argusvane/datum-quickjs-wasm-host/worker), which this build cannot reach (the bundled command line keeps it external); run from the repository with npm run check:source" };
     }
     const started = performance.now();
@@ -161,6 +166,11 @@ export class ProgramRunner {
       // A row of its own that is still pending is not run in a release check (the vector-level case is skipped by the caller).
       if (this.config.gate === "release" && row.gate.status === "pending" && row.id !== "(base)") {
         skippedRows.push(`${row.id}: pending (blocked by ${row.gate.blockedBy}); run with --gate full`);
+        continue;
+      }
+      // The heap recycler is the quickjs-emscripten host's: under qjs-wasi no module outlives its call, so there is nothing to recycle.
+      if (this.config.engine !== undefined && row.fixture.hostOptions?.recycleHeapBytes !== undefined) {
+        skippedRows.push(`${row.id}: the heap recycler belongs to the quickjs-emscripten host; under qjs-wasi every call runs in a fresh instance`);
         continue;
       }
       const outcome = await this.runRow(vector, row.fixture, row.input);
@@ -215,14 +225,15 @@ export class ProgramRunner {
       return vector.limits.programMs;
     }
     if (vector.limits.programBudgetMultiple !== undefined) {
-      const budget = this.nodeBudget(vector) ?? fixture.hostOptions?.maxEvalMs ?? PROFILE_BUDGET_MS[this.config.budgetProfile];
+      const budget = this.nodeBudget(vector) ?? fixture.hostOptions?.maxEvalMs ?? (this.config.engine !== undefined ? QJS_WASI_BUDGET_MS : PROFILE_BUDGET_MS[this.config.budgetProfile]);
       return vector.limits.programBudgetMultiple * budget;
     }
     return null;
   }
 
+  /** The vector's allowance for a slow Node host; under qjs-wasi the server hosts' default budget is already above it. */
   private nodeBudget(vector: Vector): number | undefined {
-    return vector.limits.nodeBudgetMs;
+    return this.config.engine !== undefined ? undefined : vector.limits.nodeBudgetMs;
   }
 
   private async open(fixture: Pick<Fixture, "plugins" | "hostOptions" | "host">): Promise<ProgramSession> {
@@ -234,7 +245,8 @@ export class ProgramRunner {
       ...(this.config.freezeIntrinsics === false ? { freezeIntrinsics: false } : {}),
       ...(maxEvalMs !== undefined ? { maxEvalMs } : {}),
       ...(fixture.hostOptions?.memoryLimitBytes !== undefined ? { memoryLimitBytes: fixture.hostOptions.memoryLimitBytes } : {}),
-      ...(fixture.hostOptions?.recycleHeapBytes !== undefined ? { recycleHeapBytes: fixture.hostOptions.recycleHeapBytes } : {})
+      ...(fixture.hostOptions?.recycleHeapBytes !== undefined ? { recycleHeapBytes: fixture.hostOptions.recycleHeapBytes } : {}),
+      ...(this.config.engine !== undefined ? { engine: this.config.engine } : {})
     });
   }
 

@@ -16,6 +16,7 @@ import type { ParityReport, ResultStatus, VectorResult } from "../../report/mode
 import { matchesSelector } from "../../vectors/index.js";
 import type { Fixture, Vector, VectorInput } from "../../vectors/schema.js";
 import type { LoadedProgram } from "../program/load-program.js";
+import type { QjsWasiModule } from "../program/qjs-wasi.js";
 import { ProgramSession } from "../program/session.js";
 import { openParityAdapters } from "./adapters.js";
 import { compareBytes } from "./compare.js";
@@ -37,6 +38,8 @@ export interface ParityRunOptions {
   skip?: readonly string[];
   now?: Date;
   onResult?: (result: VectorResult) => void;
+  /** The program runs on the server hosts' engine (`qjs-wasi.wasm`) instead of quickjs-emscripten. */
+  engine?: QjsWasiModule;
 }
 
 export interface ParityRunOutput {
@@ -124,10 +127,10 @@ async function kernelSays(abi: JsonWasmAbi, wire: string): Promise<Said> {
   }
 }
 
-async function programSays(program: LoadedProgram, wire: string): Promise<Said> {
+async function programSays(program: LoadedProgram, wire: string, engine: QjsWasiModule | undefined): Promise<Said> {
   let session: ProgramSession;
   try {
-    session = await ProgramSession.open({ program: program.text });
+    session = await ProgramSession.open({ program: program.text, ...(engine !== undefined ? { engine } : {}) });
   } catch (error) {
     return { text: FAILED, why: error instanceof Error ? error.message : String(error) };
   }
@@ -272,7 +275,7 @@ export async function runParityVectors(options: ParityRunOptions): Promise<Parit
           for (const row of rows) {
             await breathe();
             const wire = wireFor(abi, row);
-            table.push({ key: row.key, kernel: await kernelSays(abi, wire), program: await programSays(options.program, wire) });
+            table.push({ key: row.key, kernel: await kernelSays(abi, wire), program: await programSays(options.program, wire, options.engine) });
           }
           const diff = differences(table);
           const outcome = settleAgainstLedger(vector.id, "kernel-program", rows.map((row) => row.key), diff.differing, ledger, now);
@@ -288,7 +291,7 @@ export async function runParityVectors(options: ParityRunOptions): Promise<Parit
             const root = { id: "form", type: "form", configuration: { formulaErrors: "fail" }, children: { content: [{ id: "r", type: entry.kind, configuration: {}, rules: { value: entry.formula } }] } };
             const wire = abi.serializeContext({ formId: "parity-functions", values: {}, locale: "en", today: FUNCTION_TODAY, form: root } as never, WasmValidationHost.STRICT_POLICY);
             const kernel = await kernelSays(abi, wire);
-            const program = await programSays(options.program, wire);
+            const program = await programSays(options.program, wire, options.engine);
             table.push({ key: entry.id, kernel, program });
             for (const [side, said] of [["kernel", kernel], ["program", program]] as const) {
               const value = said.text === FAILED ? undefined : (JSON.parse(said.text) as { values?: { r?: unknown } }).values?.r;
@@ -307,7 +310,7 @@ export async function runParityVectors(options: ParityRunOptions): Promise<Parit
           break;
         }
         case "PAR-05": {
-          const session = await ProgramSession.open({ program: options.program.text });
+          const session = await ProgramSession.open({ program: options.program.text, ...(options.engine !== undefined ? { engine: options.engine } : {}) });
           try {
             const rows = await digestParity(options.golden, session);
             const differing = rows.filter((row) => row.disagree.length > 0).map((row) => row.name);

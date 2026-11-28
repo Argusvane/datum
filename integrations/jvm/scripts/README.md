@@ -20,7 +20,8 @@
   under the repository's own copyright line.
 - Runtime pin: `npm run jvm:pin-runtime [-- v0.16.2]` rewrites the `qjs.*` properties
   between the `datum:qjs begin/end` comments of `libs/datum-sandbox-endive/pom.xml` from the repository's pinned qjs
-  release (version, the official quickjs-ng download URL and its sha256).
+  release (version, the official quickjs-ng download URL and its sha256), and the FastAPI host's `runtime.json` with
+  them: both server hosts run the same module, and the FastAPI script tests fail while the two pins disagree.
 
 - `release.mjs` (`npm run jvm:release -- --version <x.y.z> [--dry-run | --stage | --publish] [--allow-stale]
   [--skip-security-suite] [--maven-args "<extra Maven options>"] [--check-only]`): builds,
