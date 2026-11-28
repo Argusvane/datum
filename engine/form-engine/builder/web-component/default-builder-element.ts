@@ -2112,11 +2112,13 @@ export class DatumBuilderElement extends HTMLElementBase {
   private returnToForm(mode: BuilderMode): void {
     this.endTrying();
     this.modeToken += 1;
+    const superseded = this.activating;
     this.activating = undefined;
     this.setDocumentFaceBusy(false);
     mode.deactivate?.();
     this.detachModeChrome(mode);
     this.activeMode = this.modeMap.get(PRIMARY_BUILDER_MODE)!;
+    this.takeDownSuperseded(superseded);
     if (this.wrapEl) {
       this.applyPanelControllers();
       this.applySurface(undefined);
@@ -3314,14 +3316,32 @@ export class DatumBuilderElement extends HTMLElementBase {
     });
   }
 
-  /** A switch still activating gives way to a choice made since: it lands nothing when its turn comes. */
+  /**
+   * A switch still activating gives way to a choice made since: it lands nothing when its turn
+   * comes, and its mode is taken down ({@link takeDownSuperseded}).
+   */
   private supersedeActivation(): void {
-    if (this.activating === undefined) {
+    const superseded = this.activating;
+    if (superseded === undefined) {
       return;
     }
     this.activating = undefined;
     this.modeToken += 1;
     this.setDocumentFaceBusy(false);
+    this.takeDownSuperseded(superseded);
+  }
+
+  /**
+   * Deactivates `mode`, whose switch gave way to another choice or failed: what its `activate`
+   * set up (a designer hearing the form's edits as made on its page, its listener on the shell)
+   * must not stay while another mode is on the page. Asked as soon as the switch gives way, and
+   * again once its `activate` settles, for what it set up after that. The mode on the page, and
+   * one a newer switch is activating again, are left as they are.
+   */
+  private takeDownSuperseded(mode: BuilderMode | undefined): void {
+    if (mode !== undefined && mode !== this.activeMode && mode !== this.activating) {
+      mode.deactivate?.();
+    }
   }
 
   /**
@@ -9870,13 +9890,16 @@ export class DatumBuilderElement extends HTMLElementBase {
    * Switches to `mode`: its own `activate` first (the tab shows busy; a failure leaves the
    * page as it was), then, when asked, the mode's document; then the old mode's chrome comes
    * down, the panels are re-pointed and the new mode's chrome goes up. A newer switch
-   * supersedes one still activating.
+   * supersedes one still activating; a mode whose switch is superseded or fails is deactivated
+   * again, so it is never left active off the page.
    */
   private async activateMode(mode: BuilderMode, documentId?: string): Promise<void> {
     this.endTrying();
     const token = (this.modeToken += 1);
     const previous = this.activeMode;
+    const superseded = this.activating;
     this.activating = mode;
+    this.takeDownSuperseded(superseded);
     // Focus on what the author pressed (a card's Open, "‹ Journeys") is put somewhere drawn once the switch lands.
     const hadFocus = this.shownFocus() !== undefined;
     const left = previous.documents ? { modeId: previous.id, documentId: previous.documents.selectedId() } : undefined;
@@ -9894,9 +9917,12 @@ export class DatumBuilderElement extends HTMLElementBase {
           new CustomEvent<BuilderModeErrorDetail>("builder-mode-error", { detail: { mode: mode.id, error }, bubbles: true, composed: true })
         );
       }
+      // Its `activate` may have run some way, or all the way before the document failed.
+      this.takeDownSuperseded(mode);
       return;
     }
     if (token !== this.modeToken) {
+      this.takeDownSuperseded(mode);
       return;
     }
     // Try it pressed while the mode activated ends before the panels move.
@@ -9934,7 +9960,9 @@ export class DatumBuilderElement extends HTMLElementBase {
     this.endTrying();
     const token = (this.modeToken += 1);
     // A mode switch still activating is superseded by this move.
+    const superseded = this.activating;
     this.activating = undefined;
+    this.takeDownSuperseded(superseded);
     this.setDocumentFaceBusy(true);
     try {
       await mode.documents?.select(documentId);
