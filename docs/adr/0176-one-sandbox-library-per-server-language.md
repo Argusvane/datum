@@ -94,7 +94,13 @@ down with details and names no web type; the binding adapts it.
 
 - **JVM.** `DatumSandbox` (`.runtime`) is `AutoCloseable`, built by `DatumSandbox.builder()`; with
   no runtime given it selects the engine by `SandboxSettings.engine().id()` (default `endive`) and
-  uses the packaged programs. The bytecode gate lives here: an engine that reports mode `bytecode`
+  uses the packaged programs. Each packaged file it reads (the freeze snippet, and each program not
+  overridden) must be listed in datum-programs' `programs.json` with its sha256 and have the sha256
+  datum-sandbox was built with: the build copies the same generation's `programs.json` into
+  datum-sandbox's jar (`ProgramStore.PINS`), as datum-sandbox-endive's holds `qjs-wasi.wasm` to
+  `qjs.sha256`. A missing description, an unlisted file or missing pins stop the start
+  (`ProgramUnavailableException`); a `datum.runtime.programs.*` override is listed nowhere and is
+  proved by the ABI probe. The bytecode gate lives here: an engine that reports mode `bytecode`
   stops the start unless `allow-bytecode`, before any program is proved, for an application's own
   runtime as for Endive.
 - **Python.** `DatumSandbox(settings, *, runtime=None, sandbox=None, ...)` is a context manager.
