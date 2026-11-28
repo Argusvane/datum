@@ -717,6 +717,17 @@ describe("editing a journey", () => {
     expect(form.getProperty("consent", "required")).toBeUndefined();
   });
 
+  it("puts nothing up when it is disposed while its activate is still loading the designer", async () => {
+    const form = formController();
+    const root = new EventTarget();
+    const listen = vi.spyOn(root, "addEventListener");
+    const mode = createJourneyBuilderMode({ form, journey: seed() });
+    const activation = mode.activate?.({ ...context(), root: root as unknown as ShadowRoot });
+    mode.dispose?.();
+    await activation;
+    expect(listen.mock.calls.filter(([type]) => type === "click")).toEqual([]);
+  });
+
   it("never adds what is unassigned to a selected exit page, which sends nothing", async () => {
     const { mode } = await activated({
       journeys: [
@@ -2249,6 +2260,30 @@ describe("an agent's way in", () => {
     expect(mode.journeys.map((journey) => journey.id)).toEqual(["intake", "quick"]);
     expect(mode.controller).toBe(controller);
     expect(controller.canUndo()).toBe(true);
+  });
+
+  it("removeJourney() takes the Step view of the journey shown with it: none of its listeners stay on the form", async () => {
+    const { form, mode } = await activated();
+    let live = 0;
+    const on = form.on.bind(form);
+    vi.spyOn(form, "on").mockImplementation(((type: never, listener: never) => {
+      live += 1;
+      const off = on(type, listener);
+      return () => {
+        live -= 1;
+        off();
+      };
+    }) as typeof form.on);
+    mode.view = "step";
+    const withStep = live;
+    expect(withStep).toBeGreaterThan(0);
+    mode.removeJourney("intake");
+    expect(mode.journeyId).toBe("quick");
+    expect(mode.view).toBe("step");
+    // The page's Step view moved to "quick": one Step view's listeners, not two.
+    expect(live).toBe(withStep);
+    mode.dispose?.();
+    expect(live).toBe(0);
   });
 
   it("applyCatalogForAgent() moves the page to the first journey left when the catalog no longer lists the one shown", async () => {

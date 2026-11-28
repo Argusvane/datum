@@ -69,10 +69,12 @@ function rulesOf(node: ComponentNode | undefined): Record<string, unknown> {
 /** The value's kind in words, as the table's Type column says it. */
 export function schemaTypeText(node: DataModelNode, repeating: boolean, words: BuilderWords = areaWords()): string {
   let base: string;
+  // A checkboxes group or a multiselect takes several of its options; a choice takes one.
+  const several = node.format === "flags" || node.kind === "object" || node.kind === "array";
   if (node.options && node.options.length > 0) {
-    base = words.text(node.format === "flags" || node.kind === "object" ? "schemaRows.type.anyOf" : "schemaRows.type.oneOf", { count: node.options.length });
+    base = words.text(several ? "schemaRows.type.anyOf" : "schemaRows.type.oneOf", { count: node.options.length });
   } else if (node.optionsSource) {
-    base = words.text("schemaRows.type.oneOfList");
+    base = words.text(several ? "schemaRows.type.anyOfList" : "schemaRows.type.oneOfList");
   } else {
     switch (node.kind) {
       case "string":
@@ -129,7 +131,8 @@ export function schemaTypeText(node: DataModelNode, repeating: boolean, words: B
 
 /**
  * The table: every place in the data a component holds, in the data model's order. A
- * checkboxes group (an object of flags) is one row; a repeating section's fields are rows
+ * checkboxes group (an object of flags) is one row, and so is a list of plain values (a
+ * multiselect, a file field taking several files); a repeating section's fields are rows
  * inside its entries (`owners[].name`), marked repeating.
  */
 export function buildSchemaTable(root: ComponentNode, options: SchemaTableOptions = {}): SchemaTable {
@@ -200,8 +203,11 @@ export function buildSchemaTable(root: ComponentNode, options: SchemaTableOption
   const rows: SchemaRow[] = [];
   walkDataModel(model, (node) => {
     const componentId = node.componentId;
-    const isLeaf = node.kind !== "object" || node.format === "flags";
-    if (!componentId || !isLeaf || node.kind === "array") {
+    // A list of entries (a repeating section's, a data grid's) is no answer of its own: its
+    // entry's fields are the rows. A list of plain values (a multiselect, several files) is one.
+    const isEntries = node.kind === "array" && node.items?.kind === "object";
+    const isLeaf = (node.kind !== "object" || node.format === "flags") && !isEntries;
+    if (!componentId || !isLeaf) {
       return node.kind === "object" && node.format === "flags" ? "skip" : undefined;
     }
     const component = nodeById.get(componentId);
@@ -245,7 +251,7 @@ export function buildSchemaTable(root: ComponentNode, options: SchemaTableOption
       ...(step !== undefined ? { stepId: step } : {}),
       pages: onPages
     });
-    return node.kind === "object" ? "skip" : undefined;
+    return node.kind === "object" || node.kind === "array" ? "skip" : undefined;
   });
   return { rows, steps, pages };
 }

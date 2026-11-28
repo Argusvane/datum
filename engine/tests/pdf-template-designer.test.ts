@@ -192,6 +192,21 @@ describe("createPdfTemplateDesigner", () => {
     expect(folded.fields).toEqual(layout().fields);
   });
 
+  it("keeps a signature's `appearance: false` (an invisible signature) through an edit: it is a choice, not a default", () => {
+    const designer = createPdfTemplateDesigner({
+      layout: layout({ signature: { field: "Sign here", appearance: false } }),
+      inspection: INSPECTION,
+      formRoot: FORM
+    });
+    expect(designer.layoutFrom(designer.builderOptions.initialRoot!).signature).toEqual({ field: "Sign here", appearance: false });
+
+    const controller = new BuilderController();
+    controller.setOptions(designer.builderOptions);
+    controller.setProperty("template", "name", "Renamed");
+    controller.setProperty("template", "signature.required", false);
+    expect(designer.layoutFrom(controller.snapshot()).signature).toEqual({ field: "Sign here", appearance: false });
+  });
+
   it("round-trips the layout's when and any root key it has no box for: nothing is lost on the first edit", () => {
     const quebec = { kind: "binary", operator: "eq", left: { kind: "path", path: "province" }, right: { kind: "literal", value: "QC" } } as const;
     // A key from a later layout version, say — the designer has no box for it, and keeps it.

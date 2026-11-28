@@ -200,6 +200,37 @@ describe("the person's File menu Save (unchanged)", () => {
     expect(heard).toEqual([{ action: "save", localeChanges: changes }]);
   });
 
+  it("hands the next save a language renamed while a save was pending: the baseline is what the save was handed", async () => {
+    const pending = deferred();
+    const save = vi.fn<(context: BuilderSaveContext) => Promise<void>>().mockReturnValueOnce(pending.promise).mockResolvedValue(undefined);
+    const element = await mount({ save }, LANGUAGES);
+    const first = element.requestSave();
+    expect(save.mock.calls[0]![0].localeChanges).toEqual({ removed: [], renamed: [] });
+    // Nothing holds the Languages workspace while the save is pending.
+    expect(element.controller.localizationActions.renameLocale("fr", "fr-CA")).toBe(true);
+    pending.resolve();
+    await expect(first).resolves.toEqual({ status: "saved" });
+    const changes = { removed: [], renamed: [{ from: "fr", to: "fr-CA" }] };
+    expect(element.localeChangesSinceSave()).toEqual(changes);
+    await expect(element.requestSave()).resolves.toEqual({ status: "saved", localeChanges: changes });
+    expect(save.mock.calls[1]![0].localeChanges).toEqual(changes);
+  });
+
+  it("hands the next save both what a failed save was handed and what moved while it was pending", async () => {
+    const pending = deferred();
+    const save = vi.fn<(context: BuilderSaveContext) => Promise<void>>().mockReturnValueOnce(pending.promise).mockResolvedValue(undefined);
+    const element = await mount({ save }, LANGUAGES);
+    expect(element.controller.renameLocale("fr", "fr-CA")).toBe(true);
+    const first = element.requestSave();
+    expect(save.mock.calls[0]![0].localeChanges).toEqual({ removed: [], renamed: [{ from: "fr", to: "fr-CA" }] });
+    expect(element.controller.renameLocale("fr-CA", "fr-QC")).toBe(true);
+    pending.reject(new Error("Conflict 409"));
+    await expect(first).resolves.toEqual({ status: "failed", message: "Conflict 409" });
+    const changes = { removed: [], renamed: [{ from: "fr", to: "fr-QC" }] };
+    expect(element.localeChangesSinceSave()).toEqual(changes);
+    await expect(element.requestSave()).resolves.toEqual({ status: "saved", localeChanges: changes });
+  });
+
   it("disables the Save item it makes busy even while it has the person's focus (Ctrl/Cmd+S in the open File menu)", async () => {
     const pending = deferred();
     const save = vi.fn(() => pending.promise);
@@ -222,14 +253,18 @@ describe("the person's File menu Save (unchanged)", () => {
     expect(item.hasAttribute("aria-disabled")).toBe(false);
   });
 
-  it("shows the host's failure beside the File menu, for a throw and for a rejection, and tells the host nothing", async () => {
-    const element = await mount({
-      save: () => {
-        throw new Error("Disk full");
-      }
-    });
+  it("shows the host's failure beside the File menu, for a throw and for a rejection, tells the host nothing and keeps the languages unsaved", async () => {
+    const element = await mount(
+      {
+        save: () => {
+          throw new Error("Disk full");
+        }
+      },
+      LANGUAGES
+    );
     const heard = fileActionEvents();
-    const markLocalesSaved = vi.spyOn(element.controller, "markLocalesSaved");
+    expect(element.controller.renameLocale("fr", "fr-CA")).toBe(true);
+    const changes = { removed: [], renamed: [{ from: "fr", to: "fr-CA" }] };
     q(element, "[data-file-save]").click();
     expect(q(element, "[data-file-error]").hidden).toBe(false);
     expect(q(element, "[data-file-error-message]").textContent).toContain("Disk full");
@@ -238,7 +273,7 @@ describe("the person's File menu Save (unchanged)", () => {
     await flush();
     expect(q(element, "[data-file-error-message]").textContent).toContain("Conflict 409");
     expect(q<HTMLButtonElement>(element, "[data-file-save]").disabled).toBe(false);
-    expect(markLocalesSaved).not.toHaveBeenCalled();
+    expect(element.controller.localeChangesSinceSave()).toEqual(changes);
     expect(heard).toEqual([]);
   });
 });

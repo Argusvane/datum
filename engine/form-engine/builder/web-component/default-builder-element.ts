@@ -1739,6 +1739,8 @@ export class DatumBuilderElement extends HTMLElementBase {
   private overviewAddDown: (() => void) | undefined;
   /** The mode a switch is activating, until it lands or another choice supersedes it. */
   private activating: BuilderMode | undefined;
+  /** Set while {@link reflectMode} writes the `mode` attribute, which is the shell's own write and no host's choice. */
+  private reflectingMode = false;
   /** The document whose card takes focus once the overview is drawn (its chunk was still loading). */
   private pendingOverviewFocus: { documentId: string | undefined } | undefined;
   /** Data's surface, once its chunk has loaded. */
@@ -1941,6 +1943,11 @@ export class DatumBuilderElement extends HTMLElementBase {
     if (name === "mode") {
       const id = value ?? PRIMARY_BUILDER_MODE;
       if (id === this.activeMode.id) {
+        // The host naming the mode on the page again: a switch still activating gives way to it,
+        // as in setMode. The shell's own write of the attribute (reflectMode) is no choice.
+        if (!this.reflectingMode) {
+          this.supersedeActivation();
+        }
         return;
       }
       // A mode not registered yet is honoured when it is (see addMode). A switch held by the
@@ -2068,7 +2075,8 @@ export class DatumBuilderElement extends HTMLElementBase {
 
   /**
    * Removes a mode. The active one is left at once — the host's decision, not held by the
-   * guard — and the form comes back on the page. The form itself cannot be removed.
+   * guard — and the form comes back on the page; a switch to it still activating lands nothing.
+   * The form itself cannot be removed.
    */
   public removeMode(id: string): void {
     if (id === PRIMARY_BUILDER_MODE) {
@@ -2080,6 +2088,8 @@ export class DatumBuilderElement extends HTMLElementBase {
     }
     if (mode === this.activeMode) {
       this.returnToForm(mode);
+    } else if (mode === this.activating) {
+      this.supersedeActivation();
     }
     this.modeMap.delete(id);
     this.surfaces.delete(mode);
@@ -2112,11 +2122,13 @@ export class DatumBuilderElement extends HTMLElementBase {
   private returnToForm(mode: BuilderMode): void {
     this.endTrying();
     this.modeToken += 1;
+    const superseded = this.activating;
     this.activating = undefined;
     this.setDocumentFaceBusy(false);
     mode.deactivate?.();
     this.detachModeChrome(mode);
     this.activeMode = this.modeMap.get(PRIMARY_BUILDER_MODE)!;
+    this.takeDownSuperseded(superseded);
     if (this.wrapEl) {
       this.applyPanelControllers();
       this.applySurface(undefined);
@@ -2210,6 +2222,8 @@ export class DatumBuilderElement extends HTMLElementBase {
       });
     }
     if (!mode.documents || mode.documents.selectedId() === documentId) {
+      // The document already on the page, as setMode's mode: a switch still activating gives way to it.
+      this.supersedeActivation();
       return true;
     }
     return mode.controller.requestLeave(() => {
@@ -3314,14 +3328,32 @@ export class DatumBuilderElement extends HTMLElementBase {
     });
   }
 
-  /** A switch still activating gives way to a choice made since: it lands nothing when its turn comes. */
+  /**
+   * A switch still activating gives way to a choice made since: it lands nothing when its turn
+   * comes, and its mode is taken down ({@link takeDownSuperseded}).
+   */
   private supersedeActivation(): void {
-    if (this.activating === undefined) {
+    const superseded = this.activating;
+    if (superseded === undefined) {
       return;
     }
     this.activating = undefined;
     this.modeToken += 1;
     this.setDocumentFaceBusy(false);
+    this.takeDownSuperseded(superseded);
+  }
+
+  /**
+   * Deactivates `mode`, whose switch gave way to another choice or failed: what its `activate`
+   * set up (a designer hearing the form's edits as made on its page, its listener on the shell)
+   * must not stay while another mode is on the page. Asked as soon as the switch gives way, and
+   * again once its `activate` settles, for what it set up after that. The mode on the page, and
+   * one a newer switch is activating again, are left as they are.
+   */
+  private takeDownSuperseded(mode: BuilderMode | undefined): void {
+    if (mode !== undefined && mode !== this.activeMode && mode !== this.activating) {
+      mode.deactivate?.();
+    }
   }
 
   /**
@@ -4570,11 +4602,25 @@ export class DatumBuilderElement extends HTMLElementBase {
   }
 
   /**
+   * One of what the canvas previews with (the binding, its assets, the data sources), kept with
+   * the rest of {@link options} and handed to the controller on its own. Not through `options`:
+   * that re-applies every option given so far, `initialRoot` and `localization` among them, which
+   * would put the form back as it was loaded and take the author's edits and their history with it.
+   */
+  private setPreviewOption<K extends "binding" | "assets" | "dataSourceResolver" | "dataSources">(key: K, value: DatumBuilderOptions[K]): void {
+    this.optionsState = { ...this.optionsState, [key]: value };
+    this.ctrl.setOptions({ [key]: value } as Pick<DatumBuilderOptions, K>);
+    if (this.wrapEl) {
+      this.applyPanelControllers();
+    }
+  }
+
+  /**
    * The design-system binding the canvas draws the form with (see
    * {@link DatumBuilderOptions.binding}): a binding, a registered id, or nothing for Datum's.
    */
   public set binding(value: LiveBinding | string | undefined) {
-    this.options = { binding: value };
+    this.setPreviewOption("binding", value);
   }
 
   public get binding(): LiveBinding | string | undefined {
@@ -4583,7 +4629,7 @@ export class DatumBuilderElement extends HTMLElementBase {
 
   /** The design system's files the canvas draws with (see {@link DatumBuilderOptions.assets}). */
   public set assets(value: LiveAssets | undefined) {
-    this.options = { assets: value };
+    this.setPreviewOption("assets", value);
   }
 
   public get assets(): LiveAssets | undefined {
@@ -4592,7 +4638,7 @@ export class DatumBuilderElement extends HTMLElementBase {
 
   /** Resolves `select` options in the canvas preview. */
   public set dataSourceResolver(value: DataSourceResolver | undefined) {
-    this.options = { dataSourceResolver: value };
+    this.setPreviewOption("dataSourceResolver", value);
   }
 
   public get dataSourceResolver(): DataSourceResolver | undefined {
@@ -4601,7 +4647,7 @@ export class DatumBuilderElement extends HTMLElementBase {
 
   /** The host's wiring-time data sources — the same set it hands the renderer. */
   public set dataSources(value: DataSourceSet | undefined) {
-    this.options = { dataSources: value };
+    this.setPreviewOption("dataSources", value);
   }
 
   public get dataSources(): DataSourceSet | undefined {
@@ -5267,6 +5313,10 @@ export class DatumBuilderElement extends HTMLElementBase {
     this.syncStripItems();
     this.syncFeatureParts();
 
+    // Fresh panels have no controller and no Form fields yet, and the bar has heard no controller
+    // since a disconnect unbound it: the re-point below is made in full, whatever was pointed before.
+    this.pointedController = undefined;
+    this.fieldsSource = undefined;
     this.renderDocuments();
     this.applyPanelControllers();
     this.applyTheme();
@@ -5847,14 +5897,18 @@ export class DatumBuilderElement extends HTMLElementBase {
       return Promise.resolve(this.saveFailed(error));
     }
     const saved = (): BuilderSaveOutcome => {
-      this.ctrl.markLocalesSaved();
-      this.localeTargets = new Map();
       this.fileActionDone({ action: "save", ...(changed ? { localeChanges } : {}), ...asked });
       return { status: "saved", ...(changed ? { localeChanges } : {}) };
     };
     if (!(result instanceof Promise)) {
+      this.ctrl.markLocalesSaved();
+      this.localeTargets = new Map();
       return Promise.resolve(saved());
     }
+    // The languages the save was handed are the baseline at once: one renamed or removed while it
+    // is pending is the next save's to hand over. A failure puts the baseline back, that move on top.
+    const unsaved = this.ctrl.markLocalesSaving();
+    this.localeTargets = new Map();
     this.setSaving(true, trigger);
     return result.then(
       () => {
@@ -5863,6 +5917,8 @@ export class DatumBuilderElement extends HTMLElementBase {
       },
       (error: unknown) => {
         this.setSaving(false);
+        unsaved();
+        this.localeTargets = new Map(this.ctrl.localeChangesSinceSave().renamed.map((entry) => [entry.from, entry.to]));
         return this.saveFailed(error);
       }
     );
@@ -9828,7 +9884,12 @@ export class DatumBuilderElement extends HTMLElementBase {
   /** Mirrors the mode on the page onto the `mode` attribute. */
   private reflectMode(): void {
     if (this.getAttribute("mode") !== this.activeMode.id) {
-      this.setAttribute("mode", this.activeMode.id);
+      this.reflectingMode = true;
+      try {
+        this.setAttribute("mode", this.activeMode.id);
+      } finally {
+        this.reflectingMode = false;
+      }
     }
     // The workspace follows a mode change from anywhere: the dropdown, setMode, the
     // mode attribute, a host's removeMode. A designer's mode has its own workspace; the
@@ -9870,13 +9931,16 @@ export class DatumBuilderElement extends HTMLElementBase {
    * Switches to `mode`: its own `activate` first (the tab shows busy; a failure leaves the
    * page as it was), then, when asked, the mode's document; then the old mode's chrome comes
    * down, the panels are re-pointed and the new mode's chrome goes up. A newer switch
-   * supersedes one still activating.
+   * supersedes one still activating; a mode whose switch is superseded or fails is deactivated
+   * again, so it is never left active off the page.
    */
   private async activateMode(mode: BuilderMode, documentId?: string): Promise<void> {
     this.endTrying();
     const token = (this.modeToken += 1);
     const previous = this.activeMode;
+    const superseded = this.activating;
     this.activating = mode;
+    this.takeDownSuperseded(superseded);
     // Focus on what the author pressed (a card's Open, "‹ Journeys") is put somewhere drawn once the switch lands.
     const hadFocus = this.shownFocus() !== undefined;
     const left = previous.documents ? { modeId: previous.id, documentId: previous.documents.selectedId() } : undefined;
@@ -9894,9 +9958,12 @@ export class DatumBuilderElement extends HTMLElementBase {
           new CustomEvent<BuilderModeErrorDetail>("builder-mode-error", { detail: { mode: mode.id, error }, bubbles: true, composed: true })
         );
       }
+      // Its `activate` may have run some way, or all the way before the document failed.
+      this.takeDownSuperseded(mode);
       return;
     }
     if (token !== this.modeToken) {
+      this.takeDownSuperseded(mode);
       return;
     }
     // Try it pressed while the mode activated ends before the panels move.
@@ -9934,7 +10001,9 @@ export class DatumBuilderElement extends HTMLElementBase {
     this.endTrying();
     const token = (this.modeToken += 1);
     // A mode switch still activating is superseded by this move.
+    const superseded = this.activating;
     this.activating = undefined;
+    this.takeDownSuperseded(superseded);
     this.setDocumentFaceBusy(true);
     try {
       await mode.documents?.select(documentId);

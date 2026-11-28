@@ -437,6 +437,38 @@ describe("the net language change a host reads at its Save", () => {
     ctrl.setOptions({ initialRoot: ctrl.snapshot(), localization: ctrl.localization()! });
     expect(ctrl.localeChangesSinceSave()).toEqual({ removed: [], renamed: [] });
   });
+
+  it("counts from the languages a pending save was handed, and from the old baseline again with both moves when it fails", () => {
+    const ctrl = languagesController(FOUR);
+    expect(ctrl.renameLocale("fr", "fr-CA")).toBe(true);
+    drop(ctrl, "es");
+    const failed = ctrl.markLocalesSaving();
+    expect(ctrl.localeChangesSinceSave()).toEqual({ removed: [], renamed: [] });
+    // Moved while the save is pending: the language renamed again, another removed, one added and renamed.
+    expect(ctrl.renameLocale("fr-CA", "fr-QC")).toBe(true);
+    drop(ctrl, "de");
+    expect(ctrl.localizationActions.addLocale("it")).toBe(true);
+    expect(ctrl.renameLocale("it", "it-CH")).toBe(true);
+    expect(ctrl.localeChangesSinceSave()).toEqual({ removed: ["de"], renamed: [{ from: "fr-CA", to: "fr-QC" }] });
+    failed();
+    expect(ctrl.localeChangesSinceSave()).toEqual({ removed: ["de", "es"], renamed: [{ from: "fr", to: "fr-QC" }] });
+    // An Undo of a removal made before the save still brings the old baseline's language back as no change.
+    ctrl.undo();
+    ctrl.undo();
+    ctrl.undo();
+    ctrl.undo();
+    expect(ctrl.localeChangesSinceSave()).toEqual({ removed: ["es"], renamed: [{ from: "fr", to: "fr-CA" }] });
+  });
+
+  it("leaves a baseline set again while the save was pending, when the save fails", () => {
+    const ctrl = languagesController(FOUR);
+    drop(ctrl, "es");
+    const failed = ctrl.markLocalesSaving();
+    expect(ctrl.renameLocale("fr", "fr-CA")).toBe(true);
+    ctrl.markLocalesSaved();
+    failed();
+    expect(ctrl.localeChangesSinceSave()).toEqual({ removed: [], renamed: [] });
+  });
 });
 
 describe("one step's events read a consistent definition and a layout's own language follows a rename", () => {

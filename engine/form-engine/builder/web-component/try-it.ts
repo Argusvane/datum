@@ -1500,7 +1500,10 @@ export function createTryIt(options: TryItOptions & TryItWordsOptions): TryItCon
 
   /**
    * The server's checks, when the WebAssembly validator is on and loaded: its problems kept for
-   * the panel and returned; `undefined` when it is off, or did not run (the panel says why).
+   * the panel and returned; `undefined` when it is off, or did not run (the panel says why). A run
+   * whose state was replaced while it ran (the checks turned off or taken away, the answers
+   * cleared, another run started) keeps nothing for the panel; it still returns its own problems
+   * while the checks are on, and `undefined` once they are off.
    */
   async function runServerChecks(root: ComponentNode, tried: Record<string, unknown>, locale: string): Promise<ReturnType<typeof checkAnswerErrors> | undefined> {
     if (!server.on) {
@@ -1510,17 +1513,25 @@ export function createTryIt(options: TryItOptions & TryItWordsOptions): TryItCon
     if (!checks || !server.on) {
       return undefined;
     }
-    server = { on: true, busy: true };
+    const running: typeof server = { on: true, busy: true };
+    server = running;
     render();
     try {
       const kinds = formKinds(options.controller());
       // The host values of Try it's Settings, so the server's checks judge a `host.` rule as the preview does.
       const hostContext = options.trySettings()?.tryHostContext();
       const outcome = await checks.run({ root, answers: tried, locale, ...(kinds !== undefined ? { kinds } : {}), ...(hostContext !== undefined ? { hostContext } : {}) });
+      if (server !== running) {
+        // Another run, or the checks turned off, took the panel's state: this run keeps none of it,
+        // but a run the checks are still on for still answers its own caller.
+        return server.on ? outcome.errors : undefined;
+      }
       server = { on: true, busy: false, problems: describeProblems(root, outcome.errors, locale, words(), textSourcesOf(options.controller())) };
       return outcome.errors;
     } catch (error) {
-      server = { on: true, busy: false, failure: words().text("try.server.failed", { reason: error instanceof Error ? error.message : String(error) }) };
+      if (server === running) {
+        server = { on: true, busy: false, failure: words().text("try.server.failed", { reason: error instanceof Error ? error.message : String(error) }) };
+      }
       return undefined;
     }
   }

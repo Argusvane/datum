@@ -405,4 +405,22 @@ describe("buildInspectorModel", () => {
     expect(model.sections[0]?.title).toBe("Basics");
     expect(model.sections[0]?.fields.map((f) => f.propertyPath)).toEqual(["required", "label"]);
   });
+
+  it("draws a field with a visibleWhen only while the property holds the value, in a flat editor too", () => {
+    const fields = [
+      { id: "kind", type: "text", propertyPath: "kind", label: "Kind" },
+      { id: "extra", type: "text", propertyPath: "extra", label: "Extra", visibleWhen: { propertyPath: "kind", equals: "b" } }
+    ];
+    const flat = { mode: "replace", fields } as unknown as PropertyEditorDefinition;
+    const sectioned = { mode: "replace", fields, sections: [{ id: "basics", title: "Basics", fieldIds: ["kind", "extra"] }] } as unknown as PropertyEditorDefinition;
+    const drawn = (editor: PropertyEditorDefinition, kind: string): string[] => {
+      const model = buildInspectorModel({ id: "thing", type: "thing", configuration: { kind } }, [], editor);
+      expect(model.shapeDependsOn).toEqual(["kind"]);
+      return model.sections.flatMap((s) => s.fields.map((f) => f.propertyPath));
+    };
+    expect(drawn(sectioned, "a")).toEqual(["kind"]);
+    expect(drawn(flat, "a")).toEqual(["kind"]);
+    expect(drawn(sectioned, "b")).toEqual(["kind", "extra"]);
+    expect(drawn(flat, "b")).toEqual(["kind", "extra"]);
+  });
 });

@@ -246,6 +246,50 @@ describe("check(): the panel's own Check, handed back", () => {
     expect(await agent.tryIt.check()).toEqual({ problems: [], server: "off" });
   });
 
+  it("leaves the server's checks off when the person turns them off while a run is under way", async () => {
+    let answer!: () => void;
+    const serverChecks: TryItServerChecks = {
+      run: () =>
+        new Promise((resolve) => {
+          answer = () => resolve({ errors: [{ componentId: "email", code: "domain", message: "Use your work address.", path: "email" }] as never });
+        })
+    };
+    const agent = made({ answers: { fullName: "Ana", email: "ana@example.org" }, serverChecks });
+    agent.tryIt.click([{ dataset: { tryServer: "" }, type: "checkbox", checked: true } as unknown as HTMLElement]);
+    await vi.waitFor(() => expect(answer).toBeDefined());
+    agent.tryIt.click([{ dataset: { tryServer: "" }, type: "checkbox", checked: false } as unknown as HTMLElement]);
+    expect(agent.tryIt.serverChecksOn()).toBe(false);
+    answer();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(agent.tryIt.serverChecksOn()).toBe(false);
+    expect(agent.panel.textContent).not.toContain("Use your work address.");
+  });
+
+  it("still hands an older check its own server answer when a newer run started while it waited", async () => {
+    const answers: Array<() => void> = [];
+    const serverChecks: TryItServerChecks = {
+      run: () =>
+        new Promise((resolve) => {
+          answers.push(() => resolve({ errors: [{ componentId: "email", code: "domain", message: "Use your work address.", path: "email" }] as never }));
+        })
+    };
+    const agent = made({ answers: { fullName: "Ana", email: "ana@example.org" }, serverChecks });
+    agent.tryIt.click([{ dataset: { tryServer: "" }, type: "checkbox", checked: true } as unknown as HTMLElement]);
+    await vi.waitFor(() => expect(answers).toHaveLength(1));
+    answers[0]!();
+    await vi.waitFor(() => expect(agent.tryIt.serverChecksOn()).toBe(true));
+    const older = agent.tryIt.check();
+    await vi.waitFor(() => expect(answers).toHaveLength(2));
+    const newer = agent.tryIt.check();
+    await vi.waitFor(() => expect(answers).toHaveLength(3));
+    answers[1]!();
+    const outcome = await older;
+    expect(outcome.server).toBe("ran");
+    expect(outcome.problems).toEqual([{ componentId: "email", label: "Email", message: expect.any(String) }]);
+    answers[2]!();
+    expect((await newer).server).toBe("ran");
+  });
+
   it("reports a server check that was on and did not answer as failed", async () => {
     const serverChecks: TryItServerChecks = {
       run: async () => {
