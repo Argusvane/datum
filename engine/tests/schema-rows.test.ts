@@ -181,4 +181,22 @@ describe("buildSchemaTable", () => {
       ["name", "name", "Text"]
     ]);
   });
+
+  it("reads a list of values whose options come from a data source as any of a list", () => {
+    const root: ComponentNode = {
+      id: "root",
+      type: "form",
+      configuration: {},
+      children: {
+        content: [
+          { id: "tags", type: "multiselect", configuration: { label: "Tags", data: { sourceId: "tagList" } } },
+          { id: "size", type: "select", configuration: { label: "Size", data: { sourceId: "sizes" } } }
+        ]
+      }
+    } as ComponentNode;
+    expect(buildSchemaTable(root).rows.map((row) => [row.componentId, row.typeText])).toEqual([
+      ["tags", "Any of a list"],
+      ["size", "One of a list"]
+    ]);
+  });
 });

@@ -69,10 +69,12 @@ function rulesOf(node: ComponentNode | undefined): Record<string, unknown> {
 /** The value's kind in words, as the table's Type column says it. */
 export function schemaTypeText(node: DataModelNode, repeating: boolean, words: BuilderWords = areaWords()): string {
   let base: string;
+  // A checkboxes group or a multiselect takes several of its options; a choice takes one.
+  const several = node.format === "flags" || node.kind === "object" || node.kind === "array";
   if (node.options && node.options.length > 0) {
-    base = words.text(node.format === "flags" || node.kind === "object" || node.kind === "array" ? "schemaRows.type.anyOf" : "schemaRows.type.oneOf", { count: node.options.length });
+    base = words.text(several ? "schemaRows.type.anyOf" : "schemaRows.type.oneOf", { count: node.options.length });
   } else if (node.optionsSource) {
-    base = words.text("schemaRows.type.oneOfList");
+    base = words.text(several ? "schemaRows.type.anyOfList" : "schemaRows.type.oneOfList");
   } else {
     switch (node.kind) {
       case "string":

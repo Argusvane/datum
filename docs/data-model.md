@@ -172,8 +172,9 @@ form's own model in three views:
   `owners[].name`), its kind in words ("Text, 2 to 120 characters", "One of 3", "Date", "Text,
   repeating") and whether it is required: Yes, No, "When Number of employees > 0" while a rule
   says so (ADR 0120), or "—" for a calculated answer. A checkboxes group is one row, as is an
-  answer stored as a list of values (a multiselect, "Any of 3"; a file field that takes several
-  files, "List"), and a repeating section's fields are rows inside its entries. Marks beside a row say it is shown by
+  answer stored as a list of values (a multiselect, "Any of 3", or "Any of a list" when its
+  options come from a data source; a file field that takes several files, "List"), and a
+  repeating section's fields are rows inside its entries. Marks beside a row say it is shown by
   a rule (its own or its container's), is calculated, or has a data-key warning. Chips narrow the
   rows by step, and a menu by a journey's page, grouped by journey: a page takes in every answer
   inside a component it draws.
