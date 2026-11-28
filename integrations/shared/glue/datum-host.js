@@ -645,38 +645,34 @@ async function wireBuilder(element, { formKey, status, seed, dataSources: source
         'An empty form. Save to keep it, or leave the page to discard it.',
       );
   }
-  if (datum && typeof datum.toFormDefinition === 'function' && typeof datum.formDefinitionProblem === 'function') {
-    actions.open = (file) => {
-      let json;
-      try {
-        json = JSON.parse(file.text);
-      } catch (error) {
-        throw new Error(`it is not JSON: ${error.message}`);
-      }
-      // Throws, with its reason, for what is not a form definition (the builder's own Open checks).
-      const opened = datum.toFormDefinition(json);
-      const problem = datum.formDefinitionProblem(opened);
-      if (problem) {
-        throw new Error(problem);
-      }
-      return () =>
-        replaceWith(
-          { ...opened, id: formKey },
-          opened.id === formKey
-            ? `Imported ${file.name}. Save to keep it.`
-            : `Imported ${file.name}, with its id changed to ${formKey}. Save to keep it.`,
-        );
-    };
-  }
+  actions.open = (file) => {
+    let json;
+    try {
+      json = JSON.parse(file.text);
+    } catch (error) {
+      throw new Error(`it is not JSON: ${error.message}`);
+    }
+    // Throws, with its reason, for what is not a form definition (the builder's own Open checks).
+    const opened = datum.toFormDefinition(json);
+    const problem = datum.formDefinitionProblem(opened);
+    if (problem) {
+      throw new Error(problem);
+    }
+    return () =>
+      replaceWith(
+        { ...opened, id: formKey },
+        opened.id === formKey
+          ? `Imported ${file.name}. Save to keep it.`
+          : `Imported ${file.name}, with its id changed to ${formKey}. Save to keep it.`,
+      );
+  };
   element.fileActions = actions;
 
   return {
     /** Saves as the File menu's Save does (the builder's own asking about unapplied edits is not repeated). */
     save: () =>
-      persist(
-        typeof element.localeChangesSinceSave === 'function' ? element.localeChangesSinceSave() : undefined,
-      ).then((saved) => {
-        if (saved && typeof element.markLocalesSaved === 'function') {
+      persist(element.localeChangesSinceSave()).then((saved) => {
+        if (saved) {
           element.markLocalesSaved();
         }
         return saved;
@@ -1264,15 +1260,12 @@ async function passkeys(element, options = {}) {
       return;
     }
     state.refusedAs = '';
-    const canSend = typeof element.submit === 'function';
     const choice = await ask(
-      [canSend ? 'Your passkey is ready. Sign and send the form with it now.' : 'Your passkey is ready. Send the form again to sign with it.'],
-      canSend
-        ? [
-            { label: 'Sign and send', value: 'send' },
-            { label: 'Not now', value: 'cancel' },
-          ]
-        : [{ label: 'OK', value: 'cancel' }],
+      ['Your passkey is ready. Sign and send the form with it now.'],
+      [
+        { label: 'Sign and send', value: 'send' },
+        { label: 'Not now', value: 'cancel' },
+      ],
     );
     if (choice === 'send') {
       try {
@@ -1310,17 +1303,15 @@ async function passkeys(element, options = {}) {
     offerAfterRefusal(reason).catch(() => {});
   };
   // The page's refusals reach the element through setErrors (DatumHost.submit): watch them there.
-  if (typeof element.setErrors === 'function') {
-    const original = element.setErrors;
-    element.setErrors = function setErrors(errors, ...rest) {
-      const result = original.call(this, errors, ...rest);
-      refused(errors);
-      return result;
-    };
-    cleanups.push(() => {
-      element.setErrors = original;
-    });
-  }
+  const original = element.setErrors;
+  element.setErrors = function setErrors(errors, ...rest) {
+    const result = original.call(this, errors, ...rest);
+    refused(errors);
+    return result;
+  };
+  cleanups.push(() => {
+    element.setErrors = original;
+  });
 
   return {
     /** Headers for DatumHost.submit(): a browser without passkeys says so to a form that accepts that. */
