@@ -9,6 +9,7 @@
 import { WASM_ABI_VERSION, type WasmPluginModule, type WasmValidationHost } from "@argusvane/datum-engine";
 
 import { ChunkLoadError, importUrl, noteImportFailure } from "./chunk-load-error.js";
+import { IntegrityError, importWithIntegrity } from "./integrity.js";
 import type { CreateWasmValidationHostOptions } from "./wasm.js";
 
 interface WasmModule {
@@ -40,6 +41,12 @@ export function resolveWasmModuleUrl(spec: string): string {
 export interface LoadWasmOptions {
   /** Milliseconds the module may take to arrive and build a host before the load fails; `0` or unset, no limit. */
   timeoutMs?: number | undefined;
+  /**
+   * Subresource Integrity the module is held to (`sha384-...`, as `<script integrity>` takes it).
+   * Set, the module is fetched, its bytes are checked, and those bytes are imported from a `blob:`
+   * URL; a module that does not match is never run. Unset, the module is imported by its URL.
+   */
+  integrity?: string | undefined;
 }
 
 /**
@@ -54,7 +61,7 @@ export function loadWasmValidationHost(
   plugins: readonly WasmPluginModule[],
   options: LoadWasmOptions = {}
 ): Promise<WasmValidationHost> {
-  const work = loadHost(spec, plugins);
+  const work = loadHost(spec, plugins, options.integrity);
   const ms = options.timeoutMs;
   if (ms === undefined || !(ms > 0)) {
     return work;
@@ -82,11 +89,15 @@ export function loadWasmValidationHost(
   });
 }
 
-async function loadHost(spec: string, plugins: readonly WasmPluginModule[]): Promise<WasmValidationHost> {
+async function loadHost(spec: string, plugins: readonly WasmPluginModule[], integrity: string | undefined): Promise<WasmValidationHost> {
   const url = resolveWasmModuleUrl(spec);
-  let load = loads.get(url);
+  const checked = integrity !== undefined && integrity.trim() !== "";
+  // A module held to a hash is a load of its own: one imported by URL is not proof of the hash.
+  const key = checked ? `${url}\n${integrity.trim()}` : url;
+  let load = loads.get(key);
   if (!load) {
-    load = import(/* @vite-ignore */ importUrl(url)).then((module: WasmModule) => {
+    const imported: Promise<WasmModule> = checked ? importWithIntegrity<WasmModule>(url, integrity.trim(), `The sandbox module at ${url}`) : import(/* @vite-ignore */ importUrl(url));
+    load = imported.then((module: WasmModule) => {
       // A module that loaded but is unusable is retried through a fresh URL too, so a corrected
       // deployment at the same URL is fetched, not served from the module map.
       if (typeof module.createWasmValidationHost !== "function") {
@@ -102,12 +113,15 @@ async function loadHost(spec: string, plugins: readonly WasmPluginModule[]): Pro
       }
       return module;
     }, (error: unknown): never => {
+      if (error instanceof IntegrityError) {
+        throw error;
+      }
       // A module that is not there (deleted, blocked, a 404) names itself; forgotten below.
       noteImportFailure(url);
       throw new ChunkLoadError(`The sandbox module (${url})`, error);
     });
-    load.catch(() => loads.delete(url));
-    loads.set(url, load);
+    load.catch(() => loads.delete(key));
+    loads.set(key, load);
   }
   const module = await load;
   return module.createWasmValidationHost!(plugins);

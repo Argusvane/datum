@@ -45,6 +45,7 @@ Other builds:
 | `fonts/` | The faces the PDF module embeds: DejaVu Sans, Serif and Mono, seven files. Needed only with `pdf` | By the PDF module | about 3.4 MB |
 | `builder-fonts/` | The builder's typeface, Geist and Geist Mono, with `builder-fonts.css` and its licence text | By the builder, when it has `load-fonts` | about 156 KB |
 | `feature-files.json` | Which files each feature name loads, for a host that serves only what its `features` list needs | By your build or server | 18 KB |
+| `integrity.json` | The sha384 Subresource Integrity of every other file a page can load: see [Pinning the files](#pinning-the-files) | By you, when you write the tags | about 35 KB |
 | `types/` | TypeScript declarations for the elements, their properties and events: see [React, Vue and Angular](/frameworks#typescript) | By your build | about 350 KB |
 | `datum-form-<name>-<hash>.js` and `datum-builder-<name>-<hash>.js` | Chunks the elements split off for themselves | By the element, when it needs the part | Between 1 KB and 250 KB each |
 | `*.map` | A source map beside every script. Not in the folder unless the build was asked for them: `DATUM_SOURCE_MAPS=1 npm run datum:build` | By a browser's developer tools | about 75 MB in all |
@@ -89,7 +90,45 @@ Any CDN that serves npm packages serves the folder, at the package's version. Wi
 - **The parts load from the CDN too.** The chunks, the fonts and `wasm="auto"` / `pdf="auto"` resolve beside the bundle, so they come from the same CDN folder with no other setting.
 - **A URL you write still follows the origin rule.** A `wasm`, `pdf`, `draft-store` or `validate-url` attribute that names a full URL on the CDN's origin needs that origin in [`allow-origins`](/security-headers#allow-origins). A definition in `src` on another origin needs CORS, as on any host.
 - **Security headers.** A page with a Content-Security-Policy lists the CDN's origin in `script-src`, `style-src`, `font-src` and `connect-src`: see [Security headers](/security-headers).
-- **A third party serves your code.** The CDN sees every visitor's address and decides what bytes arrive. For a form that collects records, host the folder yourself; for a network with no route to the Internet, see [Air-gapped deployments](/air-gapped).
+- **A third party serves your code.** The CDN sees every visitor's address and decides what bytes arrive. For a form that collects records, host the folder yourself; for a network with no route to the Internet, see [Air-gapped deployments](/air-gapped). If you do load from a CDN, pin each file to its hash: see [Pinning the files](#pinning-the-files).
+
+## Pinning the files
+
+`integrity.json` in the folder lists the sha384 Subresource Integrity of every file a page can load, by its path in the folder. Each [GitHub release](https://github.com/Argusvane/datum/releases) attaches the same list as `datum-integrity-<version>.json`. Hosting the folder yourself is the stronger choice for production; on a CDN, pin each file the page loads.
+
+```json
+{ "algorithm": "sha384", "files": { "datum-form.css": "sha384-…", "datum-form.js": "sha384-…", "datum-form-core-<hash>.js": "sha384-…", "datum-wasm.js": "sha384-…" } }
+```
+
+- **The entry files.** Give the bundle and the stylesheet their hash and `crossorigin`:
+
+  ```html
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@argusvane/datum@0.1.0/dist/datum-form.css"
+        integrity="sha384-…" crossorigin="anonymous">
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@argusvane/datum@0.1.0/dist/datum-form.js"
+          integrity="sha384-…" crossorigin="anonymous"></script>
+  ```
+
+  A classic script (`datum-form.iife.js`) takes the same two attributes.
+- **The chunks a bundle imports.** The core chunk and the lazy chunks are imported by the bundle, not by a tag you write. List them in an import map's `integrity`, before the bundle's `<script>`; a browser that supports the key checks each one it imports:
+
+  ```html
+  <script type="importmap">
+  { "integrity": {
+      "https://cdn.jsdelivr.net/npm/@argusvane/datum@0.1.0/dist/datum-form-core-<hash>.js": "sha384-…",
+      "https://cdn.jsdelivr.net/npm/@argusvane/datum@0.1.0/dist/datum-form-pdf-service-<hash>.js": "sha384-…"
+  } }
+  </script>
+  ```
+
+  Take the names and hashes from `integrity.json`; `feature-files.json` says which chunks your `features` load. A browser without import-map integrity loads the chunks unchecked.
+- **The sandbox module.** `wasm-integrity` holds the module `wasm` names to a hash: the form fetches it, checks its bytes and imports exactly those bytes, on every load and every retry, in every browser with Web Crypto (a secure context). A module that does not match is never run, and a submit reports the sandbox unavailable. The page's Content-Security-Policy then needs `blob:` in `script-src`, and the module's origin in `connect-src`:
+
+  ```html
+  <datum-form wasm="auto" wasm-integrity="sha384-…"></datum-form>
+  ```
+
+- **The PDF module and the builder's page images.** `datum-pdf.js` and `datum-pdf-pages.js` are imported by URL: an import map's `integrity` pins the first load, but after a failed load the element asks again with `?retry=n`, a URL the map does not list, and the PDF viewer's worker and data files cannot carry a hash. Serve these from your own origin.
 
 ## Classic scripts
 

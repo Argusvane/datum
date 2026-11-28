@@ -74,7 +74,7 @@
   },
   "scripts": {
     "build": "node ../../scripts/with-lock.mjs datum-dist -- npm run build:unlocked",
-    "build:unlocked": "node ./scripts/build-bundles.mjs && node ./scripts/copy-assets.mjs && vite-node ./scripts/write-sandbox-program.ts && node ./scripts/check-bundles.mjs && node ./scripts/bundle-notices.mjs && node ./scripts/strip-source-maps.mjs && node ./scripts/feature-files.mjs && node ../../scripts/npm/build-types.mjs",
+    "build:unlocked": "node ./scripts/build-bundles.mjs && node ./scripts/copy-assets.mjs && vite-node ./scripts/write-sandbox-program.ts && node ./scripts/check-bundles.mjs && node ./scripts/bundle-notices.mjs && node ./scripts/strip-source-maps.mjs && node ./scripts/feature-files.mjs && node ../../scripts/npm/build-types.mjs && node ./scripts/integrity-manifest.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "attributes": "node ./scripts/gen-attribute-reference.mjs",

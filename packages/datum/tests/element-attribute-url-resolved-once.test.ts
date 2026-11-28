@@ -116,6 +116,18 @@ describe("an origin-bound attribute's URL is resolved once", () => {
     expect(errors.map((error) => error.code)).not.toContain("attribute.origin-refused");
   });
 
+  it("hands the sandbox loader the wasm-integrity the module is held to", async () => {
+    const { el } = element({ wasm: "auto", "wasm-integrity": "  sha384-AAAA  " });
+    expect(el.wasmIntegrity).toBe("sha384-AAAA");
+    el.dataSources = { countries: [{ value: "CA", label: "Canada" }] };
+    el.definition = sampleDefinition();
+    document.body.append(el);
+    await until(() => loads.wasm.length > 0);
+    expect(loads.integrity).toEqual(["sha384-AAAA"]);
+    el.removeAttribute("wasm-integrity");
+    expect(el.wasmIntegrity).toBeUndefined();
+  });
+
   it("resolves the builder's module attributes once too", () => {
     const builder = document.createElement("datum-form-builder") as DatumFormBuilderElement;
     const own = new URL("./modules/datum-wasm.js", document.baseURI).href;

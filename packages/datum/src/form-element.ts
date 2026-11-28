@@ -788,6 +788,8 @@ class DeferredWasmValidationHost extends WasmValidationHost {
 /** A sandbox load in progress or done: what it was asked for, and the host once it has arrived. */
 interface WasmLoad {
   spec: string;
+  /** The integrity the module was held to, when one was given. */
+  integrity: string | undefined;
   /** The modules it was wired with: the installed plugins', then the page's `wasmPlugins`. */
   plugins: readonly WasmPluginModule[];
   host: Promise<WasmValidationHost>;
@@ -957,6 +959,7 @@ export class DatumFormElement extends ElementBase {
       "wasm",
       "wasm-log-level",
       "wasm-timeout",
+      "wasm-integrity",
       "signing-scope",
       "signing-placement",
       "sign-with",
@@ -1019,6 +1022,7 @@ export class DatumFormElement extends ElementBase {
   private dataSourceWaitValue: "none" | "all" = "none";
   private dataSourceTimeoutValue: number | undefined;
   private wasmTimeoutValue: number | undefined;
+  private wasmIntegrityValue: string | undefined;
   /** The validator built over `validate-url`, kept while the URL is the same one. */
   private fetchValidator: { url: string; validator: JourneyServerValidator } | undefined;
   /** The unknown journey id last warned about: once per choice, however often it is applied. */
@@ -1393,6 +1397,9 @@ export class DatumFormElement extends ElementBase {
           break;
         case "data-source-timeout":
           this.dataSourceTimeout = value === null ? undefined : toTimeoutMs("data-source-timeout", value);
+          break;
+        case "wasm-integrity":
+          this.wasmIntegrity = value ?? undefined;
           break;
         case "wasm-timeout":
           this.wasmTimeout = value === null ? undefined : toTimeoutMs("wasm-timeout", value);
@@ -2528,6 +2535,29 @@ export class DatumFormElement extends ElementBase {
     // A number of milliseconds (`0` for no limit), else the default, as a bad attribute leaves
     // it: NaN or a negative number would otherwise reach the loader as no limit at all.
     this.wasmTimeoutValue = typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : undefined;
+  }
+
+  /**
+   * The Subresource Integrity the sandbox module `wasm` names is held to: `sha384-...` (or
+   * `sha256-`, `sha512-`, several separated by spaces), as `<script integrity>` takes it. Set, the
+   * element fetches the module, checks its bytes and imports exactly those bytes from a `blob:` URL
+   * (a Content Security Policy that limits scripts lists `blob:` in `script-src`); a module that
+   * does not match is never run, and the submit reports the sandbox unavailable. The
+   * `wasm-integrity` attribute. Unset, the module is imported by its URL.
+   */
+  public get wasmIntegrity(): string | undefined {
+    return this.wasmIntegrityValue;
+  }
+
+  public set wasmIntegrity(value: string | undefined) {
+    const next = typeof value === "string" && value.trim() !== "" ? value.trim() : undefined;
+    if (next === this.wasmIntegrityValue) {
+      return;
+    }
+    const hadSandbox = this.hasSandbox();
+    this.wasmIntegrityValue = next;
+    this.dropLoadedWasm();
+    this.settleSandbox(hadSandbox);
   }
 
   // --- reads and actions ------------------------------------------------
@@ -3946,9 +3976,16 @@ export class DatumFormElement extends ElementBase {
     }
     const plugins = this.wasmModules();
     let load = this.wasmLoad;
-    if (!load || load.spec !== spec || !sameModules(load.plugins, plugins)) {
+    const integrity = this.wasmIntegrityValue;
+    if (!load || load.spec !== spec || load.integrity !== integrity || !sameModules(load.plugins, plugins)) {
       this.dropLoadedWasm();
-      const current: WasmLoad = { spec, plugins, host: loadWasmValidationHost(spec, plugins, { timeoutMs: this.wasmTimeoutValue ?? DEFAULT_WASM_TIMEOUT_MS }), ready: undefined };
+      const current: WasmLoad = {
+        spec,
+        integrity,
+        plugins,
+        host: loadWasmValidationHost(spec, plugins, { timeoutMs: this.wasmTimeoutValue ?? DEFAULT_WASM_TIMEOUT_MS, integrity }),
+        ready: undefined
+      };
       load = current;
       this.wasmLoad = current;
       current.host.then(
