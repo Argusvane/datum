@@ -12,6 +12,28 @@ import { plugins, createFormRuntime, defineDataSources } from "./datum-form.js";
 
 Types are listed beside the values they describe. The engine's own types are exported here too, so one import gives a page its typings.
 
+## Importing the package
+
+A page imports a file by its path in the folder it serves. A bundler, a TypeScript project or a script in Node imports the same files by the npm package's name, `@argusvane/datum`, with their types:
+
+| Import | File |
+|---|---|
+| `@argusvane/datum/form` | `datum-form.js` |
+| `@argusvane/datum/builder` | `datum-builder.js` |
+| `@argusvane/datum` | `datum-builder.js`, everything |
+| `@argusvane/datum/engine` | `datum-engine.js`, no DOM needed |
+| `@argusvane/datum/pdf` | `datum-pdf.js` |
+| `@argusvane/datum/pdf-pages` | `datum-pdf-pages.js` |
+| `@argusvane/datum/wasm` | `datum-wasm.js` |
+| `@argusvane/datum/webauthn` | `datum-webauthn.js`, the passkey functions with no element |
+| `@argusvane/datum/dist/*` | Any other file in the folder, such as a stylesheet or a server program |
+
+```js
+import { createFormRuntime } from "@argusvane/datum/engine";
+```
+
+A bundled application still serves the folder for the files the modules fetch by name: see [React, Vue and Angular](/frameworks#loading-the-bundle).
+
 ## The form element
 
 | Name | What it is | Page |

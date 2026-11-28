@@ -1,5 +1,7 @@
 import type { CanonicalSubmission, SignedSubmissionDocument } from "@argusvane/datum-engine";
 
+import { parseStrictJson } from "../strict-json.js";
+
 /**
  * A submission as text someone hands over — a renderer download, a server's copy, a file
  * from an email — read carefully into one of the shapes the engine knows: the canonical
@@ -14,7 +16,8 @@ export type ParsedSubmissionDocument =
 export function parseSubmissionDocument(text: string): ParsedSubmissionDocument {
   let parsed: unknown;
   try {
-    parsed = JSON.parse(text);
+    // A repeated key is malformed JSON here, as on every host.
+    parsed = parseStrictJson(text);
   } catch (error) {
     throw new Error(`the file is not valid JSON (${error instanceof Error ? error.message : String(error)})`);
   }

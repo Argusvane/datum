@@ -305,9 +305,11 @@ slim renderer bundle (ADR 0045).
 - A Java or .NET host produces PDFs by embedding QuickJS once and calling one global; the package
   README documents the recipe and the byte hashes the parity suite records.
 - Output size and speed are bounded by an interpreter: the document profile, per-script font
-  subsets, a reused runtime and the byte-free `layout` operation are the mitigations.
+  subsets and the byte-free `layout` operation are the mitigations; a server gives every call a
+  fresh runtime (ADR 0181) and pays the program's evaluation each time.
 - Two files for a server sit beside the bundles: `datum-sandbox-program.js` (validation, ADR 0046)
-  and `datum-pdf-program.js` (rendering), each evaluated once and called by a global.
+  and `datum-pdf-program.js` (rendering), each evaluated in a sandbox and called by a global; a
+  server evaluates them afresh for every call (ADR 0181).
   `packages/pdf-kernel` must be built before `packages/datum` (CI does so), as the copy is of a
   built artifact.
 - The parity guarantee reaches an engine three years older than the one in the tests: the base64

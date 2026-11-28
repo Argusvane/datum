@@ -32,7 +32,11 @@ the renderer already displays, to the same verdict wherever the program runs.
    `wasmExternalDataProvider`. A page that imports the module itself assigns `wasmValidationHost`:
    a host, or a promise of one. `datum-wasm-ready` reports the sandbox in place; a module that
    cannot load is reported as `datum-error`. `docs/reference/server-runs.md`, "Validate in the
-   sandbox", shows the wiring.
+   sandbox", shows the wiring. `wasm-integrity` (`wasmIntegrity`) holds the module to a
+   Subresource Integrity hash: the element fetches it, checks its bytes, and imports exactly those
+   bytes from a `blob:` URL, which the module can be imported from because it is one file. A module
+   that does not match is never run, and a submit fails closed as for any sandbox that cannot load.
+   The package's `integrity.json`, beside `dist`, lists the sha384 of every file in `dist` a page can load.
 3. **The runtime is built with a deferring host, and never rebuilt for the sandbox.** Whenever the
    element has a way to a sandbox (`wasm` set, or `wasmValidationHost` assigned) the runtime gets a
    `WasmValidationHost` subclass whose `run` defers to whichever sandbox the element resolves at

@@ -83,6 +83,7 @@ import {
   MAX_DEFINITION_BYTES,
   allowOriginsProblem,
   DatumCodedError,
+  absoluteModuleAttribute,
   attributeOriginProblem,
   codeOf,
   definitionShapeProblem,
@@ -787,6 +788,8 @@ class DeferredWasmValidationHost extends WasmValidationHost {
 /** A sandbox load in progress or done: what it was asked for, and the host once it has arrived. */
 interface WasmLoad {
   spec: string;
+  /** The integrity the module was held to, when one was given. */
+  integrity: string | undefined;
   /** The modules it was wired with: the installed plugins', then the page's `wasmPlugins`. */
   plugins: readonly WasmPluginModule[];
   host: Promise<WasmValidationHost>;
@@ -956,6 +959,7 @@ export class DatumFormElement extends ElementBase {
       "wasm",
       "wasm-log-level",
       "wasm-timeout",
+      "wasm-integrity",
       "signing-scope",
       "signing-placement",
       "sign-with",
@@ -1018,6 +1022,7 @@ export class DatumFormElement extends ElementBase {
   private dataSourceWaitValue: "none" | "all" = "none";
   private dataSourceTimeoutValue: number | undefined;
   private wasmTimeoutValue: number | undefined;
+  private wasmIntegrityValue: string | undefined;
   /** The validator built over `validate-url`, kept while the URL is the same one. */
   private fetchValidator: { url: string; validator: JourneyServerValidator } | undefined;
   /** The unknown journey id last warned about: once per choice, however often it is applied. */
@@ -1112,6 +1117,12 @@ export class DatumFormElement extends ElementBase {
    * whose callback is still to come.
    */
   private readonly seenUrlAttributes = new Set<string>();
+
+  /**
+   * The absolute URL the `wasm` and `pdf` attributes last set, by attribute: a spec equal to it came
+   * from markup, and its origin is checked again as the module is about to be imported.
+   */
+  private readonly attributeModuleSpecs = new Map<string, string>();
   /** The features that exist; `undefined`, the attribute absent, is every one. */
   private featuresValue: ReadonlySet<FormFeature> | undefined;
   /** The `agent-access` policy as set; `undefined`, the attribute absent, is `DEFAULT_AGENT_ACCESS`. */
@@ -1287,8 +1298,23 @@ export class DatumFormElement extends ElementBase {
       if (name in ORIGIN_BOUND_ATTRIBUTES) {
         this.seenUrlAttributes.add(name);
       }
+      // A URL is resolved once, here: the origin check judges the absolute URL, and the element
+      // stores and later loads (or posts to) that same URL, whatever the page's base becomes.
+      if (value !== null && (name === "wasm" || name === "pdf")) {
+        value = absoluteModuleAttribute(value);
+      } else if (value !== null && name === "validate-url") {
+        const named = namedValue(value);
+        value = named === undefined ? value : absoluteModuleAttribute(named);
+      }
       if (value !== null && name in ORIGIN_BOUND_ATTRIBUTES && !this.originAllows(name, value)) {
         value = null;
+      }
+      if (name === "wasm" || name === "pdf") {
+        if (value === null) {
+          this.attributeModuleSpecs.delete(name);
+        } else {
+          this.attributeModuleSpecs.set(name, value);
+        }
       }
       switch (name) {
         case "allow-origins":
@@ -1371,6 +1397,9 @@ export class DatumFormElement extends ElementBase {
           break;
         case "data-source-timeout":
           this.dataSourceTimeout = value === null ? undefined : toTimeoutMs("data-source-timeout", value);
+          break;
+        case "wasm-integrity":
+          this.wasmIntegrity = value ?? undefined;
           break;
         case "wasm-timeout":
           this.wasmTimeout = value === null ? undefined : toTimeoutMs("wasm-timeout", value);
@@ -1477,6 +1506,29 @@ export class DatumFormElement extends ElementBase {
       return undefined;
     }
     return url === undefined ? undefined : attributeOriginProblem(this, name, ORIGIN_BOUND_ATTRIBUTES[name]!, url);
+  }
+
+  /**
+   * Why the module a `wasm` or `pdf` spec names may not be imported now: the spec came from the
+   * attribute (it is the URL the attribute set) and its origin is neither the page's nor one
+   * `allow-origins` lists any longer. Reported as `attribute.origin-refused`. `undefined` when it
+   * may be imported, and for a spec a script assigned to the property, which may name any origin.
+   */
+  private moduleOriginProblem(name: "wasm" | "pdf", spec: string): string | undefined {
+    if (this.attributeModuleSpecs.get(name) !== spec) {
+      return undefined;
+    }
+    let url: string | undefined;
+    try {
+      url = moduleAttributeUrl(spec);
+    } catch {
+      return undefined;
+    }
+    const problem = url === undefined ? undefined : attributeOriginProblem(this, name, ORIGIN_BOUND_ATTRIBUTES[name]!, url);
+    if (problem !== undefined) {
+      reportError(this, "attribute.origin-refused", problem);
+    }
+    return problem;
   }
 
   /** A new `allow-origins`: each origin-bound attribute whose verdict it changes is applied again (or dropped). */
@@ -1605,8 +1657,8 @@ export class DatumFormElement extends ElementBase {
   }
 
   /**
-   * Where the PDF module is: `"auto"` for `datum-pdf.js` beside this bundle, else a URL. It is
-   * loaded on the first PDF, not on assignment. `undefined` (the attribute absent) means no
+   * Where the PDF module is: `"auto"` for `datum-pdf.js` beside this bundle, else a URL (from the
+   * attribute, the absolute URL it named as it was set). It is loaded on the first PDF, not on assignment. `undefined` (the attribute absent) means no
    * PDFs unless `pdfSupport` is assigned.
    */
   public get pdf(): string | undefined {
@@ -1730,7 +1782,7 @@ export class DatumFormElement extends ElementBase {
 
   /**
    * Where the sandbox module is: `"auto"` for `datum-wasm.js` beside this bundle,
-   * else a URL. It is fetched once the form is ready and wired with `wasmPlugins`; plugin
+   * else a URL (from the attribute, the absolute URL it named as it was set). It is fetched once the form is ready and wired with `wasmPlugins`; plugin
    * validators then run at submit inside it, and a submit before it has arrived waits for it.
    * `undefined` (the attribute absent) means no sandbox unless `wasmValidationHost` is
    * assigned: field constraints alone validate, in-process.
@@ -2483,6 +2535,29 @@ export class DatumFormElement extends ElementBase {
     // A number of milliseconds (`0` for no limit), else the default, as a bad attribute leaves
     // it: NaN or a negative number would otherwise reach the loader as no limit at all.
     this.wasmTimeoutValue = typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : undefined;
+  }
+
+  /**
+   * The Subresource Integrity the sandbox module `wasm` names is held to: `sha384-...` (or
+   * `sha256-`, `sha512-`, several separated by spaces), as `<script integrity>` takes it. Set, the
+   * element fetches the module, checks its bytes and imports exactly those bytes from a `blob:` URL
+   * (a Content Security Policy that limits scripts lists `blob:` in `script-src`); a module that
+   * does not match is never run, and the submit reports the sandbox unavailable. The
+   * `wasm-integrity` attribute. Unset, the module is imported by its URL.
+   */
+  public get wasmIntegrity(): string | undefined {
+    return this.wasmIntegrityValue;
+  }
+
+  public set wasmIntegrity(value: string | undefined) {
+    const next = typeof value === "string" && value.trim() !== "" ? value.trim() : undefined;
+    if (next === this.wasmIntegrityValue) {
+      return;
+    }
+    const hadSandbox = this.hasSandbox();
+    this.wasmIntegrityValue = next;
+    this.dropLoadedWasm();
+    this.settleSandbox(hadSandbox);
   }
 
   // --- reads and actions ------------------------------------------------
@@ -3895,11 +3970,22 @@ export class DatumFormElement extends ElementBase {
     if (spec === undefined) {
       return Promise.reject(new Error('No validation sandbox: set the "wasm" attribute (e.g. wasm="auto") or assign wasmValidationHost'));
     }
+    const refused = this.moduleOriginProblem("wasm", spec);
+    if (refused !== undefined) {
+      return Promise.reject(new Error(refused));
+    }
     const plugins = this.wasmModules();
     let load = this.wasmLoad;
-    if (!load || load.spec !== spec || !sameModules(load.plugins, plugins)) {
+    const integrity = this.wasmIntegrityValue;
+    if (!load || load.spec !== spec || load.integrity !== integrity || !sameModules(load.plugins, plugins)) {
       this.dropLoadedWasm();
-      const current: WasmLoad = { spec, plugins, host: loadWasmValidationHost(spec, plugins, { timeoutMs: this.wasmTimeoutValue ?? DEFAULT_WASM_TIMEOUT_MS }), ready: undefined };
+      const current: WasmLoad = {
+        spec,
+        integrity,
+        plugins,
+        host: loadWasmValidationHost(spec, plugins, { timeoutMs: this.wasmTimeoutValue ?? DEFAULT_WASM_TIMEOUT_MS, integrity }),
+        ready: undefined
+      };
       load = current;
       this.wasmLoad = current;
       current.host.then(
@@ -4055,6 +4141,10 @@ export class DatumFormElement extends ElementBase {
     }
     if (this.pdfSpec === undefined) {
       throw new Error('No PDF support: set the "pdf" attribute (e.g. pdf="auto") or assign pdfSupport');
+    }
+    const refused = this.moduleOriginProblem("pdf", this.pdfSpec);
+    if (refused !== undefined) {
+      throw new Error(refused);
     }
     const load = (this.pdfLoad ??= loadPdfSupport(this.pdfSpec));
     let support: DatumPdfSupport;

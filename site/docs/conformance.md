@@ -8,14 +8,16 @@ The conformance suite is three commands that check Datum's server side from outs
 
 Each prints a result per case, writes a report and ends with an exit code a CI job can act on.
 
-All three come from the `@argusvane/datum-conformance-suite` package and need Node 22 or newer. The package is not published to a registry yet. Build it from the repository root, which installs the suite and the packages it builds through (`file:` links), or install a tarball made with `npm pack`:
+All three come from the `@argusvane/datum-conformance-suite` package and need Node 22 or newer. Install it in the project the checks run from:
 
 ```sh
-npm run setup -- engine packages/*-wasm-host packages/pdf-kernel packages/submissions packages/conformance-suite
-npm run conformance-suite:build
+npm install --save-dev @argusvane/datum-conformance-suite
+npx datum-host-check --endpoint https://forms.example --capabilities forms
 ```
 
-Until the package is published, the command names on this page are not on your path. From a checkout, after the build, run each as `node packages/conformance-suite/bin/<command>.mjs` with the same arguments, for example `node packages/conformance-suite/bin/datum-host-check.mjs --endpoint https://forms.example --capabilities forms`. The root script `npm run conformance-suite:host-check -- <arguments>` runs the host check the same way.
+Without installing it, `npx --package @argusvane/datum-conformance-suite <command>` fetches the package for one run.
+
+To work on the suite itself, build it from a checkout of the repository with `npm run setup -- engine packages/*-wasm-host packages/pdf-kernel packages/submissions packages/conformance-suite`, then `npm run conformance-suite:build`. Run each command as `node packages/conformance-suite/bin/<command>.mjs` with the same arguments.
 
 ## Where each one fits
 

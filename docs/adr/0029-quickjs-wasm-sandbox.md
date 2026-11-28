@@ -190,9 +190,14 @@ authority by construction (no fetch, filesystem, process or timers), and the pro
   cannot read, empty or reorder what is registered.
 - **The language is frozen before any plugin loads.** `FREEZE_INTRINSICS_SNIPPET` freezes every
   object reachable from the global object, the three entry points included; the global object
-  stays extensible so a plugin may define globals of its own. `freezeIntrinsics: false` is the
-  documented opt-out for a plugin that must patch a built-in. A host that embeds the program
-  itself evaluates the same snippet at the same point.
+  stays extensible so a plugin may define globals of its own. Every global data property becomes
+  non-writable and non-configurable, and the snippet makes that hold on both engines: before the
+  freeze it puts guarded `Object.defineProperty`, `Object.defineProperties` and
+  `Reflect.defineProperty` in place, which refuse a change to a non-configurable own property of
+  the global object as the language does (a `TypeError`, or `false` from `Reflect`), and `Proxy`
+  refuses the global object as its target. `freezeIntrinsics: false` is the documented opt-out for
+  a plugin that must patch a built-in. A host that embeds the program itself evaluates the same
+  snippet at the same point.
 - **A server gives every call a fresh sandbox, on its own thread** (ADR 0181).
 - **There is no bundle signing** (`plugin.manifest.json.signature` is a reserved field). The
   `security:wasm-sandbox-isolation` gate verifies the no-ambient-authority guarantee, not a
@@ -209,10 +214,12 @@ authority by construction (no fetch, filesystem, process or timers), and the pro
   check makes drift loud.
 - **A sandbox failure blocks.** Passing a submission because the check could not run is the
   failure the gate exists to prevent (ADR 0142).
-- **A closure and a deep freeze, not property attributes.** The QuickJS build lets
-  `Object.defineProperty(globalThis, name, { value })` redefine a global whatever its attributes,
-  so only a name no plugin can reach is safe. Armed state in a shared sandbox could otherwise
-  change every verdict after it, which is why a server also isolates each call (ADR 0181).
+- **A closure and a deep freeze, not property attributes alone.** Bellard's QuickJS (the
+  quickjs-emscripten build) lets `Object.defineProperty(globalThis, name, { value })` replace a
+  global whatever its attributes, while quickjs-ng refuses. The kernel therefore reads no global
+  at all, and the guarded define functions make the attributes hold for the plugin modules, which
+  do read globals, on both engines. Armed state in a shared sandbox could otherwise change every
+  verdict after it, which is why a server also isolates each call (ADR 0181).
 - **A key is known only by shape.** Taking every `[n]` out of a submitted key before comparing it
   with the definition's value paths let `province[0]` beside `province`, `items.sku` with no
   index and `items[0][1].sku` pass as known, and a host storing the sandbox's values stored them.

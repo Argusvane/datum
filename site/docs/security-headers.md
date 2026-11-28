@@ -77,6 +77,8 @@ Integrity is a list of `sha256-`, `sha384-` or `sha512-` digests, and anything e
 
 A sheet that a listed stylesheet `@import`s is fetched without an integrity check, because only the listed file carries one. Self-host it and list it yourself if that matters.
 
+Datum's own files are pinned as [Pinning the files](/files#pinning-the-files) shows: `integrity` on the tags, an import map for the chunks, and `wasm-integrity` for the sandbox module. With `wasm-integrity` the form fetches the module and imports the bytes it checked from a `blob:` URL, so the policy needs `blob:` in `script-src` and the module's origin in `connect-src`.
+
 ## `allow-origins`
 
 `pdf`, `wasm`, `draft-store` and `validate-url` are held to the page's own origin. A URL on another origin is reported as `datum-error` and the attribute is ignored, unless `allow-origins` lists that origin. It takes space-separated origins, each written as a URL, for example `allow-origins="https://cdn.example"`. Write the host with its scheme: `*` and a bare host are refused.

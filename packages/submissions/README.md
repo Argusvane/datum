@@ -187,6 +187,12 @@ finding's parameters never do: a check that stores nothing must not become a way
 A refusal of the answers is a `200` with `accepted: false`, not a 4xx; on a delivery it is `422`
 (`receiveResponse(result)`, with `errorsBody`).
 
+The service takes bodies already parsed. Parse them with `parseStrictJson(text)`, which is `JSON.parse`
+except that an object naming the same key twice throws (`DuplicateJsonKeyError`, a `SyntaxError`) instead
+of keeping the last value, and answer that as any other malformed body: `bad_document` (400). The service's
+own reads of JSON text (`inspectDocument({ kind: "json" })`, the `submission.json` a PDF carries) refuse
+a repeated key the same way.
+
 `statusOf(error)` maps a refusal to its status and `errorResponse(error)` to the status and body a route
 answers (`{ errors: [{ code }] }`; `undefined` for anything that is no refusal the service knows). A run that
 gave no verdict is `503` with the run's own code and no `Retry-After` (the same run fails the same way), on a
