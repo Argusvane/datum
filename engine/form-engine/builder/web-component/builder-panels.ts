@@ -9263,18 +9263,34 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
       this.paint();
       return true;
     }
+    return this.handleFormulaFeedbackClick(target, nodeId);
+  }
 
+  /**
+   * Handles a click in the feedback under a formula box: a "Try one" chip, or Retry after the
+   * formula editor failed to load. The Rules tab's rules and a Field-tab formula (a PDF template
+   * area's) draw the same feedback, so this runs on every tab. Returns false when the click was not ours.
+   */
+  private handleFormulaFeedbackClick(target: Element, nodeId: string): boolean {
     const tryButton = target.closest<HTMLElement>("[data-rule-try]");
     if (tryButton) {
       const key = tryButton.dataset.rule ?? "";
-      this.applyFormulaEdit(nodeId, key, tryButton.dataset.ruleTry ?? "");
+      const example = tryButton.dataset.ruleTry ?? "";
+      this.applyFormulaEdit(nodeId, key, example);
+      // The write is live, which paints nothing, so the box (and the editor over it) is set
+      // here: the formula is what the author sees next, not only what the draft holds.
+      const box = this.root.querySelector<HTMLTextAreaElement>(`textarea[data-rule-formula][data-rule="${key.replace(/["\\]/g, "\\$&")}"]`);
+      const editor = this.formulaEditors.get(key);
+      if (box) {
+        box.value = example;
+      }
+      editor?.editor.setText(example);
       // A click, not a keystroke: the canvas catches up now.
       this.commitFormulaEdit(nodeId, key);
-      const editor = this.formulaEditors.get(key);
       if (editor) {
         editor.editor.focus();
       } else {
-        this.root.querySelector<HTMLTextAreaElement>(`textarea[data-rule-formula][data-rule="${key.replace(/["\\]/g, "\\$&")}"]`)?.focus();
+        box?.focus();
       }
       return true;
     }
@@ -9620,7 +9636,7 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
         return;
       }
 
-      if (this.tab === "rules" && nodeId && this.handleRulesClick(target, nodeId)) {
+      if (nodeId && (this.tab === "rules" ? this.handleRulesClick(target, nodeId) : this.handleFormulaFeedbackClick(target, nodeId))) {
         return;
       }
 
