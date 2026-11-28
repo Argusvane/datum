@@ -5,7 +5,7 @@ import com.argusvane.datum.sandbox.tck.PdfRenderContract;
 import org.junit.jupiter.api.AfterAll;
 
 /**
- * The PDF program on Endive renders the ABI 3.8 documents byte for byte as the Node kernel does: datum-sandbox-tck's
+ * The PDF program on Endive renders the parity documents byte for byte as the Node kernel does: datum-sandbox-tck's
  * {@link PdfRenderContract}. Runs in the failsafe executions, on a native runner (JFFI, or Panama on 25+).
  */
 class PdfRenderIT implements PdfRenderContract {

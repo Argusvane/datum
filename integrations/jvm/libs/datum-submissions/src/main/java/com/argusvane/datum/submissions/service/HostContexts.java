@@ -15,7 +15,7 @@ import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * A {@link HostContextProvider}'s answer as the run context's {@code hostContext} (sandbox ABI 4.1.0): asked
+ * A {@link HostContextProvider}'s answer as the run context's {@code hostContext}: asked
  * once, written as JSON, held to the bounds the ABI gives the key, and copied so nothing the provider keeps can change the
  * run. The submission service asks it for every run; the PDF facade asks it for the print of the same answers.
  *

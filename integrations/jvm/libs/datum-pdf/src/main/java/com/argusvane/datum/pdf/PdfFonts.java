@@ -21,7 +21,7 @@ import tools.jackson.databind.node.ObjectNode;
  *
  * <p>Three packs. {@link Pack#DEFAULT} is DejaVu Sans and Sans Bold (the default theme's body and headings,
  * about 1.9 MB of base64 per request). {@link Pack#STANDARD} is five faces: sans, bold, oblique, mono and mono bold.
- * {@link Pack#ALL} is all seven faces in the order of the kernel's font loader, which the ABI 3.8 parity hashes were
+ * {@link Pack#ALL} is all seven faces in the order of the kernel's font loader, which the parity hashes were
  * taken with ({@code PdfRenderIT}). The default sends two (the bytes of every request), so italic and
  * monospace text in the default pack falls back to the standard fonts (Western European text only) unless the caller
  * asks for {@code STANDARD} or {@code ALL}. Each entry carries its script coverage (the font entry's

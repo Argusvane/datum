@@ -45,7 +45,7 @@ function generated(id: string): PdfGeneratedLayout {
 const provider = (): PdfRenderProvider =>
   ({
     id: "fake",
-    abiVersion: "4.0.0",
+    abiVersion: "1.0.0",
     render: async () => ({ bytes: new TextEncoder().encode("%PDF-fake"), pageCount: 1, pages: [], warnings: [], providerId: "fake" }),
     inspect: async () => ({ pageCount: 1, pages: [{ index: 1, width: 612, height: 792 }], fields: [], hasXfa: false, encrypted: false })
   }) as unknown as PdfRenderProvider;

@@ -39,7 +39,6 @@ import { installPdfProgramPolyfills } from "./polyfills.js";
 
 export const PDF_PROGRAM_VERSION = "0.1.0";
 
-export const PDF_PROGRAM_FEATURES = ["render", "layout", "document", "build", "fill", "inspect", "tagged", "acroform", "areas", "area-fields", "bidi", "unknown-components", "pdfa", "attachments", "signature", "attachment-data", "theme-controls", "data-keys", "layout-conditions", "field-tooltips", "conditional-expressions", "formulas", "formula-functions", "verify-detail", "template-decryption", "mapping-values", "output-safety", "render-caps", "attachment-types", "default-font-fallback"];
 
 const pluginRenditions = new PdfRenditionRegistry();
 let resolver: PdfRenditionResolver | undefined;
@@ -265,7 +264,7 @@ export async function handlePdfRequest(raw: unknown): Promise<PdfKernelResponse>
     const request = validate(JSON.parse(kernelStableStringify(raw)));
     switch (request.op) {
       case "capabilities":
-        return { ok: true, op: "capabilities", abi: PDF_ABI_VERSION, features: [...PDF_PROGRAM_FEATURES], kernelVersion: PDF_PROGRAM_VERSION };
+        return { ok: true, op: "capabilities", abi: PDF_ABI_VERSION, kernelVersion: PDF_PROGRAM_VERSION };
       case "build": {
         const model = await buildFromInputs(request, renditions(), formulaFunctions());
         return {

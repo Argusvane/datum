@@ -253,7 +253,7 @@ class PdfKernelSession:
 
     # -- the eight operations ----------------------------------------------------------------------------------------
     def capabilities(self) -> dict[str, Any]:
-        """Return the program's `capabilities` answer: ``{ok, op, abi, features, kernelVersion}``."""
+        """Return the program's `capabilities` answer: ``{ok, op, abi, kernelVersion}``."""
         return self.ok({"abi": PDF_ABI_MIN, "op": "capabilities"})
 
     def document(self, **more: Any) -> dict[str, Any]:

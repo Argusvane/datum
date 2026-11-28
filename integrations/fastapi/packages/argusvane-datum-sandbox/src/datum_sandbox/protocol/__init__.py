@@ -6,7 +6,6 @@ It holds the run script, the frame, the budgets, the host options, the ABI gate,
 
 from datum_sandbox.protocol._abi import (
     PDF_ABI_MIN,
-    PDF_REQUIRED_FEATURES,
     SANDBOX_ABI_MIN,
     AbiProbe,
     require_pdf_capabilities,
@@ -115,7 +114,6 @@ __all__ = [
     "MAX_OUTCOME_UNITS",
     "NONCE_LENGTH",
     "PDF_ABI_MIN",
-    "PDF_REQUIRED_FEATURES",
     "PDF_RUN_SCRIPT",
     "REMOVED_GLOBALS",
     "SANDBOX_ABI_MIN",

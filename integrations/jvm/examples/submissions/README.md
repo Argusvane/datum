@@ -229,7 +229,7 @@ docs/conformance-suite.md ("Fresh deployments").
 
 `SubmissionsExampleIT` boots the application with the real runtime and runs the host test kit's contracts
 (`integrations/jvm/tck/datum-host-tck`: submissions, dry run, forms reads, flood) over HTTP: the golden documents of
-`packages/conformance-suite/golden/abi-4.1.json` (CTL-01 valid, CTL-02 to CTL-04 invalid) and every refusal of the
+`packages/conformance-suite/golden/abi-1.0.json` (CTL-01 valid, CTL-02 to CTL-04 invalid) and every refusal of the
 receiving routes; it also checks this example's own handler references and actuator. `SubmissionsExampleDownIT` runs
 the kit's runtime-down contract (the 503) with an unreadable program, `SubmissionsStaleProgramIT` with the kit's stale
 program (`abi_mismatch`), and `SubmissionsHardeningIT` the kit's hardening contract: a test-only rule module makes a

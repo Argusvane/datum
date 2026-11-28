@@ -230,7 +230,7 @@ def render(request_path):                              # the document profile: 1
     return json.loads(qjs(["-I", "/app/datum-pdf-program.js", "-e",
                            "__datum_pdf(std.in.readAsString()).then((json) => print(json));"],
                           request_path, 15, 256 * 1024 * 1024))
-response = render("request.json")  # {"abi": "4.0.0", "op": "document", "form": form["root"], "pdf": form.get("pdf"),
+response = render("request.json")  # {"abi": "1.0.0", "op": "document", "form": form["root"], "pdf": form.get("pdf"),
                                    #  "values": outcome["values"], "locale": "en", "optionSnapshot": {"country": COUNTRIES},
                                    #  "fonts": FONTS, "env": {"createdAt": "2026-09-09T12:00:00.000Z", "documentId": "abc-123"}}
 # response["bytes"] is the PDF as base64: answer it as application/pdf; the page shows the blob.

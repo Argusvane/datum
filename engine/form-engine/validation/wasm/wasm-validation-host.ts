@@ -338,7 +338,7 @@ export function isSourcePlugin(module: WasmPluginModule): module is WasmPluginSo
 
 // --- ABI -------------------------------------------
 
-export const WASM_ABI_VERSION = "4.1.0";
+export const WASM_ABI_VERSION = "1.0.0";
 
 /**
  * The serialization contract across the host boundary, versioned independently of the

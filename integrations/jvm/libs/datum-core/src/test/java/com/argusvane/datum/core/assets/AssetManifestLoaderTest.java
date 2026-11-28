@@ -21,7 +21,7 @@ class AssetManifestLoaderTest {
     Path dir;
 
     private static final String BODY = """
-        {"//": "Generated", "buildId": "%s", "source": "abc", "engineVersion": "0.1.0", "sandboxAbi": "2.14.0", "pdfAbi": "4.0.0",
+        {"//": "Generated", "buildId": "%s", "source": "abc", "engineVersion": "0.1.0", "sandboxAbi": "1.0.0", "pdfAbi": "1.0.0",
          "knownComponentTypes": ["button", "text"], "builtinBindings": [{"id": "datum", "label": "Datum", "pdfTheme": "datum-pdf"}, {"id": "plain", "label": "Plain"}],
          "builderThemes": [{"id": "datum-dark", "label": "Datum (dark)"}],
          "formTokens": [{"name": "color-text", "group": "palette", "tier": "base", "fallback": "#14212b", "what": "Text."}],
@@ -54,8 +54,8 @@ class AssetManifestLoaderTest {
             assertThat(manifest.buildId()).isEqualTo("b1");
             assertThat(manifest.source()).isEqualTo("abc");
             assertThat(manifest.engineVersion()).isEqualTo("0.1.0");
-            assertThat(manifest.sandboxAbi()).isEqualTo("2.14.0");
-            assertThat(manifest.pdfAbi()).isEqualTo("4.0.0");
+            assertThat(manifest.sandboxAbi()).isEqualTo("1.0.0");
+            assertThat(manifest.pdfAbi()).isEqualTo("1.0.0");
             assertThat(manifest.knownComponentTypes()).containsExactly("button", "text");
             assertThat(manifest.builtinBindings()).containsExactly(new AssetManifest.Binding("datum", "Datum", "datum-pdf"),
                 new AssetManifest.Binding("plain", "Plain", null));

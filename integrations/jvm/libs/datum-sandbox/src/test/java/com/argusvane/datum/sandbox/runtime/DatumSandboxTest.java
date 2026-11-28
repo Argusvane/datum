@@ -74,13 +74,13 @@ class DatumSandboxTest {
         SandboxStatus status = started.status();
         assertThat(status.state()).isEqualTo(SandboxStatus.State.UP);
         assertThat(status.isUp()).isTrue();
-        assertThat(status.details()).containsEntry("sandboxAbi", "2.14.0").containsEntry("pdfAbi", "4.0.0").containsEntry("engineMode", "jffi")
+        assertThat(status.details()).containsEntry("sandboxAbi", "1.0.0").containsEntry("pdfAbi", "1.0.0").containsEntry("engineMode", "jffi")
             .containsEntry("engine", TestRuntime.class.getName()).containsEntry("engineRelease", "test").containsEntry("pdfCapable", true);
         assertThat(events).singleElement().isInstanceOfSatisfying(SandboxReadyEvent.class, ready -> {
             assertThat(ready.engine().id()).isEqualTo(TestRuntime.class.getName());
             assertThat(ready.engine().mode()).isEqualTo("jffi");
-            assertThat(ready.sandboxAbi()).isEqualTo("2.14.0");
-            assertThat(ready.pdfAbi()).isEqualTo("4.0.0");
+            assertThat(ready.sandboxAbi()).isEqualTo("1.0.0");
+            assertThat(ready.pdfAbi()).isEqualTo("1.0.0");
         });
         assertThat(started.sandbox()).isNotNull();
         assertThat(started.pdfProgram()).isNotNull();
@@ -779,7 +779,7 @@ class DatumSandboxTest {
         assertThat(DatumSandbox.builder().runtime(throwing).store(Programs.packaged().store()).limits(ProgramLimits.defaults()).hostOptions(HostOptions.defaults()).settings(settings)
             .events(events::add).runLog(RunLog.slf4j()).build().status().strayRuns()).as("a count that throws never fails health").isEqualTo(-1);
         EngineInfo endive = new EngineInfo("endive", "1.1.0", "jffi", "");
-        SandboxStatus withStrays = new SandboxStatus(SandboxStatus.State.UP, null, endive, true, "2.14.0", null, null, 1, 1, 1, 1, 0, 5, 2, 3);
+        SandboxStatus withStrays = new SandboxStatus(SandboxStatus.State.UP, null, endive, true, "1.0.0", null, null, 1, 1, 1, 1, 0, 5, 2, 3);
         assertThat(withStrays.details()).containsEntry("stuckRuns", 2).containsEntry("strayRuns", 3).doesNotContainKey("engineNotes");
         SandboxStatus without = new SandboxStatus(SandboxStatus.State.UP, null, EngineInfo.unreported("x"), true, null, null, null, 1, 1, 1, 1, 0, 5, 0, -1);
         assertThat(without.details()).containsEntry("stuckRuns", 0).doesNotContainKey("strayRuns").containsEntry("engineMode", "unknown");

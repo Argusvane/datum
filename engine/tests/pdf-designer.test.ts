@@ -643,7 +643,7 @@ function modeProvider(inspect: () => Promise<PdfTemplateInfo> = async () => MODE
   const bytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d]);
   return {
     id: "fake",
-    abiVersion: "4.0.0",
+    abiVersion: "1.0.0",
     requests,
     render: async (request: unknown) => {
       requests.push(request);

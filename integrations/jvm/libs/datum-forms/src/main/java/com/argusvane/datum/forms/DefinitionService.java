@@ -35,7 +35,7 @@ import tools.jackson.databind.node.ObjectNode;
  * public copy, resolve an old version by hash, and ask the kernel whether a definition may be saved.
  *
  * <p>The hash of a definition is the SHA-256 of its canonical JSON ({@link CanonicalJson#digest}), the same
- * digest the engine and every host take (sandbox ABI 2.9.0, the shared {@code canonical.json}), so a definition has
+ * digest the engine and every host take (the shared {@code canonical.json}), so a definition has
  * one name wherever it is drawn.
  *
  * <p>The sandbox is looked up lazily: a definition with no {@code server-secret} rule is its own public copy

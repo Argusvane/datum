@@ -10,9 +10,9 @@ import tools.jackson.databind.node.ObjectNode;
  *
  * @param bytes the PDF (the prepared file when {@code signing} is set)
  * @param pageCount its pages, as the program counted them
- * @param layoutId the layout that printed ({@code document} ABI 3.11), or "" when the op names none
+ * @param layoutId the layout that printed ({@code document}), or "" when the op names none
  * @param layoutKind {@code generated}, {@code template} or {@code derived}, or null
- * @param layoutChoice how the layout was chosen (ABI 3.11), or null
+ * @param layoutChoice how the layout was chosen, or null
  * @param warnings the program's warnings and the host's ({@code sealing.unavailable}, {@code sealing.timestamp}),
  *     each {@code {code, message, ...}}
  * @param elapsedMs the wall time of the runs, slot waits excluded

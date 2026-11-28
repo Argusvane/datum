@@ -23,7 +23,7 @@ import tools.jackson.databind.node.ObjectNode;
 
 /**
  * The host's half of verifying a PDF (signature value, signer placement, timestamp check, certification state) over
- * {@code verify} reports shaped as the kernel's ({@code PdfSignatureReport}, {@code PdfTimestampReport}, ABI 3.14), with
+ * {@code verify} reports shaped as the kernel's ({@code PdfSignatureReport}, {@code PdfTimestampReport}), with
  * real signatures by the PDF kernel's signing fixtures and real tokens from datum-timestamp's authority: a seal and
  * its verification, a later change and a certification, foreign signers, a timestamp.
  */
@@ -418,7 +418,7 @@ class PdfVerifierTest {
         return new TimestampAuthority(TsaKeyMaterial.of(TestAssets.identity("tsa")), null, null, Clock.systemUTC(), new InMemoryTsaLog(Clock.systemUTC()));
     }
 
-    /** A signature report with a timestamp report over its value, shaped as the kernel's (ABI 3.14). */
+    /** A signature report with a timestamp report over its value, shaped as the kernel's. */
     static ObjectNode timestamped(byte[] tokenOver) throws Exception {
         ObjectNode report = rsaReport();
         byte[] reply = authority().stamp(tokenOver, "sealing");

@@ -97,7 +97,7 @@ class AsyncPdfKernel(_OffTheLoop):
         self._kernel = kernel
 
     async def capabilities(self) -> PdfCapabilities:
-        """Ask the program for its ABI and features."""
+        """Ask the program for its ABI and kernel version."""
         return await self.call(self._kernel.capabilities)
 
     async def document(self, request: Mapping[str, JsonValue]) -> PdfProduced:

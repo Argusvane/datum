@@ -957,8 +957,8 @@ public final class SubmissionService {
         String pageId = page == null ? null : page.path("id").stringValue();
 
         Sandbox service = sandboxNow();
-        // A check has no delivered document, and asks for the judged values of a run that blocked elsewhere (reportFold,
-        // ABI 2.10): the server stage is never handed the raw answers.
+        // A check has no delivered document, and asks for the judged values of a run that blocked elsewhere (reportFold):
+        // the server stage is never handed the raw answers.
         Built built = build(read, definition, journey, pageId, null, context, SubmissionMode.VALIDATE);
         ObjectNode outcome;
         try {
@@ -981,8 +981,8 @@ public final class SubmissionService {
         if (page != null) {
             members = pageMembers(outcome);
             if (members == null) {
-                // The run named no components for the page (a contributor took the journey or the page out of the context,
-                // or an older program): fail closed rather than guess a set.
+                // The run named no components for the page (a contributor took the journey or the page out of the context):
+                // fail closed rather than guess a set.
                 LOG.error("Sandbox check for {} named no components for page {}: the context lost its journey or page.", read.formKey(), pageId);
                 throw validatorUnavailable("The sandbox named no components for the page.", null);
             }
@@ -1034,7 +1034,7 @@ public final class SubmissionService {
         return new Checked(accepted, errors, notes, journeyId, pageId);
     }
 
-    /** The components a page check answers for: the outcome's pageComponentIds (ABI 2.7.0), or null. */
+    /** The components a page check answers for: the outcome's pageComponentIds, or null. */
     private static List<String> pageMembers(JsonNode outcome) {
         JsonNode ids = outcome.path("pageComponentIds");
         if (!ids.isArray()) {
@@ -1073,8 +1073,8 @@ public final class SubmissionService {
         ObjectNode context = NODES.objectNode();
         JsonNode id = definition.get("id");
         context.put("formId", id == null || id.isNull() || id.isContainer() ? "" : id.asString());
-        // A source set to not validate answers is marked answersFree on its choices (ABI 2.10.0) rather than left out of
-        // the snapshot; an answersFree the author wrote is removed.
+        // A source set to not validate answers is marked answersFree on its choices rather than left out of the snapshot;
+        // an answersFree the author wrote is removed.
         JsonNode root = dataSources.withAnswersFree(definition).get("root");
         context.set("form", root == null ? NODES.nullNode() : root.deepCopy());
         // The definition's translations ride in the run context: the kernel reads the context, not the
@@ -1120,18 +1120,18 @@ public final class SubmissionService {
         context.put("unknownFields", settings.unknownFieldsOrDefault());
         context.put("logLevel", settings.logLevelOrDefault());
         if (journey != null) {
-            // The journey the answers were given through (ABI 2.4); its pages may name free-answer sources too.
+            // The journey the answers were given through; its pages may name free-answer sources too.
             ObjectNode wrapper = NODES.objectNode();
             wrapper.set("journey", journey.deepCopy());
             context.set("journey", dataSources.withAnswersFree(wrapper).get("journey").deepCopy());
             if (pageId != null) {
-                // The page a check judges (ABI 2.7): the kernel answers with the components in scope for it.
+                // The page a check judges: the kernel answers with the components in scope for it.
                 context.put("page", pageId);
             }
         }
 
-        // The options of the data sources the definition names, which the kernel holds choice answers to (ABI 2.9.0), as
-        // the person submitting may see them. A source that cannot answer refuses the request with server.unavailable,
+        // The options of the data sources the definition names, which the kernel holds choice answers to, as the person
+        // submitting may see them. A source that cannot answer refuses the request with server.unavailable,
         // whatever it threw: the suite allows no other code on a submission's 503, and a provider's own 403 or 404 would
         // tell a filler about the source rather than the form.
         ObjectNode snapshot;
@@ -1174,10 +1174,10 @@ public final class SubmissionService {
             }
         }
 
-        // The host context (sandbox ABI 4.1.0) is the provider's alone: worked out by the server from the request,
+        // The host context is the provider's alone: worked out by the server from the request,
         // set after every contributor so none can replace it, and never read from the document or the body, which a client
         // writes. With no provider, or one that supplies none, the key is left out and the kernel judges a rule reading
-        // host. as it always has (lenient). A provider that fails is the host's fault, so the call is refused rather than
+        // host. leniently. A provider that fails is the host's fault, so the call is refused rather than
         // judged more leniently than the application meant.
         ObjectNode host;
         try {

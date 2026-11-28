@@ -38,7 +38,7 @@ public final class DatumTck {
     public static final String HOST_CONTEXT_FORM_LOCATION = "classpath:/" + TckFixtures.HOST_CONTEXT_FORM_RESOURCE;
 
     /**
-     * The kit's stale sandbox program (ABI 2.11.0) as a {@code datum.runtime.programs.sandbox} override: with
+     * The kit's stale sandbox program (ABI 0.9.0) as a {@code datum.runtime.programs.sandbox} override: with
      * {@code datum.runtime.fail-fast=false} the application starts, refuses it at the ABI probe ({@code abi_mismatch})
      * and answers every submission 503, which the kit's {@code RuntimeDownContract} checks.
      */

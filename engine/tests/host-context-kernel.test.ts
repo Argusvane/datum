@@ -9,7 +9,7 @@ import { runKernel } from "../form-engine/validation/wasm/portable-kernel.js";
 import { JsonWasmAbi, WasmValidationHost } from "../form-engine/validation/wasm/wasm-validation-host.js";
 
 /**
- * The server's host context (`context.hostContext`, sandbox ABI 4.1.0): with one, the kernel
+ * The server's host context (`context.hostContext`): with one, the kernel
  * judges every rule reading `host.` as the browser does; without one, exactly as before (the
  * rule skipped, the lenient reading). A key the context lacks reads as no answer.
  */

@@ -194,7 +194,7 @@ const fontsPromise = loadFontPack({ entries: DEFAULT_FONT_PACK.filter((entry) =>
 /** The browser's provider: what it renders does not matter here, only which layout the page chose. */
 const bytesless: PdfRenderProvider = {
   id: "fake",
-  abiVersion: "4.0.0",
+  abiVersion: "1.0.0",
   render: async () => ({ bytes: new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d]), pageCount: 1, pages: [], warnings: [], providerId: "fake" })
 };
 

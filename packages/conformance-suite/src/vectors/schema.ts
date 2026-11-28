@@ -86,8 +86,8 @@ export type VectorInput =
       kinds?: Json;
       today?: unknown;
       /**
-       * The values the form's `host.` paths read, as the server supplies them (`context.hostContext`,
-       * sandbox ABI 4.1.0). Program and parity only: a live host derives its own from the request.
+       * The values the form's `host.` paths read, as the server supplies them (`context.hostContext`).
+       * Program and parity only: a live host derives its own from the request.
        */
       hostContext?: unknown;
       document?: Json;

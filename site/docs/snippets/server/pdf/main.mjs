@@ -139,7 +139,7 @@ app.post("/api/submissions/pdf", async (req, res) => {
     return res.status(422).json({ errors });
   }
   const request = {
-    abi: "4.0.0",
+    abi: "1.0.0",
     op: "document",
     form: FORM.root,
     pdf: FORM.pdf,  // the form's PDF layouts, as designed in the builder's PDF mode

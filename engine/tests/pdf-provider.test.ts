@@ -116,12 +116,12 @@ describe("requests and environment", () => {
   });
 
   it("accepts one ABI major only, refuses another or a malformed version, and unwraps failures as typed errors", () => {
-    expect(pdfAbiCompatible("4.0.0", "4.4.1")).toBe(true);
-    expect(pdfAbiCompatible("4.1.0", "4.0.0")).toBe(true);
-    expect(pdfAbiCompatible("4.0.0", "3.18.0")).toBe(false);
-    expect(pdfAbiCompatible("4.0.0", "5.0.0")).toBe(false);
+    expect(pdfAbiCompatible("1.0.0", "1.4.1")).toBe(true);
+    expect(pdfAbiCompatible("1.1.0", "1.0.0")).toBe(true);
+    expect(pdfAbiCompatible("1.0.0", "0.18.0")).toBe(false);
+    expect(pdfAbiCompatible("1.0.0", "2.0.0")).toBe(false);
     for (const malformed of ["4", "4.0", "4.0.0-rc1", " 4.0.0", "", undefined, null, 4]) {
-      expect(pdfAbiCompatible("4.0.0", malformed), String(malformed)).toBe(false);
+      expect(pdfAbiCompatible("1.0.0", malformed), String(malformed)).toBe(false);
     }
     expect(unwrapPdfResponse({ ok: true, op: "layout", pages: [], warnings: [] }).op).toBe("layout");
     expect(() => unwrapPdfResponse({ ok: false, error: { code: "font", message: "no glyph" } })).toThrow(PdfKernelError);

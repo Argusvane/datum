@@ -187,7 +187,7 @@ All three are set on `SandboxSettings`. None of them can change a run's answer, 
 `trace("failures")` writes one line for each failed run, and `trace("all")` one for every run, including the ones the sandbox makes at start. The line goes at INFO to the logger `datum.sandbox.trace`.
 
 ```text
-run=cd7152c40e3f program=sandbox op=validate abi=4.1.0 engine=endive mode=panama slotWaitMs=0.0 prepareMs=0.3 instantiateMs=19.0 startMs=109.1 totalMs=129.7 termination=exited exit=0 outcome=verdict stdinBytes=1347 stdoutBytes=244 stderrBytes=0 capture=-
+run=cd7152c40e3f program=sandbox op=validate abi=1.0.0 engine=endive mode=panama slotWaitMs=0.0 prepareMs=0.3 instantiateMs=19.0 startMs=109.1 totalMs=129.7 termination=exited exit=0 outcome=verdict stdinBytes=1347 stdoutBytes=244 stderrBytes=0 capture=-
 ```
 
 - **What it holds.** How the run went and how long each step took, how it ended, and the sizes of its input and output. It never holds an answer, the definition or the run's output.

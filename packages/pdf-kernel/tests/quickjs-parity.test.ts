@@ -168,7 +168,6 @@ describe("in-process vs QuickJS parity", () => {
       const known = await withModule.document(refusal);
       expect(known.warnings.some((warning) => warning.code === "component.unknown")).toBe(false);
       expect((await extractText(known.bytes))[0]).toContain("*** (3)");
-      expect((await withModule.capabilities()).features).toContain("unknown-components");
     } finally {
       withModule.dispose();
     }
@@ -198,7 +197,6 @@ describe("in-process vs QuickJS parity", () => {
     const info = await quickJs.inspect(inspectRequest);
     expect(info).toEqual(await inProcess.inspect!(inspectRequest));
     expect(info).toMatchObject({ encrypted: true, permissions: { print: true, fillForms: true, modify: false } });
-    expect((await quickJs.capabilities()).features).toContain("template-decryption");
 
     // A static-XFA form, the usual kind: pdf-lib warns through a `console` the sandbox lacks.
     const xfa = await formTemplate({ userPassword: "", ownerPassword: "owner", algorithm: "AES-128", permissions: { fillingForms: true } }, undefined, { xfa: true });
@@ -255,7 +253,7 @@ describe("in-process vs QuickJS parity", () => {
 
     const inspectRequest = buildPdfInspectRequest(template);
     expect(await quickJs.inspect(inspectRequest)).toEqual(await inProcess.inspect!(inspectRequest));
-    expect((await quickJs.capabilities()).features).toEqual((await inProcess.capabilities!()).features);
+    expect(await quickJs.capabilities()).toEqual(await inProcess.capabilities!());
   }, 60_000);
 
   it("renders and fills PDF/A identically, attachment and custom intent included", async () => {

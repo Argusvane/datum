@@ -247,7 +247,7 @@ LYING_PROBES = [
 @pytest.mark.parametrize("answer", LYING_PROBES)
 def test_probe_answer_must_be_ok_true(answer: bytes) -> None:
     runtime = FakeRuntime(probe=lambda call: clean(honest(answer, call.nonce)))
-    with pytest.raises(ProgramUnavailableError, match=r"ABI 4\.1\.0") as raised:
+    with pytest.raises(ProgramUnavailableError, match=r"ABI 1\.0\.0") as raised:
         service(runtime).validate(CONTEXT, real=False)
     assert not runtime.runs  # no submission is judged by an unproved program
     if b"abi_mismatch" in answer:
@@ -812,7 +812,7 @@ def test_the_probe_answer_is_read_to_a_depth_of_64() -> None:
     accepted = FakeRuntime(probe=lambda call: clean(honest(deep_probe_answer(64), call.nonce)))
     service(accepted).prove_abi()
     refused = FakeRuntime(probe=lambda call: clean(honest(deep_probe_answer(65), call.nonce)))
-    with pytest.raises(ProgramUnavailableError, match=r"ABI 4\.1\.0"):
+    with pytest.raises(ProgramUnavailableError, match=r"ABI 1\.0\.0"):
         service(refused).prove_abi()
 
 

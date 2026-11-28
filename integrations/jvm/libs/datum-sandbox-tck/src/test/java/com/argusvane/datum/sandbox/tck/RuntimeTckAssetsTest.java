@@ -21,7 +21,7 @@ class RuntimeTckAssetsTest {
             }
         }
         JsonNode hashes = RuntimeTckAssets.fixture("documents-3.8/hashes.json");
-        assertThat(hashes.size()).as("the ABI 3.8 documents").isGreaterThan(0);
+        assertThat(hashes.size()).as("the parity documents").isGreaterThan(0);
         hashes.propertyNames().forEach(theme ->
             assertThat(RuntimeTckAssets.fixture("documents-3.8/" + theme + ".json").isObject()).as(theme).isTrue());
         assertThat(RuntimeTckAssets.fixture("golden.json").path("controls").has("CTL-01")).isTrue();

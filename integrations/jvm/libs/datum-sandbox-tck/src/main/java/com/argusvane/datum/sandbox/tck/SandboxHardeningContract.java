@@ -117,7 +117,7 @@ public interface SandboxHardeningContract extends RuntimeUnderTest {
     @Test
     default void aProgramBelowTheFloorIsRefused() {
         AbiProbe probe = new AbiProbe();
-        Program stale = fakeProgram("2.11.0");
+        Program stale = fakeProgram("0.9.0");
         SandboxService service = service(ProgramRunner.on(runtime()), stale, ProgramLimits.defaults(), probe);
         for (int attempt = 0; attempt < 2; attempt++) {
             assertThatThrownBy(() -> service.validate(context("Ada"), List.of(), false))
@@ -143,7 +143,7 @@ public interface SandboxHardeningContract extends RuntimeUnderTest {
         assertThat(probe.sandboxProved(good)).isTrue();
         assertThat(codes(service.validate(context("Ada"), List.of(), false))).isEmpty();
         // The program is replaced by an older one: proved again, and refused.
-        SandboxService replaced = service(ProgramRunner.on(runtime()), fakeProgram("2.11.0"), ProgramLimits.defaults(), probe);
+        SandboxService replaced = service(ProgramRunner.on(runtime()), fakeProgram("0.9.0"), ProgramLimits.defaults(), probe);
         assertThatThrownBy(() -> replaced.validate(context("Ada"), List.of(), false)).isInstanceOf(ProgramUnavailableException.class);
     }
 

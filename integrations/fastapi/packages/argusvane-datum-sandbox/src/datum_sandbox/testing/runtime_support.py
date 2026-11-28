@@ -172,7 +172,7 @@ def stand_in_program(abi: str = _ABI, answer: str = "JSON.stringify({ errors: []
     """Return a stand-in sandbox program that answers for `abi` and prints the JavaScript expression `answer` per run.
 
     Its `__datum_inspect` refuses a request naming a newer ABI than its own, as the real program does. With
-    ``abi="2.11.0"`` and the default answer it is byte for byte the security suite's `stale-program.js`.
+    ``abi="0.9.0"`` and the default answer it is byte for byte the security suite's `stale-program.js`.
     """
     return Program(ProgramKind.SANDBOX, (_STAND_IN % {"abi": abi, "answer": answer}).encode("utf-8"))
 

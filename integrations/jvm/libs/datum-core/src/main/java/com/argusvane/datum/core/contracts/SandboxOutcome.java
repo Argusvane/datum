@@ -9,7 +9,7 @@ import java.util.Map;
 import tools.jackson.databind.JsonNode;
 
 /**
- * What a run hands back (WasmSubmissionOutcome): the error contract, the sanitized values only when nothing blocked, the run log, and the optional ABI 2.7 to 2.10 results.
+ * What a run hands back (WasmSubmissionOutcome): the error contract, the sanitized values only when nothing blocked, the run log, and the optional results.
  *
  * <p>Members the Java side does not name are kept in {@code extra} and written back, so a newer
  * program's additions round-trip (the TypeScript type is open).

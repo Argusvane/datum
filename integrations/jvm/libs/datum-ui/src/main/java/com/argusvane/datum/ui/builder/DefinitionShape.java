@@ -16,8 +16,8 @@ import tools.jackson.databind.JsonNode;
  * The host's own reading of a definition's shape before the kernel is asked (conformance suite BLD-03,
  * BLD-06, DEF-05, DEF-06).
  *
- * <p>Why a second reading at all: the size caps are the kernel's own ({@code limits} in the {@code check} answer,
- * ABI 2.13.0), counted here in one early-exit pass so a hostile definition is refused before a
+ * <p>Why a second reading at all: the size caps are the kernel's own ({@code limits} in the {@code check} answer),
+ * counted here in one early-exit pass so a hostile definition is refused before a
  * sandbox run starts and before a 32 MiB guest has to parse it. Every finding carries a stable code named as the
  * kernel names its structure problems, so a client reads codes from one list whichever side found the problem.
  *
@@ -38,7 +38,7 @@ public final class DefinitionShape {
     /** The longest version a definition may carry: every snapshot and submission records it (64). */
     public static final int MAX_VERSION_LENGTH = 64;
 
-    /** The most components a definition may hold, the root's form not counted (kernel limit, ABI 2.13.0). */
+    /** The most components a definition may hold, the root's form not counted (kernel limit). */
     public static final int MAX_COMPONENTS = 10000;
 
     /** The most inline options one component may hold. */

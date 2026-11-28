@@ -3,8 +3,7 @@ import type { Attacker, Severity, Vector } from "./schema.js";
 
 /**
  * OUT: the PDF output vectors. They run only in the pdf runner
- * (`--pdf-program`, `src/runners/pdf`), against a PDF program of ABI 4 that lists the
- * `output-safety` feature: the program renders a fixture form with hostile answers and the suite
+ * (`--pdf-program`, `src/runners/pdf`), against a PDF program of ABI 1: the program renders a fixture form with hostile answers and the suite
  * inspects the OUTPUT bytes. `applies.*` are false so the sandbox-program and endpoint
  * runners skip them; `expect` is a placeholder (the check is code, `predicate` says what it
  * proves). Every row carries its time bound in `limits.programMs`.

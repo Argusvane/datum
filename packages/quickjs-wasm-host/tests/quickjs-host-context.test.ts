@@ -5,7 +5,7 @@ import { InProcessWasmHostAdapter, JsonWasmAbi, WasmValidationHost, type Compone
 import { QuickJsWasmHostAdapter } from "../src/index.js";
 
 /**
- * The server's host context (`context.hostContext`, sandbox ABI 4.1.0) behind the real sandbox:
+ * The server's host context (`context.hostContext`) behind the real sandbox:
  * the program built from the engine's kernel judges `host.` rules against it byte for byte as
  * the in-process kernel does, and with none judges as it always did.
  */

@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * What the kernel's {@code check} op said of a definition (ABI 2.13.0). {@code verdict} is the kernel's {@code ok},
+ * What the kernel's {@code check} op said of a definition. {@code verdict} is the kernel's {@code ok},
  * {@code warn} or {@code fail} under the host's formula
  * policy. A definition that is {@link #refused()} is not saved; {@code structureWarnings} and {@code warnings}
  * never refuse and ride back to the author.

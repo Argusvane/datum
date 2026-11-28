@@ -132,14 +132,13 @@
     },
     "pdf": {
       "type": "object",
-      "required": ["path", "bytes", "sha256", "abi", "features", "pending", "tools"],
+      "required": ["path", "bytes", "sha256", "abi", "pending", "tools"],
       "additionalProperties": false,
       "properties": {
         "path": { "type": "string" },
         "bytes": { "type": "integer", "minimum": 0 },
         "sha256": { "type": "string" },
         "abi": { "type": ["string", "null"] },
-        "features": { "type": "array", "items": { "type": "string" } },
         "pending": { "type": ["string", "null"] },
         "tools": {
           "type": "object",

@@ -31,7 +31,7 @@ import tools.jackson.databind.node.ObjectNode;
 
 /**
  * The data sources a definition names, and the option snapshot built from them, which the submissions path sends
- * with a validation (sandbox ABI 2.9.0, {@code optionSnapshot}) and the PDF path before a render.
+ * with a validation ({@code optionSnapshot}) and the PDF path before a render.
  *
  * <p>Every provider call runs under {@code timeout}. A source that does not answer in time or throws is
  * never judged against: for validation that is {@link DataSourceUnavailableException} (503
@@ -108,7 +108,7 @@ public final class DataSourceOptions {
     }
 
     /**
-     * The options of the data sources a definition names, by source id: sandbox ABI 2.9.0's
+     * The options of the data sources a definition names, by source id: the
      * {@code optionSnapshot}, as the principal may see them.
      *
      * <p>For validation the kernel holds each choice answer to its source's entry and leaves a source the
@@ -171,7 +171,7 @@ public final class DataSourceOptions {
 
     /**
      * A copy of a definition whose free-answer sources are marked as such: a choice that names a source set to
-     * not validate answers gets {@code configuration.data.answersFree = true} (sandbox ABI 2.10.0), so the
+     * not validate answers gets {@code configuration.data.answersFree = true}, so the
      * kernel skips the option check. A source the provider lacks is left unmarked, so its answers are refused
      * rather than let through.
      *

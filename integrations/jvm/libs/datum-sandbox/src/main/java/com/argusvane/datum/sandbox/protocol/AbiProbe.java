@@ -1,11 +1,10 @@
 package com.argusvane.datum.sandbox.protocol;
 
 import com.argusvane.datum.core.ProgramUnavailableException;
+import com.argusvane.datum.core.contracts.PdfCapabilitiesResponse;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -26,9 +25,9 @@ import tools.jackson.databind.node.ObjectNode;
  * kept against the program's sha256 and the floor it was proved for ({@link #key}), so it costs one extra run
  * per program.
  *
- * <p>PDF: the {@code capabilities} op answers the program's ABI and features; the host needs the same major version
- * as {@link PdfAbi#MIN} and at least it. The program's own answer is the gate, as for the sandbox, and a program
- * that does not answer is unavailable (a manifest's string is never trusted for it).
+ * <p>PDF: the {@code capabilities} op answers the program's ABI and its kernel's version; the host needs the same
+ * major version as {@link PdfAbi#MIN} and at least it. The program's own answer is the gate, as for the sandbox, and a
+ * program that does not answer is unavailable (a manifest's string is never trusted for it).
  *
  * <p>A PDF program that failed its capabilities answer is remembered for {@link #PDF_FAILURE_MEMORY}: a stale or
  * hanging program does not cost every PDF request a full capabilities run (up to the 15 s budget) before it is
@@ -42,7 +41,7 @@ public final class AbiProbe {
 
     private final Clock clock;
     private final Set<String> provedSandbox = ConcurrentHashMap.newKeySet();
-    private final Map<String, List<String>> pdfFeatures = new ConcurrentHashMap<>();
+    private final Map<String, PdfCapabilitiesResponse> pdfCapabilities = new ConcurrentHashMap<>();
     private final Map<String, PdfFailure> pdfFailures = new ConcurrentHashMap<>();
 
     /** A failed capabilities answer: until when it stands, and the host's message to refuse with. */
@@ -73,14 +72,14 @@ public final class AbiProbe {
         provedSandbox.add(key(program, SandboxAbi.MIN));
     }
 
-    /** The PDF program's features, when its capabilities answer has been proved. */
-    public Optional<List<String>> pdfFeatures(Program program) {
-        return Optional.ofNullable(pdfFeatures.get(key(program, PdfAbi.MIN)));
+    /** The PDF program's capabilities answer, when it has been proved. */
+    public Optional<PdfCapabilitiesResponse> pdfCapabilities(Program program) {
+        return Optional.ofNullable(pdfCapabilities.get(key(program, PdfAbi.MIN)));
     }
 
-    void rememberPdf(Program program, List<String> features) {
+    void rememberPdf(Program program, PdfCapabilitiesResponse capabilities) {
         pdfFailures.remove(key(program, PdfAbi.MIN));
-        pdfFeatures.put(key(program, PdfAbi.MIN), List.copyOf(features));
+        pdfCapabilities.put(key(program, PdfAbi.MIN), capabilities);
     }
 
     /**
@@ -157,11 +156,11 @@ public final class AbiProbe {
 
     /**
      * Reads a capabilities answer: {@code ok: true}, an ABI the host speaks ({@link PdfAbi#speaks}), and the
-     * feature names (the string entries only; anything else in the list is ignored).
+     * kernel's version (a string).
      *
      * @throws ProgramUnavailableException when the program does not answer for {@link PdfAbi#MIN}
      */
-    public static List<String> requirePdfCapabilities(JsonNode answer) {
+    public static PdfCapabilitiesResponse requirePdfCapabilities(JsonNode answer) {
         if (answer == null || !answer.isObject() || !answer.path("ok").isBoolean() || !answer.path("ok").booleanValue()) {
             JsonNode code = answer != null && answer.isObject() ? answer.path("error").path("code") : null;
             throw new ProgramUnavailableException("The PDF program does not answer for ABI " + PdfAbi.MIN + " ("
@@ -173,12 +172,11 @@ public final class AbiProbe {
             throw new ProgramUnavailableException("The PDF program speaks ABI " + (reported == null ? "(none)" : reported)
                 + "; the host needs " + PdfAbi.MIN + " or a later " + PdfAbi.MIN.substring(0, PdfAbi.MIN.indexOf('.')) + ".x.");
         }
-        List<String> features = new ArrayList<>();
-        for (JsonNode feature : answer.path("features").isArray() ? answer.path("features").values() : List.<JsonNode>of()) {
-            if (feature.isString()) {
-                features.add(feature.stringValue());
-            }
+        JsonNode kernelVersion = answer.path("kernelVersion");
+        if (!kernelVersion.isString()) {
+            throw new ProgramUnavailableException("The PDF program's capabilities answer names no kernelVersion; the host needs one. "
+                + "Rebuild the program assets (npm run jvm:assets).");
         }
-        return features;
+        return new PdfCapabilitiesResponse(reported, kernelVersion.stringValue(), null);
     }
 }

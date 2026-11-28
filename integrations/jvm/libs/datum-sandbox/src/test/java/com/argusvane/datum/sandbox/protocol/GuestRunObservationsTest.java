@@ -61,7 +61,7 @@ class GuestRunObservationsTest {
         FakeRuntime runtime = new FakeRuntime(call -> {
             String op = call.input().path("op").asString("");
             String text = "capabilities".equals(op)
-                ? "{\"ok\":true,\"op\":\"capabilities\",\"abi\":\"" + PdfAbi.MIN + "\",\"features\":[]}"
+                ? "{\"ok\":true,\"op\":\"capabilities\",\"abi\":\"" + PdfAbi.MIN + "\",\"kernelVersion\":\"0.1.0\"}"
                 : "{\"ok\":true,\"op\":\"" + op + "\"}";
             return RunOutput.exited(0, (text + "\n").getBytes(StandardCharsets.UTF_8), null);
         });

@@ -5,8 +5,8 @@ fails if a rebuilt program changes it. They run the program through `pdf_kernel.
 skip, with a reason, when the engine or the program is absent. They import nothing of the PDF host, so they run on their
 own.
 
-- the ABI reply and the feature list the host gate reads: the program answers a request of any 3.x ABI, so
-  the gate reads the reply, never the acceptance;
+- the ABI reply the host gate reads: the program answers a request of any minor of its own major, so the gate reads
+  the reply, never the acceptance;
 - the kernel verifies NO signature value: a forged value under a valid structure reads the same structure;
 - the seal's token: the in-process authority's token over SHA-256 of the signature value, asked
   with channel `seal`, is accepted by `complete`, and `verify` reports it as covering the value, with the digest, the
@@ -42,8 +42,6 @@ from datum_sandbox.wasi import RunBudget, RunEnd
 
 pytestmark = pytest.mark.runtime
 
-REQUIRED_FEATURES = {"signature", "verify-detail", "output-safety", "render-caps", "attachment-types"}
-
 
 @pytest.fixture(scope="module")
 def session() -> Any:
@@ -67,30 +65,29 @@ def token_over(authority: Any) -> Any:
     return make
 
 
-# -- the gate: ABI and features ----------------------------------------------------------------------------------------
-def test_the_program_reports_an_abi_at_least_the_floor_and_the_features_the_gate_reads(
-    session: PdfKernelSession,
-) -> None:
+# -- the gate: ABI and kernel version ----------------------------------------------------------------------------------
+def test_the_program_reports_an_abi_at_least_the_floor_and_its_kernel_version(session: PdfKernelSession) -> None:
     answer = session.capabilities()
+    assert set(answer) == {"ok", "op", "abi", "kernelVersion"}
     assert semver(answer["abi"]) >= semver(PDF_ABI_MIN)
-    assert set(answer["features"]) >= REQUIRED_FEATURES
-    assert isinstance(answer["features"], list)
+    assert isinstance(answer["kernelVersion"], str)
+    assert answer["kernelVersion"]
 
 
 def test_the_built_program_reports_exactly_the_floor_so_the_floor_needs_no_lowering(session: PdfKernelSession) -> None:
-    # The floor (4.0.0) is what the packaged program says, so no lower version is used.
-    assert session.capabilities()["abi"] == "4.0.0" == PDF_ABI_MIN
+    # The floor (1.0.0) is what the packaged program says, so no lower version is used.
+    assert session.capabilities()["abi"] == "1.0.0" == PDF_ABI_MIN
 
 
 def test_the_program_answers_a_request_of_another_minor_of_the_same_major(session: PdfKernelSession) -> None:
     # `pdfAbiCompatible` is major-only: acceptance proves nothing, so the host reads the reply's abi.
-    other = session.call({"abi": "4.99.0", "op": "capabilities"})
+    other = session.call({"abi": "1.99.0", "op": "capabilities"})
     assert other["ok"] is True
-    assert other["abi"] == "4.0.0"
+    assert other["abi"] == "1.0.0"
 
 
 def test_a_request_of_another_major_is_refused_with_abi_mismatch(session: PdfKernelSession) -> None:
-    refused = session.call({"abi": "3.18.0", "op": "capabilities"})
+    refused = session.call({"abi": "0.18.0", "op": "capabilities"})
     assert refused["ok"] is False
     assert refused["error"]["code"] == "abi_mismatch"
 
@@ -122,7 +119,7 @@ def test_the_kernel_accepts_a_raw_p256_value_and_embeds_the_der_of_the_same_numb
 ) -> None:
     """RECORDED, NEVER RELIED ON: `complete` takes the IEEE P1363 ``r||s`` of an ECDSA P-256 signature.
 
-    The host hands the program DER only (`wire_signature_value` converts); that the 4.0.0 program does not refuse the
+    The host hands the program DER only (`wire_signature_value` converts); that the 1.0.0 program does not refuse the
     raw form, and writes the DER of the same two numbers, is a fact of this build that a rebuilt program may change.
     """
     from cryptography.hazmat.primitives.asymmetric import utils  # noqa: PLC0415 - tests only

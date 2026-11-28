@@ -158,7 +158,7 @@ def submit(envelope: dict):
         errors = [{"field": e.get("componentId"), "code": e["code"]} for e in outcome["errors"]]
         return JSONResponse(status_code=422, content={"errors": errors})
     response = render({
-        "abi": "4.0.0",
+        "abi": "1.0.0",
         "op": "document",
         "form": FORM["root"],
         # The template layout, inline, with this server's fill options: this server's choice, so no

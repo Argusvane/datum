@@ -6,7 +6,7 @@
 
 A host calls `__datum_pdf` with one JSON request as text and reads one JSON reply as text. The call returns a promise: let it settle before the module exits. A host that runs the program in process imports its `handlePdfRequest` instead and skips the text.
 
-Every request has an `abi`, the interface version the host speaks, and an `op`. The program answers a request of its own major version (currently 4) and refuses any other with the `abi_mismatch` failure. The reply is either `{ "ok": true, "op": "…" }` with the keys of that operation, or a failure.
+Every request has an `abi`, the interface version the host speaks, and an `op`. The program answers a request of its own major version (currently 1) and refuses any other with the `abi_mismatch` failure. The reply is either `{ "ok": true, "op": "…" }` with the keys of that operation, or a failure.
 
 ```json
 { "ok": false, "error": { "code": "template", "message": "The template is encrypted with a password; supply an unencrypted copy of the template." } }
@@ -25,7 +25,7 @@ Two more globals exist:
 
 | Op | What it does |
 |---|---|
-| `capabilities` | Names the version and the features |
+| `capabilities` | Names the version |
 | `document` | Chooses a layout from the form and the answers and makes the PDF in one step |
 | `build` | Chooses the layout and builds what would be drawn, without drawing it |
 | `render` | Draws a document that `build` returned |
@@ -41,46 +41,12 @@ Anything else is an `invalid_request` failure.
 
 ### capabilities
 
-Request: `{ "abi": "4.0.0", "op": "capabilities" }`. Reply: `abi`, `features` and `kernelVersion`.
+Request: `{ "abi": "1.0.0", "op": "capabilities" }`. Reply: `abi`, the program's version, and `kernelVersion`, the release of the kernel it was built from.
 
 Probe the program at start and refuse one that:
 
 - Reports another major version.
 - Reports a version below the floor you built against.
-- Lacks a feature you need.
-
-| Feature | What it means |
-|---|---|
-| `document`, `build`, `render`, `layout`, `fill`, `inspect` | The operation of that name |
-| `signature` | `sign`, `complete`, `timestampRequest` and `verify`, and `signature` on `document`, `render` and `fill` |
-| `tagged` | Tagged PDFs |
-| `acroform` | Fillable fields, in drawn documents and in templates |
-| `areas`, `area-fields` | Areas drawn onto a template's pages, and areas that become fillable fields |
-| `bidi` | Right-to-left and mixed-direction text |
-| `unknown-components` | The `unknownComponents` policy |
-| `pdfa` | PDF/A conformance |
-| `attachments`, `attachment-data` | Uploaded files embedded, and `inspect` returning embedded files' bytes |
-| `attachment-types` | Executables, scripts and HTML refused as attachments, and a file whose bytes are larger than its declared size |
-| `theme-controls` | A PDF theme's geometry: controls, choice marks, fields, headings, tables, boxes, panels, lists, spacing |
-| `data-keys` | A field's `dataKey` places its answer, in tables, repeats and fillable field names |
-| `layout-conditions` | A layout's `when` chooses it from the answers |
-| `field-tooltips` | `inspect` lists each field's tooltip |
-| `conditional-expressions`, `formulas`, `formula-functions` | `if` in expressions, formula strings, and the function library with plugin functions |
-| `verify-detail` | The full signature report: the signed revision, later updates, timestamps, `knownCertificates` |
-| `template-decryption` | Templates encrypted with an empty user password are read |
-| `mapping-values` | A mapping's `values` map from answers to PDF values |
-| `output-safety` | Safe attachment names, bidi controls stripped from answers, field values clamped to their maximum length, risky patterns refused |
-| `render-caps` | A layout's `limits` for pages and answer length |
-| `default-font-fallback` | A family no font covers is drawn in the supplied default sans-serif face |
-
-Require at least `document`. Then add by need:
-
-- **Templates.** `fill` and `inspect`.
-- **Signing.** `signature`.
-- **Verify reports.** `verify-detail`, before you rely on one.
-- **Layouts with conditions.** `layout-conditions` and `formulas`.
-- **Archival files.** `pdfa`.
-- **Answers from the public.** `output-safety` and `render-caps`.
 
 ### document
 
@@ -134,7 +100,7 @@ Because the answers can choose the layout, the program refuses template bytes se
 
 ```json
 {
-  "abi": "4.0.0",
+  "abi": "1.0.0",
   "op": "document",
   "form": { "…": "the form's root component" },
   "values": { "fullName": "Ada Lovelace", "age": 36 },

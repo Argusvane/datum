@@ -1,6 +1,7 @@
 package com.argusvane.datum.sandbox.protocol;
 
 import com.argusvane.datum.core.ProgramUnavailableException;
+import com.argusvane.datum.core.contracts.PdfCapabilitiesResponse;
 import com.argusvane.datum.sandbox.diagnostics.RunRecorder;
 import com.argusvane.datum.sandbox.protocol.SandboxException.Reason;
 import com.argusvane.datum.sandbox.wasi.Budget;
@@ -8,7 +9,6 @@ import com.argusvane.datum.sandbox.wasi.OutputCapExceededException;
 import com.argusvane.datum.sandbox.wasi.RunOutput;
 import com.argusvane.datum.sandbox.wasi.Termination;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
@@ -28,8 +28,8 @@ import tools.jackson.databind.node.ObjectNode;
  * {@link PdfKernelDecorator}, never by replacing it. With a {@link RunRecorder} every run is handed to it once
  * judged, as {@link SandboxService} does, after the last check the protocol makes of it: a
  * {@link #call} answer by its {@code ok} ({@code verdict} for true, {@code refused} for false, {@code no_outcome} when it is not
- * a boolean), a {@link #capabilities} answer after the ABI and features are read ({@code refused} when the program answered
- * an {@code ok} the gate did not take, as for the sandbox probe). The checks are the same either way.
+ * a boolean), a {@link #capabilities} answer after the ABI and the kernel's version are read ({@code refused} when the
+ * program answered an {@code ok} the gate did not take, as for the sandbox probe). The checks are the same either way.
  */
 public final class PdfProgram implements PdfKernel {
 
@@ -62,16 +62,17 @@ public final class PdfProgram implements PdfKernel {
     }
 
     /**
-     * The program's feature names, asked once per program (sha256) and floor, which also proves its ABI. A
-     * failed answer is remembered for {@link AbiProbe#PDF_FAILURE_MEMORY} and refused again without a run. A run the
-     * host cancelled ({@link Reason#INTERRUPTED}) says nothing about the program and is not remembered.
+     * The program's capabilities answer (its ABI and its kernel's version), asked once per program (sha256) and floor,
+     * which proves its ABI. A failed answer is remembered for {@link AbiProbe#PDF_FAILURE_MEMORY} and refused again
+     * without a run. A run the host cancelled ({@link Reason#INTERRUPTED}) says nothing about the program and is not
+     * remembered.
      *
      * @throws ProgramUnavailableException when the program does not answer for {@link PdfAbi#MIN}, or did not
      *     a moment ago
      */
     @Override
-    public List<String> capabilities() {
-        Optional<List<String>> known = probe.pdfFeatures(program);
+    public PdfCapabilitiesResponse capabilities() {
+        Optional<PdfCapabilitiesResponse> known = probe.pdfCapabilities(program);
         if (known.isPresent()) {
             return known.get();
         }
@@ -93,9 +94,9 @@ public final class PdfProgram implements PdfKernel {
             probe.rememberPdfFailure(program, e.getMessage());
             throw e;
         }
-        List<String> features;
+        PdfCapabilitiesResponse capabilities;
         try {
-            features = AbiProbe.requirePdfCapabilities(answer.json());
+            capabilities = AbiProbe.requirePdfCapabilities(answer.json());
         } catch (ProgramUnavailableException e) {
             // The gate's refusal of what the program answered: its own stale answer (an ok the gate did not take) is
             // refused, like the sandbox probe's abi_mismatch; an answer with no ok is no outcome.
@@ -104,8 +105,8 @@ public final class PdfProgram implements PdfKernel {
             throw e;
         }
         answer.end(RunWatch.VERDICT);
-        probe.rememberPdf(program, features);
-        return features;
+        probe.rememberPdf(program, capabilities);
+        return capabilities;
     }
 
     /**

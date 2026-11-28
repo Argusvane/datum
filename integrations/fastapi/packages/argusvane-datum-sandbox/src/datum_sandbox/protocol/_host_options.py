@@ -1,4 +1,4 @@
-"""The context keys the host decides (sandbox ABI 2.8.0 `today`; 2.10.0 the two policies): `HostOptions`.
+"""The context keys the host decides (`today` and the two policies): `HostOptions`.
 
 They are set over every validation context, so a submitter cannot relax the formula or pattern policy by sending its own
 keys. The policy words are `datum.host.formula_errors` and `datum.host.risky_patterns`; a word the program does not read

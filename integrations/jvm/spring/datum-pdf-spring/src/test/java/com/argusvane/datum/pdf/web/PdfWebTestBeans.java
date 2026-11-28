@@ -138,7 +138,7 @@ public class PdfWebTestBeans {
                     }
 
                     @Override
-                    public java.util.List<String> capabilities() {
+                    public com.argusvane.datum.core.contracts.PdfCapabilitiesResponse capabilities() {
                         return kernel.capabilities();
                     }
 

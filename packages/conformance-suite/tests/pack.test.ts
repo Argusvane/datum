@@ -57,7 +57,7 @@ describe("npm pack, install, run", () => {
   afterAll(() => rmSync(work, { recursive: true, force: true }));
 
   it("carries the bundles, the shims, the binding tester with its prebuilt host module, the golden files and the fixture, and no src, tests or scripts", () => {
-    for (const path of ["package.json", "README.md", "LICENSE", "NOTICE", "dist/datum-conformance-suite.LICENSE.txt", "bin/datum-security-check.mjs", "bin/datum-binding-check.mjs", "binding-check/api.mjs", "binding-check/cli.mjs", "binding-check/page.js", "binding-check/host.html", "binding-check/dist/host.js", "binding-check/datum/binding.mjs", "binding-check/lib/cases.mjs", "binding-check/fixtures/index.mjs", "dist/cli.mjs", "dist/index.mjs", "golden/abi-4.1.json", "golden/agent-tools.json", "fixtures/endpoint-fixture.definition.json", "fixtures/README.md"]) {
+    for (const path of ["package.json", "README.md", "LICENSE", "NOTICE", "dist/datum-conformance-suite.LICENSE.txt", "bin/datum-security-check.mjs", "bin/datum-binding-check.mjs", "binding-check/api.mjs", "binding-check/cli.mjs", "binding-check/page.js", "binding-check/host.html", "binding-check/dist/host.js", "binding-check/datum/binding.mjs", "binding-check/lib/cases.mjs", "binding-check/fixtures/index.mjs", "dist/cli.mjs", "dist/index.mjs", "golden/abi-1.0.json", "golden/agent-tools.json", "fixtures/endpoint-fixture.definition.json", "fixtures/README.md"]) {
       expect(listing, path).toContain(path);
     }
     expect(listing.filter((path) => /^(src|tests|scripts)\//.test(path))).toEqual([]);

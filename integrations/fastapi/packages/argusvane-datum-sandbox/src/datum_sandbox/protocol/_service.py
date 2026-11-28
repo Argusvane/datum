@@ -1,6 +1,6 @@
 """`SandboxService`: runs the sandbox program over a `GuestRuntime`, runtime-agnostic.
 
-Every run, in this order: the depth guard before any guest starts; the ABI gate, once per program, so an older program
+Every run, in this order: the depth guard before any guest starts; the ABI gate, once per program, so a stale program
 never runs; the input written as strict JSON; a fresh nonce; the run, whose slot the runtime's harness takes with the
 budget's wait (`EngineBusyError` is 503 `server.busy`; a full stray bound is `StrayBoundError`, 503
 `server.unavailable`); the classification of how it ended and the frame; then the answer read strictly. A validation's

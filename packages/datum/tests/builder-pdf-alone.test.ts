@@ -146,7 +146,7 @@ function fakeProvider(calls: { renders: unknown[]; fills: unknown[] }): PdfRende
   const bytes = (text: string) => new TextEncoder().encode(text);
   return {
     id: "fake",
-    abiVersion: "4.0.0",
+    abiVersion: "1.0.0",
     render: async (request: unknown) => {
       calls.renders.push(request);
       return { bytes: bytes("%PDF-fake"), pageCount: 1, pages: [], warnings: [], providerId: "fake" };

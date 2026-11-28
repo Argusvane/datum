@@ -9,12 +9,8 @@ package com.argusvane.datum.sandbox.protocol;
  */
 public final class SandboxAbi {
 
-    /**
-     * The sandbox program ABI this host's requests name: a program of this major, at this version or later, answers.
-     * 4.1.0 is the first that reads {@code hostContext} and judges journeys as the browser does now (a page with a
-     * {@code when} refused, Check answers pages, Continue checking deferred to the end by default).
-     */
-    public static final String MIN = "4.1.0";
+    /** The sandbox program ABI this host's requests name: a program of this major, at this version or later, answers. */
+    public static final String MIN = "1.0.0";
 
     private SandboxAbi() {
     }

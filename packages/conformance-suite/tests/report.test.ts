@@ -94,7 +94,7 @@ describe("Markdown", () => {
     const text = renderMarkdown(report);
     expect(text).toMatch(/^# Datum security check: PASS\n/);
     expect(text).toContain(`Suite ${report.suite.version} (vector set ${report.suite.vectorSet})`);
-    expect(text).toMatch(/Program: \(built from source\) \(\d+ B, sha256 [0-9a-f]{8}\) ABI detected 4\.1\.0 \/ floor 4\.0\.0 -> OK/);
+    expect(text).toMatch(/Program: \(built from source\) \(\d+ B, sha256 [0-9a-f]{8}\) ABI detected 1\.0\.0 \/ floor 1\.0\.0 -> OK/);
     expect(text).toContain("| Status | Count |");
     for (const heading of ["## Failures (enforced)", "## Warnings and promotions (WARN, XPASS)", "## Pending (XFAIL, blocked by open items)", "## All results by class", "### control (1)", "### abi (1)", "### isolation (1)", "## Environment"]) {
       expect(text).toContain(heading);

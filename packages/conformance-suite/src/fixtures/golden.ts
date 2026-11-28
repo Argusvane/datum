@@ -1,7 +1,7 @@
-import abi41 from "../../golden/abi-4.1.json" with { type: "json" };
+import abi10 from "../../golden/abi-1.0.json" with { type: "json" };
 import type { GoldenControl } from "../predicates.js";
 
-/** The pinned reference file for the sandbox ABI (`golden/abi-4.1.json`). */
+/** The pinned reference file for the sandbox ABI (`golden/abi-1.0.json`). */
 export interface GoldenFile {
   abi: string;
   goldenCase: { canonicalLength: number; canonicalSha256: string };
@@ -10,10 +10,10 @@ export interface GoldenFile {
 }
 
 /** The `major.minor` of the ABI the bundled golden file pins. */
-export const BUNDLED_GOLDEN_ABI = "4.1";
+export const BUNDLED_GOLDEN_ABI = "1.0";
 
 /** The golden file the bundle carries: the current ABI's. `--golden <file>` overrides. */
-export const BUNDLED_GOLDEN: GoldenFile = abi41 as unknown as GoldenFile;
+export const BUNDLED_GOLDEN: GoldenFile = abi10 as unknown as GoldenFile;
 
 export interface GoldenChoice {
   golden: GoldenFile;

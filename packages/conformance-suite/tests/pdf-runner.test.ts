@@ -33,14 +33,13 @@ describe("the OUT catalogue", () => {
     }
   });
 
-  it("reads the pending rule from the ABI and the feature", () => {
-    expect(pendingReason("3.18.0", ["output-safety"])).toMatch(/needs 4\.0\.0/);
-    expect(pendingReason("5.0.0", ["output-safety"])).toMatch(/needs 4\.0\.0 or a later version of its major/);
-    expect(pendingReason("4.0.0", ["mapping-values"])).toMatch(/output-safety/);
-    expect(pendingReason("4.0.0", ["output-safety"])).toBeNull();
-    expect(pendingReason("4.2.1", ["output-safety"])).toBeNull();
-    expect(pendingReason(null, [])).toMatch(/did not answer/);
-    expect(OUTPUT_SAFETY_ABI).toBe("4.0.0");
+  it("reads the pending rule from the ABI", () => {
+    expect(pendingReason("0.18.0")).toMatch(/needs 1\.0\.0/);
+    expect(pendingReason("2.0.0")).toMatch(/needs 1\.0\.0 or a later version of its major/);
+    expect(pendingReason("1.0.0")).toBeNull();
+    expect(pendingReason("1.2.1")).toBeNull();
+    expect(pendingReason(null)).toMatch(/did not answer/);
+    expect(OUTPUT_SAFETY_ABI).toBe("1.0.0");
   });
 });
 
@@ -58,9 +57,8 @@ describe("the current kernel source (positive control)", () => {
   }, 300_000);
 });
 
-describe("a program of another major, or without the output-safety feature", () => {
-  const otherMajor = { ...currentKernel(), capabilities: async () => ({ abi: "3.18.0", features: ["output-safety"] }) } as never;
-  const noFeature = { ...currentKernel(), capabilities: async () => ({ abi: "4.0.0", features: ["mapping-values"] }) } as never;
+describe("a program of another major", () => {
+  const otherMajor = { ...currentKernel(), capabilities: async () => ({ abi: "0.18.0", kernelVersion: "0.1.0" }) } as never;
   const stale = { text: "", path: "other.js" };
 
   it("leaves the whole class pending under the release gate, with the reason, and the verdict is PASS", async () => {
@@ -69,13 +67,10 @@ describe("a program of another major, or without the output-safety feature", () 
     for (const result of run.results) {
       expect(result.status).toBe("SKIP");
       expect(result.gate).toBe("pending");
-      expect(result.blockedBy).toBe("PDF ABI 4.0.0");
-      expect(result.notes).toMatch(/answers PDF ABI 3\.18\.0; the OUT class needs 4\.0\.0/);
+      expect(result.blockedBy).toBe("PDF ABI 1.0.0");
+      expect(result.notes).toMatch(/answers PDF ABI 0\.18\.0; the OUT class needs 1\.0\.0/);
     }
-    expect(run.report.pending).toMatch(/3\.18\.0/);
-    const featureless = await runPdfVectors({ program: stale, provider: noFeature, catalogue: VECTORS, only: ["OUT-05"] });
-    expect(featureless.report.pending).toMatch(/without the output-safety feature/);
-    expect(featureless.results.map((result) => result.status)).toEqual(["SKIP"]);
+    expect(run.report.pending).toMatch(/0\.18\.0/);
   });
 
   it("runs them under the full gate as XFAIL or XPASS, never FAIL", async () => {
@@ -85,7 +80,7 @@ describe("a program of another major, or without the output-safety feature", () 
 });
 
 describe.skipIf(text === undefined)("the built program in packages/pdf-kernel/dist", () => {
-  it("answers the current PDF ABI with the output-safety feature, and every OUT vector passes", async () => {
+  it("answers the current PDF ABI, and every OUT vector passes", async () => {
     const run = await runPdfVectors({ program, catalogue: VECTORS });
     expect(run.report.pending).toBeNull();
     for (const result of run.results) {

@@ -151,8 +151,8 @@ describe("layouts chosen by the answers in the program", () => {
     expect(Buffer.from(again.bytes).equals(Buffer.from(quebec.bytes))).toBe(true);
   }, 60_000);
 
-  it("answers a request that speaks abi 4.0.0 the same way: the major version is the line", async () => {
-    const request = { ...documentRequest({ "address.province": "QC" }), abi: "4.0.0" };
+  it("answers a request that speaks another version of its major the same way: the major version is the line", async () => {
+    const request = { ...documentRequest({ "address.province": "QC" }), abi: "1.2.0" };
     const reply = JSON.parse(sandboxed(request)) as Extract<PdfKernelResponse, { op: "document" }>;
     expect(reply).toMatchObject({ ok: true, op: "document", layoutId: "quebec", layoutChoice: "condition" });
     expect(sandboxed(request)).toBe(await inProcess(request));

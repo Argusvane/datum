@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.argusvane.datum.core.ProgramUnavailableException;
+import com.argusvane.datum.core.contracts.PdfCapabilitiesResponse;
 import com.argusvane.datum.core.observation.DatumObservationNames;
 import com.argusvane.datum.core.observation.RecordingObservations;
 import com.argusvane.datum.sandbox.protocol.AbiProbe;
@@ -178,7 +179,7 @@ class DatumSandboxSeamsTest {
             }
 
             @Override
-            public List<String> capabilities() {
+            public PdfCapabilitiesResponse capabilities() {
                 calls.add("capabilities");
                 return program.capabilities();
             }
@@ -196,13 +197,13 @@ class DatumSandboxSeamsTest {
         assertThat(engine.pdfProbes()).isEqualTo(1);
         assertThat(sandboxCalls.get("proveAbi")).as("and the sandbox's through its own").hasValue(1);
         assertThat(runtime.pdfProgram()).as("the callers get the decorated kernel").isNotInstanceOf(PdfProgram.class);
-        assertThat(runtime.pdfProgram().capabilities()).containsExactly("formulas");
+        assertThat(runtime.pdfProgram().capabilities().abi()).isEqualTo(PdfAbi.MIN);
         assertThat(calls).containsExactly("capabilities", "capabilities");
         assertThat(engine.pdfProbes()).as("the gate remembers the proof: no second run").isEqualTo(1);
 
         runtime.recheck();
         assertThat(engine.pdfProbes()).as("a recheck proves the PDF program again through a new kernel").isEqualTo(2);
-        assertThat(PdfAbi.MIN).isEqualTo("4.0.0");
+        assertThat(PdfAbi.MIN).isEqualTo("1.0.0");
     }
 
     @Test

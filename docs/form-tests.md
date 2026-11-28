@@ -611,7 +611,7 @@ A request that carries many scenarios needs time, nearly all of it the runs and 
 ## Limits
 
 - **Files are not answers.** `set upload = file(…)` does not exist, since the value shape of an upload is host-specific (ADR 0034).
-- **A host adopts the `test` op by choice.** The op exists and no host is required to call it. A host's Tests tab (a run at save or publish, a failing suite blocking publishing only by a setting) is that host's to build. A host whose ABI floor is below 2.16.0 raises it, with a probe, when it adopts the op.
+- **A host adopts the `test` op by choice.** The op exists and no host is required to call it. A host's Tests tab (a run at save or publish, a failing suite blocking publishing only by a setting) is that host's to build.
 - **Record waits for the form's own signals.** The preview publishes no `interim` flag and has no commit, so Record holds each answer until another field is written, focus leaves the form's control, or a move, check, submit or Assert comes; a mode's journey session already reports settled answers.
 - **What a scenario cannot say.** Per-row requiredness inside repeating sections is not asserted (the fold does not do it), scenarios are written and not generated, and a scenario takes one `given today` (a second is `duplicateGiven`).
 

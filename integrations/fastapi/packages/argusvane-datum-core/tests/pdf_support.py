@@ -48,7 +48,6 @@ from datum_sandbox.wasi import EngineInfo, GuestRun, GuestRuntime, RunBudget, Ru
 
 __all__ = [
     "ABI",
-    "FEATURES",
     "FORM",
     "PDF_P12_PASSWORD",
     "AuthorityTransport",
@@ -75,20 +74,6 @@ __all__ = [
 ]
 
 ABI = PDF_ABI_MIN
-FEATURES = (
-    "render",
-    "layout",
-    "document",
-    "build",
-    "fill",
-    "inspect",
-    "signature",
-    "verify-detail",
-    "output-safety",
-    "render-caps",
-    "attachment-types",
-)
-"""The program's feature list as far as the host gate reads it (the real list has 29; see `test_pdf_program_facts`)."""
 FORM = "contact"
 NAME = "Ada Lovelace"
 PDF_HEAD = b"%PDF-1.7\n"
@@ -154,14 +139,13 @@ class ScriptedPdfRuntime:
 
     `answers` maps an op to a function from the request to the answer's members (`ok` and `op` are added); `fail(op,
     code, message)` makes an op answer ``{ok: false, error: {code, message}}``; a run of an op nobody scripted answers
-    the default below. `abi` and `features` are what `capabilities` says. The runtime is thread-safe (a lock guards
+    the default below. `abi` is what `capabilities` says. The runtime is thread-safe (a lock guards
     the log).
     """
 
-    def __init__(self, trail: list[str] | None = None, *, abi: str = ABI, features: Sequence[str] = FEATURES) -> None:
+    def __init__(self, trail: list[str] | None = None, *, abi: str = ABI) -> None:
         self.trail = trail if trail is not None else []
         self.abi = abi
-        self.features = tuple(features)
         self.calls: list[Call] = []
         self.answers: dict[str, Callable[[dict[str, Any]], dict[str, Any]]] = {}
         self.ends: dict[str, RunEnd] = {}
@@ -227,7 +211,7 @@ class ScriptedPdfRuntime:
 
     def _default(self, op: str, request: dict[str, Any]) -> dict[str, Any]:  # noqa: PLR0911 - one per op
         if op == "capabilities":
-            return {"abi": self.abi, "features": list(self.features), "kernelVersion": "0.1.0"}
+            return {"abi": self.abi, "kernelVersion": "0.1.0"}
         if op in {"document", "render", "fill"}:
             produced: dict[str, Any] = {
                 "bytes": b64(fake_pdf(op)),

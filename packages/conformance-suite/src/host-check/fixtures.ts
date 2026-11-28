@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import fixtureFormText from "../../fixtures/endpoint-fixture.definition.json?raw";
-import goldenText from "../../golden/abi-4.1.json?raw";
+import goldenText from "../../golden/abi-1.0.json?raw";
 import pdfThemeText from "./fixtures/fixture-pdf-theme.json?raw";
 import hardeningRulesText from "./fixtures/hardening-rules.js?raw";
 import hostContextFormJson from "./fixtures/host-context-form.json?raw";
@@ -12,7 +12,7 @@ import { asString, isRecord, path, type JsonValue } from "./json.js";
  * The kit's fixture form and the answers the kernel gives for it: the port of the Java kit's
  * TckFixtures (integrations/jvm/tck/datum-host-tck). The form is the security suite's endpoint
  * fixture (fixtures/endpoint-fixture.definition.json, form `datum-security-suite` at version 1) and
- * the verdicts are its golden control vectors (golden/abi-4.1.json: CTL-01 valid, CTL-02 to CTL-04
+ * the verdicts are its golden control vectors (golden/abi-1.0.json: CTL-01 valid, CTL-02 to CTL-04
  * refused). The Java kit reads the same two files (copied into its jar by `npm run jvm:assets`), so
  * both kits hold a host to the same bytes. The hostile rule module and the stale program live here
  * from now on (src/host-check/fixtures/); the Java kit's copies under META-INF/datum-tck/ must stay
@@ -106,7 +106,7 @@ export function hardeningRules(): string {
   return hardeningRulesText;
 }
 
-/** The stale sandbox program's source (ABI 2.11.0), for the runtime-down capability. */
+/** The stale sandbox program's source (ABI 0.9.0), for the runtime-down capability. */
 export function staleProgram(): string {
   return staleProgramText;
 }

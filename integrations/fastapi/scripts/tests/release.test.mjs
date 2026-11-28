@@ -45,9 +45,9 @@ names = {"argusvane-datum-qjs-wasm": "datum_qjs_wasm", "argusvane-datum-programs
 resource = {"datum_qjs_wasm", "datum_programs", "datum_assets_ui", "datum_assets_pdf"}
 for dist_name, pkg in names.items():
     stem = f"{dist_name.replace('-', '_')}-{version}"  # the stem uv build writes: the distribution name, not the import
-    record = {"version": version, "buildId": "b1", "sandboxAbi": "4.0.0", "pdfAbi": "4.0.0"}
+    record = {"version": version, "buildId": "b1", "sandboxAbi": "1.0.0", "pdfAbi": "1.0.0"}
     if fault == "version" and pkg == "datum_core": record["version"] = "0.0.0"
-    if fault == "abi" and pkg == "datum_core": record["pdfAbi"] = "3.18.0"
+    if fault == "abi" and pkg == "datum_core": record["pdfAbi"] = "0.18.0"
     with zipfile.ZipFile(dist / f"{stem}-py3-none-any.whl", "w") as z:
         z.writestr(f"{pkg}/datum-build.json", json.dumps(record))
         if pkg in resource: z.writestr(f"{pkg}/manifest.json", "{}")
@@ -83,7 +83,7 @@ test("postcheck accepts a complete fake dist", () => {
 for (const [fault, pattern] of [
   ["notice", /argusvane-datum-core: wheel has no dist-info\/licenses\/NOTICE/],
   ["version", /argusvane-datum-core: datum-build\.json version '0\.0\.0', release is 0\.1\.0/],
-  ["abi", /argusvane-datum-core: datum-build\.json pdfAbi '3\.18\.0' is below 4\.0\.0/],
+  ["abi", /argusvane-datum-core: datum-build\.json pdfAbi '0\.18\.0' is below 1\.0\.0/],
   ["map", /argusvane-datum-core: wheel carries datum_core\/a\.js\.map/],
   ["count", /expected 16 files .*found 17/]
 ]) {

@@ -32,7 +32,7 @@ final class Programs {
     }
 
     void manifest(String sandbox, String pdf, String freeze) {
-        manifest("2.14.0", sandbox, pdf, freeze);
+        manifest("1.0.0", sandbox, pdf, freeze);
     }
 
     /** A programs.json naming this sandbox ABI, and the same text as datum-sandbox's pins (one build made both). */
@@ -49,7 +49,7 @@ final class Programs {
 
     /** A programs.json text over these three files. */
     static String describe(String sandboxAbi, String sandbox, String pdf, String freeze) {
-        return "{\"sandboxAbi\":\"" + sandboxAbi + "\",\"pdfAbi\":\"4.0.0\",\"files\":{"
+        return "{\"sandboxAbi\":\"" + sandboxAbi + "\",\"pdfAbi\":\"1.0.0\",\"files\":{"
             + "\"datum-sandbox-program.js\":\"" + CanonicalJson.sha256Hex(sandbox) + "\","
             + "\"datum-pdf-program.js\":\"" + CanonicalJson.sha256Hex(pdf) + "\","
             + "\"freeze-intrinsics.js\":\"" + CanonicalJson.sha256Hex(freeze) + "\"}}";

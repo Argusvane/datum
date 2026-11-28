@@ -266,7 +266,7 @@ export class QuickJsPdfProvider implements PdfRenderProvider {
     if (response.op !== "capabilities") {
       throw new Error(`Unexpected response op ${response.op}`);
     }
-    return { abi: response.abi, features: response.features, ...(response.kernelVersion ? { kernelVersion: response.kernelVersion } : {}) };
+    return { abi: response.abi, kernelVersion: response.kernelVersion };
   }
 
   public dispose(): void {

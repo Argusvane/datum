@@ -93,7 +93,6 @@ function qjs(argv, request, seconds, memory) {
 const VALIDATE = ["-I", "/app/datum-sandbox-program.js", "-e", "print(__datum_run(std.in.readAsString()));"];
 
 // The PDF program, under the document profile; __datum_pdf's promise settles before qjs exits.
-// Signing needs a program that lists "signature" in its capabilities.
 const RENDER = ["-I", "/app/datum-pdf-program.js", "-e", "__datum_pdf(std.in.readAsString()).then((json) => print(json));"];
 
 // The fonts to embed: the signature's appearance is drawn with the first of them.
@@ -137,7 +136,7 @@ app.post("/api/submissions/sign", async (req, res) => {
   // The record, rendered and prepared for signing in one call: the layout's signature settings
   // plus these certificates. The answer's "bytes" carry the placeholder; "signing" says what to sign.
   const prepared = await render({
-    abi: "4.0.0",
+    abi: "1.0.0",
     op: "document",
     form: FORM.root,
     pdf: FORM.pdf,  // the sealed layout, as designed in the builder's PDF mode
@@ -158,7 +157,7 @@ app.post("/api/submissions/sign", async (req, res) => {
   if (TSA_URL) {
     signing.timestamp = { token: await timestamp(value) };
   }
-  const completed = await render({ abi: "4.0.0", op: "complete", pdf: { data: prepared.bytes }, signing });
+  const completed = await render({ abi: "1.0.0", op: "complete", pdf: { data: prepared.bytes }, signing });
   if (!completed.ok) {
     return res.status(500).json({ error: completed.error });
   }
@@ -176,7 +175,7 @@ app.post("/api/submissions/sign", async (req, res) => {
 // A signed PDF back for a verdict: which signatures it carries, whether each still matches the
 // bytes, whether the value checks out under the signer's key, and whether the signer is this server.
 app.post("/api/submissions/verify", express.raw({ type: "application/pdf", limit: "64mb" }), async (req, res) => {
-  const report = await render({ abi: "4.0.0", op: "verify", pdf: { data: req.body.toString("base64") } });
+  const report = await render({ abi: "1.0.0", op: "verify", pdf: { data: req.body.toString("base64") } });
   if (!report.ok) {
     return res.status(400).json({ error: report.error });
   }
@@ -209,7 +208,7 @@ function verifyBytes(spki, data, value) {
 }
 
 async function timestamp(value) {
-  const tsq = await render({ abi: "4.0.0", op: "timestampRequest", signature: value.toString("base64") });
+  const tsq = await render({ abi: "1.0.0", op: "timestampRequest", signature: value.toString("base64") });
   const response = await fetch(TSA_URL, { method: "POST", headers: { "content-type": "application/timestamp-query" }, body: Buffer.from(tsq.request, "base64") });
   if (!response.ok) throw new Error(`the timestamp authority answered ${response.status}`);
   return Buffer.from(await response.arrayBuffer()).toString("base64");

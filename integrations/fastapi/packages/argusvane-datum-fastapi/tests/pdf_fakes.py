@@ -29,16 +29,6 @@ from datum_sandbox.wasi import EngineInfo, GuestRun, GuestRuntime, RunBudget, Ru
 PDF_MEDIA = "application/pdf"
 HEAD = b"%PDF-1.7\n"
 ENDPOINTS = {"pdf": True, "fill": True, "sign": True, "verify": True, "certificate": True, "definition": True}
-FEATURES = [
-    "render",
-    "document",
-    "fill",
-    "signature",
-    "verify-detail",
-    "output-safety",
-    "render-caps",
-    "attachment-types",
-]
 
 
 def b64(data: bytes) -> str:
@@ -155,7 +145,7 @@ class ScriptedProgram:
 
     def _default(self, op: str, request: dict[str, Any]) -> dict[str, Any]:
         if op == "capabilities":
-            return {"abi": self.abi, "features": FEATURES, "kernelVersion": "0.1.0"}
+            return {"abi": self.abi, "kernelVersion": "0.1.0"}
         if op in {"document", "fill"}:
             answer: dict[str, Any] = {
                 "bytes": b64(fake_pdf(op)),

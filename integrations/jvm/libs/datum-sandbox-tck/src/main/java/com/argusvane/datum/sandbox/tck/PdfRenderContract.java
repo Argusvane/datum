@@ -19,7 +19,7 @@ import tools.jackson.databind.node.JsonNodeFactory;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * The PDF program on the engine renders the ABI 3.8 documents byte for byte as the Node kernel does: the requests of
+ * The PDF program on the engine renders the parity documents byte for byte as the Node kernel does: the requests of
  * {@code packages/pdf-kernel/tests/kernel-compat.test.ts} (the fixed env, the whole DejaVu pack) through
  * {@link PdfProgram}, each output's sha256 equal to {@code hashes.json}. Prints the render times with the engine's mode.
  *
@@ -41,14 +41,14 @@ public interface PdfRenderContract extends RuntimeUnderTest {
         new String[] {"dejavu-mono-bold", "monospace", "700", "normal", "DejaVuSansMono-Bold.ttf"});
 
     @Test
-    default void theAbi38DocumentsRenderToTheirPinnedHashes() {
+    default void theParityDocumentsRenderToTheirPinnedHashes() {
         assertThat(runtime().engineInfo().isBytecode()).as("the runtime under this contract is not on bytecode, where the PDF program does not "
             + "run").isFalse();
         // A parity test, not a speed test: 60 s per render rather than the production 15 s, so a loaded CI runner (JFFI
         // renders took 10-12.5 s under contention) cannot fail it with BUDGET. The budget itself is
         // proved by the sandbox budget tests; the printed times stay as information.
         PdfProgram pdf = new PdfProgram(ProgramRunner.on(runtime()), RuntimeTckAssets.pdfProgram(), ProgramLimits.builder().pdfSeconds(60).build(), new AbiProbe());
-        assertThat(pdf.capabilities()).isNotEmpty();
+        assertThat(pdf.capabilities().kernelVersion()).as("the capabilities answer names the kernel's version").isNotEmpty();
         JsonNode hashes = RuntimeTckAssets.fixture("documents-3.8/hashes.json");
         ArrayNode fonts = fonts();
         List<String> times = new ArrayList<>();

@@ -49,7 +49,7 @@ import tools.jackson.databind.node.ObjectNode;
 
 /**
  * The builder's writes with no transport in them: save, create and the host catalog,
- * judged by the kernel's {@code check} (sandbox ABI 2.13.0) so an unchecked or refused definition is never stored, and
+ * judged by the kernel's {@code check} so an unchecked or refused definition is never stored, and
  * answered as a {@link BuilderOutcome}. {@link BuilderApi} is the HTTP side over it; an
  * import job or a git sync calls it directly.
  *

@@ -592,7 +592,7 @@ describe("sandbox test op: QuickJS and the in-process kernel answer the same byt
     expect((await both(bare, request(FORM_TESTS_FIXTURE, { tests: many }))).answer).toMatchObject({ ok: false, error: { code: "invalid_request", limit: 200 } });
     const long = 'test "long"\n' + "  expect age visible\n".repeat(1001);
     expect((await both(bare, request(FORM_TESTS_FIXTURE, { tests: long }))).answer).toMatchObject({ ok: false, error: { code: "invalid_request", limit: 1000 } });
-    const newer = await both(bare, stableStringify({ abi: "5.0.0", op: "test", definition: FORM_TESTS_FIXTURE }));
+    const newer = await both(bare, stableStringify({ abi: "2.0.0", op: "test", definition: FORM_TESTS_FIXTURE }));
     expect(newer.answer).toMatchObject({ ok: false, error: { code: "abi_mismatch" } });
   });
 

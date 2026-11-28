@@ -289,7 +289,7 @@ describe("wasm validation host", () => {
 
 describe("wasm validation host: formulas, the day and the run scopes cross the ABI", () => {
   it("is 4.1.0 and carries today and formulaErrors in the context, clockDependent and serverRules in the outcome", async () => {
-    expect(WASM_ABI_VERSION).toBe("4.1.0");
+    expect(WASM_ABI_VERSION).toBe("1.0.0");
     const dated: ComponentNode = {
       id: "form",
       type: "form",
@@ -409,7 +409,7 @@ describe("wasm validation host: inspect, the introspection entry point", () => {
 
   it("returns the sandbox's refusals rather than throwing: a caller's wrong ABI, an op of no shape", async () => {
     const host = createInProcessWasmValidationHost([]);
-    expect(await host.inspect({ op: "public", definition: secret, abi: "5.0.0" })).toMatchObject({ ok: false, error: { code: "abi_mismatch" } });
+    expect(await host.inspect({ op: "public", definition: secret, abi: "2.0.0" })).toMatchObject({ ok: false, error: { code: "abi_mismatch" } });
     expect(await host.inspect({ op: "nope" as "public", definition: secret })).toMatchObject({ ok: false, error: { code: "invalid_request" } });
   });
 
@@ -426,15 +426,15 @@ describe("wasm validation host: the instance's ABI and nested external data", ()
   it("refuses a pre-instantiated sandbox whose ABI is not the host's before it runs anything", async () => {
     let ran = false;
     const stale: WasmValidatorInstance = {
-      abiVersion: "3.0.0",
+      abiVersion: "0.3.0",
       run: () => {
         ran = true;
         return '{"errors":[],"values":{}}';
       }
     };
-    expect(() => new WasmValidationHost([], { instance: stale })).toThrow(/ABI version mismatch: instance 3\.0\.0 != abi/);
+    expect(() => new WasmValidationHost([], { instance: stale })).toThrow(/ABI version mismatch: instance 0\.3\.0 != abi/);
     await expect(WasmValidationHost.create([], { instance: stale })).rejects.toThrow(/ABI version mismatch/);
-    for (const version of ["5.0.0", "4.2.0", "", "4.0", "4.1.0 "]) {
+    for (const version of ["2.0.0", "1.1.0", "", "1.0", "1.0.0 "]) {
       expect(() => new WasmValidationHost([], { instance: { ...stale, abiVersion: version } }), JSON.stringify(version)).toThrow(/ABI version mismatch/);
     }
     expect(ran).toBe(false);
@@ -442,14 +442,14 @@ describe("wasm validation host: the instance's ABI and nested external data", ()
     // The abi handed in names the version the instance must match, exactly as for an adapter.
     const json = new JsonWasmAbi();
     const other: WasmAbi = {
-      version: "3.0.0",
+      version: "0.3.0",
       serializeContext: (context, policy) => json.serializeContext(context, policy),
       deserializeContext: (payload) => json.deserializeContext(payload),
       serializeOutcome: (outcome) => json.serializeOutcome(outcome),
       deserializeOutcome: (payload) => json.deserializeOutcome(payload)
     };
     expect(() => new WasmValidationHost([], { abi: other, instance: { abiVersion: WASM_ABI_VERSION, run: () => "{}" } })).toThrow(/ABI version mismatch/);
-    expect(new WasmValidationHost([], { abi: other, instance: { abiVersion: "3.0.0", run: () => "{}" } })).toBeInstanceOf(WasmValidationHost);
+    expect(new WasmValidationHost([], { abi: other, instance: { abiVersion: "0.3.0", run: () => "{}" } })).toBeInstanceOf(WasmValidationHost);
   });
 
   const ranWith = (externalData: Record<string, unknown>) =>

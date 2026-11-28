@@ -82,7 +82,7 @@ app.MapPost("/api/submissions/pdf", (JsonNode envelope, HttpContext http) =>
     }
     var request = new Dictionary<string, object?>
     {
-        ["abi"] = "4.0.0",
+        ["abi"] = "1.0.0",
         ["op"] = "document",
         ["form"] = form["root"],
         ["pdf"] = form["pdf"],  // the form's PDF layouts, as designed in the builder's PDF mode

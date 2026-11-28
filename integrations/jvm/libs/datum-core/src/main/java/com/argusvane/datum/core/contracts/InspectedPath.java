@@ -8,7 +8,7 @@ import java.util.Map;
 import tools.jackson.databind.JsonNode;
 
 /**
- * One value path of a definition (ABI 2.9.0).
+ * One value path of a definition.
  *
  * <p>Members the Java side does not name are kept in {@code extra} and written back, so a newer
  * program's additions round-trip (the TypeScript type is open).

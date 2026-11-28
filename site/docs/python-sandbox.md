@@ -176,7 +176,7 @@ All three are settings. None of them can change a run's answer, and none can hol
 `trace="failures"` writes one line for each failed run, and `trace="all"` one for every run, including the ones the sandbox makes at start. The line goes at INFO to the logger `datum.sandbox.trace`.
 
 ```text
-run=cf0f863e0564 program=sandbox op=validate abi=4.1.0 engine=wasmtime mode=cranelift slotWaitMs=0.0 prepareMs=1.3 instantiateMs=0.5 startMs=522.4 totalMs=525.7 termination=budget exit=- outcome=budget stdinBytes=290 stdoutBytes=51 stderrBytes=0 capture=20261123-143359-cf0f863e0564
+run=cf0f863e0564 program=sandbox op=validate abi=1.0.0 engine=wasmtime mode=cranelift slotWaitMs=0.0 prepareMs=1.3 instantiateMs=0.5 startMs=522.4 totalMs=525.7 termination=budget exit=- outcome=budget stdinBytes=290 stdoutBytes=51 stderrBytes=0 capture=20261123-143359-cf0f863e0564
 ```
 
 - **What it holds.** How the run went and how long each step took, how it ended, and the sizes of its input and output. It never holds an answer, the definition or the run's output.

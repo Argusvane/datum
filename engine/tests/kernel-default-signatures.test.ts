@@ -52,7 +52,7 @@ describe("a kernel given no signatures", () => {
 
   it("checks a definition calling a built-in as passing in inspect", () => {
     const definition = { id: "f", version: "1", root: form({ value: sumTree }) };
-    const answer = kernelRunInspect({ op: "check", abi: "4.0.0", definition }) as { verdict?: string; problems?: unknown[] };
+    const answer = kernelRunInspect({ op: "check", abi: "1.0.0", definition }) as { verdict?: string; problems?: unknown[] };
     expect(answer.problems ?? []).toEqual([]);
   });
 });

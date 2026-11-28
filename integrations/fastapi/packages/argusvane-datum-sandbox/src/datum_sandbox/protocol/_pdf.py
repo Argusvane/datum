@@ -4,7 +4,7 @@ Libraries: the standard library (`typing.Protocol`, `dataclasses`, `base64`, `re
 `JsonValue`, `read`, `RunBudget` and `GuestRuntime` cover every shape here. `pydantic` would add validation the
 strict answer reader below already does (an `ok` that is the boolean `true`, a page count that is an integer and not a
 boolean, base64 that decodes), `anyio` has nothing to run (the runtime call is synchronous, on a worker thread), and no
-library speaks the PDF program's operations or its ABI words (semver libraries accept ``3.18`` and ``3.18.0rc1``, and
+library speaks the PDF program's operations or its ABI words (semver libraries accept ``1.0`` and ``1.0.0rc1``, and
 the gate compares exactly ``N.N.N``); so the protocol, its answers, `PdfKernelService` and `compose_pdf_kernel` are
 written here, once, for a middleware and a replacement kernel to implement against.
 
@@ -94,11 +94,10 @@ class PdfWarning:
 
 @dataclass(frozen=True, slots=True)
 class PdfCapabilities:
-    """What the `capabilities` operation answers: the program's ABI (semver text) and its feature words."""
+    """What the `capabilities` operation answers: the program's ABI (semver text) and its kernel version."""
 
     abi: str
-    features: tuple[str, ...]
-    kernel_version: str | None = None
+    kernel_version: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -194,7 +193,7 @@ class PdfKernel(Protocol):
         ...
 
     def capabilities(self) -> PdfCapabilities:
-        """Ask the program for its ABI and features (the gate reads this, never acceptance)."""
+        """Ask the program for its ABI and kernel version (the gate reads this, never acceptance)."""
         ...
 
     def document(self, request: Mapping[str, JsonValue]) -> PdfProduced:
@@ -555,7 +554,7 @@ class PdfKernelService:
     # -- the operations ----------------------------------------------------------------------------------------------
 
     def capabilities(self) -> PdfCapabilities:
-        """Ask the program for its ABI and features (the gate's own question: it does not itself run the gate)."""
+        """Ask the program for its ABI and kernel version (the gate's own question: it does not itself run the gate)."""
         if self._recorder is None:
             return self._capabilities()
         with self._watched("capabilities"):
@@ -564,12 +563,12 @@ class PdfKernelService:
     def _capabilities(self) -> PdfCapabilities:
         answer = _strict(self._run_op("capabilities", {}), "capabilities")
         try:
-            abi, features, kernel_version = read_pdf_capabilities(answer)
+            abi, kernel_version = read_pdf_capabilities(answer)
         except ProgramUnavailableError:
             if self._recorder is not None:
                 note_outcome(REFUSED)
             raise
-        return PdfCapabilities(abi, features, kernel_version)
+        return PdfCapabilities(abi, kernel_version)
 
     def document(self, request: Mapping[str, JsonValue]) -> PdfProduced:
         """Build and render a form's answers to a PDF; with ``signature`` in the request, prepare it for signing."""
@@ -616,9 +615,9 @@ class PdfKernelService:
     def prove_abi(self) -> None:
         """Prove the program answers for `PDF_ABI_MIN`, once per program SHA-256; a refusal is never remembered.
 
-        Raises `ProgramUnavailableError` (with the rebuild hint) when the reply is not a `capabilities` answer, its ABI
-        is older than the floor or of another major, or a feature the host needs is missing; and `SandboxError`
-        (`BUSY`, `INTERRUPTED`) or `StrayBoundError` when the probe could not run at all.
+        Raises `ProgramUnavailableError` (with the rebuild hint) when the reply is not a `capabilities` answer or its
+        ABI is older than the floor or of another major; and `SandboxError` (`BUSY`, `INTERRUPTED`) or
+        `StrayBoundError` when the probe could not run at all.
         """
         if self._probe.proved(self._program.sha256, PDF_ABI_MIN, kind="pdf"):
             return
@@ -642,7 +641,7 @@ class PdfKernelService:
             require_pdf_capabilities(answer)
         except ProgramUnavailableError:
             if self._recorder is not None:
-                note_outcome(REFUSED)  # the program answered: an ABI or feature it lacks is its own refusal
+                note_outcome(REFUSED)  # the program answered: an ABI it lacks is its own refusal
             raise
         self._probe.remember(self._program.sha256, PDF_ABI_MIN, kind="pdf")
 

@@ -463,7 +463,7 @@ describe("the test op: caps and refusals", () => {
 
     it("the ABI, shape and depth checks still come first", () => {
       const over = formOf(fields([select("s", 2001)]));
-      expect(ask({ definition: over, tests, abi: "2.17.0" }).answer).toMatchObject({ ok: false, error: { code: "abi_mismatch" } });
+      expect(ask({ definition: over, tests, abi: "0.17.0" }).answer).toMatchObject({ ok: false, error: { code: "abi_mismatch" } });
       expect(ask({ definition: { ...over, root: "no" }, tests }).answer).toMatchObject({ ok: false, error: { code: "invalid_request", message: expect.stringContaining("root component") as unknown as string } });
       let deep: Record<string, unknown> = select("s", 2001);
       for (let level = 0; level < 200; level += 1) {
@@ -498,9 +498,9 @@ describe("the test op: caps and refusals", () => {
   });
 
   it("abi_mismatch for a newer minor, a definition of no shape, an op it does not know", () => {
-    expect(ask({ definition: FORM_TESTS_FIXTURE, abi: "2.17.0" }).answer).toMatchObject({ ok: false, error: { code: "abi_mismatch" } });
-    expect(ask({ definition: FORM_TESTS_FIXTURE, abi: "5.0.0" }).answer).toMatchObject({ ok: false, error: { code: "abi_mismatch" } });
-    expect(ask({ definition: FORM_TESTS_FIXTURE, abi: "4.2.0" }).answer).toMatchObject({ ok: false, error: { code: "abi_mismatch" } });
+    expect(ask({ definition: FORM_TESTS_FIXTURE, abi: "0.17.0" }).answer).toMatchObject({ ok: false, error: { code: "abi_mismatch" } });
+    expect(ask({ definition: FORM_TESTS_FIXTURE, abi: "2.0.0" }).answer).toMatchObject({ ok: false, error: { code: "abi_mismatch" } });
+    expect(ask({ definition: FORM_TESTS_FIXTURE, abi: "1.1.0" }).answer).toMatchObject({ ok: false, error: { code: "abi_mismatch" } });
     expect(ask({ definition: { root: "no" } }).answer).toMatchObject({ ok: false, error: { code: "invalid_request" } });
     const unknown = JSON.parse(bare.inspect!(stableStringify({ abi: WASM_ABI_VERSION, op: "tests", definition: FORM_TESTS_FIXTURE })) as string);
     expect(unknown).toMatchObject({ ok: false, error: { code: "invalid_request" } });

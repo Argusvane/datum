@@ -443,7 +443,7 @@ describe("kernel shape", () => {
       expect(fn.toString().trimStart().startsWith("function "), fn.name).toBe(true);
       expect(fn.toString(), fn.name).not.toMatch(forbidden);
     }
-    expect(WASM_ABI_VERSION).toBe("4.1.0");
+    expect(WASM_ABI_VERSION).toBe("1.0.0");
   });
 });
 

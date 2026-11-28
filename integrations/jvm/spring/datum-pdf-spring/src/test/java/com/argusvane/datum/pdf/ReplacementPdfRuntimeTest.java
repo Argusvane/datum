@@ -67,7 +67,7 @@ class ReplacementPdfRuntimeTest {
                 assertThat(context).hasNotFailed();
                 assertThat(context.getBeansOfType(PdfRuntime.class)).containsOnlyKeys("applicationPdfRuntime");
                 PdfRuntime replacement = context.getBean(PdfRuntime.class);
-                assertThat(replacement.program().capabilities()).contains("fill");
+                assertThat(replacement.program().capabilities().kernelVersion()).isEqualTo("0.1.0");
                 assertThat(counts.get("capabilities")).as("the decorator saw the replacement's run").isNotNull().hasValueGreaterThanOrEqualTo(1);
                 assertThat(replacement.program()).as("wrapped once per kernel").isSameAs(replacement.program());
             });

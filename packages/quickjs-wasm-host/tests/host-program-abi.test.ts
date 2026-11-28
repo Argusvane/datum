@@ -7,12 +7,12 @@ import { createQuickJsWorkerHost } from "../src/worker-host.js";
 
 /**
  * A program handed to a host as text proves the ABI it speaks before it judges anything: a file
- * left over from an older build (here the conformance kit's stale program, which answers 2.11 and
+ * left over from an older build (here the conformance kit's stale program, which answers 0.9 and
  * accepts every submission) is refused when the host is made, never consulted on a verdict.
  */
 
 const STALE =
-  'globalThis.__datum_register = function () { return 0; };globalThis.__datum_run = function () { return JSON.stringify({ errors: [] }); };globalThis.__datum_inspect = function (r) { var q = JSON.parse(r); var a = q.abi.split(".").map(Number); var p = "2.11.0".split(".").map(Number); return JSON.stringify(a[0] === p[0] && a[1] <= p[1] ? { ok: true, op: q.op } : { ok: false, error: { code: "abi_mismatch", message: "older program" } }); };"sandbox-ready";';
+  'globalThis.__datum_register = function () { return 0; };globalThis.__datum_run = function () { return JSON.stringify({ errors: [] }); };globalThis.__datum_inspect = function (r) { var q = JSON.parse(r); var a = q.abi.split(".").map(Number); var p = "0.9.0".split(".").map(Number); return JSON.stringify(a[0] === p[0] && a[1] <= p[1] ? { ok: true, op: q.op } : { ok: false, error: { code: "abi_mismatch", message: "older program" } }); };"sandbox-ready";';
 // No inspect entry point at all: a program that answers no inspect call.
 const NO_INSPECT = 'globalThis.__datum_register = function () { return 0; }; globalThis.__datum_run = function () { return "{\\"errors\\":[]}"; }; "ready";';
 

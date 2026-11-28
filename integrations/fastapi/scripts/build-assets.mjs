@@ -277,7 +277,7 @@ for (const { name } of DISTRIBUTIONS) {
 const need = (path) => (existsSync(path) ? path : fail(`${LABEL}: fixture ${relative(repo, path)} is missing.`));
 const conformance = join(repo, "packages", "conformance-suite");
 const kernelFixtures = join(repo, "packages", "pdf-kernel", "tests", "fixtures");
-copyFileSync(need(join(conformance, "golden", "abi-4.1.json")), join(fixtures, "abi-4.1.json"));
+copyFileSync(need(join(conformance, "golden", "abi-1.0.json")), join(fixtures, "abi-1.0.json"));
 copyFileSync(need(join(conformance, "fixtures", "endpoint-fixture.definition.json")), join(fixtures, "endpoint-fixture.definition.json"));
 cpSync(need(join(kernelFixtures, "documents-3.8")), join(fixtures, "documents-3.8"), { recursive: true });
 cpSync(need(join(kernelFixtures, "signing")), join(fixtures, "signing"), { recursive: true });

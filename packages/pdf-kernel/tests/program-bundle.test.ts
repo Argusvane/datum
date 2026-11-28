@@ -5,7 +5,7 @@ import { join } from "node:path";
 import vm from "node:vm";
 import { PDF_ABI_VERSION, buildPdfRenderRequest } from "@argusvane/datum-engine/render";
 import { kernelStableStringify } from "@argusvane/datum-engine";
-import { handlePdfRequest } from "../src/program/entry.js";
+import { PDF_PROGRAM_VERSION, handlePdfRequest } from "../src/program/entry.js";
 import { ENV, document, fonts, paragraph } from "./helpers.js";
 import { SUBMISSION, archivalDocument } from "./pdfa-fixtures.js";
 import { hostSign, hostVerify, identity } from "./signing-fixtures.js";
@@ -68,16 +68,8 @@ describe("the bundled program", () => {
     expect(vm.runInContext("globalThis.__datum_pdf_abi", context)).toBe(PDF_ABI_VERSION);
     const response = JSON.parse(await call(JSON.stringify({ abi: PDF_ABI_VERSION, op: "capabilities" })));
     expect(response).toMatchObject({ ok: true, op: "capabilities", abi: PDF_ABI_VERSION });
-    // How a host tells a program that chooses layouts by their `when` from one that ignores it.
-    expect(response.features).toEqual(expect.arrayContaining(["data-keys", "layout-conditions", "field-tooltips"]));
-    // How a host tells a program that reads formula strings, the if node and the function library from one that reads a string rule as absent.
-    expect(response.features).toEqual(expect.arrayContaining(["conditional-expressions", "formulas", "formula-functions"]));
-    // How a host tells a program that reads an encrypted template (empty user password) from one that fails on it.
-    expect(response.features).toEqual(expect.arrayContaining(["template-decryption"]));
-    // How a host tells a program that translates answers by a mapping's value map from one that writes them as they are.
-    expect(response.features).toEqual(expect.arrayContaining(["mapping-values"]));
-    expect(response.features).toContain("default-font-fallback");
-    expect(response.abi).toBe("4.0.0");
+    expect(response.kernelVersion).toBe(PDF_PROGRAM_VERSION);
+    expect(response.abi).toBe("1.0.0");
   });
 
   it("reads a rule written as a formula over today in a bare context, as the in-process modules do", async () => {
@@ -217,9 +209,6 @@ describe("the bundled program", () => {
     expect(response.error).toBeUndefined();
     expect(response).toMatchObject({ ok: true, pdfa: "3b", warnings: [] });
     expect(await call(kernelStableStringify(request))).toBe(kernelStableStringify(await handlePdfRequest(request)));
-    const features = (JSON.parse(await call(JSON.stringify({ abi: PDF_ABI_VERSION, op: "capabilities" }))) as { features: string[] }).features;
-    expect(features).toContain("pdfa");
-    expect(features).toContain("attachments");
   });
 
   it("signs, completes and verifies where Date throws, byte for byte as in-process", async () => {
@@ -242,7 +231,5 @@ describe("the bundled program", () => {
     const verified = JSON.parse(await call(kernelStableStringify({ abi: PDF_ABI_VERSION, op: "verify", pdf: { data: completed.bytes } }))) as { ok: boolean; signatures: Array<{ digestMatches: boolean; certification: unknown }> };
     expect(verified.signatures[0]).toMatchObject({ digestMatches: true, certification: { permissions: "noChanges" } });
     expect(hostVerify(verified.signatures[0] as never)).toBe(true);
-    const features = (JSON.parse(await call(JSON.stringify({ abi: PDF_ABI_VERSION, op: "capabilities" }))) as { features: string[] }).features;
-    expect(features).toContain("signature");
   });
 });

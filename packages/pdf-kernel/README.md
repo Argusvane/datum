@@ -62,7 +62,7 @@ The program is `dist/datum-pdf.program.js`. Evaluate it **once** per runtime, th
 
 Which layout a `document` prints when the request names neither `layoutId` nor `layout`: the
 first in `pdf.layouts` whose `when` holds on the request's `values`, else `defaultLayoutId`, else
-the first (ABI 3.11, ADR 0044; the `layout-conditions` feature). Send the sandbox's validated
+the first (ADR 0044). Send the sandbox's validated
 `values`, and the choice is the browser's. The reply names it — `layoutId`, `layoutKind`,
 `layoutChoice` — so the file can be named and filed. A host that keeps template PDFs outside
 the definition calls `build` first (same inputs; its reply names the layout and carries the fill
@@ -166,7 +166,7 @@ handoff = prepared["signing"]          # field, byteRange, digest, toBeSigned, t
 # 2. The host signs the DER attributes with its key — RSA PKCS#1 v1.5 or ECDSA (P-256/P-384), SHA-256.
 value = key.sign(base64.b64decode(handoff["toBeSigned"]), padding.PKCS1v15(), hashes.SHA256())
 # 3. The kernel rebuilds the attributes from the bytes (a changed input is refused), assembles the CMS and embeds it.
-signed = render({"abi": "4.0.0", "op": "complete", "pdf": {"data": prepared["bytes"]},
+signed = render({"abi": "1.0.0", "op": "complete", "pdf": {"data": prepared["bytes"]},
                  "signing": {"certificates": CERTIFICATES, "value": b64(value), "toBeSignedDigest": handoff["toBeSignedDigest"]}})
 ```
 
@@ -232,7 +232,7 @@ certified revision (DocMDP diff analysis, a full validator's job); for a server'
   `font.unencodable`). The package ships DejaVu Sans (`loadFontPack()`), which covers Latin,
   Greek, Cyrillic, Arabic and Hebrew. A named family (a design system's `Lato`, `Noto Sans`) that
   no resource covers is drawn in the pack's sans-serif face, embedded, with one
-  `font.fallback_default` warning (ABI 4.0.0); the standard 14 are the fallback only when no
+  `font.fallback_default` warning; the standard 14 are the fallback only when no
   default pack was sent. A design system's own faces come from the PDF theme (`assets.fonts`):
   `createFaceFontProvider({ baseUrl })` loads them (`baseUrl` may be a function of the theme id,
   since each design system serves its fonts from a place of its own), converts WOFF 1.0 to the
@@ -243,15 +243,15 @@ certified revision (DocMDP diff analysis, a full validator's job); for a server'
   data into the validation sandbox.
 - **`env.createdAt`** (ISO instant) and **`env.documentId`**: the only time and identity the
   program ever sees. Same request, same bytes.
-- **`unknownComponents`** (`"ignore" | "warn" | "fail"`, default `"warn"`, ABI 3.3, ADR 0043):
+- **`unknownComponents`** (`"ignore" | "warn" | "fail"`, default `"warn"`, ADR 0043):
   what to do with a component whose type the program has no rendition for — a custom component
   no module registered. `warn` draws it generically and reports `component.unknown` in
   `warnings`; `fail` answers `{ "ok": false, "error": { "code": "unknown_component", … } }`. To
   teach the program the type, evaluate a module after the program:
   `__datum_pdf_register({ pdfRenditions: [{ componentType: "rating", id: "stars", render: (node, context) => [...] }] })`
   — a plain ES2020 expression, no imports; the first rendition contributed is the type's
-  default. A program that lists `unknown-components` in `capabilities` understands the key.
-- **PDF/A** (ABI 3.4, ADR 0059) needs nothing more than the layout: a layout whose
+  default.
+- **PDF/A** (ADR 0059) needs nothing more than the layout: a layout whose
   `conformance.pdfa` is `2b`, `2u`, `2a`, `3b`, `3u` or `3a` renders as a file veraPDF accepts
   at that level, provided every family the document uses has a font resource in the request —
   under a claim a missing one is a `font` error, not Helvetica. TrueType and CFF/OpenType
@@ -266,14 +266,14 @@ certified revision (DocMDP diff analysis, a full validator's job); for a server'
   an associated JSON file. The reply's `pdfa` says what the file declares; `fill` keeps a PDF/A
   template's own level (raised to part 3 when asked; under "a", the areas drawn and the widgets
   made join the template's structure tree) and returns none for a template that declares
-  nothing (`pdfa.template`). A program that lists `pdfa` in `capabilities` understands the keys.
-- **A signature** (ABI 3.6, ADR 0061): `signature.certificates` — the signer's certificate and
+  nothing (`pdfa.template`).
+- **A signature** (ADR 0061): `signature.certificates` — the signer's certificate and
   its issuers, DER base64 — on `document`, `render`, `fill` or `sign`, with the settings above
   or on the layout. The private key never: the reply's `signing.toBeSigned` is what the host
-  signs. The appearance is drawn with the first font resource (under PDF/A one is required). A
-  program that lists `signature` in `capabilities` understands the keys; an older one returns
-  no `signing`, which `renderFormPdf` refuses rather than delivering an unsigned file.
-- **Uploaded files as attachments** (ABI 3.5, ADR 0060): a `file` component whose
+  signs. The appearance is drawn with the first font resource (under PDF/A one is required).
+  `renderFormPdf` refuses a reply that carries no `signing` rather than delivering an unsigned
+  file.
+- **Uploaded files as attachments** (ADR 0060): a `file` component whose
   `configuration.pdf.attach` is on (or whose `pdf-field` binding says `attach`) has its uploads
   embedded as associated files — `/AFRelationship /Supplement`, the component's label as the
   description, the file's MIME type as the stream's `/Subtype` — in any PDF, and beside the
@@ -286,7 +286,7 @@ certified revision (DocMDP diff analysis, a full validator's job); for a server'
   `document` / `build` inputs, else the layout's `attachments: { budgetMb, onExceeded }`,
   else 4 MiB and `skip` — leaves a file past it out with `attachment.skipped`, or refuses the
   document with `attachment_budget`. The reply's `attachments` lists the names as embedded (a
-  clash earns `-2`); a program that lists `attachments` in `capabilities` understands the keys.
+  clash earns `-2`).
   In the sandbox, count on about a second and a half per megabyte of upload on top of the
   document, and keep a QuickJS host's reply under six megabytes (see the limits test).
 

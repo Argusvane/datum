@@ -80,7 +80,7 @@ type ContextContributor = Callable[[SubmissionContext], MaybeAwaitable[Mapping[s
 """Host-context entries for the run, merged in list order (a later contributor's key replaces an earlier one's)."""
 
 type HostContextProvider = Callable[[str, SubmissionContext], MaybeAwaitable[Mapping[str, JsonValue] | None]]
-"""The values the form's `host.` paths read (sandbox ABI 4.1.0 `hostContext`), worked out by the host for one call.
+"""The values the form's `host.` paths read (the sandbox's `hostContext`), worked out by the host for one call.
 
 Handed the form key and the call's context (the principal the application's dependency answered, the headers a hook
 may see), it answers a JSON object, or None for no context (every rule reading `host.` is then left unjudged, as

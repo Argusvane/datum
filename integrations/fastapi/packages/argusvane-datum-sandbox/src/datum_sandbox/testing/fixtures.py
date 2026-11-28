@@ -17,7 +17,7 @@ from typing import Any, Final, cast
 from datum_sandbox.protocol import Program, ProgramKind
 
 FIXTURES_ENV: Final = "DATUM_TEST_FIXTURES"
-GOLDEN: Final = "abi-4.1.json"
+GOLDEN: Final = "abi-1.0.json"
 """The golden file's name; its presence marks a fixtures directory."""
 FORM: Final = "endpoint-fixture.definition.json"
 HARDENING_RULES: Final = "host-check/hardening-rules.js"
@@ -140,15 +140,15 @@ def hardening_rules() -> str:
 
 
 def stale_program() -> bytes:
-    """Return the stand-in program that answers for ABI 2.11.0 only."""
+    """Return the stand-in program that answers for ABI 0.9.0 only."""
     return fixture_bytes(STALE_PROGRAM)
 
 
 def pdf_hashes() -> dict[str, str]:
-    """Return the SHA-256 each ABI 3.8 theme document must render to, by theme."""
+    """Return the SHA-256 each theme document must render to, by theme."""
     return cast("dict[str, str]", fixture_json(f"{DOCUMENTS}/hashes.json"))
 
 
 def pdf_document(theme: str) -> dict[str, Any]:
-    """Return one ABI 3.8 theme document."""
+    """Return one theme document."""
     return cast("dict[str, Any]", fixture_json(f"{DOCUMENTS}/{theme}.json"))

@@ -54,7 +54,7 @@ describe("the independent reference serializer", () => {
   });
 });
 
-describe("golden/abi-4.1.json", () => {
+describe("golden/abi-1.0.json", () => {
   it("carries the ABI it was generated for, the sandbox ABI, and is the file for a program of that major.minor", async () => {
     const { WASM_ABI_VERSION } = await import("@argusvane/datum-engine");
     expect(golden.abi).toBe(WASM_ABI_VERSION);
@@ -63,8 +63,8 @@ describe("golden/abi-4.1.json", () => {
   });
 
   it("judges a program of another ABI, or of an unknown one, against the same file with a warning", () => {
-    expect(chooseGolden("3.0.0")).toMatchObject({ golden, file: BUNDLED_GOLDEN_ABI, warning: expect.stringMatching(/answers ABI 3\.0\.0/) });
-    expect(chooseGolden("4.2.0").warning).toMatch(/answers ABI 4\.2\.0/);
+    expect(chooseGolden("2.0.0")).toMatchObject({ golden, file: BUNDLED_GOLDEN_ABI, warning: expect.stringMatching(/answers ABI 2\.0\.0/) });
+    expect(chooseGolden("1.2.0").warning).toMatch(/answers ABI 1\.2\.0/);
     expect(chooseGolden(undefined).warning).toMatch(/unknown/);
   });
 
@@ -103,7 +103,7 @@ describe("golden/abi-4.1.json", () => {
   });
 
   it("is what scripts/write-golden.ts writes (the file on disk parses and has every control)", () => {
-    const onDisk = JSON.parse(readFileSync(join(PACKAGE_ROOT, "golden", "abi-4.1.json"), "utf8")) as GoldenFile;
+    const onDisk = JSON.parse(readFileSync(join(PACKAGE_ROOT, "golden", "abi-1.0.json"), "utf8")) as GoldenFile;
     expect(Object.keys(onDisk.controls).sort()).toEqual(["CTL-01", "CTL-02", "CTL-03", "CTL-04", "CTL-05", "CTL-06"]);
     expect(onDisk.controls["CTL-01"]?.accepted).toBe(true);
     expect(onDisk.controls["CTL-02"]).toEqual({ accepted: false, errors: ["required@name"] });

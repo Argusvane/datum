@@ -34,10 +34,9 @@ guide is [`docs/pdf-rendering.md`](../pdf-rendering.md#designing-a-layout).
    Signature, button, unreadable and read-only fields are left out, each with its reason.
 
 3. **The kernel reads a field's tooltip (`/TU`)** into `PdfTemplateFieldInfo.tooltip` on `inspect`
-   (the `field-tooltips` feature; versions: [`docs/reference/pdf-abi.md`](../reference/pdf-abi.md)).
+   ([`docs/reference/pdf-abi.md`](../reference/pdf-abi.md)).
    In many fillable PDFs the tooltip is the only readable name a field has, and it is what a
-   screen reader announces. A program that sends no tooltip leaves the labels to come from the
-   field names.
+   screen reader announces. A field without a tooltip is labelled from its field name.
 
 4. **Two undo steps, one per controller.** The fields go into the form as one undoable insert
    (`requestInsertComponents`). The mappings land on the layout as one undoable edit through

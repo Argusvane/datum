@@ -8,7 +8,7 @@ import java.util.Optional;
  * repeats is answered with the first receipt and stored once. The key is the form, the form's version and the
  * submission key the browser mints once per submit attempt and sends again on a retry ({@link SubmissionContext#submissionKey()});
  * beside the receipt the store keeps the digest the attempt was accepted with (the canonical-JSON SHA-256 the host and
- * the sandbox program agree on, sandbox ABI 2.9.0). The key, not the answers, says what one submission is: the same key with the same digest
+ * the sandbox program agree on). The key, not the answers, says what one submission is: the same key with the same digest
  * is a retry, answered with the first receipt; the same key with another digest is refused
  * ({@code submission.keyConflict}, 409); two people who give the same answers send two keys and are two submissions.
  *

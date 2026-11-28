@@ -28,11 +28,10 @@ import type { PdfFillArea, PdfFillPlan, PdfFillValue } from "./pdf-template.js";
 
 /**
  * The version of this contract. A host and a program speak to each other only within one major
- * ({@link pdfAbiCompatible}); the program's `capabilities` reply names its version and lists its
- * features (`PDF_PROGRAM_FEATURES` in `packages/pdf-kernel/src/program/entry.ts`), and
- * each operation's message shapes are the types below.
+ * ({@link pdfAbiCompatible}); the program's `capabilities` reply names its version and its
+ * kernel's, and each operation's message shapes are the types below.
  */
-export const PDF_ABI_VERSION = "4.0.0";
+export const PDF_ABI_VERSION = "1.0.0";
 
 export type PdfKernelOp = "capabilities" | "document" | "build" | "render" | "layout" | "fill" | "inspect" | "sign" | "complete" | "timestampRequest" | "verify";
 
@@ -655,8 +654,7 @@ export interface PdfTemplateInfo {
 
 export interface PdfCapabilities {
   abi: string;
-  features: string[];
-  kernelVersion?: string;
+  kernelVersion: string;
 }
 
 /**

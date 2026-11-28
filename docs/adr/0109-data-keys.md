@@ -85,8 +85,7 @@ mirroring of a row write into its collection.
 
 8. **Both ABIs carry it.** The validation kernel reads keys and places entries as in decision 6
    (`docs/reference/sandbox-abi.md`); the payload is unchanged.
-   The PDF program reads entries by row key and evaluates rules by component id, and announces
-   the `data-keys` feature.
+   The PDF program reads entries by row key and evaluates rules by component id.
 
 9. **The submission stays a flat map keyed by path.** `submission.values` carries
    `{ "billing.street": "…" }`. The nested document `{ applicant: { email } }` is what the map

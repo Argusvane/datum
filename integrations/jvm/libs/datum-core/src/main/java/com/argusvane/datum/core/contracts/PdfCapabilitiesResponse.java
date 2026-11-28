@@ -6,14 +6,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.annotation.JsonDeserialize;
 
 /**
- * capabilities reply.
+ * capabilities reply: the program's ABI and its kernel's version.
  *
  * <p>Members the Java side does not name are kept in {@code extra} and written back, so a newer
  * program's additions round-trip (the TypeScript type is open).
@@ -23,7 +22,6 @@ import tools.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(using = ValueDeserializer.None.class)
 public record PdfCapabilitiesResponse(
     String abi,
-    List<String> features,
     String kernelVersion,
     @JsonAnySetter @JsonAnyGetter Map<String, JsonNode> extra
 ) implements PdfResponse {

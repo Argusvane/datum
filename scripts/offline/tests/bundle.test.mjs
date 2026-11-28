@@ -25,7 +25,7 @@ const write = (file, text) => {
   return file;
 };
 const sha256 = (text) => createHash("sha256").update(text).digest("hex");
-const ABIS = { sandboxAbi: "4.0.0", pdfAbi: "4.0.0" };
+const ABIS = { sandboxAbi: "1.0.0", pdfAbi: "1.0.0" };
 
 test("leaves: only http(s) and ws(s) requests to a host that is not local", () => {
   const local = ["127.0.0.1:4173", "api.internal"];
@@ -129,8 +129,8 @@ test("pythonSection: a release of another version or another ABI is refused", ()
   const root = temp();
   assert.throws(() => pythonSection({ releaseDir: join(root, "none"), version: "1.2.3", abis: ABIS }), /has no release\.json\. Run `npm run fastapi:assets`, then `npm run fastapi:release -- --version 1\.2\.3 --dry-run`/);
   assert.throws(() => pythonSection({ releaseDir: pythonRelease(root), version: "1.2.4", abis: ABIS }), /is version 1\.2\.3, not 1\.2\.4/);
-  const stale = pythonRelease(temp(), { abis: { sandboxAbi: "3.0.0", pdfAbi: "4.0.0" } });
-  assert.throws(() => pythonSection({ releaseDir: stale, version: "1.2.3", abis: ABIS }), /built with the sandbox ABI 3\.0\.0 and the PDF ABI 4\.0\.0, and the browser bundles here are 4\.0\.0 and 4\.0\.0/);
+  const stale = pythonRelease(temp(), { abis: { sandboxAbi: "0.3.0", pdfAbi: "1.0.0" } });
+  assert.throws(() => pythonSection({ releaseDir: stale, version: "1.2.3", abis: ABIS }), /built with the sandbox ABI 0\.3\.0 and the PDF ABI 1\.0\.0, and the browser bundles here are 1\.0\.0 and 1\.0\.0/);
 });
 
 test("mavenSection: a Maven repository layout, each file held to the digest the release recorded", () => {
@@ -171,7 +171,7 @@ test("mavenSection: a Maven repository layout, each file held to the digest the 
 
   writeFileSync(join(jvmDir, "libs", "datum-core", "target", "datum-core-1.2.3.jar"), "REBUILT");
   assert.throws(() => mavenSection({ jvmDir, releaseDir, version: "1.2.3", abis: ABIS }), /datum-core-1\.2\.3\.jar changed since the release recorded it/);
-  assert.throws(() => mavenSection({ jvmDir, releaseDir, version: "1.2.3", abis: { sandboxAbi: "5.0.0", pdfAbi: "4.0.0" } }), /The JVM release was built with the sandbox ABI 4\.0\.0/);
+  assert.throws(() => mavenSection({ jvmDir, releaseDir, version: "1.2.3", abis: { sandboxAbi: "2.0.0", pdfAbi: "1.0.0" } }), /The JVM release was built with the sandbox ABI 1\.0\.0/);
 });
 
 test("describeFiles and sumsText: every file with its size and digest, sorted by path", () => {
@@ -195,7 +195,7 @@ test("readmeText: says what is there, what was left out, and whether the bundle 
   };
   const text = readmeText({ version: "1.2.3", commit: "abc", dirty: true, abis: ABIS, sections, skipped: ["python", "maven", "tools"], hasGuide: true, checked: true });
   assert.match(text, /^# Datum 1\.2\.3, offline bundle\n/);
-  assert.match(text, /Built from commit abc, with uncommitted changes in the tree\. Sandbox ABI 4\.0\.0, PDF ABI 4\.0\.0/);
+  assert.match(text, /Built from commit abc, with uncommitted changes in the tree\. Sandbox ABI 1\.0\.0, PDF ABI 1\.0\.0/);
   assert.match(text, /\| `alberta` \| Alberta Design System \| 3\.2\.0 \| 0 \| 20 \|/);
   assert.match(text, /The `dropped` list of `alberta` in `bindings\/manifest\.json`/);
   assert.match(text, /Not in this bundle: python, maven, tools/);

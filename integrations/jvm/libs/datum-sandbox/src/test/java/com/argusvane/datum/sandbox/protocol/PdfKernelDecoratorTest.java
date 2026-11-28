@@ -1,5 +1,6 @@
 package com.argusvane.datum.sandbox.protocol;
 
+import com.argusvane.datum.core.contracts.PdfCapabilitiesResponse;
 import com.argusvane.datum.sandbox.wasi.RunOutput;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,7 +40,7 @@ class PdfKernelDecoratorTest {
         }
 
         @Override
-        public List<String> capabilities() {
+        public PdfCapabilitiesResponse capabilities() {
             calls.add(label + ":capabilities");
             return delegate.capabilities();
         }
@@ -55,7 +56,7 @@ class PdfKernelDecoratorTest {
         return new FakeRuntime(call -> {
             String op = call.input().path("op").asString("");
             String text = "capabilities".equals(op)
-                ? "{\"ok\":true,\"op\":\"capabilities\",\"abi\":\"" + PdfAbi.MIN + "\",\"features\":[]}"
+                ? "{\"ok\":true,\"op\":\"capabilities\",\"abi\":\"" + PdfAbi.MIN + "\",\"kernelVersion\":\"0.1.0\"}"
                 : answer;
             return RunOutput.exited(0, (text + "\n").getBytes(StandardCharsets.UTF_8), null);
         });

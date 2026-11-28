@@ -242,7 +242,7 @@ public class Application {
             return ResponseEntity.status(422).body(Map.of("errors", errors));
         }
         var request = JSON.createObjectNode()
-                .put("abi", "4.0.0")
+                .put("abi", "1.0.0")
                 .put("op", "document")
                 .set("form", FORM.path("root"))
                 .set("pdf", FORM.get("pdf"))  // the form's PDF layouts, as designed in the builder's PDF mode

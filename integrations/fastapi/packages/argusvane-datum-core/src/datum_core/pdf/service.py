@@ -490,7 +490,7 @@ class PdfService:
 
     def _sealed(self, kernel: PdfKernel, plan: SealPlan, pdf: bytes, handoff: PdfSigningHandoff | None) -> Sealed:
         if handoff is None:
-            raise PdfError("the PDF program prepared no signature (a program without the signature feature)")
+            raise PdfError("the PDF program prepared no signature")
         return self._run(lambda: self._seal.seal(kernel, plan, pdf, handoff, open_=lambda: not self._events.closed))
 
     def _layout_refusal(self, job: _Job) -> LayoutNotFound | LayoutNotTemplate | None:

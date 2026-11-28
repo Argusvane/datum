@@ -214,7 +214,7 @@ describe("through renderFormPdf", () => {
     const requests: PdfKernelRequest[] = [];
     const provider: PdfRenderProvider = {
       id: "fake",
-      abiVersion: "4.0.0",
+      abiVersion: "1.0.0",
       render: async (request) => {
         requests.push(request);
         return { bytes: new Uint8Array([1]), pageCount: 1, pages: [], warnings: [], providerId: "fake", signing: HANDOFF };

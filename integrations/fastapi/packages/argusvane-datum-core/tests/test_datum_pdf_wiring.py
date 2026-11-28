@@ -310,22 +310,22 @@ def test_the_in_process_authority_issues_the_seal_token_with_channel_seal_and_pu
 # -- the PDF ABI proof -------------------------------------------------------------------------------------------------
 def test_a_program_that_fails_the_gate_stops_the_start_with_the_rebuild_hint() -> None:
     trail: list[str] = []
-    datum = plain_pdf_datum(runtime=ScriptedPdfRuntime(trail, abi="3.17.0"))
+    datum = plain_pdf_datum(runtime=ScriptedPdfRuntime(trail, abi="0.17.0"))
     with pytest.raises(ProgramUnavailableError) as raised:
         datum.start()
-    assert "3.17.0" in str(raised.value)
+    assert "0.17.0" in str(raised.value)
     assert "Rebuild the program assets" in str(raised.value)
     assert not datum.started
 
 
 def test_with_fail_fast_off_the_start_stands_pdfs_are_unavailable_and_the_rest_works() -> None:
     config = {"runtime": {"fail_fast": False}, "pdf": {"seal": {"enabled": False}}}
-    with started_pdf(config, abi="3.17.0") as rig:
+    with started_pdf(config, abi="0.17.0") as rig:
         health = rig.datum.health()
         assert health.is_ready, "the sandbox is fine: readyz is unaffected"
         runtime = health.components["runtime"]
         assert runtime.status == "up"
-        assert "3.17.0" in str(runtime.details["pdfUnavailable"])
+        assert "0.17.0" in str(runtime.details["pdfUnavailable"])
         assert health.components["pdf"].status == "down"
         outcome = rig.render()
         assert type(outcome).__name__ == "Unavailable"
@@ -361,9 +361,9 @@ def test_a_runtime_without_the_pdf_program_reads_as_pdf_unavailable_on_the_runti
 
 def test_a_recheck_proves_the_pdf_program_again_and_brings_pdfs_back() -> None:
     config = {"runtime": {"fail_fast": False}, "pdf": {"seal": {"enabled": False}}}
-    with started_pdf(config, abi="3.17.0") as rig:
+    with started_pdf(config, abi="0.17.0") as rig:
         assert type(rig.render()).__name__ == "Unavailable"
-        rig.runtime.abi = "4.0.0"  # the program was rebuilt
+        rig.runtime.abi = "1.0.0"  # the program was rebuilt
         health = rig.datum.recheck()
         assert health.components["pdf"].status == "up"
         assert "pdfUnavailable" not in health.components["runtime"].details
@@ -408,7 +408,7 @@ def test_health_names_the_engine_and_its_mode_and_never_a_path_a_key_or_a_certif
 
 
 def test_the_pdf_component_never_fails_readiness() -> None:
-    with started_pdf(abi="4.0.0") as rig:
+    with started_pdf(abi="1.0.0") as rig:
         report = rig.datum.health()
     assert report.is_ready
     assert "pdf" in report.components
@@ -471,14 +471,14 @@ def test_a_recheck_of_a_down_runtime_leaves_the_runtime_up_when_the_pdf_proof_fa
     """`_retry` is a recheck as `_reprove` is: a failed PDF proof leaves PDFs 503 and the runtime up (fail_fast on)."""
     with started_pdf({"pdf": {"seal": {"enabled": False}}}) as rig:
         assert rig.datum.config.runtime.fail_fast is True
-        rig.runtime.abi = "3.17.0"  # the program no longer passes its own proof (a refusal is never kept)
+        rig.runtime.abi = "0.17.0"  # the program no longer passes its own proof (a refusal is never kept)
         assert rig.datum.recheck().components["pdf"].status == "down"
         rig.sandbox.smoke = lambda: Smoke(ok=False, elapsed=0.0, message="warm-up failed")  # type: ignore[method-assign]
         assert not rig.datum.recheck().is_ready  # the sandbox failed its smoke run: the runtime is down
         rig.sandbox.smoke = lambda: Smoke(ok=True, elapsed=0.0, message="")  # type: ignore[method-assign]
         health = rig.datum.recheck()  # the runtime is built again, and the PDF proof still fails
         assert health.is_ready, "the sandbox is back: only PDFs stay unavailable"
-        assert "3.17.0" in str(health.components["runtime"].details["pdfUnavailable"])
+        assert "0.17.0" in str(health.components["runtime"].details["pdfUnavailable"])
         assert health.components["pdf"].status == "down"
         assert type(rig.render()).__name__ == "Unavailable"
 
@@ -512,7 +512,7 @@ def test_a_recheck_keeps_the_running_kernel_serving_until_the_new_one_has_proved
             if not asking[0]:  # the running kernel proves itself again inside this render: answer that plainly
                 asking[0] = True
                 during.append(rig.render())
-            return {"abi": rig.runtime.abi, "features": list(rig.runtime.features), "kernelVersion": "0.1.0"}
+            return {"abi": rig.runtime.abi, "kernelVersion": "0.1.0"}
 
         rig.runtime.on("capabilities", capabilities)
         assert rig.datum.recheck().components["pdf"].status == "up"
@@ -523,7 +523,7 @@ def test_a_recheck_keeps_the_running_kernel_serving_until_the_new_one_has_proved
 def test_a_failed_pdf_recheck_swaps_the_old_kernel_out() -> None:
     """The swap is only for a kernel that proved: a failed proof leaves PDFs unavailable, the old kernel not served."""
     with started_pdf({"pdf": {"seal": {"enabled": False}}}) as rig:
-        rig.runtime.abi = "3.17.0"
+        rig.runtime.abi = "0.17.0"
         health = rig.datum.recheck()
         assert health.components["pdf"].status == "down"
         assert isinstance(rig.render(), Unavailable)

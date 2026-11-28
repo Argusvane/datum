@@ -77,7 +77,7 @@ app.MapPost("/api/submissions/fill", (JsonNode envelope, HttpContext http) =>
     filled["options"] = new JsonObject { ["flatten"] = fields == "flatten", ["readOnly"] = fields == "readonly", ["appearances"] = "regenerate" };
     var response = Render(new Dictionary<string, object?>
     {
-        ["abi"] = "4.0.0",
+        ["abi"] = "1.0.0",
         ["op"] = "document",
         ["form"] = form["root"],
         ["layout"] = filled,

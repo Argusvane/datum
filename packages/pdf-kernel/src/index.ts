@@ -11,7 +11,6 @@ export {
   handlePdfRequestJson,
   installProgramGlobals,
   registerPdfProgramModule,
-  PDF_PROGRAM_FEATURES,
   PDF_PROGRAM_VERSION
 } from "./program/entry.js";
 export { installPdfProgramPolyfills } from "./program/polyfills.js";

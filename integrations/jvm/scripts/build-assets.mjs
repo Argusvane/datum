@@ -18,7 +18,7 @@
 //   <module>/datum/...        the shared glue (datum-web-core) and SQL migrations (forms, submissions, timestamp,
 //                             webauthn) copied from integrations/shared, laid into META-INF/datum/ by the parent pom
 //   datum-host-tck/           the host test kit's fixture form and golden answers (META-INF/datum-tck/ in its jar)
-//   datum-sandbox-tck/        the engine test kit's golden answers, fixture form and ABI 3.8 documents
+//   datum-sandbox-tck/        the engine test kit's golden answers, fixture form and parity documents
 //                             (META-INF/datum-sandbox-tck/ in its jar)
 //   assets.properties         the Datum-* jar manifest entries, read by the parent pom's properties plugin
 // Each module's directory is built beside it as <module>.new and swapped in at the end, so a failed or killed build never
@@ -303,7 +303,7 @@ const engineJcsVectors = join(repo, "engine", "tests", "fixtures", "jcs-vectors.
 const documents = join(repo, "packages", "pdf-kernel", "tests", "fixtures", "documents-3.8");
 const fixturePlan = {
   "datum-core": [
-    [join(repo, "packages", "conformance-suite", "golden", "abi-4.1.json"), "abi-4.1.json"],
+    [join(repo, "packages", "conformance-suite", "golden", "abi-1.0.json"), "abi-1.0.json"],
     [join(repo, "packages", "conformance-suite", "fixtures", "endpoint-fixture.definition.json"), "endpoint-fixture.definition.json"],
     [join(sharedFixtures, "canonical.json"), "canonical.json"],
     [engineJcsVectors, "jcs-vectors-engine.json"],
@@ -311,7 +311,7 @@ const fixturePlan = {
     [join(sharedFixtures, "webauthn-engine.json"), "webauthn-engine.json"]
   ],
   "datum-submissions": [
-    [join(repo, "packages", "conformance-suite", "golden", "abi-4.1.json"), "abi-4.1.json"],
+    [join(repo, "packages", "conformance-suite", "golden", "abi-1.0.json"), "abi-1.0.json"],
     [join(repo, "packages", "conformance-suite", "fixtures", "endpoint-fixture.definition.json"), "endpoint-fixture.definition.json"]
   ],
   "datum-pdf": [],
@@ -327,7 +327,7 @@ const fixturePlan = {
 for (const name of readdirSync(documents).filter((entry) => entry.endsWith(".json"))) {
   fixturePlan["datum-pdf"].push([join(documents, name), join("documents-3.8", name)]);
 }
-// datum-pdf also reads the kernel's signing fixtures (keys and chains), beside the ABI 3.8 documents.
+// datum-pdf also reads the kernel's signing fixtures (keys and chains), beside the parity documents.
 const signing = join(repo, "packages", "pdf-kernel", "tests", "fixtures", "signing");
 for (const name of readdirSync(signing).filter((entry) => statSync(join(signing, entry)).isFile())) {
   fixturePlan["datum-pdf"].push([join(signing, name), join("signing", name)]);
@@ -360,7 +360,7 @@ for (const [module, rows] of Object.entries(fixturePlan)) {
 const tckAssets = moduleOut("datum-host-tck");
 mkdirSync(tckAssets, { recursive: true });
 for (const [from, name] of [
-  [join(repo, "packages", "conformance-suite", "golden", "abi-4.1.json"), "golden.json"],
+  [join(repo, "packages", "conformance-suite", "golden", "abi-1.0.json"), "golden.json"],
   [join(repo, "packages", "conformance-suite", "fixtures", "endpoint-fixture.definition.json"), "fixture-form.json"]
 ]) {
   if (!existsSync(from)) {
@@ -375,14 +375,14 @@ writeFileSync(join(tckAssets, "fixture-form-b.json"), `${JSON.stringify({ ...fix
 fixtureCount += 1;
 
 // The engine test kit's fixtures: the security suite's golden answers and endpoint fixture form, and the PDF
-// kernel's ABI 3.8 documents with their pinned hashes, travel in datum-sandbox-tck's jar (META-INF/datum-sandbox-tck/), so its
+// kernel's parity documents with their pinned hashes, travel in datum-sandbox-tck's jar (META-INF/datum-sandbox-tck/), so its
 // contracts judge an engine outside this checkout by the very bytes the TypeScript side checks. Cleared first, so a document
 // the kernel drops cannot linger in the kit.
 const engineKitAssets = moduleOut("datum-sandbox-tck");
 rmSync(join(engineKitAssets, "documents-3.8"), { recursive: true, force: true });
 mkdirSync(join(engineKitAssets, "documents-3.8"), { recursive: true });
 for (const [from, name] of [
-  [join(repo, "packages", "conformance-suite", "golden", "abi-4.1.json"), "golden.json"],
+  [join(repo, "packages", "conformance-suite", "golden", "abi-1.0.json"), "golden.json"],
   [join(repo, "packages", "conformance-suite", "fixtures", "endpoint-fixture.definition.json"), "fixture-form.json"],
   ...readdirSync(documents).filter((entry) => entry.endsWith(".json")).map((name) => [join(documents, name), join("documents-3.8", name)])
 ]) {

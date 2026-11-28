@@ -20,7 +20,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.JsonNodeFactory;
 import tools.jackson.databind.node.ObjectNode;
 
-/** The option snapshot walk over a definition with data-sourced choices (sandbox ABI 2.9.0, {@code optionSnapshot}). */
+/** The option snapshot walk over a definition with data-sourced choices ({@code optionSnapshot}). */
 class DataSourceOptionsTest {
 
     /** A definition: two plain sources on a select and a scoped select, a select in a grid's row, and a free-text source. */

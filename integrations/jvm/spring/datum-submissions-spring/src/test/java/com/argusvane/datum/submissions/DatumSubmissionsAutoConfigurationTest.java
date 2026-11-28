@@ -114,7 +114,7 @@ class DatumSubmissionsAutoConfigurationTest {
             assertThat(context).hasNotFailed();
             DatumSandbox runtime = context.getBean(DatumSandbox.class);
             assertThat(runtime.status().state()).isEqualTo(SandboxStatus.State.UP);
-            assertThat(runtime.status().sandboxAbi()).isEqualTo("4.1.0");
+            assertThat(runtime.status().sandboxAbi()).isEqualTo("1.0.0");
             assertThat(context.getBean(WithRuntime.class).ready).hasSize(1);
             assertThat(context).hasSingleBean(LoggingSubmissionHandler.class);
             assertThat(context.getBean(DatumHealthContributors.class).evaluate()).containsKey("runtime");

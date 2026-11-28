@@ -20,7 +20,7 @@ class SandboxReportTest {
             Entry.replaced("datum.host.formula-errors", "warn"),
             Entry.configured(DirectoryCaptureSink.PROPERTY, "/var/tmp/captures")));
         return new SandboxReport(settings, new EngineInfo("endive", "0.9.1", "panama", "Panama runner, /opt/lib/libx.so"),
-            List.of(new SandboxReport.ProgramLine("sandbox", "a".repeat(64), "2.16.0", "classpath:META-INF/datum/programs/x.js", null),
+            List.of(new SandboxReport.ProgramLine("sandbox", "a".repeat(64), "1.2.0", "classpath:META-INF/datum/programs/x.js", null),
                 new SandboxReport.ProgramLine("pdf", null, null, null, "The PDF program is not on the classpath.")),
             new SandboxReport.Trace("all", "the log datum.sandbox.trace (INFO)"),
             new SandboxReport.Capture(true, "the directory /var/tmp/captures", 20, 64L << 20, 64L << 20));
@@ -37,7 +37,7 @@ class SandboxReportTest {
             "  datum.host.formula-errors = warn (replaced by the application's own input)",
             "  datum.runtime.diagnostics.capture.directory = /var/tmp/captures (configured)",
             "  engine: endive 0.9.1 (panama): Panama runner, /opt/lib/libx.so",
-            "  program sandbox: sha256 " + "a".repeat(64) + ", ABI 2.16.0 (classpath:META-INF/datum/programs/x.js)",
+            "  program sandbox: sha256 " + "a".repeat(64) + ", ABI 1.2.0 (classpath:META-INF/datum/programs/x.js)",
             "  program pdf: unavailable (The PDF program is not on the classpath.)",
             "  trace: all, to the log datum.sandbox.trace (INFO)",
             "  capture: on, into the directory /var/tmp/captures (at most 20 runs and 67108864 bytes; 67108864 bytes may wait to be written)");
@@ -75,7 +75,7 @@ class SandboxReportTest {
             Entry.configured("datum.runtime.programs.pdf", "URL [https://cdn.example/pdf.js?sig=abc123&exp=9]")));
         SandboxReport report = new SandboxReport(settings,
             new EngineInfo("endive", "0.9.1", "panama", "fetched from https://ops:hunter2@mirror/lib?token=t0k"),
-            List.of(new SandboxReport.ProgramLine("sandbox", "a".repeat(64), "2.16.0", "https://u:p@host/x.js?key=k", null)),
+            List.of(new SandboxReport.ProgramLine("sandbox", "a".repeat(64), "1.2.0", "https://u:p@host/x.js?key=k", null)),
             new SandboxReport.Trace("all", "the bus https://svc:pw@bus.example/topic?apikey=zzz"),
             new SandboxReport.Capture(true, "the bucket https://key:secret@minio/captures?token=abc", 20, 1, 1));
         String text = report.toString();

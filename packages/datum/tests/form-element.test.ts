@@ -734,7 +734,7 @@ describe("<datum-form> PDFs", () => {
     return {
       provider: {
         id: "fake",
-        abiVersion: "4.0.0",
+        abiVersion: "1.0.0",
         render: async (request: unknown) => {
           seen.push(request);
           return { bytes: new TextEncoder().encode("%PDF-fake"), pageCount: 1, pages: [], warnings: [], providerId: "fake" };
@@ -865,7 +865,7 @@ describe("<datum-form> PDFs", () => {
     const support = {
       provider: {
         id: "fake",
-        abiVersion: "4.0.0",
+        abiVersion: "1.0.0",
         render: async (request: { signature?: unknown }) => {
           seen.push({ op: "render", signature: request.signature });
           return { bytes: new TextEncoder().encode("%PDF-prepared"), pageCount: 1, pages: [], warnings: [], providerId: "fake", ...(request.signature ? { signing: HANDOFF } : {}) };
@@ -2179,11 +2179,11 @@ describe("<datum-form> sandbox module: bounded wait and the ABI check", () => {
     const built = vi.fn();
     (globalThis as unknown as { __abiBuilt: () => void }).__abiBuilt = built;
     const { errors, submit } = await submitWith(
-      moduleUrl(`export const WASM_ABI_VERSION = "2.8.0"; export function createWasmValidationHost() { globalThis.__abiBuilt(); return Promise.resolve({ run: async () => ({ errors: [], values: {} }), dispose() {} }); }`)
+      moduleUrl(`export const WASM_ABI_VERSION = "0.8.0"; export function createWasmValidationHost() { globalThis.__abiBuilt(); return Promise.resolve({ run: async () => ({ errors: [], values: {} }), dispose() {} }); }`)
     );
     expect((await submit).accepted).toBe(false);
     expect(built).not.toHaveBeenCalled();
-    expect(errors.some((e) => e.cause instanceof Error && /speaks ABI 2\.8\.0/.test(e.cause.message))).toBe(true);
+    expect(errors.some((e) => e.cause instanceof Error && /speaks ABI 0\.8\.0/.test(e.cause.message))).toBe(true);
     delete (globalThis as unknown as Record<string, unknown>).__abiBuilt;
   });
 

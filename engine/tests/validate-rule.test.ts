@@ -150,8 +150,8 @@ describe("the rule's shape", () => {
     expect(DEFAULT_VALIDATION_MESSAGES.rule).toBe("Check this answer");
   });
 
-  it("is sandbox ABI 4.1.0, and inspect answers the same", () => {
-    expect(WASM_ABI_VERSION).toBe("4.1.0");
+  it("is sandbox ABI 1.0.0, and inspect answers the same", () => {
+    expect(WASM_ABI_VERSION).toBe("1.0.0");
     expect(kernelInspectAbiValue()).toBe(WASM_ABI_VERSION);
   });
 });

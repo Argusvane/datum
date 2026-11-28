@@ -8,7 +8,7 @@ import java.util.Map;
 import tools.jackson.databind.JsonNode;
 
 /**
- * A component's effective state in the fold (ABI 2.10, additive).
+ * A component's effective state in the fold.
  *
  * <p>Members the Java side does not name are kept in {@code extra} and written back, so a newer
  * program's additions round-trip (the TypeScript type is open).

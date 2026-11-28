@@ -14,9 +14,9 @@
  *   <li>{@link com.argusvane.datum.sandbox.tck.SandboxHardeningContract}: the sandbox hardening through
  *       {@code SandboxService} (the ABI gate refusing a stale program, a rule module that cannot forge, rebind or write
  *       outside the frame, the output cap, the depth guard, the loop, memory and recursion stops);</li>
- *   <li>{@link com.argusvane.datum.sandbox.tck.GoldenVerdictsContract}: the ABI 2.14 golden outcome and the six
+ *   <li>{@link com.argusvane.datum.sandbox.tck.GoldenVerdictsContract}: the golden outcome and the six
  *       control verdicts;</li>
- *   <li>{@link com.argusvane.datum.sandbox.tck.PdfRenderContract}: the ABI 3.8 documents rendered byte for byte
+ *   <li>{@link com.argusvane.datum.sandbox.tck.PdfRenderContract}: the parity documents rendered byte for byte
  *       to their pinned hashes.</li>
  * </ul>
  *

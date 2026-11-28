@@ -195,7 +195,6 @@ public class Application {
     static final List<String> VALIDATE = List.of("-I", "/app/datum-sandbox-program.js", "-e", "print(__datum_run(std.in.readAsString()));");
 
     // The PDF program, under the document profile; __datum_pdf's promise settles before qjs exits.
-    // Signing needs a program that lists "signature" in its capabilities.
     static final List<String> RENDER = List.of("-I", "/app/datum-pdf-program.js", "-e", "__datum_pdf(std.in.readAsString()).then((json) => print(json));");
 
     // The fonts to embed: the signature's appearance is drawn with the first of them.
@@ -260,7 +259,7 @@ public class Application {
             signature.put("certify", CERTIFY);
         }
         var prepared = render(JSON.createObjectNode()
-                .put("abi", "4.0.0")
+                .put("abi", "1.0.0")
                 .put("op", "document")
                 .set("form", FORM.path("root"))
                 .set("pdf", FORM.path("pdf"))  // the sealed layout, as designed in the builder's PDF mode
@@ -284,7 +283,7 @@ public class Application {
             signing.set("timestamp", JSON.valueToTree(Map.of("token", timestamp(value))));
         }
         var completed = render(JSON.createObjectNode()
-                .put("abi", "4.0.0")
+                .put("abi", "1.0.0")
                 .put("op", "complete")
                 .set("pdf", JSON.valueToTree(Map.of("data", prepared.path("bytes").asString())))
                 .set("signing", signing));
@@ -306,7 +305,7 @@ public class Application {
     @PostMapping(value = "/api/submissions/verify", consumes = MediaType.APPLICATION_PDF_VALUE)
     public ResponseEntity<?> verify(@RequestBody byte[] pdf) throws Exception {
         var report = render(JSON.createObjectNode()
-                .put("abi", "4.0.0")
+                .put("abi", "1.0.0")
                 .put("op", "verify")
                 .set("pdf", JSON.valueToTree(Map.of("data", Base64.getEncoder().encodeToString(pdf)))));
         if (!report.path("ok").asBoolean()) {
@@ -358,7 +357,7 @@ public class Application {
     }
 
     static String timestamp(byte[] value) throws Exception {
-        var tsq = render(JSON.createObjectNode().put("abi", "4.0.0").put("op", "timestampRequest").put("signature", Base64.getEncoder().encodeToString(value)));
+        var tsq = render(JSON.createObjectNode().put("abi", "1.0.0").put("op", "timestampRequest").put("signature", Base64.getEncoder().encodeToString(value)));
         var request = HttpRequest.newBuilder(URI.create(TSA_URL))
                 .header("Content-Type", "application/timestamp-query")
                 .POST(HttpRequest.BodyPublishers.ofByteArray(Base64.getDecoder().decode(tsq.path("request").asString())))

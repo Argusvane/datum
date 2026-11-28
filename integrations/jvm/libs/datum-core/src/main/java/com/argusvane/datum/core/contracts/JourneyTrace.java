@@ -9,7 +9,7 @@ import java.util.Map;
 import tools.jackson.databind.JsonNode;
 
 /**
- * The path through a journey for one set of answers (ABI 2.10).
+ * The path through a journey for one set of answers.
  *
  * <p>Members the Java side does not name are kept in {@code extra} and written back, so a newer
  * program's additions round-trip (the TypeScript type is open).

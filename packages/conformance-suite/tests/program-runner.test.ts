@@ -30,7 +30,7 @@ describe("a program built from this checkout's source", () => {
     expect(byId(report.results, "RES-10").notes).toMatch(/heavy vector/);
     expect(report.program?.detectedAbi).toBe(WASM_ABI_VERSION);
     expect(report.program?.abiOk).toBe(true);
-    expect(report.program?.golden).toEqual({ file: "abi-4.1.json", abi: WASM_ABI_VERSION });
+    expect(report.program?.golden).toEqual({ file: "abi-1.0.json", abi: WASM_ABI_VERSION });
     // Every enforced vector against the real program; a shared CI runner needs more than the 60 s default.
   }, 180_000);
 
@@ -51,18 +51,18 @@ describe("a program built from this checkout's source", () => {
   it("reports ABI detection against the manifest ABI and the floor", async () => {
     const matching = await runSuite({ program: builtProgram(), only: ["ABI-02"], manifestAbi: WASM_ABI_VERSION });
     expect(byId(matching.results, "ABI-02").status).toBe("PASS");
-    const mismatched = await runSuite({ program: builtProgram(), only: ["ABI-02"], manifestAbi: "2.11.0" });
+    const mismatched = await runSuite({ program: builtProgram(), only: ["ABI-02"], manifestAbi: "0.9.0" });
     expect(byId(mismatched.results, "ABI-02").status).toBe("FAIL");
-    expect(byId(mismatched.results, "ABI-02").notes).toMatch(/manifest says sandboxAbi 2\.11\.0/);
-    const raised = await runSuite({ program: builtProgram(), only: ["ABI-01", "ABI-02"], abiFloor: "4.2.0" });
+    expect(byId(mismatched.results, "ABI-02").notes).toMatch(/manifest says sandboxAbi 0\.9\.0/);
+    const raised = await runSuite({ program: builtProgram(), only: ["ABI-01", "ABI-02"], abiFloor: "1.2.0" });
     expect(raised.results.map((result) => result.status)).toEqual(["FAIL", "FAIL"]);
-    expect(byId(raised.results, "ABI-02").notes).toMatch(/not the floor 4\.2\.0/);
+    expect(byId(raised.results, "ABI-02").notes).toMatch(/not the floor 1\.2\.0/);
   });
 
   it("warns, rather than fails, when the banner comment disagrees with the program's own answer", async () => {
-    const lying = programFromText(`/* Datum sandbox program (ABI 2.9.0). */\n${builtProgram().text}`, "banner.js", "file");
+    const lying = programFromText(`/* Datum sandbox program (ABI 0.8.0). */\n${builtProgram().text}`, "banner.js", "file");
     const report = await runSuite({ program: lying, only: ["ABI-02"] });
-    expect(lying.bannerAbi).toBe("2.9.0");
+    expect(lying.bannerAbi).toBe("0.8.0");
     expect(byId(report.results, "ABI-02").status).toBe("WARN");
     expect(report.verdict).toBe("PASS");
     const strict = await runSuite({ program: lying, only: ["ABI-02"], failOn: "warn" });

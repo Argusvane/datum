@@ -59,8 +59,8 @@ Versions today:
 | What | Version | Where it shows |
 |---|---|---|
 | Packages | 0.1.0 | Every package |
-| Sandbox program interface | 4.1.0 | [Running the programs on your own server](/server-programs#interface-versions) |
-| PDF program interface | 4.0.0 | The same table |
+| Sandbox program interface | 1.0.0 | [Running the programs on your own server](/server-programs#interface-versions) |
+| PDF program interface | 1.0.0 | The same table |
 | `schemaVersion` of a definition | any non-empty string; the examples use `"1"` | The definition |
 
 - The major number of an interface changes when a payload's shape breaks, and a host refuses a program built for another major.

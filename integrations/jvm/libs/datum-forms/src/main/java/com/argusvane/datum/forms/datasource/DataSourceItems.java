@@ -8,7 +8,7 @@ import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.JsonNodeFactory;
 import tools.jackson.databind.node.ObjectNode;
 
-/** Options as plain strings in a locale, as the option snapshot carries them (sandbox ABI 2.9.0). */
+/** Options as plain strings in a locale, as the option snapshot carries them. */
 public final class DataSourceItems {
 
     private DataSourceItems() {

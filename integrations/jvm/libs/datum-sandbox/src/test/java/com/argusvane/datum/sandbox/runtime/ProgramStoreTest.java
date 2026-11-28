@@ -23,8 +23,8 @@ class ProgramStoreTest {
         assertThat(new String(loaded.sandbox().bytes(), StandardCharsets.UTF_8)).isEqualTo(Programs.SANDBOX);
         assertThat(loaded.pdf().kind()).isEqualTo(Program.Kind.PDF);
         assertThat(loaded.freezeSnippet()).isEqualTo(Programs.FREEZE);
-        assertThat(loaded.sandboxAbi()).isEqualTo("2.14.0");
-        assertThat(loaded.pdfAbi()).isEqualTo("4.0.0");
+        assertThat(loaded.sandboxAbi()).isEqualTo("1.0.0");
+        assertThat(loaded.pdfAbi()).isEqualTo("1.0.0");
         assertThat(loaded.pdfUnavailable()).isNull();
     }
 
@@ -65,7 +65,7 @@ class ProgramStoreTest {
             com.argusvane.datum.core.io.ResourceHandle.of("byte array", "/* mine */".getBytes(StandardCharsets.UTF_8)), null);
         ProgramStore.Programs loaded = store.load();
         assertThat(new String(loaded.sandbox().bytes(), StandardCharsets.UTF_8)).isEqualTo("/* mine */");
-        assertThat(loaded.pdfAbi()).isEqualTo("4.0.0");
+        assertThat(loaded.pdfAbi()).isEqualTo("1.0.0");
         ProgramStore missing = new ProgramStore(programs.lookup(),
             com.argusvane.datum.core.io.ResourceHandle.of(java.nio.file.Path.of("/no/such/datum-sandbox-program.js")), null);
         assertThatThrownBy(missing::load).isInstanceOf(ProgramUnavailableException.class).hasMessageContaining("does not exist");
@@ -92,7 +92,7 @@ class ProgramStoreTest {
             p -> p.files.remove(ProgramStore.BASE + "programs.json"),
             p -> p.files.remove(ProgramStore.PINS),
             p -> p.pins("{"),
-            p -> p.pins(Programs.describe("2.14.0", "/* another build */", Programs.PDF, Programs.FREEZE)));
+            p -> p.pins(Programs.describe("1.0.0", "/* another build */", Programs.PDF, Programs.FREEZE)));
         for (Consumer<Programs> damage : damages) {
             Programs programs = Programs.packaged();
             damage.accept(programs);
@@ -176,12 +176,12 @@ class ProgramStoreTest {
     @Test
     void aDatumProgramsFromAnotherBuildOrNoPinsIsRefused() {
         Programs other = Programs.packaged();
-        other.pins(Programs.describe("2.14.0", "/* the sandbox program of another build */", Programs.PDF, Programs.FREEZE));
+        other.pins(Programs.describe("1.0.0", "/* the sandbox program of another build */", Programs.PDF, Programs.FREEZE));
         assertThatThrownBy(() -> other.store().load()).isInstanceOf(ProgramUnavailableException.class)
             .hasMessageContaining("datum-sandbox-program.js does not have the sha256 this datum-sandbox was built with")
             .hasMessageContaining(ProgramStore.PINS);
         Programs freeze = Programs.packaged();
-        freeze.pins(Programs.describe("2.14.0", Programs.SANDBOX, Programs.PDF, "/* another freeze */"));
+        freeze.pins(Programs.describe("1.0.0", Programs.SANDBOX, Programs.PDF, "/* another freeze */"));
         assertThatThrownBy(() -> freeze.store().load()).isInstanceOf(ProgramUnavailableException.class)
             .hasMessageContaining("freeze-intrinsics.js does not have the sha256 this datum-sandbox was built with");
         Programs unpinned = Programs.packaged();
@@ -250,8 +250,8 @@ class ProgramStoreTest {
         byte[] manifest = programs.files.get(ProgramStore.MANIFEST);
         byte[] pins = programs.files.get(ProgramStore.PINS);
         ProgramStore.Verified verified = ProgramStore.verify(files, manifest, pins);
-        assertThat(verified.sandboxAbi()).isEqualTo("2.14.0");
-        assertThat(verified.pdfAbi()).isEqualTo("4.0.0");
+        assertThat(verified.sandboxAbi()).isEqualTo("1.0.0");
+        assertThat(verified.pdfAbi()).isEqualTo("1.0.0");
         assertThat(verified.checked()).containsKeys("freeze-intrinsics.js", "datum-sandbox-program.js", "datum-pdf-program.js");
         assertThatThrownBy(() -> ProgramStore.verify(files, null, pins)).as("no description is no check")
             .isInstanceOf(ProgramUnavailableException.class).hasMessageContaining("is not on the classpath");

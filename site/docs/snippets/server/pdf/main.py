@@ -164,7 +164,7 @@ def submit(envelope: dict):
         errors = [{"field": e.get("componentId"), "code": e["code"]} for e in outcome["errors"]]
         return JSONResponse(status_code=422, content={"errors": errors})
     request = {
-        "abi": "4.0.0",
+        "abi": "1.0.0",
         "op": "document",
         "form": FORM["root"],
         "pdf": FORM.get("pdf"),  # the form's PDF layouts, as designed in the builder's PDF mode

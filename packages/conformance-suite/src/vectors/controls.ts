@@ -4,7 +4,7 @@ import type { Vector } from "./schema.js";
 
 /**
  * CTL: controls. A dead or yes-man program must fail these: each one pins a verdict a working
- * kernel gives the fixture form, taken from the golden file (`golden/abi-4.1.json`, reviewed once, not recomputed).
+ * kernel gives the fixture form, taken from the golden file (`golden/abi-1.0.json`, reviewed once, not recomputed).
  */
 const everywhere = { program: RUNS, endpoint: RUNS, parity: RUNS } as const;
 const provenance = { tests: [{ path: TESTS.parity }] };
