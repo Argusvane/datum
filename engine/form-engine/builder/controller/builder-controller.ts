@@ -338,7 +338,11 @@ export interface FormIdentity {
 export interface BuilderControllerOptions {
   componentTypes?: BuilderComponentType[];
   initialRoot?: ComponentNode;
-  /** When supplied, the controller uses a registry-backed editor (slot constraints + composed inspector). */
+  /**
+   * When supplied, the controller uses a registry-backed editor (slot constraints + composed inspector).
+   * Left out of a later {@link BuilderController.setOptions}, the definitions stay, a new `initialRoot`
+   * included; an empty list takes them away.
+   */
   componentDefinitions?: ComponentDefinition[];
   /** The language the canvas and the inspector show the form in (a label resolves through the translations). Defaults to `"en"`. */
   locale?: string;
@@ -2090,7 +2094,13 @@ export class BuilderController {
         const registry = this.registryOf(options.componentDefinitions);
         const editor = new RegistryBackedTreeEditor(root, registry);
         this.editor = editor;
-        this.useRegistry(editor, registry, options.componentDefinitions);
+        this.useRegistry(editor, registry, typesOf(options.componentDefinitions));
+      } else if (options.componentDefinitions === undefined && this.componentRegistry) {
+        // Another form alone keeps the definitions, as every option left out keeps its value;
+        // only an empty list takes them away.
+        const editor = new RegistryBackedTreeEditor(root, this.componentRegistry);
+        this.editor = editor;
+        this.useRegistry(editor, this.componentRegistry, this.registeredTypes);
       } else {
         this.editor = new TreeEditor(root);
         this.resolver = undefined;
@@ -2134,14 +2144,14 @@ export class BuilderController {
   }
 
   /** `registry`, which `editor` now reads, and its constraints, the slots the other-slots hook adds laid over them. */
-  private useRegistry(editor: RegistryBackedTreeEditor, registry: ComponentRegistry, definitions: readonly ComponentDefinition[]): void {
+  private useRegistry(editor: RegistryBackedTreeEditor, registry: ComponentRegistry, types: readonly string[]): void {
     const declared = editor.constraintsResolver();
     this.resolver = (type) => {
       const otherSlots = this.otherSlotsHook?.(type);
       return otherSlots ? { ...declared(type), otherSlots } : declared(type);
     };
     this.componentRegistry = registry;
-    this.registeredTypes = typesOf(definitions);
+    this.registeredTypes = types;
   }
 
   /**
@@ -2162,7 +2172,7 @@ export class BuilderController {
     }
     const registry = this.registryOf(definitions);
     editor.useRegistry(registry);
-    this.useRegistry(editor, registry, definitions);
+    this.useRegistry(editor, registry, typesOf(definitions));
     this.dataKeyOffers.clear();
     // The panels redraw with the new choices; the tree did not move, so this is no edit.
     this.emitChange("preview");

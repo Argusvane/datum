@@ -65,6 +65,21 @@ describe("BuilderController", () => {
     expect(ctrl.selectedComponentId()).toBeDefined();
   });
 
+  it("keeps its component definitions when a later setOptions opens another form without them", () => {
+    const ctrl = controller();
+    expect(ctrl.hasComponentType("bogus")).toBe(false);
+    ctrl.setOptions({
+      initialRoot: { id: "root", type: "form", configuration: {}, children: { content: [{ id: "group", type: "fieldset", configuration: {}, children: { body: [] } }] } }
+    });
+    expect(ctrl.hasComponentType("bogus")).toBe(false);
+    ctrl.add("number", "group", "body");
+    expect(ctrl.dropError).toMatch(/not allowed in slot/i);
+
+    // An empty list is what takes the definitions away.
+    ctrl.setOptions({ componentDefinitions: [] });
+    expect(ctrl.hasComponentType("bogus")).toBe(true);
+  });
+
   it("enforces registry slot constraints and surfaces dropError instead of throwing", () => {
     const ctrl = controller({
       id: "root",
