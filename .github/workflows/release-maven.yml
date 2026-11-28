@@ -1,0 +1,248 @@
+# Release workflow of the Maven Central artifacts (com.argusvane, the reactor under integrations/jvm).
+#
+# NOT EXERCISED YET. The publish job names a GitHub environment, "maven-central", and reads four of its secrets:
+# MAVEN_CENTRAL_USERNAME and MAVEN_CENTRAL_PASSWORD (a Central Portal user token for the verified com.argusvane namespace, not
+# the account's login), MAVEN_GPG_PRIVATE_KEY (the release key, ASCII-armored, whose public half is on keyserver.ubuntu.com and
+# keys.openpgp.org) and MAVEN_GPG_PASSPHRASE. Before the first tag the owner creates the environment (Settings, Environments)
+# with a required reviewer and stores the secrets in it: GitHub creates an environment that does not exist on its first use
+# with no protection rules, so a pushed tag would upload unapproved. The publish jobs run only in argusvane/datum, so a fork
+# or a mirror never publishes; the build job runs for every tag.
+#
+# A tag v<version> (the one tag of a release, shared with the npm and PyPI workflows), or a run started by hand with the tag
+# named (for a tag that is already pushed), runs:
+#   build: no secret in reach. integrations/jvm/scripts/release.mjs --stage refuses unless the version is a plain x.y.z, the
+#     checkout is the tag on main, a ci.yml run on it passed ci-ok and CHANGELOG.md has the version's section; then builds the
+#     web components and the assets, runs the security suite over the sandbox program, builds and tests the whole reactor on
+#     Java 21 (the QuickJS runtime compiled for all six native targets, the containers tests on Docker), runs the post-checks
+#     over every jar, and stages the Central bundle unsigned (-DskipUpload=true), which it checks again. The release directory
+#     (release.json, SHA256SUMS, README.md and central-bundle.zip, named by its SHA-256 in release.json) is the job's artifact.
+#   publish: behind the reviewer. integrations/jvm/scripts/central-publish.mjs builds nothing: it checks the bundle against
+#     release.json, refuses a version Central already holds, signs every jar and pom with the release key, uploads the signed
+#     bundle to the Central Portal and waits for Central's validation. The deployment then waits in the portal
+#     (central.sonatype.com, Publishing, Deployments) for the owner to publish or drop it; a run started by hand with
+#     auto-publish set lets Central publish it once validated. A Central version is permanent: a bad one is followed by a
+#     patch version, never replaced.
+#   release-assets: SHA256SUMS-maven (every jar, pom and signature uploaded, by its repository path) is attached to the GitHub
+#     Release of the tag; when the tag has no Release yet, one is created as a draft, as the npm and PyPI workflows do.
+#
+# What is built is always the tag's tree. The release scripts that build, check, sign and upload it are main's, checked out
+# by name whichever ref started the run, so a tag pushed before the scripts could stage a bundle, v0.1.0 among them, is
+# released by the current ones, and a run started by hand from another branch still runs main's scripts. The workflow file
+# itself is the starting ref's, which no step can check: the environment's rule allowing only main and v* tags is what keeps a
+# branch's edit of this file away from the secrets.
+#
+# No job restores a cache: a dependency cache is written by the runs on main, which run install scripts first, and Maven
+# does not check a jar again once it is in ~/.m2. Every release resolves its dependencies afresh.
+#
+# Every action is pinned by commit SHA (the comment names the release).
+name: Release Maven
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The tag to release, v<x.y.z>; it must already be pushed, on main, with a green ci.yml run
+        type: string
+        required: true
+      auto-publish:
+        description: Let Central publish the deployment once validated, instead of leaving it in the portal
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-maven
+  cancel-in-progress: false
+
+env:
+  FORCE_COLOR: "0"
+  # The tag pushed, or the one a run started by hand names (github.ref_name is then the branch it was started from).
+  TAG: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    # The Endive compile of the QuickJS runtime for six targets is close to half an hour; the reactor's tests about as long.
+    timeout-minutes: 150
+    permissions:
+      contents: read
+      # Reads the ci.yml runs of the tagged commit (release.mjs asks with gh); the token can write nothing.
+      actions: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      # Maven Central takes a plain x.y.z only (docs/releasing.md): a prerelease tag, which the npm workflow publishes as
+      # "next", stops here.
+      - name: Refuse a tag that is not v<x.y.z>
+        id: version
+        run: |
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::$TAG is not v<x.y.z>; only a plain version is released to Maven Central."
+            exit 1
+          fi
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout the tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/tags/${{ env.TAG }}
+          persist-credentials: false
+          # Full history, branches and tags: release.mjs holds HEAD against origin/main and the tag against HEAD.
+          fetch-depth: 0
+
+      # The release scripts are main's, whichever ref started the run, run over the tag's checkout with DATUM_RELEASE_REPO: a
+      # tag made before the scripts could stage a bundle is still released by them, while everything built comes from the tag.
+      # The folder is excluded locally so the tree still reads as clean.
+      - name: Checkout the release scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          path: .release-tools
+          persist-credentials: false
+      - name: Keep the release scripts out of the tag's tree
+        run: echo "/.release-tools/" >> .git/info/exclude
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      # release.mjs builds the web components itself (npm run datum:build, never a stale dist), so only their
+      # dependencies are installed here; the security suite it runs is built from the conformance suite.
+      - name: Install the web components
+        uses: ./.github/actions/install-datum
+
+      - name: Install the conformance suite
+        run: |
+          (cd packages/submissions && npm ci)
+          (cd packages/conformance-suite && npm ci)
+
+      - name: Setup Java 21
+        uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Test the release scripts
+        run: npm run jvm:test:scripts
+        working-directory: .release-tools
+
+      # Every refusal of a real release, the build and tests, the post-checks and the staged bundle; nothing is signed or
+      # uploaded, and no secret is set.
+      - name: Build, test and stage the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          DATUM_RELEASE_REPO: ${{ github.workspace }}
+        run: node .release-tools/integrations/jvm/scripts/release.mjs --version "$VERSION" --stage
+
+      - name: Upload the release directory
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: maven-release
+          path: integrations/jvm/dist/datum-jvm-${{ steps.version.outputs.version }}
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    # Only the canonical repository publishes: a fork or a mirror that receives the tag stops after the build job.
+    if: github.repository == 'argusvane/datum'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    # The reviewers required on this environment (Settings, Environments) are what makes the job wait for approval; the
+    # environment must be configured before the first tag, as GitHub creates a missing one with no protection.
+    environment: maven-central
+    permissions:
+      contents: read
+    steps:
+      # Main's scripts, as in the build job: central-publish.mjs and the bundle checks it shares with release.mjs. Nothing of
+      # the tag's is run here; the bundle is the build job's.
+      - name: Checkout the release scripts
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Download the release directory
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: maven-release
+          path: ${{ runner.temp }}/maven-release
+
+      # The key goes into the runner's throwaway keyring and nowhere else; it is never printed.
+      - name: Import the release key
+        env:
+          MAVEN_GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "$MAVEN_GPG_PRIVATE_KEY" ]; then
+            echo "::error::The maven-central environment has no MAVEN_GPG_PRIVATE_KEY secret."
+            exit 1
+          fi
+          printf '%s\n' "$MAVEN_GPG_PRIVATE_KEY" | gpg --batch --import
+          # Only the key id and user id (public facts) go to the log, so the run shows which key signed.
+          gpg --batch --list-secret-keys --keyid-format long | grep -E '^(sec|uid)'
+
+      - name: Sign and upload to Central
+        env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+          VERSION: ${{ needs.build.outputs.version }}
+          # A tag push never auto-publishes: inputs is empty then.
+          AUTO_PUBLISH: ${{ inputs.auto-publish == true }}
+        run: |
+          set -euo pipefail
+          flags=()
+          if [ "$AUTO_PUBLISH" = "true" ]; then flags+=(--auto-publish); fi
+          node integrations/jvm/scripts/central-publish.mjs --release "$RUNNER_TEMP/maven-release" --version "$VERSION" --out "$RUNNER_TEMP/maven-checksums" "${flags[@]}"
+
+      - name: Upload the checksums
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: maven-checksums
+          path: ${{ runner.temp }}/maven-checksums
+          if-no-files-found: ignore
+
+  release-assets:
+    needs: publish
+    if: github.repository == 'argusvane/datum'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    # The same group as the npm and PyPI workflows' release-assets jobs, named by the tag: the look for the tag's Release and
+    # its create never interleave with theirs.
+    concurrency:
+      group: release-assets-${{ inputs.tag || github.ref_name }}
+      cancel-in-progress: false
+    permissions:
+      # Creates the draft Release and attaches the file: nothing else in the workflow can write to the repository.
+      contents: write
+    steps:
+      - name: Download the checksums
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: maven-checksums
+          path: maven
+
+      # A Release that exists already (from the npm or PyPI workflow, a rerun, or published) is kept and the file replaces the
+      # one of the same name. The notes are the owner's, as in the other two workflows.
+      - name: Attach the Maven checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test -s maven/SHA256SUMS-maven
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft --verify-tag --title "$TAG" --notes "Datum $TAG"
+          fi
+          gh release upload "$TAG" maven/SHA256SUMS-maven --repo "$GITHUB_REPOSITORY" --clobber

@@ -22,9 +22,14 @@
   between the `datum:qjs begin/end` comments of `libs/datum-sandbox-endive/pom.xml` from the repository's pinned qjs
   release (version, the official quickjs-ng download URL and its sha256).
 
-- `release.mjs` (`npm run jvm:release -- --version <x.y.z> [--dry-run] [--publish] [--allow-stale]
+- `release.mjs` (`npm run jvm:release -- --version <x.y.z> [--dry-run | --stage | --publish] [--allow-stale]
   [--skip-security-suite] [--maven-args "<extra Maven options>"] [--check-only]`): builds,
-  checks and publishes the whole reactor at one version. `--version` is mandatory. In order: the commit guard (a real run
+  checks and publishes the whole reactor at one version. `--stage` is the `Release Maven` workflow's build job: every
+  refusal of a real run, the verify with `-Dgpg.skip=true`, the post-checks without signatures, then
+  `deploy -DskipUpload=true -Dgpg.skip=true`, which stages the Central bundle and uploads nothing; the bundle is checked
+  and copied into the dist directory as `central-bundle.zip`, its SHA-256 in `release.json` (`staged: true`). It needs
+  no `~/.m2/settings.xml` and no key, and prints no push command. `DATUM_RELEASE_REPO=<checkout>` makes it build and check
+  another checkout than its own (the workflow runs main's scripts over the tag's tree). `--version` is mandatory. In order: the commit guard (a real run
   refuses unless the version is a plain x.y.z, the working tree is clean, `origin` names argusvane/datum, HEAD is on
   `origin/main` (no local-main fallback), a `ci.yml` run on HEAD passed `ci-ok` (read with an installed, signed-in `gh`),
   the tag `v<v>` exists and points at HEAD, and `CHANGELOG.md` has a `## [<v>]` section; it also refuses
@@ -60,6 +65,16 @@
   snippet, and prints the `git push origin v<v>` that starts the npm and PyPI workflows and the `gh release upload` that attaches the checksums to the draft Release (the script tags and pushes nothing; the tag is made before the run, see `docs/releasing.md`). `--check-only` skips everything before the
   post-checks and takes the version of the jars already under `target/` (so `-SNAPSHOT` is allowed, and then the SNAPSHOT-mention checks and the sources and javadoc jars,
   which only `-Prelease` builds, are not required): the way to try the checks without a six-target build; it never deploys.
+- `central-publish.mjs` (`node integrations/jvm/scripts/central-publish.mjs --release <dir> --version <x.y.z> --out <dir>
+  [--auto-publish]`): the `Release Maven` workflow's publish job, the only place the release key and the portal token
+  are in reach. It builds nothing. It checks the release directory a `--stage` run wrote (`release.json` of that version,
+  staged, naming the SHA-256 of `central-bundle.zip`) and the bundle's entries (all under `com/argusvane/<artifactId>/<v>/`,
+  unsigned, no tests jar or test-support artifact), refuses when Central already holds any of its components at that
+  version, signs every jar and pom with the key in gpg's keyring (`MAVEN_GPG_PASSPHRASE` on stdin) and verifies each
+  signature, uploads the signed bundle to the Central Portal (`MAVEN_CENTRAL_USERNAME` / `MAVEN_CENTRAL_PASSWORD`, a user
+  token) as `USER_MANAGED`, or `AUTOMATIC` with `--auto-publish`, and waits for `VALIDATED` (or `PUBLISHED`), failing on
+  `FAILED` with Central's errors. It writes `<out>/SHA256SUMS-maven`: every jar, pom and signature uploaded, by its
+  repository path.
 
 The poms of `datum-programs`, `datum-ui` and `datum-pdf` put `target/datum-assets/<artifactId>` under `META-INF/datum/` in the
 jar and refuse to build when it is missing (run `./mvnw -N generate-resources`, or build the whole reactor).

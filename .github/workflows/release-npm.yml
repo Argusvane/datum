@@ -247,10 +247,9 @@ jobs:
 
       # The Release is a draft with a one-line note: the owner writes the notes from CHANGELOG.md and publishes it. A
       # Release that exists already (a rerun, or created by hand) is kept and the files replace the ones of the same name.
-      # Neither the Maven release (run by hand, docs/releasing.md) nor the PyPI workflow writes notes; the Maven checksum list
-      # is attached by hand to this draft.
-      # The release-fastapi workflow attaches to the same draft for the tag; the two release-assets jobs share a concurrency group,
-      # so the look and the create of one never interleave with the other's.
+      # Neither the Maven nor the PyPI workflow writes notes.
+      # The release-maven and release-fastapi workflows attach to the same draft for the tag; the three release-assets jobs share a
+      # concurrency group, so the look and the create of one never interleave with another's.
       - name: Attach the source maps, the script bundles and the checksums
         env:
           GH_TOKEN: ${{ github.token }}

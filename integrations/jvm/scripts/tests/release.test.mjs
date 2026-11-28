@@ -319,8 +319,39 @@ test("CI on HEAD must have passed ci-ok in some ci.yml run", () => {
 
 test("a missing or signed-out gh CLI refuses with a message that says what to do", () => {
   const missing = () => ({ status: null, error: Object.assign(new Error("spawn gh ENOENT"), { code: "ENOENT" }), stdout: "", stderr: "" });
-  assert.match(ciProblems(SHA, missing).join("\n"), /gh CLI is not installed.*gh auth login/);
-  assert.match(ciProblems(SHA, ghStub({ auth: 1 })).join("\n"), /gh CLI is not signed in.*gh auth login/);
+  assert.match(ciProblems(SHA, missing, undefined, {}).join("\n"), /gh CLI is not installed.*gh auth login/);
+  assert.match(ciProblems(SHA, ghStub({ auth: 1 }), undefined, {}).join("\n"), /gh CLI is not signed in.*gh auth login/);
+});
+
+test("on a workflow runner (GH_TOKEN set) the runs are read without asking gh for its login", () => {
+  const noAuth = (args) => {
+    assert.notEqual(args[0], "auth", "gh auth status is not asked when GH_TOKEN is set");
+    return ghStub()(args);
+  };
+  assert.deepEqual(ciProblems(SHA, noAuth, undefined, { GH_TOKEN: "token" }), []);
+  assert.match(ciProblems(SHA, (args) => ghStub({ runsStatus: 1 })(args), undefined, { GH_TOKEN: "token" }).join("\n"), /could not be read: HTTP 404/);
+});
+
+test("a staged run builds and stages unsigned, needs no Central token, and keeps every refusal of a real run", () => {
+  const body = source.slice(source.indexOf("const main = () =>"));
+  // The real-run refusals and the strict step-0 guards are keyed on dryRun and checkOnly only, so --stage takes them.
+  assert.ok(body.includes("if (!dryRun && !checkOnly) {\n    const refused = realRunProblems("));
+  assert.ok(body.includes("if (commitProblems.length > 0 && !dryRun) {"));
+  assert.ok(body.includes("if (!dryRun && !stage) {\n      const settings ="), "the settings.xml check is skipped when staged");
+  assert.ok(body.includes('...(dryRun || stage ? ["-Dgpg.skip=true"] : []), "clean", "verify"'), "verify signs nothing when staged");
+  assert.ok(body.includes('const stagingFlags = stage ? ["-Dgpg.skip=true", "-DskipUpload=true"] : [];'), "the deploy stages and uploads nothing");
+  assert.ok(body.includes("signed: !dryRun && !checkOnly && !stage"));
+  assert.match(body, /\[dryRun, stage, publish, checkOnly\]\.filter\(Boolean\)\.length > 1/);
+});
+
+test("the staged README says the bundle is unsigned and who signs it, and names no tag push", () => {
+  const text = readmeText({
+    version: "1.2.3", tag: "v1.2.3", builtAt: "2026-01-01T00:00:00Z",
+    assets: { engineVersion: "1", sandboxAbi: "1", pdfAbi: "1", buildId: "x", source: "abc" }, dryRun: false, staged: true
+  });
+  assert.ok(text.includes("`central-bundle.zip`: the bundle staged for Central, unsigned"));
+  assert.ok(text.includes("the workflow's publish job signs"));
+  assert.doesNotMatch(text, /git push/);
 });
 
 test("the step-0 guards report every refusal together", () => {
