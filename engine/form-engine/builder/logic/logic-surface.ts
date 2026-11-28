@@ -699,7 +699,11 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
     }
   }
 
-  /** A clean copy takes the stored rule's text and run scope when they moved under it (an undo, an edit in Form). */
+  /**
+   * A clean copy takes the stored rule's text, run scope and kind when they moved under it (an
+   * undo, an edit in Form). The kind is compared on its own: a Show over `c` and a Hide over
+   * `not(c)` open with the same box text, and Apply wraps the box by the copy's kind.
+   */
   private followStored(working: Working, rule: LogicRule): void {
     if (working.route !== undefined) {
       this.followStoredRoute(working, working.route, rule);
@@ -713,7 +717,7 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
       working.baseline = this.serialize(working);
     }
     const text = openedTextOf(rule);
-    if (text === working.openedText && rule.run === working.openedRun) {
+    if (text === working.openedText && rule.run === working.openedRun && rule.kind === working.kind) {
       return;
     }
     working.text = text;
