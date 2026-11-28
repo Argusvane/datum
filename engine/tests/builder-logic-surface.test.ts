@@ -7,9 +7,9 @@ import type { ComponentNode } from "../form-engine/core/schema/types.js";
 
 /*
  * The Logic editor's working copy against the stored form: a clean copy follows what an undo
- * puts back, Try it answers as the form stores them, and the surface's own prompt goes with the
- * copy. The surface is driven through the real builder element, with the formula box left as its
- * textarea.
+ * puts back, Try it answers as the form stores them, the surface's own prompt goes with the copy,
+ * and a new rule says when Apply replaces the rule its field already has. The surface is driven
+ * through the real builder element, with the formula box left as its textarea.
  */
 
 defineDatumBuilderElement();
@@ -225,5 +225,36 @@ describe("the surface's own switch prompt", () => {
     surface.controller = ctrl;
     expect(inside(surface).querySelector("[data-logic-editor]")).toBeNull();
     expect(prompt(surface)).toBeNull();
+  });
+});
+
+describe("a new rule on a field that already has one", () => {
+  const problemText = (surface: LogicSurface): HTMLElement => inside(surface).querySelector<HTMLElement>("[data-logic-problem]")!;
+
+  it("opens the field's rule when nothing else was typed", async () => {
+    const { surface } = await mountInLogic();
+    newRule(surface, "hide");
+    chooseTarget(surface, "x");
+    expect(editorKind(surface)).toBe("show");
+    expect(box(surface).value).toBe('a = "1"');
+  });
+
+  it("says Apply replaces the field's rule when a formula was typed first", async () => {
+    const { surface, ctrl } = await mountInLogic();
+    newRule(surface, "hide");
+    type(surface, 'a = "9"');
+    chooseTarget(surface, "x");
+    expect(editorKind(surface)).toBe("hide");
+    const line = problemText(surface);
+    expect(line.hidden).toBe(false);
+    expect(line.dataset.severity).toBe("warning");
+    expect(line.textContent).toContain("Apply replaces the rule X already has: Show X when A is 1.");
+    // A field with no such rule has nothing to replace.
+    chooseTarget(surface, "y");
+    expect(problemText(surface).hidden).toBe(true);
+    chooseTarget(surface, "x");
+    // A warning, not a refusal: Apply still writes the author's rule over the old one.
+    apply(surface);
+    expect(node(ctrl, "x").rules?.visibleWhen).toBe('not(a = "9")');
   });
 });

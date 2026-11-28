@@ -1882,14 +1882,38 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
     return expression.ok ? undefined : expression.error;
   }
 
-  /** The line above Apply: the problem that holds Apply, else the first warning under the box. */
+  /**
+   * The line above Apply: the problem that holds Apply, else that Apply replaces the rule a new
+   * rule's field already has, else the first warning under the box.
+   */
   private summaryLine(): { severity: "error" | "warning"; text: string } | undefined {
     const problem = this.workingProblem();
     if (problem !== undefined) {
       return { severity: "error", text: problem };
     }
+    const replaced = this.replacedRule();
+    if (replaced !== undefined) {
+      return { severity: "warning", text: this.text("logic.problem.replaces", { field: replaced.target.label, rule: sentenceText(replaced.sentence) }) };
+    }
     const warning = this.currentState()?.problems.find((entry) => entry.kind === "unknownField");
     return warning ? { severity: "warning", text: warning.message } : undefined;
+  }
+
+  /**
+   * The stored rule a new rule's Apply writes over: its field's rule under the same key. Choosing
+   * such a field opens that rule instead while the copy has nothing else typed; once it has, the
+   * target is kept and the summary line says what Apply replaces.
+   */
+  private replacedRule(): LogicRule | undefined {
+    const working = this.working;
+    if (!working || working.route || working.ruleId !== undefined || working.componentId === undefined) {
+      return undefined;
+    }
+    return this.storedRuleOn(working.componentId, working.ruleKey);
+  }
+
+  private storedRuleOn(componentId: string, ruleKey: string): LogicRule | undefined {
+    return this.model?.rules.find((rule) => rule.id === `form:${componentId}:${ruleKey}`);
   }
 
   private workingLabel(): string {
@@ -2551,8 +2575,9 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
     }
     if (data.logicTarget !== undefined && type === "change") {
       const componentId = target.value || undefined;
-      // A target that already has this rule opens it rather than writing over it.
-      const existing = componentId ? this.model?.rules.find((rule) => rule.id === `form:${componentId}:${working.ruleKey}`) : undefined;
+      // A target that already has this rule opens it rather than writing over it; a copy with other
+      // changes keeps them and the target, and the summary line says Apply replaces that rule.
+      const existing = componentId ? this.storedRuleOn(componentId, working.ruleKey) : undefined;
       if (existing && !this.dirtyBeyondTarget()) {
         this.open(existing);
         return;
