@@ -4,7 +4,8 @@
  * Built as `dist/datum-pdf.js` (a module only — it is never part of the classic scripts, the
  * way the QuickJS sandbox never is). `<datum-form pdf>` and `<datum-form-builder pdf>`
  * `import()` it beside their own bundle on first use, or from the URL the attribute names; a
- * page may also import it itself and hand `createPdfSupport()`'s result to `pdfSupport`.
+ * page may also import it itself and hand `createPdfSupport()`'s result to `pdfSupport`. It is one
+ * file with no chunks, so `pdf-integrity` can fetch it, check it and import it from a `blob:` URL.
  *
  * The fonts (DejaVu Sans, regular and bold) are fetched from `fonts/` beside this file — the
  * build copies them there — so every script the pack covers prints with embedded glyphs. A
@@ -37,6 +38,7 @@ import {
   type FaceFontProviderOptions
 } from "@argusvane/datum-pdf-kernel";
 
+import type { IntegrityManifest } from "./integrity.js";
 import { pdfServiceDependencies } from "./pdf-render.js";
 import { themes, type PdfThemeInput } from "./themes.js";
 
@@ -69,6 +71,19 @@ export interface CreatePdfSupportOptions {
    * cannot be loaded is one `font.faceFailed` warning and the default font stands in.
    */
   bundleUrl?: FaceFontProviderOptions["baseUrl"] | undefined;
+  /**
+   * Where this module was served from, which the defaults of `fontsUrl` and `bundleUrl` are found
+   * beside. Default: the module's own URL. A page that imported the module from a `blob:` URL, after
+   * checking its bytes, names the URL it fetched it from (the elements do, for `pdf-integrity`).
+   */
+  baseUrl?: string | undefined;
+  /**
+   * The package's integrity manifest (`integrity.json`, which the page checked against a hash of its
+   * own). Set, each font file of the pack is held to the hash the manifest lists for `fonts/<file>`,
+   * and a font it does not list or whose bytes differ is refused. A theme's own faces (`bundleUrl`)
+   * belong to another package and are not checked.
+   */
+  manifest?: IntegrityManifest | undefined;
 }
 
 const DEFAULT_FONT_IDS = ["dejavu-sans", "dejavu-sans-bold"];
@@ -101,13 +116,20 @@ function nodeFileRead(): ((location: string) => Promise<Uint8Array>) | undefined
 export async function createPdfSupport(options: CreatePdfSupportOptions = {}): Promise<DatumPdfSupport> {
   const wanted = new Set(options.fontIds ?? DEFAULT_FONT_IDS);
   const entries = DEFAULT_FONT_PACK.filter((entry) => wanted.has(entry.id));
-  const read = nodeFileRead();
+  const base = options.baseUrl ?? import.meta.url;
+  const manifest = options.manifest;
+  let read = nodeFileRead();
+  if (manifest) {
+    // The check is a chunk of its own in the builder's bundle; this module's build carries it inline.
+    const { fetchListed } = await import("./integrity.js");
+    read = (location) => fetchListed(manifest, `fonts/${location.slice(location.lastIndexOf("/") + 1)}`, location);
+  }
   const resources = await loadFontPack({
-    baseUrl: options.fontsUrl ?? new URL(/* @vite-ignore */ "./fonts/", import.meta.url).href,
+    baseUrl: options.fontsUrl ?? new URL(/* @vite-ignore */ "./fonts/", base).href,
     entries,
     ...(read ? { read } : {})
   });
-  const bundleUrl = options.bundleUrl ?? new URL(/* @vite-ignore */ "./", import.meta.url).href;
+  const bundleUrl = options.bundleUrl ?? new URL(/* @vite-ignore */ "./", base).href;
   return {
     provider: createInProcessPdfProvider(),
     fonts: composeFontProviders(createFaceFontProvider({ baseUrl: bundleUrl }), createFontProvider(resources)),

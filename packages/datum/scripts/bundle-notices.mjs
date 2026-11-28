@@ -29,7 +29,7 @@ const dist = join(dirname(fileURLToPath(import.meta.url)), "..", "dist");
 const COVERS = {
   "datum-form": "It covers datum-form.js, datum-form.iife.js and the lazy chunks datum-form-*.js.",
   "datum-builder": "It covers datum-builder.js, datum-builder.iife.js and the lazy chunks datum-builder-*.js.",
-  "datum-pdf": "It covers datum-pdf.js and its chunks datum-pdf-*.js.",
+  "datum-pdf": "It covers datum-pdf.js, the PDF module.",
   "datum-pdf-pages": "It covers datum-pdf-pages.js, the pdf.js page imagery module.",
   "datum-wasm": "It covers datum-wasm.js, the QuickJS sandbox module.",
   "datum-engine": "It covers datum-engine.js, the runtime with no element.",

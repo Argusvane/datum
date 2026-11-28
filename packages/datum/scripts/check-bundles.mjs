@@ -147,7 +147,14 @@ const BASE_BUDGETS_KB = {
   // the row-count check, the formula bounds, the form-test parser, judge and kernel driver for the
   // `test` op, the bind-time ABI probe, the per-request size term, the prepared-definition cache,
   // the host context read, the bounded journey walks and the freeze's guard on the global object.
-  "datum-wasm.js": 988
+  "datum-wasm.js": 988,
+  // The two PDF modules are one file each (vite.config.ts), so pdf-integrity and pdf-pages-integrity
+  // can import the bytes they checked from a blob: URL. Measured with the integrity check inlined
+  // (src/integrity.ts: the font, worker and data checks against the manifest): datum-pdf.js
+  // 1,610,832 B (1573.1 KB), 8,120 B more than as an entry with a chunk beside it; datum-pdf-pages.js
+  // 511,671 B (499.7 KB), 4,511 B more. Each plus 3 KB, rounded up.
+  "datum-pdf.js": 1577,
+  "datum-pdf-pages.js": 503
 };
 const BUDGETS_KB = effectiveBudgets(BASE_BUDGETS_KB, guards, problems);
 // The validation kernel is the sandbox's: <datum-form> never runs it in-process,
@@ -164,8 +171,11 @@ for (const [name, budget] of Object.entries(BUDGETS_KB)) {
 // than a developer machine's. A gate is raised only deliberately, never to fit a measurement. Both
 // were raised by 512 B for the origin rule's own code in the elements: an attribute's URL resolved
 // once and checked again before its module is imported, and the wasm-integrity attribute (its
-// check is a lazy chunk).
-const GZIP_BASE = { "datum-form.js": 203_980, "datum-builder.js": 517_279 };
+// check is a lazy chunk). The form's was raised by 512 B again for pdf-integrity, pdf-manifest and
+// pdf-manifest-integrity and the loader's branch for them (measured 404 B more; the checks are the
+// lazy integrity chunk). The builder's took its five integrity attributes with no raise: its pair
+// measured 289 B smaller gzipped, the entry and its core chunk having traded modules.
+const GZIP_BASE = { "datum-form.js": 204_492, "datum-builder.js": 517_279 };
 const GZIP_ALLOWANCE = 4 * 1024;
 const pairGzip = (name) => [name, ...coreOf(name.replace(/\.js$/, ""))].reduce((total, part) => total + gzipSync(readFileSync(join(dist, part)), { level: 9 }).length, 0);
 for (const [name, base] of Object.entries(GZIP_BASE)) {
@@ -389,6 +399,20 @@ expect(pdfPages.includes("createPdfPageRasterizer"), "datum-pdf-pages.js should 
 expect(!pdfPages.includes(KERNEL), "datum-pdf-pages.js carries the PDF executor; it only draws pages");
 expect(existsSync(join(dist, "pdfjs", "pdf.worker.min.mjs")), "dist/pdfjs/pdf.worker.min.mjs is missing (copy-assets)");
 expect(existsSync(join(dist, "pdfjs", "standard_fonts")), "dist/pdfjs/standard_fonts/ is missing (copy-assets)");
+// The two PDF modules are one file each: pdf-integrity and pdf-pages-integrity import the bytes they
+// checked from a blob: URL, which has no folder for a relative import, so neither may import a chunk
+// (statically or lazily), and neither has chunks of its own. Each carries the manifest check its
+// files are held to.
+const RELATIVE_IMPORT = /(?:\bfrom\s*|\bimport\s*\(?\s*)["'`]\.\.?\//;
+const INTEGRITY_CHECK = "the integrity manifest lists no"; // src/integrity.ts, fetchListed
+for (const [name, text] of [["datum-pdf.js", pdf], ["datum-pdf-pages.js", pdfPages]]) {
+  expect(!RELATIVE_IMPORT.test(text), `${name} imports a file by a relative URL; it must be one file, so a page can import it from a blob: URL of the bytes it checked`);
+  expect(text.includes(INTEGRITY_CHECK), `${name} should carry the integrity manifest check (src/integrity.ts) inline`);
+}
+expect(chunksOf("datum-pdf").length === 0 && chunksOf("datum-pdf-pages").length === 0, `the PDF modules have chunks (${[...chunksOf("datum-pdf"), ...chunksOf("datum-pdf-pages")].join(", ")}); each must be one file`);
+// The checks are a lazy chunk of the elements' bundles: a page that pins nothing never loads them.
+expect(!form.includes(INTEGRITY_CHECK), "datum-form.js (with its core chunk) carries the integrity checks; they belong in the lazy integrity chunk");
+expect(!builder.includes(INTEGRITY_CHECK), "datum-builder.js (with its core chunk) carries the integrity checks; they belong in the lazy integrity chunk");
 expect(!read("datum-pdf-program.js").includes(PDFJS), "datum-pdf-program.js carries pdf.js; a server never draws pages");
 
 // The sandbox lives in datum-wasm.js alone: not in a bundle, not in a chunk, not in a classic script.

@@ -221,6 +221,30 @@
         "notes": "auto fetches datum-pdf.js beside the bundle on the first PDF. A loaded module is the pdfSupport property; a template resolver is the pdfTemplates property. Held to the page's origin: a URL on another origin is reported as datum-error and the attribute is treated as absent, unless allow-origins lists that origin; the property may name any."
       },
       {
+        "attribute": "pdf-integrity",
+        "prop": "pdfIntegrity",
+        "values": "sha256-, sha384- or sha512- digests, space-separated",
+        "default": "unset",
+        "category": "O",
+        "notes": "Holds the PDF module pdf names to a hash, as script integrity does: the module is fetched, its bytes checked, and those bytes imported from a blob: URL (list blob: in script-src under a Content Security Policy), on the first load and on every retry. A module that does not match is never run and the PDF fails saying why. integrity.json in the package, beside dist, lists every file's sha384."
+      },
+      {
+        "attribute": "pdf-manifest",
+        "prop": "pdfManifest",
+        "values": "auto | URL of integrity.json",
+        "default": "auto: ../integrity.json from the PDF module (the npm package's layout, as the CDNs serve it)",
+        "category": "O",
+        "notes": "Where the package's integrity manifest is; read only with pdf-manifest-integrity. Resolved against the page when set. Not held to the page's origin: the file is held to a hash."
+      },
+      {
+        "attribute": "pdf-manifest-integrity",
+        "prop": "pdfManifestIntegrity",
+        "values": "sha256-, sha384- or sha512- digests, space-separated",
+        "default": "unset (the fonts are fetched unchecked)",
+        "category": "O",
+        "notes": "Holds integrity.json to a hash, then each font file the PDF module fetches (fonts/) to the hash the manifest lists for it; a font it does not list or whose bytes differ is refused and the PDF fails. A PDF theme's own faces belong to another package and are not checked."
+      },
+      {
         "attribute": "pdf-theme",
         "prop": "pdfTheme",
         "values": "PDF theme id (default, or a registered id)",
@@ -487,6 +511,38 @@
         "notes": "Where the page imagery for template areas loads from; off draws on blank sheets. A template resolver is the pdfTemplates property. Held to the page's origin: a URL on another origin is reported as datum-error and the attribute is treated as absent (auto), unless allow-origins lists that origin; the property may name any."
       },
       {
+        "attribute": "pdf-integrity",
+        "prop": "pdfIntegrity",
+        "values": "sha256-, sha384- or sha512- digests, space-separated",
+        "default": "unset",
+        "category": "O",
+        "notes": "Holds the PDF executor to a hash: the module pdf names, or for auto datum-pdf.js beside the bundle in place of the bundle's own chunk, is fetched, its bytes checked, and those bytes imported from a blob: URL (list blob: in script-src under a Content Security Policy), on every load and retry. A module that does not match is never run, and the preview or download fails saying why."
+      },
+      {
+        "attribute": "pdf-pages-integrity",
+        "prop": "pdfPagesIntegrity",
+        "values": "sha256-, sha384- or sha512- digests, space-separated",
+        "default": "unset",
+        "category": "O",
+        "notes": "Holds the page imagery to a hash: the module pdf-pages names, or datum-pdf-pages.js beside the PDF module, is fetched, checked and imported from a blob: URL. One that does not match is never run and the area editor draws blank sheets, saying why."
+      },
+      {
+        "attribute": "pdf-manifest",
+        "prop": "pdfManifest",
+        "values": "auto | URL of integrity.json",
+        "default": "auto: ../integrity.json from the PDF module (the npm package's layout, as the CDNs serve it)",
+        "category": "O",
+        "notes": "Where the package's integrity manifest is; read only with pdf-manifest-integrity. Resolved against the page when set. Not held to the page's origin: the file is held to a hash."
+      },
+      {
+        "attribute": "pdf-manifest-integrity",
+        "prop": "pdfManifestIntegrity",
+        "values": "sha256-, sha384- or sha512- digests, space-separated",
+        "default": "unset (the files are fetched unchecked)",
+        "category": "O",
+        "notes": "Holds integrity.json to a hash, then every file the PDF modules fetch to the hash it lists: the fonts, the pdf.js worker (started from a blob: URL, so list blob: in worker-src), its standard fonts, CMaps and wasm image decoders. A file it does not list or whose bytes differ is refused. pdf.js's ICC profiles and its decoders' JavaScript fallbacks have no hook and are not loaded in this mode."
+      },
+      {
         "attribute": "journeys",
         "prop": "journeys",
         "values": "auto | off",
@@ -653,6 +709,14 @@
         "default": "auto",
         "category": "J",
         "notes": "The sandbox Try it validates with; nothing is fetched until the author turns the validator on in Try it. A serverChecks property wins over it. Held to the page's origin: a URL on another origin is reported as datum-error and the attribute is treated as absent (auto), unless allow-origins lists that origin; the property may name any."
+      },
+      {
+        "attribute": "wasm-integrity",
+        "prop": "wasmIntegrity",
+        "values": "sha256-, sha384- or sha512- digests, space-separated",
+        "default": "unset",
+        "category": "O",
+        "notes": "Holds the sandbox module wasm names to a hash, as the form's wasm-integrity does: fetched, checked, and imported from a blob: URL (list blob: in script-src under a Content Security Policy). A module that does not match is never run, and Try it says the validator is unavailable."
       },
       {
         "attribute": "allow-origins",

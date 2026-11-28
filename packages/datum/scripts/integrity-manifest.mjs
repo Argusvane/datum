@@ -3,8 +3,10 @@
 // The npm tarball carries it (package.json "files") and each release attaches it as
 // `datum-integrity-<version>.json`; the docs (site/docs/files.md) show how a page uses it:
 // `<script integrity crossorigin>` and `<link integrity crossorigin>` for the bundles and the
-// stylesheet, an import map's `integrity` for the chunks the bundles import, and `wasm-integrity` for
-// the sandbox module. It sits outside `dist` because the hosts copy `dist` file by file into their
+// stylesheet, an import map's `integrity` for the chunks the bundles import, `wasm-integrity`,
+// `pdf-integrity` and `pdf-pages-integrity` for the modules the elements import themselves, and
+// `pdf-manifest-integrity` for this file, whose entries the elements then hold the PDF fonts and the
+// pdf.js files to. It sits outside `dist` because the hosts copy `dist` file by file into their
 // own distributions, and this file describes the folder rather than belonging to it.
 //
 //   { "algorithm": "sha384", "files": { "datum-form.js": "sha384-...", "fonts/...": "sha384-..." } }

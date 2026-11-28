@@ -26,6 +26,7 @@ Content-Security-Policy:
 |---|---|---|
 | In-page sandbox (`wasm="auto"`) | `script-src 'wasm-unsafe-eval'` | The sandbox is compiled from WebAssembly bytes. Without it the form draws, and raises `datum-error` that the validation sandbox could not be loaded |
 | PDF kernel (`pdf="auto"`) | `connect-src` for the font and image addresses | Fonts under `fonts/` and the images a PDF embeds are fetched. Without it `renderPdf()` rejects with "Failed to fetch" |
+| A module or the manifest held to a hash (`wasm-integrity`, `pdf-integrity`, `pdf-pages-integrity`, `pdf-manifest-integrity`) | `script-src blob:`, and `worker-src blob:` for the builder's page images | See [Subresource integrity](#subresource-integrity) |
 | A definition or module on another origin | `connect-src` or `script-src` for that origin, and `allow-origins` | See below |
 | A design-system binding | `connect-src`, `font-src`, `img-src`, `script-src` | See below |
 
@@ -77,7 +78,28 @@ Integrity is a list of `sha256-`, `sha384-` or `sha512-` digests, and anything e
 
 A sheet that a listed stylesheet `@import`s is fetched without an integrity check, because only the listed file carries one. Self-host it and list it yourself if that matters.
 
-Datum's own files are pinned as [Pinning the files](/files#pinning-the-files) shows: `integrity` on the tags, an import map for the chunks, and `wasm-integrity` for the sandbox module. With `wasm-integrity` the form fetches the module and imports the bytes it checked from a `blob:` URL, so the policy needs `blob:` in `script-src` and the module's origin in `connect-src`.
+Datum's own files are pinned as [Pinning the files](/files#pinning-the-files) shows: `integrity` on the tags, an import map for the chunks, and attributes for the modules the elements import themselves. Each attribute adds to the policy:
+
+| Attribute | Directive | Why |
+|---|---|---|
+| `wasm-integrity` (form and builder) | `script-src blob:`, `connect-src` for the module's origin | The element fetches the sandbox module and imports the bytes it checked from a `blob:` URL |
+| `pdf-integrity` (form and builder), `pdf-pages-integrity` (builder) | `script-src blob:`, `connect-src` for the module's origin | The same, for `datum-pdf.js` and `datum-pdf-pages.js` |
+| `pdf-manifest-integrity` | `connect-src` for the manifest's and the files' origin; on the builder, `worker-src blob:` | The manifest, the fonts and the viewer's files are fetched and checked. The viewer's worker is started from a `blob:` URL of the bytes checked |
+
+A builder drawing a page image and a form rendering a PDF, each pinning every file above and served from the page's own origin, were checked in Chromium under this policy (`npm run integrity:browser` in `packages/datum`):
+
+```
+Content-Security-Policy:
+  default-src 'none';
+  script-src 'self' blob: 'wasm-unsafe-eval';
+  worker-src blob:;
+  connect-src 'self';
+  style-src 'self';
+  img-src 'self' blob: data:;
+  font-src 'self' blob: data:
+```
+
+`'wasm-unsafe-eval'` is for the viewer's image decoders, as without pinning. Without `blob:` in `worker-src`, opening a PDF in the area editor fails, saying so, and the editor draws blank sheets. Without pinning, the viewer starts its worker from its URL: `worker-src` then names the folder's origin, and a folder on another origin is started through a `blob:` wrapper the viewer writes, so `blob:` as well.
 
 ## `allow-origins`
 

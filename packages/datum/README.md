@@ -35,10 +35,11 @@ Pin what a CDN serves to its hash. `integrity.json` in the package, beside `dist
 ```html
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@argusvane/datum@0.1.0/dist/datum-form.css" integrity="sha384-…" crossorigin="anonymous">
 <script type="module" src="https://cdn.jsdelivr.net/npm/@argusvane/datum@0.1.0/dist/datum-form.js" integrity="sha384-…" crossorigin="anonymous"></script>
-<datum-form wasm="auto" wasm-integrity="sha384-…"></datum-form>
+<datum-form wasm="auto" wasm-integrity="sha384-…"
+  pdf="auto" pdf-integrity="sha384-…" pdf-manifest-integrity="sha384-…"></datum-form>
 ```
 
-The chunks the bundle imports are pinned with an import map's `integrity`, and `wasm-integrity` holds the sandbox module to its hash (the page's policy then needs `blob:` in `script-src`). [Pinning the files](https://datum.argusvane.com/docs/files#pinning-the-files) has every file. For production, host the folder yourself.
+The chunks the bundle imports are pinned with an import map's `integrity`. The modules the elements import themselves are held to their hash by attributes: `wasm-integrity` for the sandbox (on the form and the builder), `pdf-integrity` for `datum-pdf.js`, and on the builder `pdf-pages-integrity` for `datum-pdf-pages.js`; the page's policy then needs `blob:` in `script-src`. `pdf-manifest-integrity` holds `integrity.json` itself to a hash, and every file the PDF modules fetch (the fonts, the PDF viewer's worker and its data) to the manifest; the builder's viewer worker then needs `blob:` in `worker-src`. A few files cannot be pinned (the viewer's colour profiles and its decoders' JavaScript fallbacks, which are then not loaded, and a PDF theme's own faces); [Pinning the files](https://datum.argusvane.com/docs/files#pinning-the-files) has every file and what cannot be pinned. For production, host the folder yourself.
 
 ## What is in `dist`
 

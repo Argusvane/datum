@@ -75,7 +75,8 @@ write a formula source per radio group. The first is worse the more forms share 
    as `datum-pdf-pages.js` — a module only, never inside the classic scripts or the renderer,
    which `check-bundles` asserts by sentinel — reading its worker, standard fonts, CMaps, wasm
    decoders and ICC profiles from `pdfjs/` beside itself, every path overridable or switchable
-   off, nothing from a CDN. The builder fetches it the way it fetches the executor, and a failure
+   off, nothing from a CDN. Given the package's integrity manifest, it fetches the worker and the
+   data itself and holds each to the manifest (ADR 0182). The builder fetches it the way it fetches the executor, and a failure
    leaves `pages` out; a host may substitute its own rasteriser, pre-rendered page images from a
    server say. `pdfjs-dist` is a dependency of `packages/datum`, never of the engine.
 

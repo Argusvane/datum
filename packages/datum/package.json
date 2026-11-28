@@ -89,6 +89,7 @@
     "demo": "node ./scripts/serve-demo.mjs",
     "visual": "node ./scripts/visual-browser.mjs",
     "builder:browser": "node ./scripts/builder-browser.mjs",
+    "integrity:browser": "node ./scripts/integrity-browser.mjs",
     "agent:eval": "node ./scripts/agent-eval.mjs",
     "kit:check": "node ./binding-kit/check.mjs",
     "kit:check:datum": "node ./binding-kit/check.mjs --binding datum",

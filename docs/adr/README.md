@@ -82,3 +82,4 @@ One file per decision. Each explains how the thing works and, where there was a 
 | 0179 | [Builder interaction patterns: toolbars, confirmations, dialogs and leaving](0179-builder-interaction-patterns.md) | Accepted |
 | 0180 | [Undo of catalog actions](0180-undo-of-catalog-actions.md) | Accepted |
 | 0181 | [A fresh sandbox for every server call](0181-a-fresh-sandbox-for-every-server-call.md) | Accepted |
+| 0182 | [Integrity for the PDF modules and their files](0182-integrity-for-the-pdf-modules-and-their-files.md) | Accepted |

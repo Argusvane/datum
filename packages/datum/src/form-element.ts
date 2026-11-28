@@ -101,7 +101,7 @@ import {
   toFormDefinition
 } from "./support.js";
 import { themes as sharedThemes, type DatumThemeRegistry, type PdfThemeInput } from "./themes.js";
-import { loadPdfSupport } from "./pdf-loader.js";
+import { loadPdfSupport, type PdfModuleIntegrity } from "./pdf-loader.js";
 import { pdfServiceDependencies } from "./pdf-render.js";
 import { plugins as sharedPlugins, withPluginDataSources, type DatumPluginRegistry } from "./plugins.js";
 // Journey diagnostics come in a lazy chunk, loaded by `debug` alone.
@@ -952,6 +952,9 @@ export class DatumFormElement extends ElementBase {
       "features",
       "agent-access",
       "pdf",
+      "pdf-integrity",
+      "pdf-manifest",
+      "pdf-manifest-integrity",
       "pdf-theme",
       "pdf-unknown-components",
       "formula-errors",
@@ -976,6 +979,8 @@ export class DatumFormElement extends ElementBase {
   private readonly root: ShadowRoot;
   private rendererEl: DatumFormRendererElement | undefined;
   private pdfSpec: string | undefined;
+  /** `pdf-integrity`, `pdf-manifest` and `pdf-manifest-integrity`, trimmed; blank is unset. */
+  private pdfPin: PdfModuleIntegrity = {};
   private pdfSupportValue: DatumPdfSupport | undefined;
   private pdfThemeValue: PdfThemeInput = undefined;
   private pdfLoad: Promise<DatumPdfSupport> | undefined;
@@ -1300,7 +1305,7 @@ export class DatumFormElement extends ElementBase {
       }
       // A URL is resolved once, here: the origin check judges the absolute URL, and the element
       // stores and later loads (or posts to) that same URL, whatever the page's base becomes.
-      if (value !== null && (name === "wasm" || name === "pdf")) {
+      if (value !== null && (name === "wasm" || name === "pdf" || name === "pdf-manifest")) {
         value = absoluteModuleAttribute(value);
       } else if (value !== null && name === "validate-url") {
         const named = namedValue(value);
@@ -1430,6 +1435,15 @@ export class DatumFormElement extends ElementBase {
           break;
         case "pdf":
           this.pdf = value ?? undefined;
+          break;
+        case "pdf-integrity":
+          this.pdfIntegrity = value ?? undefined;
+          break;
+        case "pdf-manifest":
+          this.pdfManifest = value ?? undefined;
+          break;
+        case "pdf-manifest-integrity":
+          this.pdfManifestIntegrity = value ?? undefined;
           break;
         case "wasm":
           this.wasm = value ?? undefined;
@@ -1668,6 +1682,53 @@ export class DatumFormElement extends ElementBase {
   public set pdf(value: string | undefined) {
     this.pdfSpec = value;
     this.pdfLoad = undefined;
+  }
+
+  private setPdfPin(key: keyof PdfModuleIntegrity, value: string | undefined): void {
+    this.pdfPin = { ...this.pdfPin, [key]: typeof value === "string" && value.trim() !== "" ? value.trim() : undefined };
+    this.pdfLoad = undefined;
+  }
+
+  /**
+   * The Subresource Integrity the PDF module `pdf` names is held to (`sha384-...`, as `<script
+   * integrity>` takes it): the `pdf-integrity` attribute. Set, the element fetches the module,
+   * checks its bytes and imports exactly those bytes from a `blob:` URL (a Content Security Policy
+   * that limits scripts lists `blob:` in `script-src`), on the first load and on every retry; a
+   * module that does not match is never run, and the PDF fails saying why. Unset, the module is
+   * imported by its URL.
+   */
+  public get pdfIntegrity(): string | undefined {
+    return this.pdfPin.integrity;
+  }
+
+  public set pdfIntegrity(value: string | undefined) {
+    this.setPdfPin("integrity", value);
+  }
+
+  /**
+   * Where the package's `integrity.json` is, read only with `pdf-manifest-integrity`: absent or
+   * `"auto"`, `../integrity.json` from the PDF module (the npm package's layout); else a URL. The
+   * `pdf-manifest` attribute.
+   */
+  public get pdfManifest(): string | undefined {
+    return this.pdfPin.manifest;
+  }
+
+  public set pdfManifest(value: string | undefined) {
+    this.setPdfPin("manifest", value);
+  }
+
+  /**
+   * The Subresource Integrity of the package's `integrity.json`: the `pdf-manifest-integrity`
+   * attribute. Set, each font file the PDF module fetches is held to the hash the manifest lists
+   * for it, and one it does not list is refused.
+   */
+  public get pdfManifestIntegrity(): string | undefined {
+    return this.pdfPin.manifestIntegrity;
+  }
+
+  public set pdfManifestIntegrity(value: string | undefined) {
+    this.setPdfPin("manifestIntegrity", value);
   }
 
   /** The PDF provider and fonts in use, for a page that loaded the module itself. */
@@ -4146,7 +4207,7 @@ export class DatumFormElement extends ElementBase {
     if (refused !== undefined) {
       throw new Error(refused);
     }
-    const load = (this.pdfLoad ??= loadPdfSupport(this.pdfSpec));
+    const load = (this.pdfLoad ??= loadPdfSupport(this.pdfSpec, this.pdfPin));
     let support: DatumPdfSupport;
     try {
       support = await load;

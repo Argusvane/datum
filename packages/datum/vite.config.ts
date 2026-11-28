@@ -162,7 +162,10 @@ export default defineConfig(({ command, mode }) => {
     // The sandbox module is one file: the QuickJS host reaches its binary through a
     // dynamic import, which would otherwise become chunks of its own beside it. Elsewhere the
     // module build gets one `core` chunk beside the entry (scripts/vite-bundle.ts, coreChunk).
-    // The engine and WebAuthn modules are one file too: a server or a worker copies it alone.
-    ...(mode === "wasm" || mode === "engine" || mode === "webauthn" ? { codeSplitting: false as const } : moduleBuild ? { codeSplitting: coreChunk(core) } : {})
+    // The engine and WebAuthn modules are one file too: a server or a worker copies it alone. So are
+    // the two PDF modules, so `pdf-integrity` and `pdf-pages-integrity` can import them from a
+    // `blob:` URL of the bytes checked, where a relative import of a chunk has nothing to resolve
+    // against (src/integrity.ts); their dynamic imports (the integrity check, a Node stub) are inlined.
+    ...(mode === "wasm" || mode === "engine" || mode === "webauthn" || mode === "pdf" || mode === "pdf-pages" ? { codeSplitting: false as const } : moduleBuild ? { codeSplitting: coreChunk(core) } : {})
   });
 });

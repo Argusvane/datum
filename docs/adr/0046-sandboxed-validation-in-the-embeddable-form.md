@@ -36,6 +36,7 @@ the renderer already displays, to the same verdict wherever the program runs.
    Subresource Integrity hash: the element fetches it, checks its bytes, and imports exactly those
    bytes from a `blob:` URL, which the module can be imported from because it is one file. A module
    that does not match is never run, and a submit fails closed as for any sandbox that cannot load.
+   The same check holds the PDF modules and their files (ADR 0182).
    The package's `integrity.json`, beside `dist`, lists the sha384 of every file in `dist` a page can load.
 3. **The runtime is built with a deferring host, and never rebuilt for the sandbox.** Whenever the
    element has a way to a sandbox (`wasm` set, or `wasmValidationHost` assigned) the runtime gets a
@@ -87,6 +88,8 @@ the renderer already displays, to the same verdict wherever the program runs.
   module is a single file to deploy, where the PDF module's fonts sit beside it.
 - The runtime's `wasmValidationHost` dependency is a class, so the deferring host is a subclass with
   `run` and `dispose` overridden; the engine needed no interface for it.
-- `<datum-form-builder>` is untouched: the canvas previews, it does not submit.
+- `<datum-form-builder>` builds no deferring host: the canvas previews, it does not submit. Its Try
+  it loads the sandbox `wasm` names when the author turns the validator on, held to `wasm-integrity`
+  as the form's is; a module that does not match is reported unavailable there.
 - A sandbox the element loaded is released when superseded (a new plugin list, a new spec), not
   when the element leaves the page: the runtime survives that, and so does its sandbox.

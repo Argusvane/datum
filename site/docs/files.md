@@ -98,7 +98,7 @@ Any CDN that serves npm packages serves the folder, at the package's version. Wi
 `integrity.json`, beside the folder in the npm package (`node_modules/@argusvane/datum/integrity.json`, or `@argusvane/datum@0.1.0/integrity.json` on a CDN), lists the sha384 Subresource Integrity of every file in the folder a page can load, by its path in the folder. Each [GitHub release](https://github.com/Argusvane/datum/releases) attaches the same list as `datum-integrity-<version>.json`. Hosting the folder yourself is the stronger choice for production; on a CDN, pin each file the page loads.
 
 ```json
-{ "algorithm": "sha384", "files": { "datum-form.css": "sha384-…", "datum-form.js": "sha384-…", "datum-form-core-<hash>.js": "sha384-…", "datum-wasm.js": "sha384-…" } }
+{ "algorithm": "sha384", "files": { "datum-form.css": "sha384-…", "datum-form.js": "sha384-…", "datum-form-core-<hash>.js": "sha384-…", "datum-pdf.js": "sha384-…", "datum-wasm.js": "sha384-…", "fonts/DejaVuSans.ttf": "sha384-…" } }
 ```
 
 - **The entry files.** Give the bundle and the stylesheet their hash and `crossorigin`:
@@ -129,7 +129,29 @@ Any CDN that serves npm packages serves the folder, at the package's version. Wi
   <datum-form wasm="auto" wasm-integrity="sha384-…"></datum-form>
   ```
 
-- **The PDF module and the builder's page images.** `datum-pdf.js` and `datum-pdf-pages.js` are imported by URL: an import map's `integrity` pins the first load, but after a failed load the element asks again with `?retry=n`, a URL the map does not list, and the PDF viewer's worker and data files cannot carry a hash. Serve these from your own origin.
+  `<datum-form-builder>` takes the same `wasm-integrity` for the sandbox its Try it panel runs.
+- **The PDF modules.** `pdf-integrity` holds `datum-pdf.js` to a hash, and on the builder `pdf-pages-integrity` holds `datum-pdf-pages.js`. Each module is one file, so the element fetches it, checks its bytes and imports exactly those bytes, as it does the sandbox module, on the first load and on every retry. A module that does not match is never run: the PDF fails, saying which digest it found. On the builder, `pdf-integrity` with `pdf="auto"` loads `datum-pdf.js` beside the bundle in place of the bundle's own PDF chunk, and `pdf-pages-integrity` loads `datum-pdf-pages.js` beside the PDF module.
+- **The files the PDF modules fetch.** `pdf-manifest-integrity` holds `integrity.json` itself to a hash, and the element then holds every file the PDF modules fetch to the hash the manifest lists for it: the fonts in `fonts/`, the PDF viewer's worker, and its standard fonts, CMaps and image decoders in `pdfjs/`. A file the manifest does not list, or whose bytes differ, is refused. `pdf-manifest` says where the manifest is; by default it is `../integrity.json` from the PDF module, the npm package's layout that the CDNs serve. On a server of your own, put the release's `datum-integrity-<version>.json` somewhere and name it:
+
+  ```html
+  <datum-form-builder
+    pdf-integrity="sha384-…" pdf-pages-integrity="sha384-…"
+    pdf-manifest-integrity="sha384-…"></datum-form-builder>
+
+  <datum-form pdf="auto" pdf-integrity="sha384-…"
+    pdf-manifest="/vendor/datum-integrity-0.1.0.json" pdf-manifest-integrity="sha384-…"></datum-form>
+  ```
+
+  Take the hash of the manifest from the file you serve: `sha384-` followed by the output of `openssl dgst -sha384 -binary integrity.json | openssl base64 -A`. With the manifest pinned, the viewer's worker runs from the bytes checked, and the viewer gets its data from the page instead of fetching it. The worker then needs `blob:` in `worker-src`. See [Security headers](/security-headers#subresource-integrity).
+
+Some files still cannot be pinned, and are either not loaded or loaded unchecked:
+
+- **The viewer's colour profiles.** `pdfjs/iccs/` and its colour engine `pdfjs/wasm/qcms_bg.wasm` are fetched by the viewer itself, with no hook to check them. With the manifest pinned they are not loaded, and page images are drawn without colour profiles. Without it they are fetched unchecked.
+- **The image decoders' JavaScript fallbacks.** `pdfjs/wasm/jbig2_nowasm_fallback.js` and `pdfjs/wasm/openjpeg_nowasm_fallback.js` are what the viewer imports when WebAssembly cannot run. With the manifest pinned they are never imported, so a JBIG2 or JPEG 2000 image is left out of a page image when the policy has no `'wasm-unsafe-eval'`.
+- **A PDF theme's own faces.** The font files a design system's PDF theme names come from that package, not this folder, and are fetched unchecked. Serve them from your own origin.
+- **What a document brings.** The images a PDF embeds by URL and the template files `pdfTemplates` returns are your page's content, fetched as your code fetches them.
+- **The builder's own faces.** `load-fonts` links `builder-fonts/builder-fonts.css`, and the browser loads it and its font files with no hash. Serve them from your own origin, or leave `load-fonts` off.
+- **The builder's own PDF chunks** (`pdf="auto"` without `pdf-integrity`) are pinned by the import map, as the other chunks are.
 
 ## Classic scripts
 

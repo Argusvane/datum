@@ -80,6 +80,7 @@ import {
 } from "@argusvane/datum-engine";
 
 import type { DatumFormDataSources } from "./form-element.js";
+import type { IntegrityManifest } from "./integrity.js";
 import { defaultPdfModuleUrl, loadPdfPageRasterizer, loadPdfSupport, resolvePdfModuleUrl, resolvePdfPagesModuleUrl } from "./pdf-loader.js";
 import { pluginComponents, plugins as sharedPlugins, withPluginDataSources, type DatumPluginRegistry } from "./plugins.js";
 import { createFormRuntime } from "./runtime-factory.js";
@@ -518,6 +519,10 @@ export class DatumFormBuilderElement extends ElementBase {
       "component-types",
       "pdf",
       "pdf-pages",
+      "pdf-integrity",
+      "pdf-pages-integrity",
+      "pdf-manifest",
+      "pdf-manifest-integrity",
       "journeys",
       "values",
       "translations",
@@ -539,6 +544,7 @@ export class DatumFormBuilderElement extends ElementBase {
       "scheme",
       "no-scheme-toggle",
       "wasm",
+      "wasm-integrity",
       "allow-origins",
       "leave-guard"
     ];
@@ -608,6 +614,8 @@ export class DatumFormBuilderElement extends ElementBase {
 
   private pdfValue: string | undefined;
   private pdfPagesValue: string | undefined;
+  /** `pdf-integrity`, `pdf-pages-integrity`, `pdf-manifest` and `pdf-manifest-integrity`, trimmed; blank is unset. */
+  private pdfPin: { pdf?: string | undefined; pages?: string | undefined; manifest?: string | undefined; manifestIntegrity?: string | undefined } = {};
   private pdfSupportValue: PdfBuilderModeSupport | undefined;
   private pdfThemeValue: PdfThemeInput = undefined;
   private pdfTemplatesValue: PdfTemplateResolver | undefined;
@@ -718,8 +726,9 @@ export class DatumFormBuilderElement extends ElementBase {
   private fileActionsOverride: DatumFormBuilderFileActions | undefined;
   private serverChecksValue: TryItServerChecks | undefined;
   private wasmValue: string | undefined;
-  /** Try it's WebAssembly validator from `wasm`, built once per module URL and plugin set (see {@link wasmChecks}). */
-  private wasmChecksMemo: { spec: string; plugins: readonly WasmPluginModule[]; source: TryItServerChecksSource } | undefined;
+  private wasmIntegrityValue: string | undefined;
+  /** Try it's WebAssembly validator from `wasm`, built once per module URL, integrity and plugin set (see {@link wasmChecks}). */
+  private wasmChecksMemo: { spec: string; integrity: string | undefined; plugins: readonly WasmPluginModule[]; source: TryItServerChecksSource } | undefined;
   /** The file actions `file-actions` names; `undefined` shows all three. */
   private fileActionsNamed: ReadonlySet<FileActionName> | undefined;
   /**
@@ -1050,7 +1059,7 @@ export class DatumFormBuilderElement extends ElementBase {
       }
       // A module URL is resolved once, here: the origin check judges the absolute URL, and the
       // element stores and later loads that same URL, whatever the page's base becomes.
-      if (value !== null && (name === "wasm" || name === "pdf" || name === "pdf-pages")) {
+      if (value !== null && (name === "wasm" || name === "pdf" || name === "pdf-pages" || name === "pdf-manifest")) {
         value = absoluteModuleAttribute(value);
       }
       if (value !== null && name in ORIGIN_BOUND_ATTRIBUTES && !this.originAllows(name, value)) {
@@ -1109,6 +1118,21 @@ export class DatumFormBuilderElement extends ElementBase {
           break;
         case "pdf-pages":
           this.pdfPages = value ?? undefined;
+          break;
+        case "pdf-integrity":
+          this.pdfIntegrity = value ?? undefined;
+          break;
+        case "pdf-pages-integrity":
+          this.pdfPagesIntegrity = value ?? undefined;
+          break;
+        case "pdf-manifest":
+          this.pdfManifest = value ?? undefined;
+          break;
+        case "pdf-manifest-integrity":
+          this.pdfManifestIntegrity = value ?? undefined;
+          break;
+        case "wasm-integrity":
+          this.wasmIntegrity = value ?? undefined;
           break;
         case "journeys":
           this.journeys = value ?? undefined;
@@ -1813,6 +1837,65 @@ export class DatumFormBuilderElement extends ElementBase {
   public set pdfPages(value: string | undefined) {
     this.pdfPagesValue = value;
     this.request("pdf");
+  }
+
+  private setPdfPin(key: "pdf" | "pages" | "manifest" | "manifestIntegrity", value: string | undefined): void {
+    this.pdfPin = { ...this.pdfPin, [key]: typeof value === "string" && value.trim() !== "" ? value.trim() : undefined };
+    this.request("pdf");
+  }
+
+  /**
+   * The Subresource Integrity the PDF module is held to (`sha384-...`, as `<script integrity>` takes
+   * it): the `pdf-integrity` attribute. Set, the executor is `datum-pdf.js` (the module `pdf` names,
+   * or the one beside this bundle for `"auto"`, in place of this bundle's own chunk), fetched,
+   * checked and imported from a `blob:` URL; a module that does not match is never run.
+   */
+  public get pdfIntegrity(): string | undefined {
+    return this.pdfPin.pdf;
+  }
+
+  public set pdfIntegrity(value: string | undefined) {
+    this.setPdfPin("pdf", value);
+  }
+
+  /**
+   * The Subresource Integrity the page imagery module is held to: the `pdf-pages-integrity`
+   * attribute. Set, the imagery is `datum-pdf-pages.js` (the module `pdf-pages` names, or the one
+   * beside the PDF module), fetched, checked and imported from a `blob:` URL.
+   */
+  public get pdfPagesIntegrity(): string | undefined {
+    return this.pdfPin.pages;
+  }
+
+  public set pdfPagesIntegrity(value: string | undefined) {
+    this.setPdfPin("pages", value);
+  }
+
+  /**
+   * Where the package's `integrity.json` is, read only with `pdf-manifest-integrity`: absent or
+   * `"auto"`, `../integrity.json` from the PDF module (the npm package's layout); else a URL. The
+   * `pdf-manifest` attribute.
+   */
+  public get pdfManifest(): string | undefined {
+    return this.pdfPin.manifest;
+  }
+
+  public set pdfManifest(value: string | undefined) {
+    this.setPdfPin("manifest", value);
+  }
+
+  /**
+   * The Subresource Integrity of the package's `integrity.json`: the `pdf-manifest-integrity`
+   * attribute. Set, the files the PDF modules fetch (the fonts, the pdf.js worker, its standard
+   * fonts, CMaps and image decoders) are each held to the hash the manifest lists for them, and one
+   * it does not list is refused.
+   */
+  public get pdfManifestIntegrity(): string | undefined {
+    return this.pdfPin.manifestIntegrity;
+  }
+
+  public set pdfManifestIntegrity(value: string | undefined) {
+    this.setPdfPin("manifestIntegrity", value);
   }
 
   /** The executor in use, for a page that built one itself (the QuickJS-WASM sandbox, a server). */
@@ -2641,6 +2724,23 @@ export class DatumFormBuilderElement extends ElementBase {
     }
   }
 
+  /**
+   * The Subresource Integrity the sandbox module `wasm` names is held to, as `<datum-form
+   * wasm-integrity>` holds it: the module is fetched, its bytes checked, and exactly those bytes
+   * imported from a `blob:` URL; one that does not match is never run, and Try it says the
+   * validator is unavailable. The `wasm-integrity` attribute. Unset, the module is imported by its URL.
+   */
+  public get wasmIntegrity(): string | undefined {
+    return this.wasmIntegrityValue;
+  }
+
+  public set wasmIntegrity(value: string | undefined) {
+    this.wasmIntegrityValue = typeof value === "string" && value.trim() !== "" ? value.trim() : undefined;
+    if (this.builderEl) {
+      this.builderEl.serverChecks = this.tryItChecks();
+    }
+  }
+
   /** What Try it validates with on the server's side: the page's checks, else the sandbox `wasm` names. */
   private tryItChecks(): TryItServerChecksSource | undefined {
     return this.serverChecksValue ?? this.wasmChecks();
@@ -2658,12 +2758,13 @@ export class DatumFormBuilderElement extends ElementBase {
     }
     const plugins = this.allPlugins().flatMap((plugin) => (plugin.wasmPlugin ? [plugin.wasmPlugin as WasmPluginModule] : []));
     const memo = this.wasmChecksMemo;
-    if (memo && memo.spec === spec && memo.plugins.length === plugins.length && memo.plugins.every((module, index) => module === plugins[index])) {
+    const integrity = this.wasmIntegrityValue;
+    if (memo && memo.spec === spec && memo.integrity === integrity && memo.plugins.length === plugins.length && memo.plugins.every((module, index) => module === plugins[index])) {
       return memo.source;
     }
     const policy: WasmSandboxPolicy = { allowNetwork: false, allowFilesystem: false, allowProcess: false, allowEnvironment: false };
     const source: TryItServerChecksSource = () =>
-      loadWasmValidationHost(spec, plugins).then(
+      loadWasmValidationHost(spec, plugins, { integrity }).then(
         (host): TryItServerChecks => ({
           label: "WebAssembly",
           run: async ({ root, answers, locale, kinds, hostContext }) => {
@@ -2686,12 +2787,16 @@ export class DatumFormBuilderElement extends ElementBase {
           }
         }),
         (error: unknown) => {
-          // Said plainly in Try it: the file the page did not ship, rather than a module error.
+          // Said plainly in Try it: the file the page did not ship, rather than a module error. A
+          // module refused for its hash was there, and its own message says so.
+          if (error instanceof Error && error.name === "IntegrityError") {
+            throw error;
+          }
           const reason = error instanceof Error ? error.message : String(error);
           throw new Error(spec === "auto" ? `datum-wasm.js was not found beside the builder (${reason})` : `the module at ${spec} did not load (${reason})`);
         }
       );
-    this.wasmChecksMemo = { spec, plugins, source };
+    this.wasmChecksMemo = { spec, integrity, plugins, source };
     return source;
   }
 
@@ -3949,18 +4054,24 @@ export class DatumFormBuilderElement extends ElementBase {
               return { ...support, pages: { open: () => Promise.reject(new Error(reason)) } };
             }
           );
-    if (spec && spec !== "auto") {
-      const pdfModuleUrl = resolvePdfModuleUrl(spec);
-      return () => loadPdfSupport(spec).then((support) => withPages(support, () => loadPdfPageRasterizer(resolvePdfPagesModuleUrl(pagesSpec, pdfModuleUrl))));
-    }
-    if (pagesSpec && pagesSpec !== "auto" && pagesSpec !== "off") {
-      return () =>
-        import("./pdf.js").then((module) => module.createPdfSupport()).then((support) => withPages(support, () => loadPdfPageRasterizer(resolvePdfPagesModuleUrl(pagesSpec, defaultPdfModuleUrl()))));
-    }
-    return () =>
-      import("./pdf.js")
-        .then((module) => module.createPdfSupport())
-        .then((support) => withPages(support, () => import("./pdf-pages.js").then((module) => module.createPdfPageRasterizer())));
+    // A module held to a hash is always `datum-pdf.js` (or `datum-pdf-pages.js`) by URL: this
+    // bundle's own chunks are pinned by the page's import map, not by these attributes.
+    const { pdf: pdfIntegrity, pages: pagesIntegrity, manifest, manifestIntegrity } = this.pdfPin;
+    const pdfByUrl = (spec !== undefined && spec !== "" && spec !== "auto") || pdfIntegrity !== undefined;
+    const pagesByUrl = pdfByUrl || (pagesSpec !== undefined && pagesSpec !== "" && pagesSpec !== "auto") || pagesIntegrity !== undefined;
+    const pdfModuleUrl = pdfByUrl ? resolvePdfModuleUrl(spec ?? "auto") : defaultPdfModuleUrl();
+    // This bundle's chunks find their files beside the bundle, as datum-pdf.js beside it would.
+    const ownOptions = (): Promise<{ manifest?: IntegrityManifest }> =>
+      manifestIntegrity === undefined
+        ? Promise.resolve({})
+        : import("./integrity.js").then(({ pinnedModuleOptions }) => pinnedModuleOptions(defaultPdfModuleUrl(), { manifest, manifestIntegrity }));
+    const support = pdfByUrl
+      ? () => loadPdfSupport(spec ?? "auto", { integrity: pdfIntegrity, manifest, manifestIntegrity })
+      : () => Promise.all([import("./pdf.js"), ownOptions()]).then(([module, options]) => module.createPdfSupport(options));
+    const pages = pagesByUrl
+      ? () => loadPdfPageRasterizer(resolvePdfPagesModuleUrl(pagesSpec, pdfModuleUrl), { integrity: pagesIntegrity, manifest, manifestIntegrity })
+      : () => Promise.all([import("./pdf-pages.js"), ownOptions()]).then(([module, options]) => module.createPdfPageRasterizer(options));
+    return () => support().then((loaded) => withPages(loaded, pages));
   }
 
   /**
