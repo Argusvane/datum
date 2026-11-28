@@ -179,9 +179,9 @@ Add parts by name: `features="minimal logic"` is the form plus the Logic workspa
 `features="minimal logic try-it json"` also gives Try it and the JSON view. Tokens: logic, data,
 languages, translations, journeys, pdf, variables, header-footer, data-model, palette, try-it,
 json, binding-picker, advanced-fields, agent; presets all and minimal (`agent` is opt-in: not part
-of all; write `features="all agent"` to add it). `pdf="off"`, `journeys="off"`,
-`hidden-workspaces`, `hidden-panels`, `file-actions` and `component-types` can only take more
-away from the list, never put a part back. The attribute is read at connect; changing it later
+of all; write `features="all agent"` to add it); `-<part>` leaves one out (`features="-pdf"` is
+every part but the PDF side). `hidden-workspaces`, `hidden-panels`, `file-actions` and
+`component-types` can only take more away from the list, never put a part back. The attribute is read at connect; changing it later
 rebuilds the builder, except an agent-only change, which only registers or withdraws the agent
 tools. Leave it off and the builder is exactly what it was.
 
@@ -220,7 +220,7 @@ A definition with journeys runs on the journeys runtime, one lazy file
 like every other feature file). `<datum-form>` fetches it by itself and is ready one chunk load later (see "Knowing when a form is ready" below). `journey="form"`
 does not skip it: the journey can be switched later without a rebuild, so the chunk is still
 needed, and if the file is missing the form shows the error card with Retry, not the whole form.
-To avoid the chunk, leave `journeys` out of `features` (or set `journeys="off"`); the form then
+To avoid the chunk, leave `journeys` out of `features`; the form then
 runs as one page with one console warning.
 
 A host that builds runtimes itself on `datum-form.js` gets the pair from the loader and gives it to both parts:

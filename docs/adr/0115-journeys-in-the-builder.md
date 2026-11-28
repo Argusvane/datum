@@ -213,15 +213,15 @@ The guide to the mode as an author uses it is [docs/reference/journeys.md](../re
     session of its own, with the Journey card drawing the map with the way taken (ADR 0119).
 
 14. **Hosts.**
-    - `<datum-form-builder>` has the mode on by default, with `journeys="off"` to opt
-      out. A `workspaces` list without `journeys` (ADR 0125) leaves the side out as a hidden
+    - `<datum-form-builder>` has the mode on by default, with `features="-journeys"` (or any
+      `features` list without `journeys`) to opt out. A `workspaces` list without `journeys` (ADR 0125) leaves the side out as a hidden
       workspace does. The API is `journeyMode`, `journeyConfiguration` and the events in the
       guide.
     - The `definition` getter equals the seed byte for byte until the first journey edit: it keeps
       the seed's key order and the seed's own `localization` object while the builder's has the
       same content.
     - `<datum-form-builder>` registers the PDF side with `addMode(mode, { before: "journeys" })`, so a
-      PDF side turned off and on again (`pdf="off"` lifted) keeps its layouts ahead of the journeys
+      PDF side turned off and on again (by its `features` list) keeps its layouts ahead of the journeys
       in the command palette's list of documents; a `before` that names no registered mode, or the
       form, appends, which is already the right order while the journeys are off.
 

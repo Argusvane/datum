@@ -289,7 +289,7 @@ describe("Try it's panel", () => {
     // WebAssembly validation is always a part of Checks, off until the author turns it on.
     expect(panel.querySelector("[data-try-pdf]")).not.toBeNull();
     expect(panel.querySelector<HTMLInputElement>("[data-try-server]")!.checked).toBe(false);
-    element.setAttribute("pdf", "off");
+    element.setAttribute("features", "-pdf");
     await until(() => panel.querySelector("[data-try-pdf]") === null);
 
     const canvasEl = shell(element).querySelector("datum-builder-canvas") as HTMLElement & { previewing: boolean };

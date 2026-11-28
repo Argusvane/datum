@@ -19,7 +19,7 @@ async function mount(max?: number): Promise<DatumFormBuilderElement> {
     (definition.root.children!.content![0]!.configuration as Record<string, unknown>).maxLength = max;
   }
   const el = document.createElement("datum-form-builder") as DatumFormBuilderElement;
-  el.setAttribute("pdf", "off");
+  el.setAttribute("features", "-pdf");
   el.definition = definition;
   document.body.append(el);
   await until(() => el.builder?.shadowRoot?.querySelector("datum-builder-canvas"));

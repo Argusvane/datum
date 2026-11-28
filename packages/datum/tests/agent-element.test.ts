@@ -114,10 +114,10 @@ async function mountBuilder(attributes: Record<string, string>): Promise<{ eleme
   const errors: Array<{ message: string; cause?: unknown }> = [];
   element.addEventListener("datum-error", (event) => errors.push((event as CustomEvent).detail));
   element.addEventListener("datum-agent-tools", (event) => toolsEvents.push((event as CustomEvent<DatumAgentToolsDetail>).detail));
-  element.setAttribute("pdf", "off");
-  element.setAttribute("journeys", "off");
+  // The PDF and Journeys sides left out, whatever else the list names.
+  element.setAttribute("features", "-pdf -journeys");
   for (const [name, value] of Object.entries(attributes)) {
-    element.setAttribute(name, value);
+    element.setAttribute(name, name === "features" ? `${value} -pdf -journeys` : value);
   }
   element.definition = sampleDefinition();
   document.body.append(element);
@@ -399,7 +399,7 @@ describe("the agent token on <datum-form-builder>", () => {
     expect(controller).toBeDefined();
     expect(loads.agent).toBe(0);
 
-    element.features = "all agent";
+    element.features = "all agent -pdf -journeys";
     await until(() => toolsEvents.length > 0);
     expect(element.builder).toBe(builder);
     expect(element.controller).toBe(controller);
@@ -409,7 +409,7 @@ describe("the agent token on <datum-form-builder>", () => {
     expect(names).toContain("begin_session");
 
     const before = toolsEvents.length;
-    element.features = "all";
+    element.features = "all -pdf -journeys";
     await settle();
     expect(element.builder).toBe(builder);
     expect(element.controller).toBe(controller);

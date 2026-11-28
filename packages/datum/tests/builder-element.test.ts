@@ -416,9 +416,9 @@ describe("<datum-form-builder>", () => {
     expect(switcherLocales()).toEqual([]);
   });
 
-  it('hides the PDF side for pdf="off", and previews through an executor the page built', async () => {
+  it('hides the PDF side for features="-pdf", and previews through an executor the page built', async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = sampleDefinition();
     });
     await ready(element);
@@ -426,7 +426,7 @@ describe("<datum-form-builder>", () => {
     expect(element.pdfMode).toBeUndefined();
     expect(element.definition.pdf).toBeUndefined();
 
-    element.removeAttribute("pdf");
+    element.removeAttribute("features");
     await until(() => element.modes.length === 3);
     // The PDF side comes back ahead of the journeys, as it is listed when on from the start.
     expect(element.modes.map((mode) => mode.id)).toEqual(["form", "pdf", "journeys"]);
@@ -467,7 +467,7 @@ describe("<datum-form-builder>", () => {
     expect(themed.themeId).toBe("acme");
     expect(JSON.stringify(renders[1])).toContain(ACME_PDF_HEADING_COLOR);
 
-    element.setAttribute("pdf", "off");
+    element.setAttribute("features", "-pdf");
     await until(() => element.modes.length === 2);
     expect(element.mode).toBe("form");
     expect(element.pdfMode).toBeUndefined();

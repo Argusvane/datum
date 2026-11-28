@@ -18,9 +18,9 @@
       <span id="status" role="status" aria-live="polite">Loading the builder…</span>
       <a href="/">Open the form</a>
     </header>
-    <!-- The page sets every attribute of the element; the server decides none of them. pdf="off": this example
-         ships no PDF module, so the builder offers no PDF layouts. -->
-    <datum-form-builder id="builder" layout="contained" pdf="off"></datum-form-builder>
+    <!-- The page sets every attribute of the element; the server decides none of them. features="-pdf": this
+         example ships no PDF module, so the builder offers no PDF layouts. -->
+    <datum-form-builder id="builder" layout="contained" features="-pdf"></datum-form-builder>
 
     <script type="module" src="/datum/assets/datum-host.js"></script>
     <script type="module">

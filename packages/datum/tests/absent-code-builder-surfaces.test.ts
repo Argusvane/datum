@@ -67,10 +67,7 @@ afterEach(() => {
 
 async function mount(options: { journeys?: boolean; definition?: FormDefinition } = {}): Promise<{ element: DatumFormBuilderElement; errors: Array<{ message: string; cause: unknown }> }> {
   const element = document.createElement("datum-form-builder");
-  element.setAttribute("pdf", "off");
-  if (!options.journeys) {
-    element.setAttribute("journeys", "off");
-  }
+  element.setAttribute("features", options.journeys ? "-pdf" : "-pdf -journeys");
   element.definition = options.definition ?? sampleDefinition();
   const errors: Array<{ message: string; cause: unknown }> = [];
   element.addEventListener("datum-error", (event) => errors.push((event as CustomEvent<{ message: string; cause: unknown }>).detail));

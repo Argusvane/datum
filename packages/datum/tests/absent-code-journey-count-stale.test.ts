@@ -31,7 +31,7 @@ describe("the journey problem count after a check that cannot run", { timeout: 2
   it("clears the earlier count rather than keeping it", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     const element = document.createElement("datum-form-builder") as DatumFormBuilderElement;
-    element.setAttribute("pdf", "off");
+    element.setAttribute("features", "-pdf");
     element.definition = { ...sampleDefinition(), journey: { journeys: [{ id: "apply", name: "Apply online", pages: [{ id: "p1", components: ["fullName"] }] }] } } as FormDefinition;
     document.body.append(element);
     await until(() => element.journeyMode !== undefined);

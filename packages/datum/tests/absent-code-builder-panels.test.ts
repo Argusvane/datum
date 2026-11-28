@@ -22,8 +22,7 @@ describe("a lazy panel that was wired and then threw", { timeout: 20000 }, () =>
       throw new Error("setter broke");
     });
     const element = document.createElement("datum-form-builder");
-    element.setAttribute("pdf", "off");
-    element.setAttribute("journeys", "off");
+    element.setAttribute("features", "-pdf -journeys");
     element.definition = sampleDefinition();
     const errors: Array<{ message: string; cause: unknown }> = [];
     element.addEventListener("datum-error", (event) => errors.push((event as CustomEvent<{ message: string; cause: unknown }>).detail));

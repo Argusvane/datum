@@ -15,7 +15,7 @@ afterEach(() => {
 describe("a form component renamed while the PDF side is off", () => {
   it("is followed in a template layout's path source by the path the answer is stored under", async () => {
     const element = document.createElement("datum-form-builder") as DatumFormBuilderElement;
-    element.setAttribute("pdf", "off");
+    element.setAttribute("features", "-pdf");
     element.definition = {
       id: "intake",
       version: "1.0.0",

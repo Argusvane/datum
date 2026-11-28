@@ -11,7 +11,7 @@
 // No budget moves here: the model added about 3 KB to datum-builder.js, inside the 5 KB the
 // other guards left, and no code left it.
 
-const MODEL = "ignored: not in features"; // builder-features.ts builderSides(), the warning for pdf / journeys the list omits
+const MODEL = "ignored: not in features"; // builder-features.ts builderSides(), the warning for a pdf attribute the list omits
 const UNKNOWN = "unknown feature"; // builder-features.ts parseBuilderFeatures(), the warning for a word that names nothing
 
 export default function guard({ entryText, read, chunksOf, expect }) {

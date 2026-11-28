@@ -171,7 +171,7 @@ describe("<datum-form-builder> Download behind the unsaved-edits guard", () => {
 describe("<datum-form-builder> New with the PDF designer off", () => {
   it("asks while the form holds a PDF layout, and starts a form with none; a second New asks nothing", async () => {
     const element = await mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = { id: "setup", version: "1.0.0", schemaVersion: "1", root: EMPTY_ROOT, pdf: { layouts: [designedLayout()], defaultLayoutId: "letter" } } as FormDefinition;
     });
     // An empty tree, but the layouts are someone's work, designer or no designer.

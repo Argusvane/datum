@@ -283,7 +283,7 @@ describe("<datum-form-builder> file actions", () => {
 
     // With no PDF side, what is left is exactly the identity and an empty tree.
     const plain = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = { ...fullDefinition(), id: "plain", version: "4.0.0", schemaVersion: "2" };
     });
     await ready(plain);

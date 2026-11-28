@@ -126,9 +126,7 @@ describe("the agent chunk missing from <datum-form-builder>", () => {
     chunk.builderFail = 1;
     const asked = chunk.builderAsked;
     const element = document.createElement("datum-form-builder") as DatumFormBuilderElement;
-    element.setAttribute("pdf", "off");
-    element.setAttribute("journeys", "off");
-    element.setAttribute("features", "all agent");
+    element.setAttribute("features", "all agent -pdf -journeys");
     element.definition = sampleDefinition();
     // Only the agent chunk's reports: the sample's data-source select reports its own missing source.
     const errors: DatumErrorDetail[] = [];

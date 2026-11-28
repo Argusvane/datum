@@ -30,7 +30,7 @@ describe("the journey problem count's diagnostics are missing", { timeout: 20000
   it("tells the host once, however many changes follow, and counts again when the chunk is back", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     const element = document.createElement("datum-form-builder");
-    element.setAttribute("pdf", "off");
+    element.setAttribute("features", "-pdf");
     element.definition = { ...sampleDefinition(), journey: { journeys: [{ id: "apply", name: "Apply online", pages: [{ id: "p1", components: ["fullName"] }] }] } } as FormDefinition;
     const errors: Array<{ message: string; cause: unknown }> = [];
     element.addEventListener("datum-error", (event) => errors.push((event as CustomEvent<{ message: string; cause: unknown }>).detail));

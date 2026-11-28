@@ -228,7 +228,7 @@ describe("the Journeys bar actions", () => {
 
   it("keeps the Map | Step group on the bar, and has no Add unassigned or Remove missing to fold", async () => {
     const element = document.createElement("datum-form-builder");
-    element.setAttribute("pdf", "off");
+    element.setAttribute("features", "-pdf");
     element.definition = journeyDefinition();
     document.body.append(element);
     await until(() => element.builder?.shadowRoot?.querySelector("datum-builder-canvas"));

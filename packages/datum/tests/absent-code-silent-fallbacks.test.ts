@@ -119,7 +119,7 @@ describe("the Journeys overview's diagnoser is missing", () => {
   it("says Couldn't check, tells the host, and is not asked for again by a repaint", async () => {
     gone.diagnoser = 1;
     const element = document.createElement("datum-form-builder");
-    element.setAttribute("pdf", "off");
+    element.setAttribute("features", "-pdf");
     element.definition = journeyDefinition();
     const errors: Array<{ message: string; cause: unknown }> = [];
     element.addEventListener("datum-error", (event) => errors.push((event as CustomEvent<{ message: string; cause: unknown }>).detail));

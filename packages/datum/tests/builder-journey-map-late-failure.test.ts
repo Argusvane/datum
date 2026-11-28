@@ -29,7 +29,7 @@ describe("<datum-form-builder> journeys: a map chunk that fails once the builder
       fail = resolve;
     });
     const element = document.createElement("datum-form-builder");
-    element.setAttribute("pdf", "off");
+    element.setAttribute("features", "-pdf");
     element.definition = {
       ...sampleDefinition(),
       journey: { journeys: [{ id: "map", name: "Map", pages: [{ id: "start", title: "Start", components: ["fullName"] }] }] }

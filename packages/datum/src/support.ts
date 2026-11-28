@@ -535,14 +535,14 @@ function journeyProblem(value: unknown): string | undefined {
 
 /**
  * The words of a builder `features` value that name no part and no preset, in the order written
- * and lower-cased, each once. `form` is accepted as the Form workspace's own name. Such a word
+ * and lower-cased, each once; `-<part>` (a part left out) is known when the part is. Such a word
  * is left out of the list (a typo can only narrow what exists), so the page is told which.
  */
 export function unknownBuilderFeatureTokens(value: string | readonly string[] | null | undefined): string[] {
   if (value === undefined || value === null) {
     return [];
   }
-  const known = new Set<string>([...BUILDER_FEATURES, ...BUILDER_FEATURE_PRESETS, "form"]);
+  const known = new Set<string>([...BUILDER_FEATURES, ...BUILDER_FEATURE_PRESETS, ...BUILDER_FEATURES.map((feature) => `-${feature}`)]);
   const words = (typeof value === "string" ? value.split(/[\s,]+/) : value.flatMap((entry) => String(entry).split(/[\s,]+/)))
     .map((word) => word.trim().toLowerCase())
     .filter((word) => word !== "" && !known.has(word));

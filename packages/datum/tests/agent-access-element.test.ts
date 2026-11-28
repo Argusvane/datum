@@ -493,9 +493,7 @@ describe("the builder beside forms of every access", () => {
     const element = document.createElement("datum-form-builder") as DatumFormBuilderElement;
     const toolsEvents: DatumAgentToolsDetail[] = [];
     element.addEventListener("datum-agent-tools", (event) => toolsEvents.push((event as CustomEvent<DatumAgentToolsDetail>).detail));
-    element.setAttribute("features", "all agent");
-    element.setAttribute("pdf", "off");
-    element.setAttribute("journeys", "off");
+    element.setAttribute("features", "all agent -pdf -journeys");
     element.id = "access-builder";
     element.definition = definition;
     document.body.append(element);

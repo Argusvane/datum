@@ -388,7 +388,7 @@ describe("the canvas's seams for an agent's Try it", () => {
       }
     };
     const element = document.createElement("datum-form-builder") as DatumFormBuilderElement;
-    element.setAttribute("pdf", "off");
+    element.setAttribute("features", "-pdf");
     element.definition = definition;
     document.body.append(element);
     await until(() => element.builder?.shadowRoot?.querySelector("datum-builder-canvas"));
@@ -429,7 +429,7 @@ describe("the canvas's seams for an agent's Try it", () => {
       }
     };
     const element = document.createElement("datum-form-builder") as DatumFormBuilderElement;
-    element.setAttribute("pdf", "off");
+    element.setAttribute("features", "-pdf");
     element.definition = definition;
     document.body.append(element);
     await until(() => element.builder?.shadowRoot?.querySelector("datum-builder-canvas"));

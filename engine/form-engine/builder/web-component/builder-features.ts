@@ -3,18 +3,16 @@
  * `<datum-builder>` exist at all. A pure model, shared by the shell, the element that wraps it and
  * the tests; it touches no DOM.
  *
- * - No `features` attribute (or a property set to `undefined` / `null`): everything exists, exactly
- *   as before the attribute was added.
+ * - No `features` attribute (or a property set to `undefined` / `null`): everything exists.
  * - A `features` list: only the listed parts exist, plus the Form workspace with its canvas, its
  *   inspector and its component palette, which are always there. The list is the MASTER: the
- *   attributes that already switch a part off (`pdf="off"`, `journeys="off"`, `hidden-workspaces`,
- *   `hidden-panels`, `component-types`, `file-actions`) can only restrict further, never bring back a
- *   part the list leaves out. A part that does not exist fetches none of its chunks.
+ *   attributes that take a part away (`hidden-workspaces`, `hidden-panels`, `component-types`,
+ *   `file-actions`) can only restrict further, never bring back a part the list leaves out. A part
+ *   that does not exist fetches none of its chunks.
  *
  * Tokens are separated by spaces and/or commas, case-insensitive. `all` is every part; `minimal`
  * is none of the optional ones (the Form workspace alone), so `minimal logic` is the form plus
- * Logic. `form` is accepted and means what it always does. A token nobody knows is reported once
- * with `console.warn` and ignored.
+ * Logic. A token nobody knows is reported once with `console.warn` and ignored.
  *
  * One token is opt-in: `agent`, the WebMCP agent tools over the builder. It is not
  * in `all` and an absent list does not include it, so a page that says nothing never registers
@@ -110,7 +108,7 @@ const PANEL_FEATURES = {
 /** The set of parts that exist: `undefined` is "no list given", where every part does. */
 export type BuilderFeatureSet = ReadonlySet<BuilderFeature> | undefined;
 
-const KNOWN = new Set<string>([...BUILDER_FEATURES, ...BUILDER_FEATURE_PRESETS, "form"]);
+const KNOWN = new Set<string>([...BUILDER_FEATURES, ...BUILDER_FEATURE_PRESETS]);
 
 /** What has been said already on this page: a token or a restriction is reported once. */
 const said = new Set<string>();
@@ -233,33 +231,26 @@ export function panelAllowed(set: BuilderFeatureSet, panel: string): boolean {
 }
 
 /**
- * What the master list and the attributes that can only restrict leave of the PDF and Journeys
- * sides. A side is on when the list allows it, its own attribute is not `"off"` and its workspace
- * is not hidden; an attribute that asks for it while the list leaves it out is ignored, with one
- * warning.
+ * What the master list and the hidden workspaces leave of the PDF and Journeys sides. A side is
+ * on when the list allows it and its workspace is not hidden; a `pdf` attribute that names how
+ * the executor arrives (`auto`, a URL) while the list leaves the PDF side out is ignored, with
+ * one warning.
  */
 export interface BuilderSides {
   pdf: boolean;
   journeys: boolean;
 }
 
-export function builderSides(input: {
-  features: BuilderFeatureSet;
-  pdf: string | undefined;
-  journeys: string | undefined;
-  hiddenWorkspaces: readonly string[];
-}): BuilderSides {
+export function builderSides(input: { features: BuilderFeatureSet; pdf: string | undefined; hiddenWorkspaces: readonly string[] }): BuilderSides {
   const sides: BuilderSides = { pdf: false, journeys: false };
   for (const side of ["pdf", "journeys"] as const) {
-    const attribute = input[side];
-    const requested = attribute !== undefined && attribute.trim() !== "" && attribute.trim() !== "off";
     if (!featureOn(input.features, side)) {
-      if (requested) {
-        warnBuilderFeatureOnce(`ignored:${side}`, `${side} attribute ignored: not in features`);
+      if (side === "pdf" && input.pdf !== undefined && input.pdf.trim() !== "") {
+        warnBuilderFeatureOnce("ignored:pdf", "pdf attribute ignored: not in features");
       }
       continue;
     }
-    sides[side] = attribute?.trim() !== "off" && !input.hiddenWorkspaces.includes(side);
+    sides[side] = !input.hiddenWorkspaces.includes(side);
   }
   return sides;
 }
