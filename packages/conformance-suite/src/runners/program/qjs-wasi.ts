@@ -55,8 +55,27 @@ export function loadQjsWasiModule(path: string, pin: { sha256: string; size?: nu
 export const APP_PROGRAM = "program.js";
 export const APP_RUN_SCRIPT = "run.js";
 
-/** The globals the run script removes before any module is evaluated, in the script's order. */
-export const REMOVED_GLOBALS = ["std", "os", "print", "console", "performance", "scriptArgs", "bjson"] as const;
+/**
+ * The globals the run script removes before any module is evaluated, in the script's order: qjs's own helpers, then
+ * the globals quickjs-ng defines that Bellard QuickJS does not.
+ */
+export const REMOVED_GLOBALS = [
+  "std",
+  "os",
+  "print",
+  "console",
+  "performance",
+  "scriptArgs",
+  "bjson",
+  "queueMicrotask",
+  "gc",
+  "navigator",
+  "argv0",
+  "execArgv",
+  "atob",
+  "btoa",
+  "DOMException"
+] as const;
 
 /** The guest's arguments: `--std` gives the script `std` (which it removes); `-I` runs the program first. */
 export function guestArgv(): string[] {
