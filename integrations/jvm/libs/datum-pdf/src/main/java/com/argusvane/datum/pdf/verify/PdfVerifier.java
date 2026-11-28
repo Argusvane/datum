@@ -556,7 +556,7 @@ public class PdfVerifier {
      * Whether a certificate chains to a trust anchor, for any purpose: a PKIX path build from the carried certificates (and the policy's stores) to one of
      * the policy's anchors, signatures, validity at the time given and CA constraints checked. Revocation is checked when
      * the policy asks, by the JDK's {@link PKIXRevocationChecker} as the policy sets it up (the standard policy checks
-     * none, as before). An anchor that is the certificate itself holds while the certificate is valid at that time (an
+     * none). An anchor that is the certificate itself holds while the certificate is valid at that time (an
      * anchor is trusted as it is: no revocation check applies to it). Any failure of the build, revocation included, is
      * "does not chain": never trusted on an error.
      */

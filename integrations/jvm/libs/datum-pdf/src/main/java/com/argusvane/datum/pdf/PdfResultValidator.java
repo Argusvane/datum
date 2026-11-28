@@ -13,7 +13,7 @@ import com.argusvane.datum.core.hooks.HookFindings;
  * <p>Errors refuse: no PDF leaves, no {@link PdfRenderedEvent} is published, and the request answers
  * {@link com.argusvane.datum.core.hooks.HookRefusedException} {@code INVALID} with every error in order (422 with the
  * errors body; its code is the first error's). Warnings ride along in {@link PdfResult#warnings()} as
- * {@code {code, message, field?}} after the program's (the PDF routes send none of them, as before). A validator may also
+ * {@code {code, message, field?}} after the program's (the PDF routes send none of them). A validator may also
  * throw {@code HookRefusedException} to refuse at once with another kind (403, 409); anything else it throws fails the
  * request (500): a PDF the policy could not judge does not leave.
  */
