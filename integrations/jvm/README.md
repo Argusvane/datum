@@ -114,7 +114,13 @@ CI builds the reactor on Temurin 17, 21 and 25 and checks that the working tree 
 
 ## Release
 
-`npm run jvm:release -- --version <x.y.z>` rebuilds the assets, runs the security suite's program mode with
+A release is cut by the `Release Maven` workflow (`.github/workflows/release-maven.yml`), started by the push of the tag
+`v<x.y.z>`: its build job runs `npm run jvm:release -- --version <x.y.z> --stage`, which builds, tests and checks
+everything below and stages the Central bundle unsigned, with no key or token in reach; its publish job, behind the
+`maven-central` environment's approval, signs that bundle and uploads it to the Central Portal
+(`scripts/central-publish.mjs`). The order is in [docs/releasing.md](../../docs/releasing.md).
+
+Run without `--stage`, `npm run jvm:release -- --version <x.y.z>` rebuilds the assets, runs the security suite's program mode with
 `--gate release`, runs `./mvnw -B -ntp -Prelease -Drevision=<x.y.z> clean deploy` and checks every jar (including the
 three Endive engine jars; no tests jar exists, the shared test helpers are in the unpublished `libs/*-test-support` modules): `META-INF/LICENSE`, `META-INF/NOTICE`, the
 `Datum-*` manifest entries, no SNAPSHOT dependency. It writes `dist/datum-jvm-<x.y.z>/release.json`, `SHA256SUMS` and a

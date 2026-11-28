@@ -5,19 +5,20 @@ How a release is cut: one version, one tag `v<version>`, three registries and on
 `0.2.0-rc.1`, while the FastAPI release script and the PyPI workflow take only PEP 440's normalized form (`0.2.0rc1`),
 so one tag cannot name both. The Maven release script refuses anything but `X.Y.Z` on a real run.
 
-The three registries do not publish alike, and the order follows from that:
+Each registry has its own workflow, and the push of the tag starts all three:
 
 | Host | Published by | Starts when | Can be undone |
 |---|---|---|---|
-| Maven Central (`com.argusvane`) | `integrations/jvm/scripts/release.mjs`, run by hand on the maintainer's machine | the maintainer runs it | no: a Central version is permanent |
-| npm (`@argusvane/*`) | `.github/workflows/release-npm.yml` | the push of the tag `v<version>` | no: a version number is never reused |
+| Maven Central (`com.argusvane`) | `.github/workflows/release-maven.yml`, then the maintainer in the Central portal | the push of the tag `v<version>` | no: a Central version is permanent |
+| npm (`@argusvane/*`) | `.github/workflows/release-npm.yml` | the push of the same tag | no: a version number is never reused |
 | PyPI (eight `argusvane-datum-*` distributions) | `.github/workflows/release-fastapi.yml`, TestPyPI first | the push of the same tag | no |
 
-Maven goes first because it is the only one that is not started by the tag, and the one that needs a commit that is
-already the tag's. The script refuses to deploy unless the tree is clean, `origin` is `argusvane/datum`, HEAD is on
-`origin/main`, a `ci.yml` run on HEAD passed `ci-ok`, and the tag `v<version>` already exists locally and points at
-HEAD, so Central never receives a build of a commit that is not the one the tag names and CI approved. The tag is pushed
-only after the deployment is published, because the push starts npm and PyPI.
+Each workflow builds first and refuses a tagged commit that is not on `main` or has no `ci.yml` run that passed `ci-ok`,
+then waits for its environment's reviewer before anything is uploaded. The Maven workflow's build job runs
+`integrations/jvm/scripts/release.mjs --stage`, which holds no key and no token: it builds and tests the reactor and
+stages an unsigned Central bundle. Its publish job, behind the `maven-central` environment, signs that same bundle with
+the release key and uploads it (`integrations/jvm/scripts/central-publish.mjs`), so what Central receives is what was
+tested. The deployment then waits in the Central portal until the maintainer publishes it.
 
 ## The engine's release gates
 
@@ -41,8 +42,8 @@ The engine's gates run against the in-process sandbox adapter, because a depende
    'argusvane/datum'` on every job that publishes or writes to the Release), so a fork or a mirror that receives the
    tag builds and stops. A clone made before the move still points `origin` at the old address, which the Maven
    release script refuses; point it at the new one with `git remote set-url origin https://github.com/argusvane/datum.git`.
-2. Create three GitHub environments (Settings, Environments): `npm`, `testpypi` and `pypi`. Give `npm` and `pypi` a
-   required reviewer (the owner), and `testpypi` one too if the first upload should wait. GitHub creates an
+2. Create four GitHub environments (Settings, Environments): `npm`, `testpypi`, `pypi` and `maven-central`. Give `npm`,
+   `pypi` and `maven-central` a required reviewer (the owner), and `testpypi` one too if the first upload should wait. GitHub creates an
    environment that does not exist on its first use with no protection, so create them before anything that lets a job
    publish: a trusted publisher registered while `pypi` is unconfigured lets a pushed tag upload unapproved. Required
    reviewers need a public repository or a paid plan.
@@ -52,11 +53,19 @@ The engine's gates run against the in-process sandbox adapter, because a depende
    `release-fastapi.yml`, environment `pypi` on PyPI and `testpypi` on TestPyPI.
 5. Restrict who may create `v*` tags to the owner and require the `ci-ok` check on `main` (a repository ruleset; it needs
    the same plan as step 2). Both workflows start on every `v*` tag.
-6. For Maven: the namespace `com.argusvane` is verified in the Central portal, the release GPG key is in the keyring, and
-   `~/.m2/settings.xml` has a `<server>` with `<id>central</id>` holding the portal token. The script checks that the
-   server id exists and never reads the key or prints the token.
+6. For Maven: the namespace `com.argusvane` is verified in the Central portal. Store four secrets in the `maven-central`
+   environment:
+   - `MAVEN_CENTRAL_USERNAME` and `MAVEN_CENTRAL_PASSWORD`: a portal user token (Account, Generate User Token), not the
+     account's login.
+   - `MAVEN_GPG_PRIVATE_KEY`: the release signing key, ASCII-armored (`gpg --armor --export-secret-keys <key id>`).
+   - `MAVEN_GPG_PASSPHRASE`: its passphrase.
+
+   Central checks the signatures against the public keyservers, so send the public key to `keyserver.ubuntu.com` and
+   `keys.openpgp.org` (`gpg --keyserver <host> --send-keys <key id>`; the second mails the key's address to confirm it).
+   Keep an offline copy of the secret key: every later release should be signed with the same one.
 7. Run `jvm.yml` by hand once on the commit to be released, for every Java version (`gh workflow run jvm.yml -f java=all`):
-   the JVM host has no pull request gate, so this is where its test matrix runs.
+   the JVM host has no pull request gate, so this is where its test matrix runs. The Maven release workflow builds and
+   tests on Java 21 only.
 
 ## The order of a release
 
@@ -69,7 +78,7 @@ The tree carries the release version before the tag is made; the workflows refus
 - PyPI: `npm run fastapi:release -- --version 0.1.0` sets every member's version and rewrites the sibling pins, builds
   the distributions locally and uploads nothing. Commit the changes it makes. It does not tag: the tag is made in step 2, on the
   merged commit, and pushed in step 3.
-- Maven: nothing in the tree changes; the version is passed to the script as `--version`.
+- Maven: nothing in the tree changes; the workflow takes the version from the tag.
 - Changelog: `node scripts/changelog-promote.mjs --version 0.1.0` turns `## [Unreleased]` into `## [0.1.0] - <date>` and
   leaves an empty `## [Unreleased]` above it. Read the section once: it is the release's notes. `release.mjs` refuses to
   run when the version's section is missing.
@@ -78,60 +87,34 @@ The tree carries the release version before the tag is made; the workflows refus
 
 Open a pull request with the commit. `main` takes squash-merged pull requests, so the commit that lands on `main` is a
 new commit with its own SHA, and it is that commit that is released. Wait for `ci.yml` to finish with `ci-ok` green on
-the merged commit. Both workflows look for a green `ci-ok` on the tagged commit and stop without it.
+the merged commit. The three workflows look for a green `ci-ok` on the tagged commit and stop without it.
 
-### 2. Maven Central, from the tagged commit
+### 2. Tag the merged commit and push the tag
 
 The tag goes on the merged commit, not on the branch the pull request came from: its SHA is not the merged one.
 
 ```sh
 git fetch origin
 git switch --detach origin/main    # the merged commit (or: git switch main && git pull --ff-only)
-git status --short                 # empty
-git tag v0.1.0                     # local only; do not push it yet
-npm run jvm:release -- --version 0.1.0 --dry-run     # builds, signs nothing, uploads nothing
-npm run jvm:release -- --version 0.1.0
-```
-
-The real run refuses unless all of these hold, and says which does not: the working tree is clean (untracked files
-count; ignored files do not), the `origin` remote is `argusvane/datum` (https or ssh), HEAD is an ancestor of, or equal
-to, `origin/main` (a clone without `origin/main` is refused, never held against a local `main`), a `ci.yml` run on
-HEAD concluded success with its `ci-ok` job passed (read with the `gh` CLI, which must be installed and signed in with
-`gh auth login`), the tag `v0.1.0` exists and points at HEAD, and `CHANGELOG.md` has a `## [0.1.0]` section. It then builds the assets,
-runs the security suite over the sandbox program, builds and signs the reactor, runs the post-checks over every jar and
-the staged bundle, and only then deploys. After the build it checks the tree and the tag again, so a build that moved
-either does not upload.
-
-- `--dry-run` runs the guards (the `gh` lookup included) as warnings, builds without signing and uploads nothing, so it works before the tag
-  exists.
-- `--check-only` runs only the post-checks over the jars already under `integrations/jvm/target/`; it skips the commit
-  guards (so it needs no tag, no network and no `gh`). The version is whatever those jars were built with (`0.1.0-SNAPSHOT` for a development
-  build), and it writes nothing under `dist/`.
-- `--publish` adds `-DautoPublish=true`; without it the deployment waits in the Central portal and the maintainer
-  publishes it there after looking at it.
-- `--allow-stale` and `--skip-security-suite` are for a dry run or `--check-only`; a real run refuses both, so Central
-  only receives assets this run built and a program the security suite checked.
-
-Publish the deployment in the Central portal. If the run fails before the deploy, fix the cause; when that needs a new
-commit, delete the local tag (`git tag -d v0.1.0`), merge the new commit to `main`, wait for CI, switch to the merged commit and tag
-again. Once
-Central holds a version it cannot be replaced, so a bad published version is followed by a patch version, not by a
-retry.
-
-The run writes `integrations/jvm/dist/datum-jvm-0.1.0/` (`release.json`, `SHA256SUMS`, `README.md`) and prints the
-next two steps.
-
-### 3. Push the tag
-
-```sh
+git tag v0.1.0
 git push origin v0.1.0
 ```
 
-Two workflows start. Each builds first and stops when the tagged commit is not on `main`, when no `ci.yml` run on it
+Three workflows start. Each builds first and stops when the tagged commit is not on `main`, when no `ci.yml` run on it
 passed `ci-ok`, or when a package's version is not the tag's.
 
-### 4. Approve the publishes
+The Maven build job (`Release Maven`, about an hour) runs `release.mjs --stage`, which also refuses a version that is not
+a plain `x.y.z` and a `CHANGELOG.md` without a `## [0.1.0]` section. It builds the web components and the assets, runs the
+security suite over the sandbox program, builds and tests the reactor on Java 21 with the QuickJS runtime compiled for all
+six native targets, runs the post-checks over every jar, and stages the Central bundle with nothing signed. The release
+directory (`release.json`, `SHA256SUMS`, `README.md` and `central-bundle.zip`) is the job's artifact.
 
+### 3. Approve the publishes
+
+- `Release Maven`: approve the `maven-central` environment. The publish job builds nothing. It checks the bundle against
+  `release.json`, refuses a version Central already holds, signs every jar and pom, uploads the signed bundle and waits
+  for Central to validate it. Its `release-assets` job then attaches `SHA256SUMS-maven` to the tag's Release, creating
+  the draft when none exists.
 - `Release npm`: approve the `npm` environment. The tarballs publish in dependency order with provenance; a version the
   registry already holds with the same tarball is skipped and one with another tarball fails. The `release-assets` job
   then creates the draft Release when none exists and attaches the source maps, the script bundles and
@@ -141,23 +124,40 @@ passed `ci-ok`, or when a package's version is not the tag's.
   attaches `SHA256SUMS-pypi` to the same draft, creating it when the npm workflow has not. After a partial failure,
   rerun with `skip-existing` set to true on the steps that already went out, for that run only.
 
-Both `release-assets` jobs share a concurrency group named by the tag, so they run one after the other.
+The three `release-assets` jobs share a concurrency group named by the tag, so they run one after the other. The draft
+then carries one checksum list per registry: `SHA256SUMS-npm`, `SHA256SUMS-pypi` and `SHA256SUMS-maven`. The Maven list
+holds a SHA-256 for every jar, pom and signature uploaded, by its path in the repository, so a file downloaded from
+`https://repo1.maven.org/maven2/<path>` can be checked against it.
 
-### 5. Attach the Maven checksums
+### 4. Publish the Maven deployment
 
-The Maven release is not a workflow, so its checksum list is attached by hand once the draft Release exists (after either
-`release-assets` job). `release.mjs` prints these commands with the real paths:
+The validated deployment waits in the Central portal (Publishing, Deployments, named `datum-jvm-0.1.0`). Look at its
+components, then publish it, or drop it on a finding. Once Central holds a version it cannot be replaced, so a bad
+published version is followed by a patch version, not by a retry. A run started by hand with `auto-publish` set lets
+Central publish the deployment as soon as it is validated.
+
+#### A tag that is already pushed
+
+When the Maven workflow did not run for a tag, or stopped before the upload, start it by hand on that tag. It builds the
+tag's tree with the release scripts of `main`, so a tag pushed before a fix to those scripts (v0.1.0 was pushed before
+the workflow existed) is still released by the fixed ones. A failed upload has left nothing on Central, so this is safe;
+the publish job refuses a version Central already holds.
 
 ```sh
-cp integrations/jvm/dist/datum-jvm-0.1.0/SHA256SUMS integrations/jvm/dist/SHA256SUMS-maven
-gh release upload v0.1.0 integrations/jvm/dist/SHA256SUMS-maven --repo argusvane/datum
+gh workflow run release-maven.yml --repo argusvane/datum -f tag=v0.1.0
 ```
 
-The list holds a SHA-256 for every jar, flattened pom and signature that went to Central, with paths relative to
-`integrations/jvm`; `shasum -a 256 -c` run there checks a local build against it. The draft then carries one checksum
-list per registry: `SHA256SUMS-npm`, `SHA256SUMS-pypi` and `SHA256SUMS-maven`.
+#### Trying the Maven build on a machine
 
-### 6. Publish the Release
+`npm run jvm:release -- --version 0.1.0 --dry-run` runs the workflow's checks as warnings, builds without signing and
+uploads nothing, so it works before the tag exists. `--check-only` runs only the post-checks over the jars already under
+`integrations/jvm/target/`: it needs no tag, no network and no `gh`, and writes nothing under `dist/`. `--allow-stale`
+and `--skip-security-suite` are for those two; a staged or real run refuses both, so Central only receives assets the
+run built and a program the security suite checked. A real run without `--stage` signs with the local keyring and
+uploads with the token in `~/.m2/settings.xml` (server id `central`); the workflow has replaced it, and it is kept only
+for when GitHub Actions cannot be used.
+
+### 5. Publish the Release
 
 The workflows leave a draft with the one-line note `Datum v0.1.0`. Open it (`gh release list`; there is exactly one
 draft for the tag), replace the note with the `## [0.1.0]` section of `CHANGELOG.md`, check the assets, and publish it.
@@ -167,9 +167,10 @@ and a `pip install argusvane-datum-fastapi`.
 
 ## When something stops half way
 
-- A published npm or PyPI version is never replaced, and a published tag is never moved. A defect found after publishing
+- A published Maven, npm or PyPI version is never replaced, and a published tag is never moved. A defect found after publishing
   is fixed in a patch version with its own tag.
 - A workflow job that fails before it publishes is rerun from the Actions page. The npm publish step is safe to rerun:
-  it compares the registry's digest with the tarball it holds.
+  it compares the registry's digest with the tarball it holds. The Maven publish job refuses a version Central already
+  holds; a deployment that failed validation is dropped in the portal before the rerun.
 - A tag pushed by mistake on a commit that is not on `main` stops in the build job. Delete the tag on the remote
   (`git push origin :refs/tags/v0.1.0`) once nothing published from it.

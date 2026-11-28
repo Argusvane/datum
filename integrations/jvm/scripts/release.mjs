@@ -32,11 +32,19 @@
 //      test-support artifact. The examples and the test-support modules are never published and are skipped;
 //   5. integrations/jvm/dist/datum-jvm-<v>/{release.json, SHA256SUMS, README.md}, and the tag to cut.
 //
-// Nothing is committed, pushed or tagged: the maintainer creates the tag locally BEFORE the run (step 0 needs it) and pushes
-// it AFTER the deployment is published, because the push starts the npm and PyPI workflows (docs/releasing.md has the whole
-// order). The script prints the push command and the two commands that attach SHA256SUMS to the GitHub Release.
+// A release is cut by the Release Maven workflow (.github/workflows/release-maven.yml), which runs this script with --stage:
+// every refusal of a real run, the build and tests UNSIGNED, the post-checks, then the deploy with -DskipUpload=true, which
+// stages the Central bundle without uploading it. The bundle is checked and copied into the dist directory as
+// central-bundle.zip, with its SHA-256 in release.json. The workflow's build job holds no secret; its publish job, behind the
+// maven-central environment's approval, signs that bundle and uploads it (central-publish.mjs). --stage needs no GPG key and
+// no Central token.
 //
-//   npm run jvm:release -- --version <x.y.z> [--dry-run] [--publish] [--allow-stale] [--skip-security-suite]
+// Run by hand without --stage (the way a release was cut before the workflow, kept for a maintainer's machine), nothing is
+// committed, pushed or tagged: the maintainer creates the tag locally BEFORE the run (step 0 needs it) and pushes it AFTER the
+// deployment is published, because the push starts the release workflows (docs/releasing.md has the whole order). The script
+// prints the push command and the two commands that attach SHA256SUMS to the GitHub Release.
+//
+//   npm run jvm:release -- --version <x.y.z> [--dry-run | --stage | --publish] [--allow-stale] [--skip-security-suite]
 //                          [--maven-args "<extra Maven options>"] [--check-only]
 //
 // --maven-args takes -D / -X style options only (no goals, no -P, no value-taking flags such as -pl): a goal there
@@ -50,12 +58,15 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const jvm = join(here, "..");
-const repo = join(jvm, "..", "..");
+// DATUM_RELEASE_REPO names the checkout to build and check when the script runs from another one: the Release Maven workflow
+// runs its own commit's scripts over the tag's checkout, so a tag made before a fix to these scripts is still released by
+// the fixed ones. Unset, the checkout is the one this script is in.
+const repo = process.env.DATUM_RELEASE_REPO ? resolve(process.env.DATUM_RELEASE_REPO) : join(here, "..", "..", "..");
+const jvm = join(repo, "integrations", "jvm");
 const GROUP_ID = "com.argusvane";
 // Where central-publishing-maven-plugin stages the reactor's one bundle: under the target/ of the project whose plugin
 // assembles it (the BOM is the first module and carries its own plugin configuration), so both places are looked at.
@@ -242,9 +253,11 @@ const ghRun = (args) => spawnSync("gh", args, { encoding: "utf8", maxBuffer: 16 
  * that waits for every other job) passed, the lookup the release workflows make on the tagged commit. `gh` is injected for the
  * tests; the default is the gh CLI, which must be installed and signed in.
  */
-export const ciProblems = (sha, gh = ghRun, slug = "argusvane/datum") => {
-  // Only github.com's active account: another host's expired login must not refuse a maintainer signed in here.
-  const auth = gh(["auth", "status", "--active", "--hostname", "github.com"]);
+export const ciProblems = (sha, gh = ghRun, slug = "argusvane/datum", env = process.env) => {
+  // Only github.com's active account: another host's expired login must not refuse a maintainer signed in here. On a
+  // workflow runner GH_TOKEN is the job's token, which `gh auth status` may not be able to describe (it is no user's), so
+  // the status is not asked; a token that cannot read the runs fails the lookup below, which says so.
+  const auth = env.GH_TOKEN ? { status: 0 } : gh(["auth", "status", "--active", "--hostname", "github.com"]);
   if (auth.error !== undefined && auth.error.code === "ENOENT") {
     return ["the gh CLI is not installed, so CI on HEAD cannot be checked; install it (https://cli.github.com) and run gh auth login"];
   }
@@ -457,7 +470,7 @@ export const checkTestSupportModules = (root = jvm) => {
 
 // ---- the README of the release directory ----
 
-export const readmeText = ({ version, tag, builtAt, assets, dryRun }) => [
+export const readmeText = ({ version, tag, builtAt, assets, dryRun, staged = false }) => [
   `# Datum for the JVM ${version}`,
   "",
   `Built ${builtAt.slice(0, 10)} from commit \`${assets.source ?? "unknown"}\` of <${REPOSITORY}>: engine ${assets.engineVersion}, sandbox ABI ${assets.sandboxAbi}, PDF ABI ${assets.pdfAbi}, assets build \`${assets.buildId}\`. MIT licence. Java 17 or later; the Spring Boot bindings are for Spring Boot 4.`,
@@ -494,13 +507,18 @@ export const readmeText = ({ version, tag, builtAt, assets, dryRun }) => [
   "",
   "- `release.json`: the version, the sources it was built from and every published artifact (jars, the flattened poms as deployed, signatures) with its size and SHA-256.",
   "- `SHA256SUMS`: the same sums, paths relative to `integrations/jvm`; `shasum -a 256 -c SHA256SUMS` from there.",
+  ...(staged ? ["- `central-bundle.zip`: the bundle staged for Central, unsigned; its SHA-256 is in `release.json`."] : []),
   "",
   "## Tag",
   "",
-  dryRun
-    ? `A real release is built from the commit the tag ${tag} names, created before the run.`
-    : `The jars were built from the commit the tag ${tag} names, created before the run. Pushing the tag starts the npm and PyPI workflows:`,
-  ...(dryRun ? [] : ["", "```sh", `git push origin ${tag}`, "```"]),
+  ...(staged
+    ? [`The jars were built from the commit the tag ${tag} names, by the Release Maven workflow. Nothing here is signed: the workflow's publish job signs \`central-bundle.zip\` and uploads it to Central.`]
+    : [
+      dryRun
+        ? `A real release is built from the commit the tag ${tag} names, created before the run.`
+        : `The jars were built from the commit the tag ${tag} names, created before the run. Pushing the tag starts the npm and PyPI workflows:`,
+      ...(dryRun ? [] : ["", "```sh", `git push origin ${tag}`, "```"])
+    ]),
   ""
 ].join("\n");
 
@@ -519,6 +537,7 @@ const main = () => {
     process.exit(1);
   };
   const dryRun = argv.includes("--dry-run");
+  const stage = argv.includes("--stage");
   const publish = argv.includes("--publish");
   const allowStale = argv.includes("--allow-stale");
   const checkOnly = argv.includes("--check-only");
@@ -532,8 +551,8 @@ const main = () => {
   if (!checkOnly && /SNAPSHOT/.test(version)) {
     fail("release: a SNAPSHOT version cannot be released.");
   }
-  if (dryRun && publish) {
-    fail("release: --dry-run and --publish exclude each other.");
+  if ([dryRun, stage, publish, checkOnly].filter(Boolean).length > 1) {
+    fail("release: --dry-run, --stage, --publish and --check-only exclude each other.");
   }
   if (!dryRun && !checkOnly) {
     const refused = realRunProblems({ version, allowStale, skipSecuritySuite: argv.includes("--skip-security-suite") });
@@ -598,15 +617,15 @@ const main = () => {
     }
 
     // 3. Maven. A real deploy needs the maintainer's GPG key and Central token; refuse early, without reading
-    // either, when the settings file does not even name the server.
-    if (!dryRun) {
+    // either, when the settings file does not even name the server. A staged run needs neither.
+    if (!dryRun && !stage) {
       const settings = join(process.env.HOME ?? "", ".m2", "settings.xml");
       if (!existsSync(settings) || !/<id>\s*central\s*<\/id>/.test(readFileSync(settings, "utf8"))) {
         fail("release: ~/.m2/settings.xml has no <server> with <id>central</id> (the Central Portal token); use --dry-run to build without publishing.");
       }
     }
     // Build (and, in verify, sign) first; the upload is a separate run after the post-checks.
-    const built = mavenRun([`-Drevision=${version}`, ...(dryRun ? ["-Dgpg.skip=true"] : []), "clean", "verify"]);
+    const built = mavenRun([`-Drevision=${version}`, ...(dryRun || stage ? ["-Dgpg.skip=true"] : []), "clean", "verify"]);
     if (built.status !== 0) {
       fail(`release: Maven verify failed (exit ${built.status}); nothing uploaded.`);
     }
@@ -617,7 +636,7 @@ const main = () => {
   const problems = [];
   const artifacts = [];
   for (const module of modules) {
-    const result = checkModule(module, version, { signed: !dryRun && !checkOnly, allowSnapshot: checkOnly && /-SNAPSHOT$/.test(version) });
+    const result = checkModule(module, version, { signed: !dryRun && !checkOnly && !stage, allowSnapshot: checkOnly && /-SNAPSHOT$/.test(version) });
     problems.push(...result.problems);
     artifacts.push({ artifactId: module.artifactId, path: module.path, packaging: module.packaging, files: result.jars });
   }
@@ -638,7 +657,9 @@ const main = () => {
   const jarCount = allFiles.filter((file) => file.file.endsWith(".jar")).length;
   console.log(`release: post-checks passed: ${jarCount} jars and ${allFiles.length - jarCount} poms or signatures over ${modules.length} modules, no tests jar.`);
 
-  // 3c. The upload, only now. No clean: the jars that passed are the jars that go; the sums prove it afterwards.
+  // 3c. The upload (or, staged, the bundle), only now. No clean: the jars that passed are the jars that go; the sums prove it
+  // afterwards.
+  let stagedBundle;
   if (!checkOnly && !dryRun) {
     // The build must not have moved the tree or the checkout off the tag since step 0: the jars are of the tagged commit only
     // while that still holds.
@@ -648,10 +669,14 @@ const main = () => {
     }
     // -Ddatum.assets.skip=true: the checked jars were built from the assets of the first run; generating them again would
     // rewrite the resources, repackage the jars and change the sums the checks above were taken over.
+    // A staged run deploys with -DskipUpload=true: the plugin assembles the bundle and stops, and nothing is signed.
     const deployStarted = Date.now();
-    const deployed = mavenRun([`-Drevision=${version}`, "-DskipTests", "-DskipITs", "-Ddatum.assets.skip=true", ...(publish ? ["-DautoPublish=true"] : []), "deploy"]);
+    const stagingFlags = stage ? ["-Dgpg.skip=true", "-DskipUpload=true"] : [];
+    const deployed = mavenRun([`-Drevision=${version}`, "-DskipTests", "-DskipITs", "-Ddatum.assets.skip=true", ...stagingFlags, ...(publish ? ["-DautoPublish=true"] : []), "deploy"]);
     if (deployed.status !== 0) {
-      fail(`release: Maven deploy failed (exit ${deployed.status}); check the Central portal before running again.`);
+      fail(stage
+        ? `release: staging the bundle failed (exit ${deployed.status}); nothing was uploaded.`
+        : `release: Maven deploy failed (exit ${deployed.status}); check the Central portal before running again.`);
     }
     // The signing step ran again in the deploy run: its .asc files are new, so their sums are taken again.
     for (const file of allFiles.filter((entry) => entry.kind === "signature")) {
@@ -671,8 +696,11 @@ const main = () => {
       bundleProblems.push(`${uploaded} predates the deploy, so no bundle from this run was found`);
     }
     if (bundleProblems.length > 0) {
-      fail(`release: the uploaded bundle is wrong; drop the deployment in the Central portal instead of publishing it:\n  - ${bundleProblems.join("\n  - ")}`);
+      fail(stage
+        ? `release: the staged bundle is wrong; nothing was uploaded:\n  - ${bundleProblems.join("\n  - ")}`
+        : `release: the uploaded bundle is wrong; drop the deployment in the Central portal instead of publishing it:\n  - ${bundleProblems.join("\n  - ")}`);
     }
+    stagedBundle = uploaded;
   }
 
   // --check-only is a read-only look at the jars already built: no dist/ directory, SHA256SUMS or release.json is
@@ -701,12 +729,19 @@ const main = () => {
   mkdirSync(staging, { recursive: true });
   const allJars = allFiles;
   writeFileSync(join(staging, "SHA256SUMS"), allJars.map((jar) => `${jar.sha256}  ${jar.file}\n`).join(""));
+  // Staged: the bundle the publish job signs travels in this directory, named by its sum.
+  const bundle = stage ? { file: "central-bundle.zip", sha256: sha256(stagedBundle) } : undefined;
+  if (bundle !== undefined) {
+    writeFileSync(join(staging, bundle.file), readFileSync(stagedBundle));
+  }
   writeFileSync(join(staging, "release.json"), `${JSON.stringify({
     "//": "Written by integrations/jvm/scripts/release.mjs.",
     version,
     tag,
     groupId: GROUP_ID,
     dryRun,
+    staged: stage,
+    ...(bundle !== undefined ? { bundle } : {}),
     builtAt,
     source: assets.source,
     engineVersion: assets.engineVersion,
@@ -715,11 +750,15 @@ const main = () => {
     assetsBuildId: assets.buildId,
     artifacts
   }, null, 2)}\n`);
-  writeFileSync(join(staging, "README.md"), readmeText({ version, tag, builtAt, assets, dryRun }));
+  writeFileSync(join(staging, "README.md"), readmeText({ version, tag, builtAt, assets, dryRun, staged: stage }));
   rmSync(out, { recursive: true, force: true });
   renameSync(staging, out);
-  console.log(`release: ${relative(repo, out)} written (${allJars.length} files${dryRun ? ", dry run: nothing signed or uploaded" : ""}).`);
+  console.log(`release: ${relative(repo, out)} written (${allJars.length} files${dryRun ? ", dry run: nothing signed or uploaded" : ""}${stage ? ", staged: nothing signed or uploaded" : ""}).`);
   if (dryRun) {
+    return;
+  }
+  if (stage) {
+    console.log(`release: staged ${relative(repo, join(out, bundle.file))} (sha256 ${bundle.sha256}); central-publish.mjs signs and uploads it.`);
     return;
   }
   console.log([
