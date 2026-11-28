@@ -1587,10 +1587,12 @@ class JourneyBuilderModeImpl implements JourneyBuilderMode {
     const removed = this.model.require(id);
     const next = removeJourney(this.model.configuration, id);
     // The journey's translations go from every language with it, in the same step of
-    // the form's history as the journey.
+    // the form's history as the journey. Its designer goes too, its Step view with it: once
+    // the entry is gone nothing else would release that view's listeners on the form.
     this.formSteps.stepped(() => {
       const entry = this.entries.get(id);
       if (entry) {
+        entry.step?.dispose();
         entry.unsubscribe();
         this.entries.delete(id);
       }
