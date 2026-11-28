@@ -30,6 +30,7 @@ import { journeyEntryPlacesForm, journeyOwnership, journeyPageOfComponent } from
 import type { JourneyOwnership, JourneyTrace } from "../../core/journey/journey-types.js";
 import { readInlineOptions } from "../../core/schema/inline-options.js";
 import { collectionPathOf, createValuePathResolver, holdsData } from "../../core/tree/data-scope.js";
+import { printFormula } from "../formula/feel-print.js";
 
 /** The slot of the step's drawn root that holds the form, which the review lists from and never draws. */
 export const REVIEW_ANSWERS_SLOT = "review-answers";
@@ -230,7 +231,7 @@ export function reviewAnswersForm(formRoot: ComponentNode, listed: ReadonlySet<s
     } else if (below && !collection && holdsData(node)) {
       const placeholder = placeholderOf(node, word);
       if (placeholder !== undefined) {
-        out.rules = { value: { kind: "literal", value: placeholder } };
+        out.rules = { value: printFormula({ kind: "literal", value: placeholder }) };
       }
     }
     return out;

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import type { PdfFillArea } from "@argusvane/datum-engine/render";
 import { fillTemplate, inspectTemplate } from "../src/kernel/template.js";
-import { ENV, fonts } from "./helpers.js";
+import { ENV, fonts, PLAN_THEME } from "./helpers.js";
 import { FILL_OPTIONS } from "./pdfa-fixtures.js";
 
 /**
@@ -78,7 +78,7 @@ describe("template pages as shown (cropped, turned)", () => {
       { id: `text_${page}`, page, rect: { x: 30, y: 40, width: 150, height: 30 }, value: `Answer ${page}`, draw },
       { id: `field_${page}`, page, rect: { x: 30, y: 100, width: 120, height: 20 }, value: `Filled ${page}`, draw, field: { name: `Area field ${page}`, required: false, readOnly: false } }
     ]);
-    const filled = await fillTemplate(bytes, {}, FILL_OPTIONS, await fonts(), ENV, areas);
+    const filled = await fillTemplate(bytes, {}, FILL_OPTIONS, await fonts(), ENV, areas, undefined, undefined, PLAN_THEME);
     expect(filled.areas?.map((report) => report.status)).toEqual(areas.map(() => "filled"));
     const { pdf, pdfjs, task } = await pdfjsDocument(filled.bytes);
     for (const pageIndex of [1, 2, 3, 4]) {

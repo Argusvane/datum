@@ -8,7 +8,6 @@ import {
   renderFormPdf,
   selectPdfLayoutForValues,
   type ComponentNode,
-  type Expression,
   type FormDefinition,
   type Journey,
   type PdfGeneratedLayout,
@@ -37,11 +36,11 @@ import type { SubmissionRecord, SubmissionSettings } from "../src/types.js";
  * chooses nothing on either side, even where the raw state still holds it.
  */
 
-const eq = (path: string, value: string | boolean): Expression => ({ kind: "binary", operator: "eq", left: { kind: "path", path }, right: { kind: "literal", value } });
+const eq = (path: string, value: string | boolean): string => `${path} = ${JSON.stringify(value)}`;
 // not(empty(path)), not the bare path: a condition holds only for true (strict truthiness), so a text answer is no yes.
-const answered = (path: string): Expression => ({ kind: "unary", operator: "not", operand: { kind: "call", name: "empty", args: [{ kind: "path", path }] } });
+const answered = (path: string): string => `not(empty(${path}))`;
 
-function layout(id: string, when?: Expression): PdfGeneratedLayout {
+function layout(id: string, when?: string): PdfGeneratedLayout {
   return {
     id,
     kind: "generated",
@@ -79,7 +78,7 @@ function provinces(behaviour: "clear" | "exclude-from-submission" | "retain"): F
 }
 
 /** The Rules tab's "ratio / does not equal / null" row. */
-const ratioKnown: Expression = { kind: "binary", operator: "neq", left: { kind: "path", path: "ratio" }, right: { kind: "literal", value: null } };
+const ratioKnown = "ratio != null";
 
 /**
  * A household ratio that has no answer when the household is left empty or 0 (`undefined` in
@@ -91,7 +90,7 @@ function household(): FormDefinition {
     [
       field("income", { required: true }, { type: "number" }),
       field("members", {}, { type: "number" }),
-      field("ratio", {}, { type: "number", rules: { value: { kind: "arithmetic", operator: "divide", left: { kind: "path", path: "income" }, right: { kind: "path", path: "members" } } } }),
+      field("ratio", {}, { type: "number", rules: { value: "income / members" } }),
       field("explain", { required: true }, { rules: { visibleWhen: ratioKnown } }),
       field("shared", { required: true }),
       field("contact")
@@ -113,7 +112,7 @@ function campaign(): FormDefinition {
   return definitionOf("campaign", [field("name", { required: true })], [layout("campaign", eq("campaign", "spring"))]);
 }
 
-const bigOrder: Expression = { kind: "binary", operator: "gt", left: { kind: "path", path: "orders[0].qty" }, right: { kind: "literal", value: 5 } };
+const bigOrder = "`orders[0].qty` > 5";
 
 /**
  * A data grid whose rows the runtime keeps at `orders[i].<column>`: the first row's quantity
@@ -143,7 +142,7 @@ function requiredRatio(): FormDefinition {
     [
       field("income", { required: true }, { type: "number" }),
       field("members", {}, { type: "number" }),
-      field("ratio", { required: true }, { type: "number", rules: { value: { kind: "arithmetic", operator: "divide", left: { kind: "path", path: "income" }, right: { kind: "path", path: "members" } } } })
+      field("ratio", { required: true }, { type: "number", rules: { value: "income / members" } })
     ],
     []
   );

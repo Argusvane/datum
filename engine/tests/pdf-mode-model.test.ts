@@ -99,7 +99,7 @@ describe("PdfModeModel", () => {
   });
 
   it("keeps the page on the layout it shows once a designer holds it", () => {
-    const quebec = { kind: "binary", operator: "eq", left: { kind: "path", path: "province" }, right: { kind: "literal", value: "QC" } } as const;
+    const quebec = 'province = "QC"';
     // Opened with nothing chosen: the page is the first layout, the default for want of one.
     const model = new PdfModeModel({ pdf: { layouts: [generated("client"), PAPER] }, root: FORM });
     expect(model.layoutId).toBeUndefined();
@@ -124,7 +124,7 @@ describe("PdfModeModel", () => {
   });
 
   it("takes a built designer's layout back without declaring a default the definition lacks", () => {
-    const quebec = { kind: "binary", operator: "eq", left: { kind: "path", path: "province" }, right: { kind: "literal", value: "QC" } } as const;
+    const quebec = 'province = "QC"';
     const model = new PdfModeModel({ pdf: { layouts: [{ ...generated("client"), when: quebec }, PAPER] }, root: FORM });
     // Opening the layout: the designer's seeding comes back, and the definition keeps its shape.
     model.replaceQuietly("client", { ...generated("client", "Client"), when: quebec }, { declareDefault: false });

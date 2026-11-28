@@ -63,7 +63,7 @@ builder" is the pair.
    the ES form bundle that shares its engine code; nothing is fetched until the first PDF.
 
 4. **The builder loads the PDF side lazily, in layers.** `<datum-form-builder>` registers the PDF
-   mode on connect unless `pdf="off"`, and the mode and the designer's chunk (the add popover, the
+   mode on connect unless its `features` list leaves the PDF side out (`-pdf`), and the mode and the designer's chunk (the add popover, the
    template planners) are chunks of the builder's own bundle, loaded when the PDF side is on and a
    layout opens, a preview runs or an add is asked for.
 
@@ -77,7 +77,7 @@ builder" is the pair.
 5. **The renderer is opt-in; the builder is opt-out.** `<datum-form>` without `pdf` shows no PDF
    button and never loads the pipeline chunk or `datum-pdf.js`; `pdf="auto"` (or a URL) loads both
    on the first PDF. `<datum-form-builder>` needs no attribute (`"auto"` means the same);
-   `pdf="off"` removes the PDF mode for a host that never wants it; a URL loads a different
+   `features="-pdf"` removes the PDF mode for a host that never wants it; a URL loads a different
    executor module instead of the bundled chunk.
 
    The `features` list (ADR 0143) is the master over both, and `pdf` configures the PDF feature

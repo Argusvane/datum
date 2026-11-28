@@ -228,7 +228,7 @@ export interface KernelFoldResult {
    * ({@link kernelFoldRowBounds}): grid id -> `{ min?, max? }`, the values as evaluated, for
    * `resolveDataGridRowBounds` (`core/schema/data-grid.ts`) or the kernel's mirror to weigh against
    * the fixed bounds. Present only when the input has `ruleRowBound` and some grid carries such a
-   * rule, so a form without one folds to the result it always did.
+   * rule.
    */
   rowBounds?: Record<string, { min?: unknown; max?: unknown }>;
   /** The journey's path, when there is a journey. */
@@ -632,7 +632,7 @@ export function kernelFoldValidReadsHost(node: ComponentNode, today?: string, si
  * (`hiddenRequiredBehavior: "required"`, which holds whether it is shown or not). Only
  * requiredness is read as hidden: the node stays visible by its configuration for validation
  * and for its answer's hidden-value policy, which is untouched (a forged value for a field
- * hidden to some viewers is kept, as before). The browser, which can replay the rule, keeps
+ * hidden to some viewers is kept). The browser, which can replay the rule, keeps
  * its own reading. `order` is document pre-order, root first, so a parent is read before its
  * children; the root is never relaxed. Returns the ids whose own `visibleWhen` was skipped, in
  * document order, which the outcome lists as `visibilitySkipped`. `hostKnown`: the run was given

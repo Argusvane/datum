@@ -78,7 +78,7 @@ const LAYOUTS: ComponentNode = group("root", "form", [
   },
   group("people", "panel", [field("personName"), field("personAge", "number")], { collection: { collectionPath: "people" } }),
   field("secret", "text", { configuration: { label: "secret", hidden: true } }),
-  field("total", "number", { rules: { value: { kind: "arithmetic", operator: "add", left: { kind: "path", path: "age" }, right: { kind: "literal", value: 1 } } } }),
+  field("total", "number", { rules: { value: "age + 1" } }),
   { id: "note", type: "html", configuration: { content: "<p>Thanks.</p>" } },
   button("submit")
 ]);
@@ -135,7 +135,7 @@ describe("journeyFromForm: sections", () => {
   });
 
   it("never gives a calculated field a page of its own: it rides with the next page, or the run it sits in", () => {
-    const total = field("total", "number", { rules: { value: { kind: "literal", value: 1 } } });
+    const total = field("total", "number", { rules: { value: "1" } });
     const between = group("root", "form", [group("g1", "panel", [field("a")]), total, group("g2", "panel", [field("b")]), button("submit")]);
     const journey = journeyFromForm(between, { id: "j", shape: "sections" });
     expect(members(journey)).toEqual([["g1"], ["total", "g2", "submit"]]);
@@ -327,7 +327,7 @@ describe("unassignedMembers", () => {
   });
 
   it("lists a hidden field a rule may show, as the diagnostics judge it, and never one hidden for good — not even an opt-in the diagnostics hold required", () => {
-    const show = { kind: "binary", operator: "eq", left: { kind: "path", path: "name" }, right: { kind: "literal", value: "x" } } as const;
+    const show = 'name = "x"';
     const root = group("root", "form", [
       field("name"),
       field("reveal", "text", { configuration: { label: "reveal", hidden: true, required: true }, rules: { visibleWhen: show } }),

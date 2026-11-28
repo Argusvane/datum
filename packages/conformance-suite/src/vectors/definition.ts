@@ -344,7 +344,7 @@ export const DEFINITION_VECTORS: Vector[] = [
   }),
   def({
     id: "DEF-12",
-    title: "Formula problems: an unknown function or a risky pattern is reported by where and code, and the verdict follows the formulaErrors word (a server rule's unknown function fails under every word)",
+    title: "Formula problems: an unknown function, a risky pattern or a rule written as an expression tree (invalidRule) is reported by where and code, and the verdict follows the formulaErrors word (a server rule's unknown function fails under every word)",
     severity: "S3",
     input: request("check"),
     fixture: textFixture(unknownBrowserFunction),
@@ -354,18 +354,18 @@ export const DEFINITION_VECTORS: Vector[] = [
       variant("risky-pattern", riskyMatches, all(ok, verdictIs("fail"), problems({ includes: ["pattern.risky"] }))),
       variant("browser-function-under-warn", unknownBrowserFunction, all(ok, verdictIs("warn")), { input: request("check", ',"formulaErrors":"warn"') }),
       variant("server-function-under-warn-still-fails", unknownServerFunction, all(ok, verdictIs("fail")), { input: request("check", ',"formulaErrors":"warn"') }),
-      // A rule written as a tree goes through the same guards as the formula.
+      // A rule written as an expression tree is refused (invalidRule), bare or in the object form, whatever it calls.
       variant(
-        "tree-calling-an-unknown-function",
-        () => edited((def) => contentOf(def).push({ id: "tx", type: "text", configuration: {}, rules: { visibleWhen: { kind: "call", name: "noSuchFunction", args: [] } } })),
-        all(ok, verdictIs("fail"), problems({ includes: ["unknownFunction@rules:tx:visibleWhen"] })),
+        "a-tree-is-refused",
+        () => edited((def) => contentOf(def).push({ id: "tx", type: "text", configuration: {}, rules: { visibleWhen: { kind: "binary", operator: "eq", left: { kind: "path", path: "name" }, right: { kind: "literal", value: "x" } } } })),
+        all(ok, verdictIs("fail"), problems({ includes: ["invalidRule@rules:tx:visibleWhen"] })),
         { gate: ENFORCED }
       ),
       variant(
-        "tree-calling-an-unknown-function-under-warn-still-fails",
+        "a-server-tree-in-the-object-form-is-refused",
         () => edited((def) => contentOf(def).push({ id: "tx", type: "text", configuration: {}, rules: { visibleWhen: { expression: { kind: "call", name: "noSuchFunction", args: [] }, run: "server" } } })),
-        all(ok, verdictIs("fail")),
-        { input: request("check", ',"formulaErrors":"warn"'), gate: ENFORCED }
+        all(ok, verdictIs("fail"), problems({ includes: ["invalidRule@rules:tx:visibleWhen"] })),
+        { gate: ENFORCED }
       ),
       variant(
         "malformed-tree",

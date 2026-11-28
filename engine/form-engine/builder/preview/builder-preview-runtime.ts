@@ -82,7 +82,7 @@ export interface BuilderPreviewRuntimeOptions {
   translationCatalog?: TranslationCatalog | undefined;
   /**
    * The calendar day the rules read (`today()`, `age()`), `YYYY-MM-DD`. Without one the
-   * orchestrator evaluates a day-reading rule with no day, as before; Logic's Try it passes
+   * orchestrator evaluates a day-reading rule with no day; Logic's Try it passes
    * the day the author chose.
    */
   today?: string | undefined;
@@ -389,7 +389,7 @@ export class BuilderPreviewRuntime implements RenderHostRuntime {
    * the view is drawn, once (one `FORM_INITIALIZED`), and a repaint over both unchanged draws
    * nothing. A tree that cannot be read (a root `ComponentTree` refuses) is not taken: the last
    * one that could goes on being drawn, with the view it was drawn as, and nothing is thrown at
-   * the paint. Two nodes under one id are read as before (the Form canvas draws a loaded
+   * the paint. Two nodes under one id are taken, not refused (the Form canvas draws a loaded
    * definition's duplicate as two boxes and goes on drawing every edit).
    */
   public setFormRoot(root: ComponentNode, options: BuilderPreviewRootOptions = {}): void {

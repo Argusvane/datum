@@ -21,7 +21,6 @@ import {
   ValidationPipeline,
   WasmValidationHost,
   type ComponentNode,
-  type Expression,
   type FormDefinition,
   type FormulaErrorPolicy,
   type Journey,
@@ -232,9 +231,7 @@ describe("QuickJS vs in-process kernel parity (two genuinely different JS engine
     const abi = new JsonWasmAbi();
     const inProcess = new InProcessWasmHostAdapter().instantiate([], abi);
     const quickJs = await new QuickJsWasmHostAdapter().instantiate([], abi);
-    const path = (name: string): Expression => ({ kind: "path", path: name });
-    const literal = (value: string | number | boolean): Expression => ({ kind: "literal", value });
-    const isFull: Expression = { kind: "binary", operator: "eq", left: path("kind"), right: literal("full") };
+    const isFull = 'kind = "full"';
     const form: ComponentNode = {
       id: "form",
       type: "form",
@@ -243,9 +240,9 @@ describe("QuickJS vs in-process kernel parity (two genuinely different JS engine
         content: [
           { id: "kind", type: "select", configuration: { options: [{ value: "short", label: "short" }, { value: "full", label: "full" }, { value: "skip", label: "skip" }, { value: "next", label: "next" }, { value: "route", label: "route" }, { value: "summary", label: "summary" }, { value: "questions", label: "questions" }] } },
           { id: "birth_year", type: "number", configuration: {} },
-          { id: "age", type: "number", configuration: {}, rules: { value: { kind: "arithmetic", operator: "subtract", left: literal(2026), right: path("birth_year") } } },
-          { id: "minor", type: "checkbox", configuration: {}, rules: { value: { kind: "binary", operator: "lt", left: path("age"), right: literal(18) } } },
-          { id: "guardian", type: "text", configuration: { required: true }, rules: { visibleWhen: { kind: "binary", operator: "eq", left: path("minor"), right: literal(true) } } },
+          { id: "age", type: "number", configuration: {}, rules: { value: "2026 - birth_year" } },
+          { id: "minor", type: "checkbox", configuration: {}, rules: { value: "age < 18" } },
+          { id: "guardian", type: "text", configuration: { required: true }, rules: { visibleWhen: "minor = true" } },
           // Retained: the subject is that a hidden answer is still sent, so its format still holds.
           { id: "note", type: "text", configuration: { maxLength: 4, pattern: "[a-z]+", hiddenValueBehavior: "retain" }, rules: { visibleWhen: isFull } },
           {
@@ -256,15 +253,15 @@ describe("QuickJS vs in-process kernel parity (two genuinely different JS engine
             children: { content: [{ id: "sku", type: "text", configuration: {} }] }
           },
           // empty() keeps each rule a real yes or no: a condition holds only for true (strict truthiness).
-          { id: "a", type: "text", configuration: { hiddenValueBehavior: "exclude-from-submission" }, rules: { visibleWhen: { kind: "call", name: "empty", args: [path("b")] } } },
-          { id: "b", type: "text", configuration: { hiddenValueBehavior: "exclude-from-submission" }, rules: { visibleWhen: { kind: "unary", operator: "not", operand: { kind: "call", name: "empty", args: [path("a")] } } } }
+          { id: "a", type: "text", configuration: { hiddenValueBehavior: "exclude-from-submission" }, rules: { visibleWhen: "empty(b)" } },
+          { id: "b", type: "text", configuration: { hiddenValueBehavior: "exclude-from-submission" }, rules: { visibleWhen: "not(empty(a))" } }
         ]
       }
     };
     const journey: Journey = {
       id: "order",
       pages: [
-        { id: "start", components: ["kind", "birth_year", "guardian", "note", "a", "b"], routes: [{ when: { kind: "unary", operator: "not", operand: isFull }, to: "$end" }] },
+        { id: "start", components: ["kind", "birth_year", "guardian", "note", "a", "b"], routes: [{ when: `not(${isFull})`, to: "$end" }] },
         { id: "full", components: ["items"] }
       ]
     };
@@ -388,12 +385,7 @@ describe("QuickJS vs in-process kernel parity (two genuinely different JS engine
     };
     const inProcess = new InProcessWasmHostAdapter().instantiate([flagging], abi);
     const quickJs = await new QuickJsWasmHostAdapter().instantiate([toSourcePlugin(flagging)], abi);
-    const eq = (path: string, value: string | boolean) => ({
-      kind: "binary" as const,
-      operator: "eq" as const,
-      left: { kind: "path" as const, path },
-      right: { kind: "literal" as const, value }
-    });
+    const eq = (path: string, value: string | boolean): string => `${path} = ${JSON.stringify(value)}`;
     const form: ComponentNode = {
       id: "form",
       type: "form",
@@ -464,12 +456,7 @@ describe("QuickJS vs in-process kernel parity (two genuinely different JS engine
     const abi = new JsonWasmAbi();
     const inProcess = new InProcessWasmHostAdapter().instantiate([], abi);
     const quickJs = await new QuickJsWasmHostAdapter().instantiate([], abi);
-    const eq = (path: string, value: string) => ({
-      kind: "binary" as const,
-      operator: "eq" as const,
-      left: { kind: "path" as const, path },
-      right: { kind: "literal" as const, value }
-    });
+    const eq = (path: string, value: string): string => `${path} = ${JSON.stringify(value)}`;
     const form: ComponentNode = {
       id: "form",
       type: "form",
@@ -525,7 +512,6 @@ describe("QuickJS vs in-process kernel parity (two genuinely different JS engine
     const abi = new JsonWasmAbi();
     const inProcess = new InProcessWasmHostAdapter().instantiate([], abi);
     const quickJs = await new QuickJsWasmHostAdapter().instantiate([], abi);
-    const path = (name: string): Expression => ({ kind: "path", path: name });
     const envelope = { form: { id: "f", version: "1" }, client: { runtimeVersion: "1.0.0", rendererVersion: "1.0.0", schemaVersion: "1" } };
     const codes = (errors: ReadonlyArray<{ code: string; componentId?: string | undefined }>) => errors.map((error) => `${error.componentId ?? "-"}:${error.code}`).sort();
     const definitionOf = (content: ComponentNode[]): FormDefinition => ({ id: "f", version: "1", schemaVersion: "1", root: { id: "form", type: "form", configuration: {}, children: { content } } });
@@ -556,8 +542,8 @@ describe("QuickJS vs in-process kernel parity (two genuinely different JS engine
     const household = definitionOf([
       { id: "income", type: "number", configuration: { required: true } },
       { id: "members", type: "number", configuration: {} },
-      { id: "ratio", type: "number", configuration: { required: true }, rules: { value: { kind: "arithmetic", operator: "divide", left: path("income"), right: path("members") } } },
-      { id: "fee", type: "number", configuration: {}, rules: { value: { kind: "arithmetic", operator: "multiply", left: path("members"), right: { kind: "literal", value: 2 } } } }
+      { id: "ratio", type: "number", configuration: { required: true }, rules: { value: "income / members" } },
+      { id: "fee", type: "number", configuration: {}, rules: { value: "members * 2" } }
     ]);
     for (const members of [undefined, 0]) {
       for (const sandboxed of [true, false]) {
@@ -596,7 +582,7 @@ describe("QuickJS vs in-process kernel parity (two genuinely different JS engine
     }
 
     // A data grid's first row decides whether `rush` is asked; its rows are keys the schema defines.
-    const bigOrder: Expression = { kind: "binary", operator: "gt", left: path("orders[0].qty"), right: { kind: "literal", value: 5 } };
+    const bigOrder = "`orders[0].qty` > 5";
     const ordering = definitionOf([
       {
         id: "orders_grid",
@@ -650,10 +636,8 @@ describe("QuickJS vs in-process kernel parity (two genuinely different JS engine
     const abi = new JsonWasmAbi();
     const inProcess = new InProcessWasmHostAdapter().instantiate([], abi);
     const quickJs = await new QuickJsWasmHostAdapter().instantiate([], abi);
-    const path = (name: string): Expression => ({ kind: "path", path: name });
-    const literal = (value: string | number | boolean | null): Expression => ({ kind: "literal", value });
-    const eq = (name: string, value: string | number | boolean | null): Expression => ({ kind: "binary", operator: "eq", left: path(name), right: literal(value) });
-    const ratioKnown: Expression = { kind: "binary", operator: "neq", left: path("ratio"), right: literal(null) };
+    const eq = (name: string, value: string | number | boolean | null): string => `${name} = ${JSON.stringify(value)}`;
+    const ratioKnown = "ratio != null";
     const envelope = { form: { id: "reach", version: "1" }, client: { runtimeVersion: "1.0.0", rendererVersion: "1.0.0", schemaVersion: "1" } };
     const codes = (errors: ReadonlyArray<{ code: string; componentId?: string | undefined }>) => errors.map((error) => `${error.componentId ?? "-"}:${error.code}`).sort();
     const field = (id: string, configuration: Record<string, unknown> = {}, extra: Partial<ComponentNode> = {}): ComponentNode => ({ id, type: "text", configuration, ...extra });
@@ -661,7 +645,7 @@ describe("QuickJS vs in-process kernel parity (two genuinely different JS engine
     const journey: Journey = {
       id: "reach",
       pages: [
-        { id: "how", components: ["contact", "phone", "gate", "secret", "echo", "branch"], routes: [{ when: { kind: "unary", operator: "not", operand: eq("branch", "x") }, to: "finish" }] },
+        { id: "how", components: ["contact", "phone", "gate", "secret", "echo", "branch"], routes: [{ when: `not(${eq("branch", "x")})`, to: "finish" }] },
         { id: "detailed", components: ["detail"] },
         { id: "finish", components: ["extra", "billing", "staff_note", "both", "income", "members", "ratio", "per_head"], routes: [{ to: "$end" }] }
       ]
@@ -689,7 +673,7 @@ describe("QuickJS vs in-process kernel parity (two genuinely different JS engine
             field("both", { required: true }, { rules: { requiredWhen: eq("contact", "never") } }),
             field("income", {}, { type: "number" }),
             field("members", {}, { type: "number" }),
-            field("ratio", {}, { type: "number", rules: { value: { kind: "arithmetic", operator: "divide", left: path("income"), right: path("members") } } }),
+            field("ratio", {}, { type: "number", rules: { value: "income / members" } }),
             field("per_head", {}, { rules: { requiredWhen: ratioKnown } })
           ]
         }
@@ -814,9 +798,7 @@ describe("QuickJS vs in-process kernel parity (two genuinely different JS engine
     const abi = new JsonWasmAbi();
     const inProcess = new InProcessWasmHostAdapter().instantiate([], abi);
     const quickJs = await new QuickJsWasmHostAdapter().instantiate([], abi);
-    const path = (name: string): Expression => ({ kind: "path", path: name });
-    const literal = (value: string | number | boolean | null): Expression => ({ kind: "literal", value });
-    const eq = (name: string, value: string | number | boolean | null): Expression => ({ kind: "binary", operator: "eq", left: path(name), right: literal(value) });
+    const eq = (name: string, value: string | number | boolean | null): string => `${name} = ${JSON.stringify(value)}`;
     const staff = eq("host.role", "staff");
     const envelope = { form: { id: "short", version: "1" }, client: { runtimeVersion: "1.0.0", rendererVersion: "1.0.0", schemaVersion: "1" } };
     const codes = (errors: ReadonlyArray<{ code: string; componentId?: string | undefined }>) => errors.map((error) => `${error.componentId ?? "-"}:${error.code}`).sort();
@@ -826,7 +808,7 @@ describe("QuickJS vs in-process kernel parity (two genuinely different JS engine
     const journey: Journey = {
       id: "short",
       pages: [
-        { id: "start", components: ["resident"], routes: [{ when: { kind: "unary", operator: "not", operand: eq("resident", "yes") }, to: "$end" }] },
+        { id: "start", components: ["resident"], routes: [{ when: `not(${eq("resident", "yes")})`, to: "$end" }] },
         { id: "more", components: ["extra"] }
       ]
     };
@@ -848,7 +830,7 @@ describe("QuickJS vs in-process kernel parity (two genuinely different JS engine
             { id: "staff_box", type: "fieldset", configuration: {}, rules: { visibleWhen: staff }, children: { content: [field("nested_ref", { required: true })] } },
             field("opt_in", { hidden: true, required: true, hiddenRequiredBehavior: "required", hiddenValidationBehavior: "validate" }),
             field("cost", {}, { type: "number" }),
-            field("total", {}, { type: "number", rules: { value: { kind: "arithmetic", operator: "multiply", left: path("cost"), right: literal(2) } } }),
+            field("total", {}, { type: "number", rules: { value: "cost * 2" } }),
             field("code", { pattern: "[A-Z]{3}" })
           ]
         }
@@ -971,7 +953,7 @@ describe("QuickJS vs in-process kernel parity (two genuinely different JS engine
     const abi = new JsonWasmAbi();
     const inProcess = new InProcessWasmHostAdapter().instantiate([], abi);
     const quickJs = await new QuickJsWasmHostAdapter().instantiate([], abi);
-    const staff: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "host.role" }, right: { kind: "literal", value: "staff" } };
+    const staff = 'host.role = "staff"';
     const envelope = { form: { id: "short", version: "1" }, client: { runtimeVersion: "1.0.0", rendererVersion: "1.0.0", schemaVersion: "1" } };
     const codes = (errors: ReadonlyArray<{ code: string; componentId?: string | undefined }>) => errors.map((error) => `${error.componentId ?? "-"}:${error.code}`).sort();
     // `ruled` is on no page, `listed` on the one page; both are required when the host says staff.
@@ -1068,7 +1050,7 @@ describe("QuickJS vs in-process kernel parity: presentations", () => {
   const form = presentationRoot();
   const apply = applyJourney();
   const variant = publicVariant();
-  const eq = (path: string, value: string): Expression => ({ kind: "binary", operator: "eq", left: { kind: "path", path }, right: { kind: "literal", value } });
+  const eq = (path: string, value: string): string => `${path} = ${JSON.stringify(value)}`;
   /** Every usability rule broken once (A–G), beside nodes in use: ignored alike on both engines. */
   const broken: Journey = {
     id: "apply",
@@ -1083,10 +1065,10 @@ describe("QuickJS vs in-process kernel parity: presentations", () => {
           { id: "to_section", type: "number", configuration: { fills: "money" } },
           { id: "note", type: "html", configuration: { fills: "name" } },
           { id: "work_email", type: "text", configuration: { fills: "email" } },
-          { id: "first_total", type: "journey-value", configuration: { to: "annual_income", value: { kind: "path", path: "m1" } } },
-          { id: "second_total", type: "journey-value", configuration: { to: "annual_income", value: { kind: "path", path: "m1" } } }
+          { id: "first_total", type: "journey-value", configuration: { to: "annual_income", value: "m1" } },
+          { id: "second_total", type: "journey-value", configuration: { to: "annual_income", value: "m1" } }
         ],
-        routes: [{ when: { kind: "unary", operator: "not", operand: eq("name", "more") }, to: "$end" }]
+        routes: [{ when: `not(${eq("name", "more")})`, to: "$end" }]
       },
       { id: "assist", components: ["approved_amount"] }
     ]
@@ -1169,11 +1151,10 @@ describe("QuickJS vs in-process kernel parity: presentations", () => {
     const abi = new JsonWasmAbi();
     const inProcess = new InProcessWasmHostAdapter().instantiate([plugin], abi);
     const quickJs = await new QuickJsWasmHostAdapter().instantiate([toSourcePlugin(plugin)], abi);
-    const read = (source: string): Expression => ({ kind: "path", path: source });
-    const unlessFifty = (total: string): Expression => ({ kind: "unary", operator: "not", operand: { kind: "binary", operator: "gte", left: read(total), right: { kind: "literal", value: 50 } } }) as unknown as Expression;
+    // `source` is formula text: a path with odd characters in backticks.
     const calculated = (source: string, total: string, proof: string) => [
-      { id: total, type: "number", configuration: {}, rules: { value: read(source) } },
-      { id: proof, type: "text", configuration: { required: true }, rules: { visibleWhen: unlessFifty(total) } }
+      { id: total, type: "number", configuration: {}, rules: { value: source } },
+      { id: proof, type: "text", configuration: { required: true }, rules: { visibleWhen: `not(${total} >= 50)` } }
     ];
     const root = {
       id: "form",
@@ -1182,7 +1163,7 @@ describe("QuickJS vs in-process kernel parity: presentations", () => {
       children: {
         content: [
           { id: "email", type: "text", configuration: {} },
-          ...calculated("@apply.m1", "total_at", "proof_at"),
+          ...calculated("`@apply.m1`", "total_at", "proof_at"),
           ...calculated("m1", "total_id", "proof_id"),
           { id: "box", type: "fieldset", configuration: {}, children: { content: [{ id: "inside", type: "text", configuration: {} }] } },
           ...calculated("box", "total_box", "proof_box")
@@ -1346,7 +1327,7 @@ describe("QuickJS vs in-process kernel parity: presentations", () => {
         content: [
           { id: "kind", type: "select", configuration: { options: [{ value: "short", label: "short" }, { value: "full", label: "full" }, { value: "skip", label: "skip" }, { value: "next", label: "next" }, { value: "route", label: "route" }, { value: "summary", label: "summary" }, { value: "questions", label: "questions" }] } },
           { id: "go", type: "button", configuration: {} },
-          { id: "banner", type: "html", configuration: {}, rules: { value: { kind: "literal", value: "worked out" } } },
+          { id: "banner", type: "html", configuration: {}, rules: { value: '"worked out"' } },
           { id: "box", type: "fieldset", configuration: {}, children: { content: [{ id: "inside", type: "text", configuration: {} }] } },
           {
             id: "orders_grid",
@@ -1395,7 +1376,7 @@ describe("the browser with QuickJS as its sandbox: presentations", () => {
     form: { id: "presentation", version: "1.0.0" },
     client: { runtimeVersion: "0.1.0", rendererVersion: "0.1.0", schemaVersion: "1.0.0" }
   };
-  const eq = (path: string, value: string): Expression => ({ kind: "binary", operator: "eq", left: { kind: "path", path }, right: { kind: "literal", value } });
+  const eq = (path: string, value: string): string => `${path} = ${JSON.stringify(value)}`;
   type Steps = (runtime: FormRuntime) => void;
   const all = (...steps: Steps[]): Steps => (runtime) => steps.forEach((step) => step(runtime));
   const set = (path: string, value: unknown): Steps => (runtime) => runtime.setValue(path, value);
@@ -1535,7 +1516,7 @@ describe("the browser with QuickJS as its sandbox: presentations", () => {
       asked: [],
       clientDerived: ["annual_income"]
     });
-    const conditional = definitionOf(applyWith({ details: { routes: [{ when: { kind: "unary", operator: "not", operand: eq("name", "ask") }, to: "assist" }] } }));
+    const conditional = definitionOf(applyWith({ details: { routes: [{ when: `not(${eq("name", "ask")})`, to: "assist" }] } }));
     expect(await judge(conditional, all(fill("work_email", "a@b.co"), set("name", "skip"), set("annual_income", 36000), months(12000)))).toMatchObject({
       accepted: true,
       values: { email: "a@b.co", name: "skip" },
@@ -1577,10 +1558,10 @@ describe("the browser with QuickJS as its sandbox: presentations", () => {
             { id: "to_section", type: "number", configuration: { fills: "money" } },
             { id: "note", type: "html", configuration: { fills: "name" } },
             { id: "work_email", type: "text", configuration: { fills: "email" } },
-            { id: "first_total", type: "journey-value", configuration: { to: "annual_income", value: { kind: "path", path: "to_section" } } },
-            { id: "second_total", type: "journey-value", configuration: { to: "annual_income", value: { kind: "path", path: "to_section" } } }
+            { id: "first_total", type: "journey-value", configuration: { to: "annual_income", value: "to_section" } },
+            { id: "second_total", type: "journey-value", configuration: { to: "annual_income", value: "to_section" } }
           ],
-          routes: [{ when: { kind: "unary", operator: "not", operand: eq("name", "more") }, to: "$end" }]
+          routes: [{ when: `not(${eq("name", "more")})`, to: "$end" }]
         },
         { id: "assist", components: ["approved_amount"] }
       ]
@@ -1590,7 +1571,7 @@ describe("the browser with QuickJS as its sandbox: presentations", () => {
     expect(ran).toMatchObject({ accepted: true, values: { email: "a@b.co", name: "more", annual_income: 7, approved_amount: 9 }, path: ["details", "assist"], clientDerived: ["annual_income"] });
 
     // a form calculation reading an own answer reads nothing on either side.
-    const reading = rootWith((root) => void root.children!.content!.push({ id: "first_month", type: "number", configuration: {}, rules: { value: { kind: "call", name: "sum", args: [{ kind: "path", path: "@apply.m1" }] } } }));
+    const reading = rootWith((root) => void root.children!.content!.push({ id: "first_month", type: "number", configuration: {}, rules: { value: "sum(`@apply.m1`)" } }));
     expect(await judge(definitionOf(applyJourney(), reading), all(fill("work_email", "ada@example.org"), months(12000)))).toMatchObject({
       accepted: true,
       values: { ...APPLY_BELOW, first_month: 0 },
@@ -2100,7 +2081,7 @@ describe("QuickJS vs in-process kernel parity: fail closed on the gate", () => {
 
   it("reports the fold's results when asked (reportFold), identically, and nothing when not asked", async () => {
     const hidden = (id: string, configuration: Record<string, unknown>): ComponentNode =>
-      text(id, configuration, { visibleWhen: { kind: "binary", operator: "eq", left: { kind: "path", path: "a" }, right: { kind: "literal", value: "show" } } });
+      text(id, configuration, { visibleWhen: 'a = "show"' });
     const root = rootOf(
       text("a"),
       hidden("hid", { required: true, hiddenValueBehavior: "exclude-from-submission" }),
@@ -2125,7 +2106,7 @@ describe("QuickJS vs in-process kernel parity: fail closed on the gate", () => {
   });
 
   it("leaves a hidden answer out by default and returns it with retain, byte for byte on both engines", async () => {
-    const hiddenWhen = { visibleWhen: { kind: "binary", operator: "eq", left: { kind: "path", path: "a" }, right: { kind: "literal", value: "show" } } } as const;
+    const hiddenWhen = { visibleWhen: 'a = "show"' } as const;
     const values = { a: "hide", secret: "s", other: "o" };
     // Nothing set: the default is exclude-from-submission, so the answer is not in the returned values.
     const plain = rootOf(text("a"), text("secret", {}, hiddenWhen), text("other"));

@@ -114,7 +114,7 @@ export function pdfFieldNamePart(value: string): string {
 
 /** The words of the form a rendition draws that no field supplies (a row's heading, an untitled tab's caption). */
 function formTextOf(context: PdfRenditionContext): FormTextResolver {
-  return createFormTextResolver(context.locale, undefined, context.translationCatalog, undefined, { translations: context.translations });
+  return createFormTextResolver(context.locale, undefined, undefined, { translations: context.translations, catalog: context.translationCatalog });
 }
 
 function blockStyle(context: PdfRenditionContext) {
@@ -137,8 +137,8 @@ function blockStyle(context: PdfRenditionContext) {
 
 /**
  * What the theme draws beside a label: the field's hint when the theme shows
- * hints, and the required marker when the theme words one. Absent keys stay absent, so a
- * theme that asks for neither produces the block it always did.
+ * hints, and the required marker when the theme words one. Absent keys stay absent: a
+ * theme that asks for neither adds nothing to the block.
  */
 function fieldDecor(context: PdfRenditionContext): { hint?: string; labelSuffix?: string } {
   const out: { hint?: string; labelSuffix?: string } = {};

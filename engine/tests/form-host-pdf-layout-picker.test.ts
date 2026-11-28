@@ -21,9 +21,9 @@ afterEach(() => {
 const ROOT: ComponentNode = { id: "root", type: "form", configuration: {}, children: { content: [{ id: "fullName", type: "text", configuration: { label: "Full name" } }] } } as unknown as ComponentNode;
 
 // A download that names no layout prints the first layout whose `when` holds.
-const QUEBEC = { kind: "binary" as const, operator: "eq" as const, left: { kind: "path" as const, path: "fullName" }, right: { kind: "literal" as const, value: "QC" } };
-type PickerLayout = { id: string; kind: "generated"; name: string; when?: typeof QUEBEC; root: ComponentNode };
-const layoutOf = (id: string, when?: typeof QUEBEC): PickerLayout => ({
+const QUEBEC = 'fullName = "QC"';
+type PickerLayout = { id: string; kind: "generated"; name: string; when?: string; root: ComponentNode };
+const layoutOf = (id: string, when?: string): PickerLayout => ({
   id,
   kind: "generated",
   name: `Layout ${id.toUpperCase()}`,

@@ -35,7 +35,7 @@ function threeSteps(): JourneyConfiguration {
         name: "Intake",
         pages: [
           { id: "about", title: "About you", components: ["fullName"] },
-          { id: "touch", title: "Keeping in touch", components: ["subscribe"], routes: [{ when: { kind: "path", path: "subscribe" }, to: "mail" }] },
+          { id: "touch", title: "Keeping in touch", components: ["subscribe"], routes: [{ when: "subscribe", to: "mail" }] },
           { id: "where", title: "Where", components: ["country"] },
           { id: "mail", title: "Mail", components: ["email"] }
         ]
@@ -61,7 +61,7 @@ function longJourney(count: number): FormDefinition {
 
 function mount(definition: FormDefinition): DatumFormBuilderElement {
   const element = document.createElement("datum-form-builder");
-  element.setAttribute("pdf", "off");
+  element.setAttribute("features", "-pdf");
   element.definition = definition;
   document.body.append(element);
   return element;

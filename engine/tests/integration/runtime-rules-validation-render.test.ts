@@ -2,7 +2,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import type { FormDefinition, ComponentNode } from "../../form-engine/core/schema/types.js";
-import type { Expression } from "../../form-engine/core/expressions/expression.js";
 import { SubmissionModeRegistry } from "../../form-engine/core/submission/submission-modes.js";
 import { ValidationPipeline } from "../../form-engine/validation/core/validation-pipeline.js";
 import { createFieldConstraintsStage } from "../../form-engine/validation/core/field-constraints.js";
@@ -38,12 +37,7 @@ describe("runtime + rules integration", () => {
             type: "text",
             configuration: {},
             rules: {
-              visibleWhen: {
-                kind: "binary",
-                operator: "eq",
-                left: { kind: "path", path: "hasPet" },
-                right: { kind: "literal", value: true }
-              }
+              visibleWhen: "hasPet = true"
             }
           }
         ]
@@ -73,7 +67,7 @@ describe("runtime + rules integration", () => {
             type: "container",
             configuration: {},
             rules: {
-              visibleWhen: { kind: "path", path: "advanced" }
+              visibleWhen: "advanced"
             },
             children: {
               content: [{ id: "tuning", type: "text", configuration: {} }]
@@ -103,12 +97,7 @@ describe("runtime + rules integration", () => {
             type: "number",
             configuration: {},
             rules: {
-              value: {
-                kind: "arithmetic",
-                operator: "multiply",
-                left: { kind: "path", path: "price" },
-                right: { kind: "path", path: "qty" }
-              }
+              value: "price * qty"
             }
           }
         ]
@@ -137,12 +126,7 @@ describe("runtime + rules integration", () => {
             type: "text",
             configuration: {},
             rules: {
-              requiredWhen: {
-                kind: "binary",
-                operator: "eq",
-                left: { kind: "path", path: "contactMethod" },
-                right: { kind: "literal", value: "phone" }
-              }
+              requiredWhen: 'contactMethod = "phone"'
             }
           }
         ]
@@ -162,8 +146,8 @@ describe("runtime + rules integration", () => {
       configuration: {},
       children: {
         content: [
-          { id: "a", type: "number", configuration: {}, rules: { value: { kind: "path", path: "b" } } },
-          { id: "b", type: "number", configuration: {}, rules: { value: { kind: "path", path: "a" } } }
+          { id: "a", type: "number", configuration: {}, rules: { value: "b" } },
+          { id: "b", type: "number", configuration: {}, rules: { value: "a" } }
         ]
       }
     };
@@ -184,12 +168,7 @@ describe("runtime + rules integration", () => {
             configuration: {},
             children: { content: [] },
             rules: {
-              navigationGating: {
-                kind: "binary",
-                operator: "eq",
-                left: { kind: "path", path: "agreed" },
-                right: { kind: "literal", value: true }
-              }
+              navigationGating: "agreed = true"
             }
           }
         ]
@@ -249,12 +228,7 @@ describe("runtime + validation hidden-policy enforcement", () => {
           type: "text",
           configuration: {},
           rules: {
-            visibleWhen: {
-              kind: "binary",
-              operator: "eq",
-              left: { kind: "path", path: "hasPet" },
-              right: { kind: "literal", value: true }
-            }
+            visibleWhen: "hasPet = true"
           }
         }
       ]
@@ -307,12 +281,7 @@ describe("runtime + validation hidden-policy enforcement", () => {
 });
 
 describe("runtime + Required when", () => {
-  const contactIs = (value: string): Expression => ({
-    kind: "binary",
-    operator: "eq",
-    left: { kind: "path", path: "contactMethod" },
-    right: { kind: "literal", value }
-  });
+  const contactIs = (value: string): string => `contactMethod = ${JSON.stringify(value)}`;
   const root = (): ComponentNode => ({
     id: "root",
     type: "form",

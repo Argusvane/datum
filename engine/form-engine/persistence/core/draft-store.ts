@@ -11,14 +11,14 @@ export interface FormDraft {
   locale: string;
   values: FormValues;
   state: {
-    /** Navigation mode; "normal" when absent. */
-    mode?: "normal" | "wizard";
+    mode: "normal" | "wizard";
+    /** The wizard step shown; absent outside a wizard. */
     currentStep?: string;
     touched: string[];
     dirty: string[];
-    /** Full wizard progress; [] when absent. */
-    visitedSteps?: string[];
-    completedSteps?: string[];
+    /** The wizard's progress: the steps visited and those completed, empty outside a wizard. */
+    visitedSteps: string[];
+    completedSteps: string[];
     /**
      * The journey being filled in: its id, the page shown and the pages continued
      * from. Absent when the form was being filled on one page.
@@ -71,19 +71,19 @@ export interface DraftStore {
 /**
  * Why a draft could not be brought back: nothing stored under the key (`draft.notFound`), a
  * draft of another form (`draft.formMismatch`), a version the form cannot read
- * (`draft.incompatible`, the compatibility policy's verdict), or a draft with no answers to
- * give (`draft.malformed`: not a record, `values` not a record, or no `state`).
+ * (`draft.incompatible`, the compatibility policy's verdict), or a draft that is not one
+ * (`draft.malformed`: not a record, `values` not a record, no `state`, or a `state` without
+ * its `mode`, `visitedSteps` or `completedSteps`).
  */
 export type DraftErrorCode = "draft.notFound" | "draft.formMismatch" | "draft.incompatible" | "draft.malformed";
 
 /**
  * A draft that could not be brought back, with a code a caller can branch on instead of reading
  * the message. Every store the engine ships rejects `load` with it, and
- * `FormRuntime.hydrateFromDraft` and `assertDraftCompatible` throw it. The messages are the ones
- * these places always threw (`Draft not found: <id>`, `Draft form mismatch: …`, `Draft is
- * incompatible: …`), so a host that reads `message` sees no change. A host's own
- * {@link DraftStore} may still reject with a plain `Error` of the same wording: a caller that
- * needs the reason reads `code` when it is one of these and the message otherwise.
+ * `FormRuntime.hydrateFromDraft` and `assertDraftCompatible` throw it, with the messages
+ * `Draft not found: <id>`, `Draft form mismatch: …`, `Draft is incompatible: …` and `Draft is
+ * malformed: …`. A host's own {@link DraftStore} may reject with a plain `Error` instead: a
+ * caller that needs the reason reads `code` when it is one of these and the message otherwise.
  */
 export class DraftError extends Error {
   public readonly code: DraftErrorCode;
@@ -100,7 +100,7 @@ export class DraftError extends Error {
  * and by the runtime putting any store's draft back. Tolerant rather than strict: a
  * hand-edited or damaged journey block costs the person their place in the journey, never the
  * answers the draft holds, which then resume at the journey's start. Anything else
- * in the block — a server's verdict an earlier draft kept (`clean`), say — is dropped: a
+ * in the block — a server's verdict written into it (`clean`), say — is dropped: a
  * draft file is the person's to edit, so it never vouches for answers. `written`
  * is kept: it vouches for nothing — it only says which worked-out values the journey may
  * clear again.

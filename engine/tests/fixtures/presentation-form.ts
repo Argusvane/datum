@@ -49,11 +49,16 @@ export const ASSIST_THRESHOLD = 50_000;
 const read = (name: string): Expression => ({ kind: "path", path: name });
 
 /** `annual_income >= 50000`: a route condition over a form field the browser works out. */
-export function assistCondition(): Expression {
-  return { kind: "binary", operator: "gte", left: read("annual_income"), right: { kind: "literal", value: ASSIST_THRESHOLD } };
+export function assistCondition(): string {
+  return `annual_income >= ${ASSIST_THRESHOLD}`;
 }
 
 /** `sum(m1, m2, m3)`: what the worked-out value is worked out with, over own fields of its page. */
+export function incomeFormula(): string {
+  return "sum(m1, m2, m3)";
+}
+
+/** The tree {@link incomeFormula} compiles to, as a compiled copy holds it. */
 export function incomeExpression(): Expression {
   return { kind: "call", name: "sum", args: [read("m1"), read("m2"), read("m3")] };
 }
@@ -89,7 +94,7 @@ export function workEmailAlias(): PresentationNode {
 
 /** The worked-out value on `income`: `annual_income`, from the page's own `m1`…`m3`. */
 export function incomeTotal(): PresentationNode {
-  return { id: "income_total", type: "journey-value", configuration: { to: "annual_income", value: incomeExpression(), label: "Annual income" } };
+  return { id: "income_total", type: "journey-value", configuration: { to: "annual_income", value: incomeFormula(), label: "Annual income" } };
 }
 
 /** The journey `apply`: an alias, a worked-out value a route reads, and a reused field. */

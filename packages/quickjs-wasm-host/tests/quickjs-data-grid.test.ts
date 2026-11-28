@@ -34,7 +34,7 @@ const container = formOf(
         { id: "size", type: "select", configuration: { options: [{ value: "s", label: "S" }, { value: "m", label: "M" }] } }
       ]
     },
-    rules: { visibleWhen: { kind: "binary", operator: "eq", left: { kind: "path", path: "kind" }, right: { kind: "literal", value: "order" } } }
+    rules: { visibleWhen: 'kind = "order"' }
   }
 );
 

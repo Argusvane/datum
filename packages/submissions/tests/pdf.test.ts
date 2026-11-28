@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { X509Certificate } from "node:crypto";
-import type { Expression, FormDefinition, PdfGeneratedLayout, PdfTemplateLayout } from "@argusvane/datum-engine";
+import type { FormDefinition, PdfGeneratedLayout, PdfTemplateLayout } from "@argusvane/datum-engine";
 import { DEFAULT_FONT_PACK, createInProcessPdfProvider, handlePdfRequest, loadFontPack, parseCertificate } from "@argusvane/datum-pdf-kernel";
 
 import {
@@ -180,9 +180,9 @@ describe("the record's PDF: rendered, signed, carrying its submission", () => {
 });
 
 describe("the record's PDF: a layout chosen by the answers", () => {
-  const IS_ADA: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "firstName" }, right: { kind: "literal", value: "Ada" } };
+  const IS_ADA = 'firstName = "Ada"';
 
-  function generated(id: string, when?: Expression): PdfGeneratedLayout {
+  function generated(id: string, when?: string): PdfGeneratedLayout {
     return {
       id,
       kind: "generated",

@@ -75,7 +75,7 @@
                   <files>
                     <file>${datum.assets.dir}/${project.artifactId}/golden.json</file>
                     <file>${datum.assets.dir}/${project.artifactId}/fixture-form.json</file>
-                    <file>${datum.assets.dir}/${project.artifactId}/documents-3.8/hashes.json</file>
+                    <file>${datum.assets.dir}/${project.artifactId}/documents/hashes.json</file>
                   </files>
                   <message>the engine kit's fixtures are missing (${datum.assets.dir}/${project.artifactId}): run ./mvnw -N generate-resources in integrations/jvm (or npm run jvm:assets at the repository root), or build the whole reactor, which generates them first</message>
                 </requireFilesExist>

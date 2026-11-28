@@ -7,7 +7,7 @@
  * form's controller when it is made, and the Logic surface looks it up by the controller it was
  * given, so neither knows the other and the shell wires nothing: a page with two builders keeps
  * two registries, and a builder with no Journeys mode has no entry, so the surface lists its
- * journey rules read-only as it always did.
+ * journey rules read-only.
  *
  * Every write is one undo step on the journey's controller. Rules are named by what the Logic
  * model names them by (the journey, the step's page id and the route's written position), never

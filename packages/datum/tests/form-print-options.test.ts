@@ -28,13 +28,13 @@ function definition(): FormDefinition {
             id: "email",
             type: "text",
             configuration: { label: "Email", print: { show: "always", note: "Complete only if you ticked Subscribe." } },
-            rules: { visibleWhen: { kind: "path", path: "subscribe" } }
+            rules: { visibleWhen: "subscribe" }
           },
           {
             id: "phone",
             type: "text",
             configuration: { label: "Phone", print: { show: "always" } },
-            rules: { visibleWhen: { kind: "path", path: "subscribe" } }
+            rules: { visibleWhen: "subscribe" }
           },
           { id: "office", type: "text", configuration: { label: "Office use only", print: { on: "screen" } } },
           { id: "reference", type: "text", configuration: { label: "Reference", print: { show: "answered" } } }

@@ -721,8 +721,11 @@ export async function fillTemplate(
   areas: readonly PdfFillArea[] = [],
   conformance?: PdfDocumentConformance,
   attachments?: readonly PdfDocumentAttachment[],
-  theme: { typography?: PdfTypography | undefined; colors?: PdfThemeColors | undefined } = {}
+  theme?: { typography: PdfTypography; colors: PdfThemeColors }
 ): Promise<FilledTemplate> {
+  if (areas.length > 0 && !theme) {
+    throw new PdfKernelError("invalid_request", "A fill with areas needs the typography and colors its plan was built under.");
+  }
   const warnings: PdfWarning[] = [];
   const reports: PdfFillReport[] = [];
   const { pdf, encryption } = await loadTemplate(template);
@@ -773,12 +776,9 @@ export async function fillTemplate(
   }
   // Content areas are drawn and fillable areas' widgets created before the form's appearances
   // are regenerated, so the new widgets get theirs in the same pass and flatten sees them all.
-  const placed = await drawAreas(pdf, areas, fonts, warnings, form, {
-    strict,
-    ...(tagging ? { tagging } : {}),
-    ...(theme.typography ? { typography: theme.typography } : {}),
-    ...(theme.colors ? { colors: theme.colors } : {})
-  });
+  const placed = theme
+    ? await drawAreas(pdf, areas, fonts, warnings, form, { strict, ...(tagging ? { tagging } : {}), typography: theme.typography, colors: theme.colors })
+    : { reports: [], fields: new Map<string, PDFTextField | PDFCheckBox>() };
   tagging?.finish();
   if (form) {
     await finishForm(pdf, form, options, fonts, values, areas, placed.fields, warnings, strict);

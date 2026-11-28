@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Expression, RuleObject } from "../form-engine/core/expressions/expression.js";
+import type { RuleObject } from "../form-engine/core/expressions/expression.js";
 import {
   formulaMentionsField,
   formulaReadsField,
@@ -81,42 +81,13 @@ describe("renameInRuleSource", () => {
     expect(renameInRuleSource("amount > 1", "amount", "total")).toBe("total > 1");
   });
 
-  it("renames a tree along the changed branches only and returns the same reference when nothing changed", () => {
-    const tree: Expression = {
-      kind: "logical",
-      operator: "and",
-      left: { kind: "binary", operator: "gt", left: { kind: "path", path: "amount" }, right: { kind: "literal", value: 1 } },
-      right: { kind: "path", path: "other" }
-    };
-    const renamed = renameInRuleSource(tree, "amount", "total");
-    expect(renamed).toEqual({
-      kind: "logical",
-      operator: "and",
-      left: { kind: "binary", operator: "gt", left: { kind: "path", path: "total" }, right: { kind: "literal", value: 1 } },
-      right: { kind: "path", path: "other" }
-    });
-    expect(renamed).not.toBe(tree);
-    expect((renamed as { right: unknown }).right).toBe(tree.right);
-    expect(tree.left.kind === "binary" && tree.left.left.kind === "path" ? tree.left.left.path : "").toBe("amount");
-    expect(renameInRuleSource(tree, "missing", "x")).toBe(tree);
+  it("renames an if formula through every branch", () => {
+    expect(renameInRuleSource("if amount then row.amount else amount.sub", "amount", "total")).toBe("if total then row.total else total.sub");
   });
 
-  it("renames an if tree through every branch", () => {
-    const tree: Expression = {
-      kind: "if",
-      cases: [{ when: { kind: "path", path: "amount" }, then: { kind: "path", path: "row.amount" } }],
-      else: { kind: "path", path: "amount.sub" }
-    };
-    expect(renameInRuleSource(tree, "amount", "total")).toEqual({
-      kind: "if",
-      cases: [{ when: { kind: "path", path: "total" }, then: { kind: "path", path: "row.total" } }],
-      else: { kind: "path", path: "total.sub" }
-    });
-  });
-
-  it("renames both halves of the object form and keeps the run scope", () => {
-    const rule: RuleObject = { formula: "amount > 1", expression: { kind: "path", path: "amount" }, run: "server" };
-    expect(renameInRuleSource(rule, "amount", "total")).toEqual({ formula: "total > 1", expression: { kind: "path", path: "total" }, run: "server" });
+  it("renames the object form's formula and keeps the run scope", () => {
+    const rule: RuleObject = { formula: "amount > 1", run: "server" };
+    expect(renameInRuleSource(rule, "amount", "total")).toEqual({ formula: "total > 1", run: "server" });
     const untouched: RuleObject = { formula: "other > 1", run: "both" };
     expect(renameInRuleSource(untouched, "amount", "total")).toBe(untouched);
   });

@@ -18,7 +18,6 @@ import {
   setDefaultJourneyRenderKit,
   type DatumFormActionDetail,
   type DatumFormHostElement,
-  type Expression,
   type FormDefinition,
   type Journey,
   type JourneyConfiguration,
@@ -42,19 +41,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const path = (name: string): Expression => ({ kind: "path", path: name });
-const eq = (name: string, value: string): Expression => ({
-  kind: "binary",
-  operator: "eq",
-  left: path(name),
-  right: { kind: "literal", value }
-});
-const neq = (name: string, value: string): Expression => ({
-  kind: "binary",
-  operator: "neq",
-  left: path(name),
-  right: { kind: "literal", value }
-});
+const eq = (name: string, value: string): string => `${name} = "${value}"`;
+const neq = (name: string, value: string): string => `${name} != "${value}"`;
 
 const YES_NO = [
   { value: "yes", label: "Yes" },
@@ -776,7 +764,7 @@ describe("<datum-form> journeys: a journey that reads what the page seeds", () =
    * (`role`, on no page). No page is passed over: for anyone else the page is shown with nothing
    * on it. A page has no condition of its own; the first page has nothing before it to route from.
    */
-  function seeded(contactWhen?: Expression): FormDefinition {
+  function seeded(contactWhen?: string): FormDefinition {
     return {
       id: "agent-form",
       version: "1.0.0",
@@ -1158,7 +1146,7 @@ describe("<datum-form> presentations: what a worked-out value moves, and errors 
       {
         id: "income_total",
         type: "journey-value",
-        configuration: { to: "annual_income", value: { kind: "call", name: "sum", args: [path("m1"), path("m2"), path("bonus")] }, label: "Annual income" }
+        configuration: { to: "annual_income", value: "sum(m1, m2, bonus)", label: "Annual income" }
       }
     ];
     return definition;

@@ -62,7 +62,7 @@ async function open(inspection: PdfTemplateInfo = INSPECTION) {
   let surface: HTMLElement | undefined;
   const host = document.createElement("div");
   document.body.append(host);
-  const context = { host, root: host.attachShadow({ mode: "open" }), showCanvasSurface: (next: HTMLElement | undefined) => (surface = next) };
+  const context = { host, root: host.attachShadow({ mode: "open" }), showCanvasSurface: (next: HTMLElement | undefined) => (surface = next), holdForInspector: (run: () => void) => (run(), true) };
   await mode.activate!(context);
   await until(() => mode.templateDesigner?.inspection !== undefined && mode.controller.snapshot().children?.widgets?.length === 1);
   const widget = "widget_since";

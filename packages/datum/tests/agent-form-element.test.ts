@@ -30,7 +30,7 @@ import type { DatumFormElement, DatumFormSubmitDetail } from "../src/form.js";
 import type { AgentToolResult } from "@argusvane/datum-engine/agent";
 import type { FormDefinition } from "@argusvane/datum-engine";
 
-import { AGENT_HIGHLIGHT_RULE } from "../src/agent-host.js";
+import { AGENT_HIGHLIGHT_RULE } from "../src/agent-ui.js";
 import type { AgentProvenance, DatumPdfDetail, FormDraft, FormPlugin } from "@argusvane/datum-engine";
 import { sampleDefinition, until, withEngineWords } from "./helpers.js";
 
@@ -195,7 +195,7 @@ describe("announcements and the highlight", () => {
 
   it("says what was filled in the polite live region, in English and then in French after set_locale", async () => {
     // The French is the form's `texts` translation (the engine words only English).
-    const mounted = await mount({}, undefined, withEngineWords(plainDefinition(), "fr", { texts: { agentFilled: "Un assistant a rempli {{count}} champs", agentFilledOne: "Un assistant a rempli {{count}} champ" } }));
+    const mounted = await mount({}, undefined, withEngineWords(plainDefinition(), "fr", { texts: { "agentFilled.other": "Un assistant a rempli {{count}} champs", "agentFilled.one": "Un assistant a rempli {{count}} champ" } }));
     await mounted.ok("set_answers", { answers: { fullName: "Ada" } });
     expect(live(mounted.element)?.getAttribute("role")).toBe("status");
     expect(live(mounted.element)?.getAttribute("aria-live")).toBe("polite");

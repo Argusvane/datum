@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { PDFDocument, StandardFonts } from "@cantoo/pdf-lib";
-import { kernelStableStringify, type ComponentNode, type Expression, type PdfConfiguration, type PdfGeneratedLayout, type PdfTemplateLayout } from "@argusvane/datum-engine";
+import { kernelStableStringify, type ComponentNode, type PdfConfiguration, type PdfGeneratedLayout, type PdfTemplateLayout } from "@argusvane/datum-engine";
 import { PDF_ABI_VERSION, bytesToBase64, type PdfDocumentRequest, type PdfKernelRequest, type PdfKernelResponse } from "@argusvane/datum-engine/render";
 import { DOCUMENT_PROFILE, createQuickJsProgramHost, type QuickJsProgramHost } from "@argusvane/datum-quickjs-wasm-host";
 import { createInProcessPdfProvider } from "../src/in-process-provider.js";
@@ -16,8 +16,8 @@ import { ENV, extractText, reload } from "./helpers.js";
  * what a Python, Java or .NET host gets — and the `document` reply says which printed.
  */
 
-const IS_QUEBEC: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "province" }, right: { kind: "literal", value: "QC" } };
-const LARGE_PRINT: Expression = { kind: "path", path: "largePrint" };
+const IS_QUEBEC = 'province = "QC"';
+const LARGE_PRINT = "largePrint";
 
 /** The province sits in a container, so its answer travels under `address.province` and a `when` names it by id. */
 const FORM: ComponentNode = {
@@ -38,12 +38,12 @@ const FORM: ComponentNode = {
   }
 };
 
-function generated(id: string, heading: string, when?: unknown): PdfGeneratedLayout {
+function generated(id: string, heading: string, when?: string): PdfGeneratedLayout {
   return {
     id,
     kind: "generated",
     name: heading,
-    ...(when !== undefined ? { when: when as Expression } : {}),
+    ...(when !== undefined ? { when } : {}),
     root: {
       id: `${id}-doc`,
       type: "pdf-document",
@@ -53,13 +53,9 @@ function generated(id: string, heading: string, when?: unknown): PdfGeneratedLay
   };
 }
 
-/**
- * Standard is the default; Quebec copy prints for Quebec; a `when` the evaluator cannot run (a
- * misspelt operator) never holds and says so. A string `when` is a formula, so a tree with a misspelt operator stands for the condition that cannot be run.
- */
-const BROKEN_WHEN: Expression = { kind: "binary", operator: "equals" as "eq", left: { kind: "path", path: "province" }, right: { kind: "literal", value: "QC" } };
+/** Standard is the default; Quebec copy prints for Quebec. */
 const PDF: PdfConfiguration = {
-  layouts: [generated("standard", "Standard copy"), generated("broken", "Broken", BROKEN_WHEN), generated("quebec", "Copie du Québec", IS_QUEBEC)],
+  layouts: [generated("standard", "Standard copy"), generated("quebec", "Copie du Québec", IS_QUEBEC)],
   defaultLayoutId: "standard"
 };
 
@@ -81,7 +77,7 @@ async function paper(field: string): Promise<Uint8Array> {
 }
 
 /** A template layout whose PDF the host keeps (not inline): the request must carry its bytes. */
-function paperLayout(id: string, field: string, when?: Expression): PdfTemplateLayout {
+function paperLayout(id: string, field: string, when?: string): PdfTemplateLayout {
   return {
     id,
     kind: "template",
@@ -127,10 +123,18 @@ describe("layouts chosen by the answers in the program", () => {
       const rendered = JSON.parse(document) as Extract<PdfKernelResponse, { op: "document" }>;
       expect(build).toMatchObject({ ok: true, layoutId, layoutKind: "generated", layoutChoice });
       expect(rendered).toMatchObject({ ok: true, layoutId, layoutKind: "generated", layoutChoice });
-      // A `when` the evaluator cannot run never holds, and both ops say so.
-      for (const reply of [build, rendered]) {
-        expect(reply.warnings.filter((warning) => warning.code.startsWith("layout."))).toEqual([expect.objectContaining({ code: "layout.conditionInvalid" })]);
-      }
+    }
+  }, 60_000);
+
+  it("refuses a layout whose `when` is an expression tree, in-process and under QuickJS alike", async () => {
+    const tree = { kind: "binary", operator: "eq", left: { kind: "path", path: "province" }, right: { kind: "literal", value: "QC" } };
+    const pdf: PdfConfiguration = { ...PDF, layouts: [...PDF.layouts!, generated("tree", "Tree", tree as never)] };
+    for (const request of [buildRequest({ name: "Ada" }), documentRequest({ name: "Ada" })]) {
+      const asked = { ...request, pdf };
+      const refused = await inProcess(asked);
+      expect(sandboxed(asked)).toBe(refused);
+      expect(JSON.parse(refused)).toMatchObject({ ok: false, error: { code: "formula_invalid" } });
+      expect((JSON.parse(refused) as { error: { message: string } }).error.message).toContain("this one is an expression tree");
     }
   }, 60_000);
 

@@ -130,7 +130,7 @@ export { loadJourneyReview, type JourneyReviewBundle } from "./journey-review-lo
 export { toFormDefinition, type DatumErrorDetail, type DatumWarningDetail } from "./support.js";
 // Which optional capabilities a form has: the `features` list, and the draft store its
 // `draft-store` attribute spells, for a page that builds either itself.
-export { FORM_FEATURES, FORM_FEATURE_PRESETS, parseFormFeatures, type FormFeature, type FormFeaturesInput, type ParsedFormFeatures } from "./form-features.js";
+export { FORM_FEATURES, FORM_FEATURE_PRESETS, parseFormFeatures, type FormFeature, type FormFeaturesInput, type ParsedFormFeatures } from "@argusvane/datum-engine";
 export { createUrlDraftStore, parseDraftStoreSpec, type DraftStoreSpec } from "./draft-store-url.js";
 // The draft file: a draft as stable JSON a person keeps, and the check that reads it back. Both
 // are plain functions over the draft, so a page that keeps files needs no store for them.

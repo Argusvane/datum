@@ -15,7 +15,6 @@ import {
   ServerValidationRunner,
   kernelFoldSubmission,
   kernelPartitionValues,
-  type Expression,
   type FormDefinition,
   type ServerValidationContext
 } from "@argusvane/datum-engine";
@@ -28,12 +27,7 @@ import { InMemorySubmissionStore, createKernelValidator, createSubmissionService
  * outcome without them is one whose fold did not run: nothing is judged and nothing withheld.
  */
 
-const eq = (path: string, value: string): Expression => ({
-  kind: "binary",
-  operator: "eq",
-  left: { kind: "path", path },
-  right: { kind: "literal", value }
-});
+const eq = (path: string, value: string): string => `${path} = ${JSON.stringify(value)}`;
 
 const FORM: FormDefinition = {
   id: "keys",

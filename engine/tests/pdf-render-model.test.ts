@@ -938,7 +938,7 @@ describe("buildPdfRenderModel — template layout", () => {
       { pdfField: "IsFrance", source: { kind: "component", componentId: "country" }, checkedValue: "FR" },
       { pdfField: "AgreeOption", source: { kind: "component", componentId: "agree" }, checkedValue: "Yes" },
       { pdfField: "Notes", source: { kind: "path", path: "notes" } },
-      { pdfField: "Total", source: { kind: "expression", expression: { kind: "arithmetic", operator: "add", left: { kind: "path", path: "items[0].qty" }, right: { kind: "path", path: "items[1].qty" } } }, format: { kind: "number", pattern: "2" } },
+      { pdfField: "Total", source: { kind: "expression", expression: "`items[0].qty` + `items[1].qty`" }, format: { kind: "number", pattern: "2" } },
       { pdfField: "Const", source: { kind: "literal", value: 7 } },
       { pdfField: "Hidden", source: { kind: "component", componentId: "secret" } },
       { pdfField: "Missing", source: { kind: "component", componentId: "ghost" } },
@@ -1011,7 +1011,7 @@ describe("buildPdfRenderModel — template layout", () => {
       areas: [
         { id: "name", label: "Full name", page: 1, rect: { x: 60, y: 40, width: 200, height: 14 }, source: { kind: "template", text: "{{firstName}} {{lastName}}" } },
         { id: "isCanada", page: 1, rect: { x: 60, y: 60, width: 12, height: 12 }, source: { kind: "component", componentId: "country" }, checkedValue: "CA", draw: { kind: "check" } },
-        { id: "total", page: 2, rect: { x: 60, y: 80, width: 80, height: 14 }, source: { kind: "expression", expression: { kind: "arithmetic", operator: "add", left: { kind: "path", path: "items[0].qty" }, right: { kind: "path", path: "items[1].qty" } } }, format: { kind: "number", pattern: "1" }, draw: { align: "end", fontSize: 12, bold: true } },
+        { id: "total", page: 2, rect: { x: 60, y: 80, width: 80, height: 14 }, source: { kind: "expression", expression: "`items[0].qty` + `items[1].qty`" }, format: { kind: "number", pattern: "1" }, draw: { align: "end", fontSize: 12, bold: true } },
         { id: "hidden", page: 1, rect: { x: 0, y: 0, width: 10, height: 10 }, source: { kind: "component", componentId: "secret" } },
         { id: "ghost", label: "Nobody", page: 1, rect: { x: 0, y: 0, width: 10, height: 10 }, source: { kind: "component", componentId: "ghost" } },
         { id: "fixed", page: 1, rect: { x: 0, y: 0, width: 10, height: 10 }, source: { kind: "literal", value: "RECEIVED" }, draw: { valign: "middle", padding: 0, wrap: false, color: "#ff0000" } },
@@ -1375,13 +1375,13 @@ describe("buildPdfRenderModel — layouts chosen by the answers", () => {
   const french: PdfGeneratedLayout = {
     id: "french",
     kind: "generated",
-    when: { kind: "binary", operator: "eq", left: { kind: "path", path: "country" }, right: { kind: "literal", value: "FR" } },
+    when: 'country = "FR"',
     root: body("Français")
   };
   const paper: PdfTemplateLayout = {
     id: "paper",
     kind: "template",
-    when: { kind: "path", path: "agree" },
+    when: "agree",
     template: { storage: "base64", name: "gov.pdf", type: "application/pdf", size: 4, data: "JVBERg==" },
     fields: [{ pdfField: "Name", source: { kind: "component", componentId: "firstName" } }]
   };
@@ -1423,7 +1423,7 @@ describe("buildPdfRenderModel — layouts chosen by the answers", () => {
     const throwing: PdfGeneratedLayout = {
       ...french,
       id: "throwing",
-      when: { kind: "binary", operator: "eq", left: { kind: "path", path: "notes.deep" }, right: { kind: "literal", value: "x" } }
+      when: 'notes.deep = "x"'
     };
     const model = await buildPdfRenderModel(root(), state({ agree: false }), resolver, {}, {
       pdf: { layouts: [standard, odd, written, throwing, french], defaultLayoutId: "standard" },
@@ -1457,7 +1457,7 @@ describe("buildPdfRenderModel — riskyPatterns", () => {
   const french: PdfGeneratedLayout = {
     id: "french",
     kind: "generated",
-    when: { kind: "binary", operator: "eq", left: { kind: "path", path: "country" }, right: { kind: "literal", value: "FR" } },
+    when: 'country = "FR"',
     root: body("Français")
   };
   const riskyLayout: PdfGeneratedLayout = { ...french, id: "risky", when: 'matches(country, "(F+)+$")' };

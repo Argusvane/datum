@@ -395,8 +395,8 @@ export interface PdfGeneratedLayout {
    * form's answers as they would be submitted, by component id — the view a server holds.
    * Layouts are tried in list order and the first whose condition holds prints; when none
    * does, the default prints. A `when` the evaluator cannot run never holds. Absent: this
-   * layout prints only when asked for by id, or as the default. A formula string, a tree, or
-   * the rule object form; a string the parser rejects never holds.
+   * layout prints only when asked for by id, or as the default. A formula string or the rule
+   * object form; a string the parser rejects never holds.
    */
   when?: RuleSource;
   page?: Partial<PdfPageSetup>;
@@ -445,7 +445,7 @@ export type PdfFieldMappingSource =
   | { kind: "component"; componentId: string }
   | { kind: "path"; path: string }
   | { kind: "template"; text: string }
-  /** A formula string, a tree, or the rule object form; a string the parser rejects prints blank. */
+  /** A formula string or the rule object form; a string the parser rejects prints blank. */
   | { kind: "expression"; expression: RuleSource }
   | { kind: "literal"; value: string | number | boolean | null };
 
@@ -559,8 +559,8 @@ export interface PdfTemplateLayout {
    * form's answers as they would be submitted, by component id — the view a server holds.
    * Layouts are tried in list order and the first whose condition holds prints; when none
    * does, the default prints. A `when` the evaluator cannot run never holds. Absent: this
-   * layout prints only when asked for by id, or as the default. A formula string, a tree, or
-   * the rule object form; a string the parser rejects never holds.
+   * layout prints only when asked for by id, or as the default. A formula string or the rule
+   * object form; a string the parser rejects never holds.
    */
   when?: RuleSource;
   accessibility?: PdfAccessibilityConfiguration;
@@ -765,8 +765,9 @@ export function pdfFormulaSignatures(functions?: readonly string[]): FormulaFunc
 }
 
 /**
- * A rule as a PDF layout carries it — a formula string, a tree, or the rule object form — as
- * the tree the evaluator runs; `undefined` for a string the parser rejects, or no rule at all.
+ * A rule as a PDF layout carries it — a formula string or the rule object form, or a compiled
+ * copy's tree — as the tree the evaluator runs; `undefined` for a string the parser rejects, or
+ * no rule at all.
  */
 export function pdfRuleExpression(source: unknown, functions?: readonly string[]): Expression | undefined {
   return kernelRuleExpression(source, kernelParseFormula, pdfFormulaSignatures(functions));

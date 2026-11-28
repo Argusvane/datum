@@ -82,7 +82,7 @@ function draftOf(values: Row, overrides: Partial<FormDraft> = {}): FormDraft {
     runtime: { schemaVersion: AGENT_VERSION_CONTEXT.schemaVersion, rendererVersion: AGENT_VERSION_CONTEXT.rendererVersion },
     locale: "en",
     values,
-    state: { mode: "normal", touched: [], dirty: [] },
+    state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [] },
     updatedAt: 1_792_530_000_000,
     ...overrides
   };

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import type { ValidationContext, ValidationResult } from "../form-engine/core/schema/contracts.js";
 import { findJourney, validateJourneyShape, type Journey, type JourneyPageEntry, type PresentationNode } from "../form-engine/core/schema/journey.js";
 import type { PdfGeneratedLayout } from "../form-engine/core/schema/pdf-layout.js";
@@ -15,7 +14,7 @@ import { buildPresentationIndex } from "../form-engine/core/journey/presentation
 import {
   kernelDefinesKey,
   kernelFlattenRows,
-  kernelFoldSubmission,
+  kernelFoldSubmission as kernelFold,
   kernelNormalizeDataGrids,
   kernelIsJourney,
   kernelKnownKeyShapes,
@@ -36,9 +35,11 @@ import {
   workEmailAlias
 } from "./fixtures/presentation-form.js";
 import { formulaFunctionSignatures } from "../form-engine/core/expressions/function-table.js";
+import { kernelCompileDefinition } from "../form-engine/core/expressions/compile.js";
+import { kernelParseFormula } from "../form-engine/core/expressions/formula.js";
 
 // A host hands the kernel the function table's signatures, as the in-process and sandbox hosts
-// do: a tree's calls are checked against them like a formula's. These runs do the same.
+// do: a formula's calls are checked against them. These runs do the same.
 const runKernel = (
   context: Parameters<typeof kernelRun>[0],
   validators: Parameters<typeof kernelRun>[1],
@@ -46,6 +47,20 @@ const runKernel = (
   signatures: Parameters<typeof kernelRun>[3] = formulaFunctionSignatures(),
   cache?: Parameters<typeof kernelRun>[4]
 ): ReturnType<typeof kernelRun> => kernelRun(context, validators, functions, signatures, cache);
+
+// The fold reads a compiled copy, as runKernel hands it one: these folds compile the form and
+// the journey first.
+const kernelFoldSubmission = (
+  root: ComponentNode,
+  values: Parameters<typeof kernelFold>[1],
+  journey: Journey | undefined,
+  ...rest: Parameters<typeof kernelFold> extends [unknown, unknown, unknown, ...infer Tail] ? Tail : never
+): ReturnType<typeof kernelFold> => {
+  const compiled = kernelCompileDefinition(root, journey === undefined ? undefined : { journeys: [journey] }, undefined, kernelParseFormula, formulaFunctionSignatures());
+  expect(compiled.problems).toEqual([]);
+  const journeys = (compiled.definition.journey as { journeys?: Journey[] } | undefined)?.journeys;
+  return kernelFold(compiled.definition.root, values, journeys?.[0], ...rest);
+};
 
 /** The node with `id` under `root`, when there is one. */
 function nodeOf(root: ComponentNode, id: string): ComponentNode | undefined {
@@ -75,20 +90,12 @@ function nodeOf(root: ComponentNode, id: string): ComponentNode | undefined {
  * which is a documented difference (`rule.reads-host`).
  */
 
-const path = (name: string): Expression => ({ kind: "path", path: name });
-const literal = (value: string | number | boolean | null): Expression => ({ kind: "literal", value });
-const eq = (name: string, value: string | number | boolean | null): Expression => ({
-  kind: "binary",
-  operator: "eq",
-  left: path(name),
-  right: literal(value)
-});
-const neq = (name: string, value: string | number | boolean | null): Expression => ({
-  kind: "binary",
-  operator: "neq",
-  left: path(name),
-  right: literal(value)
-});
+/** A path as formula text: a name with odd characters in backticks. */
+const path = (name: string): string => (/^[A-Za-z_][A-Za-z0-9_.]*$/.test(name) ? name : `\`${name}\``);
+/** A literal as formula text: a string double-quoted. */
+const literal = (value: string | number | boolean | null): string => (typeof value === "string" ? JSON.stringify(value) : String(value));
+const eq = (name: string, value: string | number | boolean | null): string => `${path(name)} = ${literal(value)}`;
+const neq = (name: string, value: string | number | boolean | null): string => `${path(name)} != ${literal(value)}`;
 
 const EXCLUDE = { hiddenValueBehavior: "exclude-from-submission" } as const;
 
@@ -244,8 +251,8 @@ function hiddenRetained(): FormDefinition {
 function calculated(): FormDefinition {
   return formOf([
     field("birth_year", { required: true }, { type: "number" }),
-    field("age", {}, { type: "number", rules: { value: { kind: "arithmetic", operator: "subtract", left: literal(2026), right: path("birth_year") } } }),
-    field("minor", {}, { type: "checkbox", rules: { value: { kind: "binary", operator: "lt", left: path("age"), right: literal(18) } } }),
+    field("age", {}, { type: "number", rules: { value: "2026 - birth_year" } }),
+    field("minor", {}, { type: "checkbox", rules: { value: "age < 18" } }),
     field("guardian", { required: true }, { rules: { visibleWhen: eq("minor", true) } })
   ]);
 }
@@ -284,11 +291,11 @@ function collectedHidden(): FormDefinition {
 }
 
 /** A generated PDF layout, printed when `when` holds. */
-function layout(id: string, when?: Expression): PdfGeneratedLayout {
+function layout(id: string, when?: string): PdfGeneratedLayout {
   return { id, kind: "generated", ...(when ? { when } : {}), root: { id: `${id}-doc`, type: "pdf-document", configuration: {}, children: { body: [] } } };
 }
 
-const ratioKnown: Expression = { kind: "binary", operator: "neq", left: path("ratio"), right: literal(null) };
+const ratioKnown = "ratio != null";
 
 /**
  * A household ratio that comes to no answer when the household is left empty or 0 — what the Rules
@@ -301,8 +308,8 @@ function ratioForm(): FormDefinition {
       [
         field("income", { required: true }, { type: "number" }),
         field("members", {}, { type: "number" }),
-        field("ratio", {}, { type: "number", rules: { value: { kind: "arithmetic", operator: "divide", left: path("income"), right: path("members") } } }),
-        field("per_person", {}, { type: "number", rules: { value: { kind: "call", name: "coalesce", args: [path("ratio"), literal(0)] } } }),
+        field("ratio", {}, { type: "number", rules: { value: "income / members" } }),
+        field("per_person", {}, { type: "number", rules: { value: "coalesce(ratio, 0)" } }),
         field("explain", { required: true }, { rules: { visibleWhen: ratioKnown } }),
         field("shared", { required: true }),
         field("contact")
@@ -338,7 +345,7 @@ function requiredRatioForm(): FormDefinition {
     [
       field("income", { required: true }, { type: "number" }),
       field("members", {}, { type: "number" }),
-      field("ratio", { required: true }, { type: "number", rules: { value: { kind: "arithmetic", operator: "divide", left: path("income"), right: path("members") } } }),
+      field("ratio", { required: true }, { type: "number", rules: { value: "income / members" } }),
       field("contact")
     ],
     {
@@ -351,7 +358,7 @@ function requiredRatioForm(): FormDefinition {
   );
 }
 
-const bigOrder: Expression = { kind: "binary", operator: "gt", left: path("orders[0].qty"), right: literal(5) };
+const bigOrder = "`orders[0].qty` > 5";
 
 /**
  * A data grid whose rows the runtime keeps at `orders[i].<column>`: its first row's quantity
@@ -412,7 +419,7 @@ function requiredWhenForm(): FormDefinition {
       field("both", { required: true }, { rules: { requiredWhen: eq("contact", "never") } }),
       field("income", {}, { type: "number" }),
       field("members", {}, { type: "number" }),
-      field("ratio", {}, { type: "number", rules: { value: { kind: "arithmetic", operator: "divide", left: path("income"), right: path("members") } } }),
+      field("ratio", {}, { type: "number", rules: { value: "income / members" } }),
       field("per_head", {}, { rules: { requiredWhen: ratioKnown } })
     ],
     {
@@ -448,7 +455,7 @@ function leftOut(): FormDefinition {
       { ...group("staff_box", "fieldset", [field("nested_ref", { required: true })]), rules: { visibleWhen: staff } },
       field("opt_in", { hidden: true, required: true, hiddenRequiredBehavior: "required", hiddenValidationBehavior: "validate" }),
       field("cost", {}, { type: "number" }),
-      field("total", {}, { type: "number", rules: { value: { kind: "arithmetic", operator: "multiply", left: path("cost"), right: literal(2) } } }),
+      field("total", {}, { type: "number", rules: { value: "cost * 2" } }),
       field("code", { pattern: "[A-Z]{3}" })
     ],
     {
@@ -1401,7 +1408,7 @@ describe("presentations parity at the kernel: a journey that asks the form throu
     }
     // A form calculation that reads one (the kernel half): unanswered here, so its result is kept as sent and listed.
     const reading = presentationRoot();
-    reading.children!.content!.push({ id: "first_month", type: "number", configuration: {}, rules: { value: { kind: "call", name: "sum", args: [path("@apply.m1")] } } });
+    reading.children!.content!.push({ id: "first_month", type: "number", configuration: {}, rules: { value: "sum(`@apply.m1`)" } });
     const calculated = runKernel({ formId: "presentation", values: { ...APPLY_BELOW, first_month: 0 }, locale: "en", form: reading, journey: applyJourney() }, []);
     expect(calculated.values).toEqual({ ...APPLY_BELOW, first_month: 0 });
     expect(calculated.clientDerived).toEqual(["annual_income", "first_month"]);
@@ -1861,7 +1868,7 @@ describe("presentations parity in the browser: the runtime's verdict is the kern
 
   it("a form calculation that reads an own answer reads nothing, in the browser as in the kernel, and is listed as client-derived", async () => {
     const reading = presentationRoot();
-    reading.children!.content!.push({ id: "first_month", type: "number", configuration: {}, rules: { value: { kind: "call", name: "sum", args: [path("@apply.m1")] } } });
+    reading.children!.content!.push({ id: "first_month", type: "number", configuration: {}, rules: { value: "sum(`@apply.m1`)" } });
     const form = definitionOf(applyJourney(), reading);
     const result = await parity(form, all(fill("work_email", "ada@example.org"), months(12000)));
     expect(result.browser.runtime.state().values).toMatchObject({ "@apply.m1": 12000, first_month: 0 });
@@ -1904,7 +1911,7 @@ describe("presentations parity in the browser: the runtime's verdict is the kern
  * `reject` mode has nothing to refuse.
  */
 describe("a node that holds no data puts no key in the submission: the browser alone, with its sandbox, and the kernel agree in strip, keep and reject", () => {
-  const thanks: Expression = { kind: "call", name: "concat", args: [literal("Thanks, "), path("name")] };
+  const thanks = 'concat("Thanks, ", name)';
   const nonData = (): FormDefinition =>
     formOf([
       field("name", { required: true }),
@@ -1958,7 +1965,7 @@ describe("a node that holds no data puts no key in the submission: the browser a
  * verdict is `strip`'s. The browser never sends one; it is judged here beside the kernel.
  */
 describe("keep stores an unknown key unread: a forged key steers no calculation", () => {
-  const atLeast = (name: string): Expression => ({ kind: "unary", operator: "not", operand: { kind: "binary", operator: "gte", left: path(name), right: literal(50) } }) as unknown as Expression;
+  const atLeast = (name: string): string => `not(${path(name)} >= 50)`;
   const reads = (source: string, total: string, proof: string): ComponentNode[] => [
     { ...field(total), type: "number", rules: { value: path(source) } },
     // Required unless the calculation reaches 50.

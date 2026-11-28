@@ -33,8 +33,6 @@ export type ComponentJsonRead = { ok: true; value: ComponentJsonValue } | { ok: 
 export interface ComponentJsonReadOptions {
   /** Whether the id may change from here: not on the root, nor where the tree's owner shows it read-only. */
   idEditable: boolean;
-  /** The plugin functions the host wired, so a tree calling one is a valid rule; absent: built-ins only. */
-  knownFunctions?: Iterable<string> | undefined;
   /**
    * The property paths the site manages (`managed-settings`): a text that changes one is refused
    * in the words an assistant's write gets. A path under `rules` reads the rules; any other, the
@@ -346,7 +344,7 @@ export function readComponentJson(text: string, node: ComponentNode, options: Co
   let rules: ComponentRules | undefined;
   if ("rules" in parsed && parsed.rules !== null) {
     if (!isPlainObject(parsed.rules)) {
-      return refuse('"rules" must be an object, one formula or expression per rule.', "rules");
+      return refuse('"rules" must be an object, one formula per rule.', "rules");
     }
     const current = (node.rules ?? {}) as Record<string, unknown>;
     for (const [key, rule] of Object.entries(parsed.rules)) {
@@ -354,9 +352,9 @@ export function readComponentJson(text: string, node: ComponentNode, options: Co
         return refuse(`"${key}" cannot be a rule name: it is a name every object has.`, key);
       }
       // Only a rule the text changes is checked: one the component already carries applies as it is.
-      // A rule is a formula string, an expression tree, or the object form { formula | expression, run }.
-      if (rule !== null && !same(rule, current[key]) && !isRuleSourceShape(rule, options.knownFunctions)) {
-        return refuse(`The rule "${key}" is not a valid expression: a formula string, a tree where every node has a known "kind", or { "formula", "run" }.`, key);
+      // A rule is a formula string, or the object form { formula, run }.
+      if (rule !== null && !same(rule, current[key]) && !isRuleSourceShape(rule)) {
+        return refuse(`The rule "${key}" is not a valid rule: a formula string, or { "formula", "run" }.`, key);
       }
     }
     const kept = Object.fromEntries(Object.entries(parsed.rules).filter(([, rule]) => rule !== null && rule !== undefined));

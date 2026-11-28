@@ -211,12 +211,10 @@ export class QuickJsWasmHostAdapter implements WasmHostAdapter {
       // The prepared-definition cache lives inside the sandbox's memory: bound the key text
       // it keeps by the limit this host was given (a prepared definition is about seven times its
       // key in memory), so a small limit gets a small cache, never an out-of-memory run. The program
-      // reads the number once as it starts (the cache is no global); a program that
-      // keeps the cache on its global (a shipped older one) is bounded after it loads.
+      // reads the number once as it starts (the cache is no global).
       const cacheChars = options.preparedCache === false ? "0" : String(Math.min(SANDBOX_PREPARED_CHARS, Math.floor(this.memoryLimitBytes / 16)));
       host.evaluate(`globalThis.__datum_cache_chars = ${cacheChars};`, "sandbox-cache-bound");
       host.evaluate(this.program ?? buildSandboxProgram(), "sandbox-program");
-      host.evaluate(`if (typeof __datum_prepared !== "undefined") { __datum_prepared.maxChars = ${cacheChars}; }`, "sandbox-cache-bound");
       // The entry points are taken hold of now, before the freeze and any plugin, and called by
       // these handles from here on: a plugin can redefine the global names, not these.
       host.captureEntries(SANDBOX_ENTRY_POINTS);
@@ -292,7 +290,7 @@ export class QuickJsWasmHostAdapter implements WasmHostAdapter {
   private scaledBudget(sandbox: SandboxInstance, serializedContext: string): number {
     // The cache key comes from the request text itself: the form, journey and pdf segments
     // found by one scan, with no parse and no re-stringify. Text that cannot be scanned falls
-    // back to parsing it, as before.
+    // back to parsing it.
     let key = scaledBudgetKey(serializedContext);
     let definition: Record<string, unknown> | undefined;
     if (key === undefined) {

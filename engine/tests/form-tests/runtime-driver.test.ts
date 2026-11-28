@@ -384,6 +384,6 @@ describe("the browser driver: start errors and coded refusals (j3)", () => {
     expect((await driver.snapshot()).pages).toEqual(["intro", "contact", "details", "review", "stop"]);
     const flat = createFormTestRuntimeDriver(FORM_TESTS_FIXTURE, { makeRuntime });
     await flat.start([{ kind: "given", key: "journey", value: "none", line: 2 }]);
-    expect((await flat.snapshot()).pages).toBeUndefined();
+    expect((await flat.snapshot()).pages).toEqual([]);
   });
 });

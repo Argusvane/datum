@@ -5,7 +5,7 @@ import type { DatumFormElement } from "../src/form.js";
 import type { FormDefinition } from "@argusvane/datum-engine";
 
 import { ChunkLoadError } from "../src/chunk-load-error.js";
-import { FORM_FEATURES, parseFormFeatures } from "../src/form-features.js";
+import { FORM_FEATURES, parseFormFeatures } from "@argusvane/datum-engine";
 import { journeyTitleOf, sampleDefinition, until } from "./helpers.js";
 import { box, control } from "./live-dom.js";
 

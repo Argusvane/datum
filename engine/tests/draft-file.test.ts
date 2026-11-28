@@ -14,7 +14,7 @@ describe("draft file serialization", () => {
       runtime: { schemaVersion: "1", rendererVersion: "1.0.0" },
       locale: "fr-CA",
       values: { b: 2, a: 1 },
-      state: { currentStep: "s1", touched: ["a"], dirty: ["a"] },
+      state: { mode: "wizard" as const, currentStep: "s1", touched: ["a"], dirty: ["a"], visitedSteps: ["s1"], completedSteps: [] },
       updatedAt: 1
     };
 
@@ -31,7 +31,7 @@ describe("draft file serialization", () => {
       runtime: { schemaVersion: "1", rendererVersion: "1.0.0" },
       locale: "fr-CA",
       values: {},
-      state: { touched: [], dirty: [] },
+      state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [] },
       updatedAt: 1
     });
 

@@ -42,24 +42,27 @@ choice marks (`choice`), the rhythm inside a field (`fields`), headings, tables,
 lists, spacing per block kind, two texts, seven optional type roles and a `scale`. Every block is
 optional. A role a theme leaves out is drawn as the kernel derives it, `null` takes a role away,
 and `scale` multiplies point sizes and gaps at resolve time, so a host prints a screen-scale
-theme smaller without redrawing it. The document model carries the resolved blocks, and every
-addition is optional, so `PDF_DOCUMENT_MODEL_VERSION` stays `1` ([`docs/reference/pdf-abi.md`](../reference/pdf-abi.md)). The
-keys are listed in the guide.
+theme smaller without redrawing it. The document model carries every resolved block whole
+(`PDF_DOCUMENT_MODEL_VERSION` `1`, [`docs/reference/pdf-abi.md`](../reference/pdf-abi.md)), and the
+program refuses a `render` or `layout` request whose document lacks one as an `invalid_request`. A
+fill plan carries the theme's `typography` and `colors` for its content areas. The keys are listed in the guide.
 
 ### 2. Two layers of defaults, kept apart
 
-- **The kernel's fallbacks** (`PDF_KERNEL_FALLBACKS`, read by `kernel/settings.ts`): the constants
-  the kernel draws with. A document that carries no setting renders with exactly these.
-  `tests/kernel-compat.test.ts` renders captured documents and holds their sha256.
+- **The kernel's own settings** (`PDF_KERNEL_FALLBACKS`, read by `kernel/settings.ts` and
+  `kernel/areas.ts`): the plain geometry a fill plan's content areas lay out with (a plan carries
+  type and colours, not geometry) and the pair for a block kind a document's spacing table leaves
+  out. `tests/kernel-parity-documents.test.ts` renders documents the engine built and holds their
+  sha256, the same hashes every host's PDF render contract checks.
 - **The engine's defaults** (`DEFAULT_PDF_*`, what `resolvePdfTheme` fills in): the PDF form
   look. Every registered theme takes it unless it says otherwise.
 
 `DEFAULT_PDF_THEME` (`datum-pdf`, "Datum (default)") is the `datum` binding's look on paper and
 the theme ladder's last rung: what a form prints under when nothing names another.
 
-`PLAIN_PDF_THEME` (`datum-plain`, "Datum (plain)") states the fallbacks as a theme — no frame, no
-bands, no numbering, no capitals, hints and markers left out — for a host that wants the plain
-record. It is registered beside the default in the web components' PDF theme registry. Affixes
+`PLAIN_PDF_THEME` (`datum-plain`, "Datum (plain)") states the kernel's own settings as a theme —
+no frame, no bands, no numbering, no capitals, hints and markers left out — for a host that wants
+a plain record of the answers. It is registered beside the default in the web components' PDF theme registry. Affixes
 print under every theme, plain included.
 
 ### 3. The PDF form look

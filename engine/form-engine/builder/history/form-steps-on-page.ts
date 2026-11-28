@@ -70,7 +70,7 @@ export interface FormStepsOnPage<T> extends BuilderModeHistory {
    * step whose follow-up is the form's next entry that way, the form's history steps that entry
    * instead of `write` writing another, so the form's history stays as it stood before the edit
    * and a catalog step held under it is live again. A follow-up the form can no longer reach in
-   * order (a step of the form's made since) is written afresh by `write`, as before the pair.
+   * order (a step of the form's made since) is written afresh by `write`.
    */
   followUp(page: BuilderController, direction: "undo" | "redo" | undefined, write: () => void): void;
   /**

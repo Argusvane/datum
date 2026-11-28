@@ -110,12 +110,11 @@ export type RunScope = "both" | "browser" | "server" | "server-secret";
  */
 export type FormulaErrorPolicy = "warn" | "fail";
 
-/** A rule with its run scope: a formula, or a tree, or neither (an absent rule). */
+/** A rule with its run scope: a formula, or none (an absent rule). */
 export interface RuleObject {
   formula?: string;
-  expression?: Expression;
   run?: RunScope;
 }
 
-/** A rule as a definition may write it: a FEEL-subset formula, a tree, or a {@link RuleObject}. */
-export type RuleSource = string | Expression | RuleObject;
+/** A rule as a definition may write it: a FEEL-subset formula, or a {@link RuleObject}. */
+export type RuleSource = string | RuleObject;

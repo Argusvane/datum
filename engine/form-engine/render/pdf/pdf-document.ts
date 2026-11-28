@@ -479,18 +479,18 @@ export interface PdfDocument {
   colors: PdfThemeColors;
   /**
    * The theme's geometry: the control box, the choice marks, the field rhythm, the
-   * headings, tables, boxes, panels, lists and the spacing table. Each is optional — a
-   * document from an older engine carries none, and the kernel then draws as it always did.
+   * headings, tables, boxes, panels, lists and the spacing table. A block kind the spacing
+   * table leaves out takes the kernel's own pair.
    */
-  controls?: PdfControlSettings;
-  choice?: PdfChoiceSettings;
-  fields?: PdfFieldSettings;
-  headings?: PdfHeadingSettings;
-  table?: PdfTableSettings;
-  box?: PdfBoxSettings;
-  panel?: PdfPanelSettings;
-  list?: PdfListSettings;
-  spacing?: PdfSpacingTable;
+  controls: PdfControlSettings;
+  choice: PdfChoiceSettings;
+  fields: PdfFieldSettings;
+  headings: PdfHeadingSettings;
+  table: PdfTableSettings;
+  box: PdfBoxSettings;
+  panel: PdfPanelSettings;
+  list: PdfListSettings;
+  spacing: PdfSpacingTable;
   /** Running regions, drawn on every page inside the header / footer bands. */
   header?: PdfBlock[];
   footer?: PdfBlock[];

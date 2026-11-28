@@ -156,7 +156,7 @@ class ContractsRoundTripTest {
         + " \"timestamp\": true, \"commitment\": {\"type\": \"approval\", \"statement\": \"s\"}, \"placeholderBytes\": 16384, \"name\": \"n\"}";
 
     private static String pdfRequest(String op) {
-        JsonNode document = RepoFixtures.json("packages/pdf-kernel/tests/fixtures/documents-3.8/datum-pdf.json");
+        JsonNode document = RepoFixtures.json("packages/pdf-kernel/tests/fixtures/documents/datum-pdf.json");
         JsonNode form = RepoFixtures.json("packages/conformance-suite/fixtures/endpoint-fixture.definition.json").get("root");
         String inputs = "\"form\": " + form + ", \"values\": {\"name\": \"Ada\"}, \"locale\": \"en\", \"layoutId\": \"main\","
             + " \"optionSnapshot\": {\"s\": [{\"value\": \"a\", \"label\": {\"en\": \"A\"}}]}, \"effectiveStates\": {\"a\": {\"visible\": true}},"

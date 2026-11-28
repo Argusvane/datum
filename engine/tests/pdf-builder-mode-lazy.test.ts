@@ -73,7 +73,7 @@ const overlay = (m: ReturnType<typeof mode>, index: number): HTMLElement => (m.o
 function context(showCanvasSurface: (surface: HTMLElement | undefined) => void) {
   const host = document.createElement("div");
   document.body.append(host);
-  return { host, root: host.attachShadow({ mode: "open" }), showCanvasSurface };
+  return { host, root: host.attachShadow({ mode: "open" }), showCanvasSurface, holdForInspector: (run: () => void) => (run(), true) };
 }
 
 const until = async (check: () => unknown): Promise<void> => {

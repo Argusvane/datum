@@ -43,7 +43,8 @@ function snapshot(patch: Partial<FormTestSnapshot> = {}): FormTestSnapshot {
     values: { c_age: 20 },
     byPath: { age: 20, name: "  ", topics: { a: false, b: false }, agree: false },
     errors: [],
-    rows: { items: 2 }
+    rows: { items: 2 },
+    pages: []
   };
   return { ...base, ...patch };
 }
@@ -525,7 +526,7 @@ describe("kernelFormTestJudge: journeys", () => {
   });
 
   it("expectOnPath compares membership with on", () => {
-    const snap = snapshot({ trace: trace(["a", "b"]) });
+    const snap = snapshot({ trace: trace(["a", "b"]), pages: ["a", "b", "c"] });
     expect(judge({ kind: "expectOnPath", page: "b", on: true, line: 1 }, snap).status).toBe("passed");
     expect(judge({ kind: "expectOnPath", page: "c", on: false, line: 1 }, snap).status).toBe("passed");
     expect(judge({ kind: "expectOnPath", page: "c", on: true, line: 2 }, snap)).toEqual({
@@ -959,7 +960,7 @@ describe("a checkbox group with nothing ticked reads as an empty list", () => {
 });
 
 describe("a journey the snapshot could not replay skips what reads the path", () => {
-  const snap = snapshot({ traceUnreplayable: "unreplayable.browser", trace: { pages: ["one", "three"], end: "end", decisions: [] }, page: "three", withheld: [], submitted: { age: 1 } });
+  const snap = snapshot({ traceUnreplayable: "unreplayable.browser", trace: { pages: ["one", "three"], end: "end", decisions: [] }, page: "three", pages: ["one", "two", "three"], withheld: [], submitted: { age: 1 } });
   const skipped = { status: "skipped", code: "unreplayable.browser" };
 
   it("skips the page, the path, where it ends and a page on or off it", () => {
@@ -980,7 +981,7 @@ describe("a journey the snapshot could not replay skips what reads the path", ()
   });
 
   it("judges the path as usual when the snapshot says nothing", () => {
-    const plain = snapshot({ trace: { pages: ["one", "three"], end: "end", decisions: [] }, page: "three" });
+    const plain = snapshot({ trace: { pages: ["one", "three"], end: "end", decisions: [] }, page: "three", pages: ["one", "two", "three"] });
     expect(judge({ kind: "expectOnPath", page: "two", on: false, line: 2 }, plain).status).toBe("passed");
   });
 });
@@ -1085,11 +1086,6 @@ describe("an expectation on a page the journey lacks, or a row it lacks, fails",
     expect(judge({ kind: "expectOnPath", page: "two", on: false, line: 2 }, journeySnap()).status).toBe("passed");
     expect(judge({ kind: "expectOnPath", page: "two", on: true, line: 2 }, journeySnap())).toMatchObject({ status: "failed", code: "expect.onPath" });
     expect(judge({ kind: "expectOnPath", page: "three", on: true, line: 2 }, journeySnap()).status).toBe("passed");
-  });
-
-  it("without the page list the judge reads the path alone, as before", () => {
-    const plain = snapshot({ trace: { pages: ["one", "three"], end: "end", decisions: [] }, page: "one" });
-    expect(judge({ kind: "expectOnPath", page: "tow", on: false, line: 2 }, plain).status).toBe("passed");
   });
 
   // A driver resolves a row field at any index to its component (`items[2].qty` is `c_qty`).

@@ -83,7 +83,7 @@ describe("createPdfSupport", () => {
     const before = calls.length;
     await support.fonts!.resolve({ families: ["Acme Sans"], scripts: ["Latn"], faces });
     expect(calls.length).toBe(before);
-    // A need without faces (an older engine's) loads nothing of any theme.
+    // A need without faces (its theme ships none) loads nothing of any theme.
     await support.fonts!.resolve({ families: ["Lato"], scripts: ["Latn"] });
     expect(calls.filter((url) => url.includes("lato"))).toEqual([]);
   });

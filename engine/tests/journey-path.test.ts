@@ -4,27 +4,30 @@ import type { Expression } from "../form-engine/core/expressions/expression.js";
 import type { ComponentNode } from "../form-engine/core/schema/types.js";
 import { normalizeDataGrids } from "../form-engine/core/schema/data-grid.js";
 import type { Journey, JourneyPage, JourneyPageEntry, PresentationNode, PresentationReference } from "../form-engine/core/schema/journey.js";
-import type { JourneyOwnership, JourneyTrace } from "../form-engine/core/journey/journey-types.js";
+import type { JourneyOwnership, JourneyPathInput, JourneyTrace } from "../form-engine/core/journey/journey-types.js";
 import {
   JOURNEY_PATH_FUNCTIONS,
   journeyFormKeys,
-  journeyCollectionPathOf,
   journeyEntryPlacesForm,
   journeyFrontier,
-  journeyHoldsOwnAnswer,
   journeyOwnNodeRule,
   journeyOwnNodeUsable,
   journeyOwnership,
   journeyPageOfComponent,
   journeyPagesOfKey,
-  journeyPath,
+  journeyPath as journeyPathOver,
   journeyPlacements,
   journeyReachable,
   journeyRuleTree,
   journeyStaticGraph,
   journeyTargetUsable
 } from "../form-engine/core/journey/journey-path.js";
+import { journeyCollectionPathOf, journeyHoldsOwnAnswer } from "../form-engine/core/journey/journey-shared.js";
 import { kernelFoldHoldsOwnAnswer } from "../form-engine/core/state/submittable-fold.js";
+import { kernelCompileJourney } from "../form-engine/core/expressions/compile.js";
+import { kernelParseFormula } from "../form-engine/core/expressions/formula.js";
+import type { FormulaProblem } from "../form-engine/core/expressions/formula-types.js";
+import { formulaFunctionSignatures } from "../form-engine/core/expressions/function-table.js";
 import { isValidComponentId } from "../form-engine/core/tree/component-id.js";
 import { evaluateExpression } from "../form-engine/rules/evaluator/evaluator.js";
 import { kernelIsDataScopeContainer, kernelKnownKeyShapes, kernelTreeIndex } from "../form-engine/validation/wasm/portable-kernel.js";
@@ -38,12 +41,21 @@ function group(id: string, type: string, children: ComponentNode[], extra: Parti
   return { id, type, configuration: { label: id }, children: { content: children }, ...extra };
 }
 
-function eq(path: string, value: string | number | boolean | null): Expression {
-  return { kind: "binary", operator: "eq", left: { kind: "path", path }, right: { kind: "literal", value } };
+/** The formula `path = value`; a path with an index is written in backticks. */
+function eq(path: string, value: string | number | boolean | null): string {
+  return `${path.includes("[") ? `\`${path}\`` : path} = ${JSON.stringify(value)}`;
 }
 
 const evaluate = (expression: Expression, values: Record<string, unknown>): unknown =>
   evaluateExpression(expression, { values });
+
+/** The walk reads a compiled copy, as the runtimes hand it one: these walks compile the journey first. */
+function journeyPath(journey: Journey, input: JourneyPathInput): JourneyTrace {
+  const problems: FormulaProblem[] = [];
+  const compiled = kernelCompileJourney({ journeys: [journey] }, kernelParseFormula, formulaFunctionSignatures(), problems) as { journeys: Journey[] };
+  expect(problems).toEqual([]);
+  return journeyPathOver(compiled.journeys[0]!, input);
+}
 
 /** Five questions, q1..q5, one per page p1..p5, and `u` on no page. */
 const flat: ComponentNode = group("form", "form", [field("q1"), field("q2"), field("q3"), field("q4"), field("q5"), field("u")]);
@@ -114,7 +126,7 @@ describe("journeyOwnership", () => {
 
 describe("journeyRuleTree", () => {
   it("reads a tree, the object form's expression, and a formula string (compiled away before the walk) as no condition", () => {
-    const tree = eq("q1", "far");
+    const tree: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "q1" }, right: { kind: "literal", value: "far" } };
     expect(journeyRuleTree(tree)).toBe(tree);
     expect(journeyRuleTree({ expression: tree, run: "both" })).toBe(tree);
     expect(journeyRuleTree('q1 = "far"')).toBeUndefined();
@@ -124,13 +136,16 @@ describe("journeyRuleTree", () => {
   });
 
   it("passes over a route whose when is still text: the condition does not hold", () => {
+    // A compiled copy, handed to the walk as it is.
+    const tree: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "q1" }, right: { kind: "literal", value: "far" } };
     const journey = fivePages({
-      p1: { routes: [{ when: { expression: eq("q1", "far") }, to: "p4" }, { when: 'q1 = "far"', to: "p3" }] },
+      p1: { routes: [{ when: { expression: tree } as never, to: "p4" }, { when: 'q1 = "far"', to: "p3" }] },
       p2: { routes: [{ when: 'q1 = "near"', to: "p4" }] }
     });
-    const far = walk(journey, { q1: "far" });
+    const ownership = journeyOwnership(flat, journey);
+    const far = journeyPathOver(journey, { values: { q1: "far" }, ownership, evaluate });
     expect(far.pages).toEqual(["p1", "p4", "p5"]);
-    const near = walk(journey, { q1: "near" });
+    const near = journeyPathOver(journey, { values: { q1: "near" }, ownership, evaluate });
     expect(near.pages).toEqual(["p1", "p2", "p3", "p4", "p5"]);
     expect(near.decisions[1]).toEqual({ kind: "next", pageId: "p2", to: "p3" });
   });
@@ -201,7 +216,7 @@ describe("journeyPath", () => {
     expect(walk(stale, { q1: "yes", q2: "stale" }).pages).toEqual(["p1", "p2", "p3", "p5"]);
 
     // ...a route reads its own page's answers, and a component on no page is there from the start.
-    const both = { kind: "logical", operator: "and", left: eq("u", "go"), right: eq("q1", "skip") } as Expression;
+    const both = `${eq("u", "go")} and ${eq("q1", "skip")}`;
     const own = fivePages({ p1: { routes: [{ when: both, to: "p3" }] } });
     expect(walk(own, { u: "go", q1: "skip" }).pages).toEqual(["p1", "p3", "p4", "p5"]);
     expect(walk(own, { u: "stop", q1: "skip" }).pages).toEqual(["p1", "p2", "p3", "p4", "p5"]);
@@ -237,7 +252,7 @@ describe("journeyPath", () => {
         {
           id: "p1",
           components: ["q1"],
-          routes: [{ when: { kind: "logical", operator: "or", left: eq("order_lines[0].sku", "A"), right: eq("order.items[0].code", "B") }, to: "p3" }]
+          routes: [{ when: `${eq("order_lines[0].sku", "A")} or ${eq("order.items[0].code", "B")}`, to: "p3" }]
         },
         { id: "p2", components: ["q3"] },
         { id: "p3", components: ["items", "order_items"] }
@@ -343,7 +358,7 @@ describe("journeyPath", () => {
           ...(random() < 0.2 ? { kind: "exit" as const } : {}),
           routes: Array.from({ length: Math.floor(random() * 3) }, () => ({
             to: random() < 0.15 ? "$end" : ids[Math.floor(random() * count)] ?? "$end",
-            ...(random() < 0.5 ? { when: { kind: "literal" as const, value: random() < 0.5 } } : {})
+            ...(random() < 0.5 ? { when: String(random() < 0.5) } : {})
           }))
         }))
       };
@@ -491,7 +506,7 @@ describe("ids and keys named after Object.prototype members", () => {
     const journey: Journey = {
       id: "flow",
       pages: [
-        { id: "p1", components: ["constructor"], routes: [{ when: { kind: "unary", operator: "not", operand: { kind: "path", path: "constructor" } }, to: "p2" }] },
+        { id: "p1", components: ["constructor"], routes: [{ when: "not(constructor)", to: "p2" }] },
         { id: "p2", components: ["q2"], routes: [{ when: eq("__proto__", "x"), to: "$end" }] },
         { id: "p3", components: ["q2"] }
       ]
@@ -517,9 +532,10 @@ describe("ids and keys named after Object.prototype members", () => {
 });
 
 describe("JOURNEY_PATH_FUNCTIONS", () => {
-  it("lists every exported function of the path engine, each a top-level declaration", async () => {
-    const module = (await import("../form-engine/core/journey/journey-path.js")) as Record<string, unknown>;
-    const exported = Object.entries(module)
+  it("lists every exported function of the path engine and of the shared helpers it calls, each a top-level declaration", async () => {
+    const path = (await import("../form-engine/core/journey/journey-path.js")) as Record<string, unknown>;
+    const shared = (await import("../form-engine/core/journey/journey-shared.js")) as Record<string, unknown>;
+    const exported = [...Object.entries(path), ...Object.entries(shared)]
       .filter(([, value]) => typeof value === "function")
       .map(([name]) => name)
       .sort();
@@ -541,7 +557,7 @@ const presentationTree: ComponentNode = group("form", "form", [
   group("address", "container", [field("street"), field("city")]),
   group("items", "repeatingSection", [field("sku")], { collection: {} }),
   { id: "orders_grid", type: "dataGrid", configuration: {}, collection: { collectionPath: "orders" }, children: { content: [field("grid_cell")] } },
-  { ...field("total", "number"), rules: { value: { kind: "literal", value: 1 } } },
+  { ...field("total", "number"), rules: { value: "1" } },
   field("logo", "image"),
   field("send", "button"),
   group("visual", "container", [field("loose")], { configuration: { label: "visual", scopeData: false } })
@@ -556,7 +572,7 @@ function alias(id: string, fills: string, type = "text"): PresentationNode {
 }
 
 function workedOut(id: string, to: string): PresentationNode {
-  return { id, type: "journey-value", configuration: { to, value: { kind: "path", path: "m1" } } };
+  return { id, type: "journey-value", configuration: { to, value: "m1" } };
 }
 
 function ref(componentId: string): PresentationReference {
@@ -805,7 +821,7 @@ describe("presentations: rule F — an alias holds a value itself", () => {
       alias("press", "name", "button"),
       alias("childless_layout", "name", "fieldset"),
       { ...box("layout", [ownField("inside")]), configuration: { fills: "name" } },
-      { id: "sum", type: "journey-value", configuration: { to: "approved_amount", value: { kind: "path", path: "m1" }, fills: "name" } }
+      { id: "sum", type: "journey-value", configuration: { to: "approved_amount", value: "m1", fills: "name" } }
     ]);
     expect(plain(ownership.aliasOf)).toEqual({ text_alias: "email", number_alias: "annual_income" });
     // `name` is filled by nothing: every `fills` on a node with no value of its own is ignored.
@@ -1224,11 +1240,10 @@ describe("the path engine's own list", () => {
 
 // A route condition holds only for the boolean true.
 describe("journeyPath: strict truthiness of a route condition", () => {
-  const read = (path: string): Expression => ({ kind: "path", path });
   const NOT_TRUE: Array<[string, unknown]> = [["the text yes", "yes"], ["the text false", "false"], ["the number 1", 1], ["a list", ["a"]], ["an empty list", []], ["an object", { a: true }], ["null", null], ["nothing", undefined]];
 
   it.each(NOT_TRUE)("takes no route whose condition comes to %s", (_label, answer) => {
-    const journey = fivePages({ p1: { routes: [{ when: read("q1"), to: "p4" }] } });
+    const journey = fivePages({ p1: { routes: [{ when: "q1", to: "p4" }] } });
     expect(walk(journey, { q1: answer }).pages).toEqual(["p1", "p2", "p3", "p4", "p5"]);
     expect(walk(journey, { q1: true }).pages).toEqual(["p1", "p4", "p5"]);
   });

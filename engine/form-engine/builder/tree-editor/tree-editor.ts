@@ -116,7 +116,7 @@ export class RemoveComponentCommand implements BuilderCommand {
     const live = Object.entries(parent.children ?? {});
     const slot = [...(live.find(([id]) => id === slotId)?.[1] ?? [])];
     slot.splice(index, 0, structuredClone(node));
-    // The slot keeps its place; one the node alone was in comes back last, as it always did.
+    // The slot keeps its place; one the node alone was in comes back last.
     this.tree.replaceChildren(this.parentId, Object.fromEntries(live.some(([id]) => id === slotId) ? live.map(([id, group]) => [id, id === slotId ? slot : group]) : [...live, [slotId, slot]]));
   }
 }

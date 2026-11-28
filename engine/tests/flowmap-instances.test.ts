@@ -2,7 +2,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { createJourneyMap, journeyMapEdgeId, journeyMapStylesInto, JOURNEY_MAP_STYLES, type JourneyMap, type JourneyMapContext, type JourneyMapSubject } from "../form-engine/builder/journey-map/journey-map.js";
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import type { Journey } from "../form-engine/core/schema/journey.js";
 import type { ComponentNode } from "../form-engine/core/schema/types.js";
 import { mapSource, mapWords } from "./flowmap-words.js";
@@ -14,8 +13,8 @@ import { mapSource, mapWords } from "./flowmap-words.js";
  * out: sizes and rectangles are stood in where a case needs them.
  */
 
-function eq(path: string, value: string): Expression {
-  return { kind: "binary", operator: "eq", left: { kind: "path", path }, right: { kind: "literal", value } };
+function eq(path: string, value: string): string {
+  return `${path} = ${JSON.stringify(value)}`;
 }
 
 const FORM: ComponentNode = {

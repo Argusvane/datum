@@ -26,13 +26,6 @@ function t(en: string, fr: string): { default: string; locales: { "fr-CA": strin
   return { default: en, locales: { "fr-CA": fr } };
 }
 
-// Expressions (engine/form-engine/core/expressions/expression.ts).
-const path = (p: string) => ({ kind: "path", path: p });
-const literal = (value: string | number | boolean) => ({ kind: "literal", value });
-const eq = (p: string, value: string | number | boolean) => ({ kind: "binary", operator: "eq", left: path(p), right: literal(value) });
-const not = (operand: unknown) => ({ kind: "unary", operator: "not", operand });
-const call = (name: string, ...args: unknown[]) => ({ kind: "call", name, args });
-
 const EMAIL = "[^@\\s]+@[^@\\s]+\\.[^@\\s]+";
 
 const localization = {
@@ -1736,14 +1729,14 @@ const rebate = {
             title: "Your home",
             components: ["mainHome"],
             // Not the home they live in: straight to the exit page.
-            routes: [{ when: eq("mainHome", "no"), to: "ineligible" }]
+            routes: [{ when: 'mainHome = "no"', to: "ineligible" }]
           },
           {
             id: "ownership",
             title: "Owning or renting",
             components: ["tenure"],
             // Only a renter goes on to the landlord's page; everyone else passes it by.
-            routes: [{ when: not(eq("tenure", "rent")), to: "work" }]
+            routes: [{ when: 'not(tenure = "rent")', to: "work" }]
           },
           {
             id: "landlord",
@@ -1782,7 +1775,7 @@ const rebate = {
               },
               // A worked-out value: the form's "Estimated cost", added up from the two amounts
               // above and shown read-only. The rebate under it is the form's own calculation.
-              { id: "costTotal", type: "journey-value", configuration: { to: "cost", value: call("sum", path("equipment"), path("installation")) } },
+              { id: "costTotal", type: "journey-value", configuration: { to: "cost", value: "sum(equipment, installation)" } },
               "rebateAmount"
             ]
           },

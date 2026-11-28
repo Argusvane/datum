@@ -555,8 +555,9 @@ export class DatumFormRendererElement extends HTMLElementBase {
     const runtime = this.runtimeRef;
     const binding = this.drawingBinding();
     const pack = binding.texts !== undefined || binding.messages !== undefined ? { texts: binding.texts, messages: binding.messages } : undefined;
-    const words = createFormTextResolver(runtime?.state().locale ?? "en", this.textsValue, runtime?.translationCatalog?.(), undefined, {
+    const words = createFormTextResolver(runtime?.state().locale ?? "en", this.textsValue, undefined, {
       translations: runtime?.translations?.(),
+      catalog: runtime?.translationCatalog?.(),
       ...(pack ? { pack } : {})
     });
     const line = (this.loadingLine ??= this.ownerDocument.createElement("p"));

@@ -5,9 +5,11 @@ import { FormEventType } from "../form-engine/core/events/event-types.js";
 import { ComponentTree } from "../form-engine/core/tree/component-tree.js";
 import { FormStateStore } from "../form-engine/core/state/form-state.js";
 import { RuntimeOrchestrator, type RecomputeResult } from "../form-engine/runtime/browser/runtime-orchestrator.js";
+import { compileFormDefinition } from "../form-engine/runtime/browser/form-runtime.js";
 import { applyHiddenValuePolicy } from "../form-engine/core/state/hidden-value-policy.js";
 import type { ComponentNode } from "../form-engine/core/schema/types.js";
-import type { Expression } from "../form-engine/core/expressions/expression.js";
+import type { Expression, RuleSource } from "../form-engine/core/expressions/expression.js";
+import type { FormulaFunctionSignature } from "../form-engine/core/expressions/formula-types.js";
 import type { Journey, JourneyPage, PresentationNode } from "../form-engine/core/schema/journey.js";
 import { journeyOwnership, journeyPath, journeyPlacements } from "../form-engine/core/journey/journey-path.js";
 import { buildPresentationIndex, type PresentationIndex } from "../form-engine/core/journey/presentation.js";
@@ -168,7 +170,7 @@ describe("RuntimeOrchestrator: whose state judges a value key", () => {
             // Retains: the rule reads the field's own answer, which a hidden-and-left-out default would take back from it the moment the rule hid it.
             configuration: { hiddenValueBehavior: "retain" },
             // empty(component), not `not component`: a condition holds only for true (strict truthiness), so "answered" no longer reads as a yes.
-            rules: { visibleWhen: { kind: "call", name: "empty", args: [{ kind: "path", path: "component" }] } }
+            rules: { visibleWhen: "empty(component)" }
           }
         ]
       }
@@ -186,7 +188,7 @@ describe("RuntimeOrchestrator: whose state judges a value key", () => {
 // --- Presentations -------------------------------------------------------------
 
 /** `name == value`, read by component id. */
-const nameIs = (value: string): Expression => ({ kind: "binary", operator: "eq", left: { kind: "path", path: "name" }, right: { kind: "literal", value } });
+const nameIs = (value: string): string => `name = ${JSON.stringify(value)}`;
 
 interface PresentationHarness {
   store: FormStateStore;
@@ -199,9 +201,17 @@ interface PresentationHarness {
 }
 
 /** An orchestrator over the shared presentation fixture, wired to a store as `FormRuntime` wires its own. */
-function presentationHarness(options: { root?: ComponentNode; journey?: Journey; store?: FormStateStore } = {}): PresentationHarness {
-  const root = options.root ?? presentationRoot();
-  const journey = options.journey ?? applyJourney();
+function presentationHarness(options: { root?: ComponentNode; journey?: Journey; store?: FormStateStore; signatures?: FormulaFunctionSignature[] } = {}): PresentationHarness {
+  // Compiled first, as `FormRuntime` compiles its definition: the orchestrator and the fold read the compiled copy.
+  const compiled = compileFormDefinition({
+    id: "presentation",
+    version: "1.0.0",
+    schemaVersion: "1.0.0",
+    root: options.root ?? presentationRoot(),
+    journey: { journeys: [options.journey ?? applyJourney()] }
+  }, { signatures: options.signatures ?? [] }).definition;
+  const root = compiled.root;
+  const journey = compiled.journey?.journeys?.[0] as Journey;
   const ownership = journeyOwnership(root, journey);
   const shapes = kernelKnownKeyShapes(root);
   const index = buildPresentationIndex(root, journey, ownership, (key) => kernelDefinesKey(shapes, key)) as PresentationIndex;
@@ -270,7 +280,7 @@ describe("RuntimeOrchestrator: the form pipeline never sees a presentation's own
 
   it("gives a form calculation that reads an own answer nothing to read, and keeps the own answers out of the submittable view", () => {
     const root = presentationRoot();
-    root.children?.content?.push({ id: "first_month", type: "number", configuration: {}, rules: { value: { kind: "call", name: "sum", args: [{ kind: "path", path: "@apply.m1" }] } } });
+    root.children?.content?.push({ id: "first_month", type: "number", configuration: {}, rules: { value: "sum(`@apply.m1`)" } });
     const harness = presentationHarness({ root });
     harness.set("@apply.m1", 12000);
     expect(harness.values().first_month).toBe(0);
@@ -403,7 +413,7 @@ describe("RuntimeOrchestrator: worked-out values", () => {
 
     // `income` skipped: its own fields are not shown, so the value it wrote is cleared; the
     // own answers stay, and the page works it out again once it is back on the path.
-    const skipping = presentationHarness({ journey: applyWith({ details: { routes: [{ when: { ...nameIs("ask"), operator: "neq" } as Expression, to: "assist" }] } }) });
+    const skipping = presentationHarness({ journey: applyWith({ details: { routes: [{ when: 'name != "ask"', to: "assist" }] } }) });
     skipping.set("name", "ask");
     skipping.set("@apply.m1", 300);
     expect(skipping.values().annual_income).toBe(300);
@@ -417,7 +427,7 @@ describe("RuntimeOrchestrator: worked-out values", () => {
 
   it("reports worked-out values that do not settle, and settles once an answer lets them", () => {
     // `m2` shows only while the total is under 100 — the field it is summed into.
-    const below: Expression = { kind: "binary", operator: "lt", left: { kind: "path", path: "annual_income" }, right: { kind: "literal", value: 100 } };
+    const below = "annual_income < 100";
     const harness = presentationHarness({ journey: incomeWith("m2", { rules: { visibleWhen: below } }) });
     harness.set("@apply.m1", 50);
     expect(harness.orchestrator.lastMappingsSettled()).toBe(true);
@@ -435,8 +445,9 @@ describe("RuntimeOrchestrator: worked-out values", () => {
   it("stores what an expression that throws, or comes to nothing, leaves: nothing", () => {
     const journey = applyJourney();
     const node = journey.pages[1]?.components?.[3] as PresentationNode;
-    node.configuration = { ...node.configuration, value: { kind: "call", name: "no-such-function", args: [] } as unknown as Expression };
-    const harness = presentationHarness({ journey });
+    // A function the compile is told of and the browser has none of: evaluating it throws.
+    node.configuration = { ...node.configuration, value: "no_such_function()" };
+    const harness = presentationHarness({ journey, signatures: [{ name: "no_such_function", min: 0, max: 0 }] });
     harness.set("annual_income", 5);
     harness.set("@apply.m1", 1);
     expect(harness.values().annual_income).toBeUndefined();
@@ -447,7 +458,7 @@ describe("RuntimeOrchestrator: the overlay for a presentation's own nodes", () =
   it("gives an own field its own rules' state on a page the path takes, and hides every own node of a page it skips", () => {
     const journey = incomeWith("m1", { configuration: { label: "Month 1", required: true } });
     const harness = presentationHarness({
-      journey: { ...journey, pages: journey.pages.map((page) => (page.id === "details" ? { ...page, routes: [{ when: { ...nameIs("ask"), operator: "neq" } as Expression, to: "assist" }] } : page)) }
+      journey: { ...journey, pages: journey.pages.map((page) => (page.id === "details" ? { ...page, routes: [{ when: 'name != "ask"', to: "assist" }] } : page)) }
     });
     harness.set("name", "ask");
     expect(harness.orchestrator.stateOf("m1")).toMatchObject({
@@ -508,12 +519,12 @@ describe("RuntimeOrchestrator: the overlay for a presentation's own nodes", () =
   });
 
   it("evaluates own rules over the form's view plus the own answers by id, and never reads the visibility of a node mapped to the form", () => {
-    const never: Expression = { kind: "literal", value: false };
+    const never = "false";
     const journey = applyWith({
       details: {
         components: [
           { id: "kind", type: "text", configuration: {} },
-          { id: "extra", type: "text", configuration: { required: true }, rules: { visibleWhen: { kind: "binary", operator: "eq", left: { kind: "path", path: "kind" }, right: { kind: "literal", value: "more" } }, enabledWhen: nameIs("Ada") } },
+          { id: "extra", type: "text", configuration: { required: true }, rules: { visibleWhen: 'kind = "more"', enabledWhen: nameIs("Ada") } },
           { id: "work_email", type: "text", configuration: { fills: "email", hidden: true }, rules: { visibleWhen: never } },
           {
             id: "box",
@@ -572,7 +583,7 @@ describe("RuntimeOrchestrator: the overlay for a presentation's own nodes", () =
           { id: "toString", type: "number" },
           // Not an id at all (rule A): the entry is dropped, and nothing is polluted.
           { id: "__proto__", type: "number", configuration: { required: true } },
-          { id: "income_total", type: "journey-value", configuration: { to: "annual_income", value: { kind: "call", name: "sum", args: [{ kind: "path", path: "isPrototypeOf" }, { kind: "path", path: "toString" }] } } }
+          { id: "income_total", type: "journey-value", configuration: { to: "annual_income", value: "sum(isPrototypeOf, toString)" } }
         ]
       }
     });
@@ -600,7 +611,7 @@ describe("RuntimeOrchestrator: the overlay for a presentation's own nodes", () =
  * calculation that flips itself through its own answer refused as before.
  */
 describe("RuntimeOrchestrator: the day, the functions and the run scopes", () => {
-  const after: Expression = { kind: "binary", operator: "gte", left: { kind: "call", name: "today", args: [] }, right: { kind: "literal", value: "2026-07-01" } };
+  const after = 'today() >= "2026-07-01"';
   /** `retained` names the fields that keep their answer while hidden: the default leaves it out of what other rules read. */
   function datedTree(rules: Record<string, ComponentNode["rules"]>, retained: string[] = []): ComponentTree {
     return new ComponentTree({
@@ -616,7 +627,7 @@ describe("RuntimeOrchestrator: the day, the functions and the run scopes", () =>
   it("reads the day once per recompute and hands it to every rule and calculation", () => {
     const days = ["2026-10-07", "2025-01-01"];
     const today = vi.fn(() => days.shift());
-    const orchestrator = new RuntimeOrchestrator(datedTree({ late: { visibleWhen: after }, day: { value: { kind: "call", name: "today", args: [] } }, gated: { requiredWhen: after } }), {
+    const orchestrator = new RuntimeOrchestrator(datedTree({ late: { visibleWhen: after }, day: { value: "today()" }, gated: { requiredWhen: after } }), {
       eventBus: new EventBus(),
       formId: "f1",
       today
@@ -641,11 +652,11 @@ describe("RuntimeOrchestrator: the day, the functions and the run scopes", () =>
   });
 
   it("ignores a rule scoped to the server, and applies one scoped to the browser or to both", () => {
-    const hide: Expression = { kind: "literal", value: false };
+    const hide = "false";
     const tree = datedTree({
-      by_server: { visibleWhen: { expression: hide, run: "server" }, requiredWhen: { expression: { kind: "literal", value: true }, run: "server-secret" } },
-      by_browser: { visibleWhen: { expression: hide, run: "browser" } },
-      by_both: { visibleWhen: { expression: hide } },
+      by_server: { visibleWhen: { formula: hide, run: "server" }, requiredWhen: { formula: "true", run: "server-secret" } },
+      by_browser: { visibleWhen: { formula: hide, run: "browser" } },
+      by_both: { visibleWhen: { formula: hide } },
       calc: { value: { formula: '"server"', run: "server" } },
       text_rule: { visibleWhen: "by_both = 1" }
     }, ["by_both"]); // text_rule reads by_both, which the hide rule hides: it must keep its answer to be read
@@ -658,7 +669,7 @@ describe("RuntimeOrchestrator: the day, the functions and the run scopes", () =>
     expect(orchestrator.effectiveStateFor("by_browser")?.visible).toBe(false);
     expect(orchestrator.effectiveStateFor("by_both")?.visible).toBe(false);
     expect(orchestrator.effectiveValues().calc).toBe("sent");
-    // A rule still written as text is parsed here, once, and read like its tree.
+    // A rule written as text is parsed here, once, and read like its tree.
     expect(orchestrator.effectiveStateFor("text_rule")?.visible).toBe(false);
     store.setValue({ segments: [{ key: "by_both" }] }, 1);
     orchestrator.recompute(store.snapshot());
@@ -666,8 +677,10 @@ describe("RuntimeOrchestrator: the day, the functions and the run scopes", () =>
   });
 
   it("puts the plugins' functions on every rule context", () => {
+    // Compiled copies, as a `FormRuntime` that knows the plugin hands them over: the orchestrator reads the trees.
     const shout = { kind: "call", name: "shout", args: [{ kind: "path", path: "name" }] } as unknown as Expression;
-    const orchestrator = new RuntimeOrchestrator(datedTree({ name: undefined, loud: { value: shout }, shown: { visibleWhen: { kind: "binary", operator: "eq", left: shout, right: { kind: "literal", value: "ADA" } } } }), {
+    const shown = { kind: "binary", operator: "eq", left: shout, right: { kind: "literal", value: "ADA" } } as unknown as RuleSource;
+    const orchestrator = new RuntimeOrchestrator(datedTree({ name: undefined, loud: { value: shout as unknown as RuleSource }, shown: { visibleWhen: shown } }), {
       eventBus: new EventBus(),
       formId: "f1",
       functions: { shout: (args) => String(args[0] ?? "").toUpperCase() }
@@ -683,7 +696,7 @@ describe("RuntimeOrchestrator: the day, the functions and the run scopes", () =>
     class Money {
       public readonly cents = 1;
     }
-    const call = (name: string): Expression => ({ kind: "call", name, args: [] }) as unknown as Expression;
+    const call = (name: string): RuleSource => ({ kind: "call", name, args: [] }) as unknown as RuleSource;
     const results: Record<string, () => unknown> = {
       nan: () => Number.NaN,
       later: () => Promise.resolve(1),
@@ -729,7 +742,7 @@ describe("RuntimeOrchestrator: the day, the functions and the run scopes", () =>
   });
 
   it("says a size cap that tripped in a rule once, naming the function and the cap", () => {
-    const long: Expression = { kind: "call", name: "padStart", args: [{ kind: "literal", value: "a" }, { kind: "literal", value: 20000 }, { kind: "literal", value: "b" }] } as unknown as Expression;
+    const long = 'padStart("a", 20000, "b")';
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     try {
       const orchestrator = new RuntimeOrchestrator(datedTree({ padded: { value: long } }), { eventBus: new EventBus(), formId: "f1" });
@@ -745,7 +758,7 @@ describe("RuntimeOrchestrator: the day, the functions and the run scopes", () =>
 
   it("gives a calculation over an empty operand no answer: the field stays empty, and fills once the operand is typed", () => {
     // The demo fee rule, `employees * 2`, before Employees is answered: no answer, never NaN.
-    const double: Expression = { kind: "arithmetic", operator: "multiply", left: { kind: "path", path: "employees" }, right: { kind: "literal", value: 2 } };
+    const double = "employees * 2";
     const store = new FormStateStore("en");
     const orchestrator = new RuntimeOrchestrator(
       new ComponentTree({
@@ -756,7 +769,7 @@ describe("RuntimeOrchestrator: the day, the functions and the run scopes", () =>
           content: [
             { id: "employees", type: "number", configuration: {} },
             { id: "fee", type: "number", configuration: {}, rules: { value: double } },
-            { id: "fee_known", type: "text", configuration: {}, rules: { visibleWhen: { kind: "binary", operator: "neq", left: { kind: "path", path: "fee" }, right: { kind: "literal", value: null } } } }
+            { id: "fee_known", type: "text", configuration: {}, rules: { visibleWhen: "fee != null" } }
           ]
         }
       }),
@@ -786,11 +799,7 @@ describe("RuntimeOrchestrator: the day, the functions and the run scopes", () =>
   });
 
   it("refuses a calculation whose if flips itself through its own answer: it does not converge", () => {
-    const flip: Expression = {
-      kind: "if",
-      cases: [{ when: { kind: "binary", operator: "eq", left: { kind: "path", path: "component" }, right: { kind: "literal", value: 1 } }, then: { kind: "literal", value: 2 } }],
-      else: { kind: "literal", value: 1 }
-    };
+    const flip = "if component = 1 then 2 else 1";
     const orchestrator = new RuntimeOrchestrator(datedTree({ flipper: { value: flip } }), { eventBus: new EventBus(), formId: "f1" });
     expect(() => orchestrator.recompute(new FormStateStore("en").snapshot())).toThrow(/did not converge/);
   });
@@ -802,9 +811,9 @@ describe("RuntimeOrchestrator: the day, the functions and the run scopes", () =>
       let passes = 0;
       const links: ComponentNode[] = [{ id: "x", type: "number", configuration: {} }];
       for (let i = 0; i < n; i += 1) {
-        const rule: Expression | string =
+        const rule: RuleSource =
           i === n - 1
-            ? ({ kind: "arithmetic", operator: "add", left: { kind: "call", name: "tick", args: [{ kind: "path", path: "x" }] }, right: { kind: "literal", value: 1 } } as unknown as Expression)
+            ? ({ kind: "arithmetic", operator: "add", left: { kind: "call", name: "tick", args: [{ kind: "path", path: "x" }] }, right: { kind: "literal", value: 1 } } as unknown as RuleSource)
             : `k${i + 1} + 1`;
         links.push({ id: `k${i}`, type: "number", configuration: {}, rules: { value: rule } } as ComponentNode);
       }

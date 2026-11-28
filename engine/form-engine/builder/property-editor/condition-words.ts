@@ -6,7 +6,7 @@
  * the same way, and the flow map draws them as terms (`journey-components.ts`,
  * `journey-map-model.ts`, both over this module).
  *
- * A condition is read as stored: a formula string, a tree, or the object form
+ * A condition is read as stored: a formula string or the object form
  * (`rule-source.ts`); one that does not parse, or cannot be evaluated, has no words, and the
  * caller says so ("a condition that never holds").
  *

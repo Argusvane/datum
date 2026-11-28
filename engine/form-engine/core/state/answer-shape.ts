@@ -32,7 +32,7 @@ export function isScalarAnswer(value: unknown): boolean {
 
 /**
  * A lone checkbox's answer as it is stored: the text `"true"` is `true` and `"false"` is
- * `false`, as a host's prefill or an older draft may spell them. Every other value is kept as
+ * `false`, as a host's prefill or a hand-edited draft file may spell them. Every other value is kept as
  * written, as a number box keeps text that is no number: the box is ticked only by `true`, and
  * anything else (`false`, `0`, `1`, `"yes"`) is no tick, and no answer to `required`.
  */

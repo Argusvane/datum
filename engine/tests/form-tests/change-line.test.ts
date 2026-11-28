@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import type { Expression } from "../../form-engine/core/expressions/expression.js";
 import { formulaFunctionSignatures } from "../../form-engine/core/expressions/function-table.js";
 import type { DefinitionInspectResponse } from "../../form-engine/core/expressions/inspect.js";
 import { kernelParseFormTests } from "../../form-engine/core/form-tests/form-test-parse.js";
@@ -23,8 +22,7 @@ import { JsonWasmAbi, WASM_ABI_VERSION, stableStringify } from "../../form-engin
  * very same steps, refusals included.
  */
 
-const path = (name: string): Expression => ({ kind: "path", path: name });
-const neq = (name: string, value: string): Expression => ({ kind: "binary", operator: "neq", left: path(name), right: { kind: "literal", value } });
+const neq = (name: string, value: string): string => `${name} != ${JSON.stringify(value)}`;
 
 const makeRuntime: FormTestRuntimeFactory = (definition, givens) => {
   const modes = new SubmissionModeRegistry();

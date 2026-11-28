@@ -11,14 +11,15 @@
  * that ranks.
  *
  * Two layers of defaults, kept apart on purpose:
- * - what the kernel draws when a document carries no setting at all ({@link PDF_KERNEL_FALLBACKS}):
- *   the constants it always had, so a document from an older engine renders as it did;
+ * - the kernel's own constants ({@link PDF_KERNEL_FALLBACKS}): the plain geometry a fill
+ *   plan's content areas lay out with, the pair for a block kind a theme's spacing table
+ *   leaves out, and the settings {@link PLAIN_PDF_THEME} states;
  * - what {@link resolvePdfTheme} fills in when a theme says nothing (the `DEFAULT_PDF_*`
  *   values): the engine's form look — a label above a boxed answer, numbered sections on
  *   bands, a title block, uppercase captions — which every registered theme takes unless it
  *   says otherwise.
- * {@link PLAIN_PDF_THEME} spells the fallbacks out as a theme, for a host that wants the
- * earlier, plainer document.
+ * {@link PLAIN_PDF_THEME} is the plain record: answers under their labels, no frames, bands,
+ * numbering or captions in capitals.
  *
  * Split out of pdf-theme.ts: the defaults and the two shipped themes are what the theme
  * registry registers when the bundle loads, so they stay eager; the merge, scale and selection
@@ -349,12 +350,14 @@ export interface PdfThemeDefinition {
 export const DEFAULT_PDF_THEME_ID = "datum-pdf";
 export const PLAIN_PDF_THEME_ID = "datum-plain";
 
-// --- The kernel's fallbacks: what a document without a setting draws ---------------------------
+// --- The kernel's own constants: the plain settings -------------------------------------------
 
 /**
- * What the kernel draws when a document says nothing — the constants it always had. The
- * kernel reads these (so the two cannot drift), and {@link PLAIN_PDF_THEME} states them as a
- * theme. Not the engine's defaults: those are the form look below.
+ * The kernel's own settings: what a fill plan's content areas lay out with (a plan carries the
+ * theme's type and colours, not its geometry), the pair for a block kind a document's spacing
+ * table leaves out, and the colour an unreadable one falls back to. The kernel reads these
+ * (so the two cannot drift), and {@link PLAIN_PDF_THEME} states them as a theme. Not the
+ * engine's defaults: those are the form look below.
  */
 export const PDF_KERNEL_FALLBACKS = {
   typography: {
@@ -372,7 +375,7 @@ export const PDF_KERNEL_FALLBACKS = {
   box: { borderWidth: 0.75, padding: 6, radius: 0 } satisfies PdfBoxSettings as PdfBoxSettings,
   panel: { borderWidth: 0.75, radius: 0, padding: 6, headerPadding: 6 } satisfies PdfPanelSettings as PdfPanelSettings,
   list: { indent: 12, gap: 2, bullet: "•" } satisfies PdfListSettings as PdfListSettings,
-  /** Every kind: the table the kernel had, the `list` kind spaced like a paragraph. */
+  /** Every kind, the `list` kind spaced like a paragraph. */
   spacing: {
     heading: [10, 4],
     paragraph: [0, 4],
@@ -520,9 +523,9 @@ export const DEFAULT_PDF_THEME: PdfThemeDefinition = {
 };
 
 /**
- * The plain document: the kernel's fallbacks as a
- * theme — no frame, no bands, no numbering, no captions in capitals, hints and markers left
- * out. A host that wants the plain record registers this beside the default.
+ * The plain document: the kernel's own settings as a theme — no frame, no bands, no
+ * numbering, no captions in capitals, hints and markers left out. A host that wants a plain
+ * record of the answers registers this beside the default.
  */
 export const PLAIN_PDF_THEME: PdfThemeDefinition = {
   id: PLAIN_PDF_THEME_ID,
@@ -545,7 +548,7 @@ export const PLAIN_PDF_THEME: PdfThemeDefinition = {
       stepTag: null
     },
     colors: PDF_KERNEL_FALLBACKS.colors,
-    // An optional field the fallbacks leave out must be taken away in so many words (`null`), or the form look's value fills it.
+    // An optional field the kernel's settings leave out must be taken away in so many words (`null`), or the form look's value fills it.
     controls: { ...PDF_KERNEL_FALLBACKS.controls, textareaRows: null, fontSize: null, maxWidth: null },
     choice: { ...PDF_KERNEL_FALLBACKS.choice, dotSize: null },
     fields: { ...PDF_KERNEL_FALLBACKS.fields, inlineLabelWidth: null },

@@ -163,7 +163,7 @@ export function coverageChromeForm(): FormDefinition {
             thanks: { text: tr("Thank you for your time.", "Merci de votre temps.") }
           },
           texts: {
-            form: { summaryHeadingOne: tr("{{count}} error", "{{count}} erreur"), selectEmpty: tr("Select…", "Choisir…"), dateDay: tr("Day", "Jour"), dateMonth: tr("Month", "Mois"), dateYear: tr("Year", "Année") },
+            form: { "summaryHeading.one": tr("{{count}} error", "{{count}} erreur"), selectEmpty: tr("Select…", "Choisir…"), dateDay: tr("Day", "Jour"), dateMonth: tr("Month", "Mois"), dateYear: tr("Year", "Année") },
             messages: { required: tr("This field is required", "Ce champ est obligatoire") }
           }
         }

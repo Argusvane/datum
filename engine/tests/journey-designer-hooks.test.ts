@@ -25,7 +25,6 @@ import {
   JOURNEY_ROUTE_TYPE,
   JOURNEY_ROUTES_SLOT
 } from "../form-engine/builder/journey-designer/journey-mode-model.js";
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import type { Journey } from "../form-engine/core/schema/journey.js";
 import type { ComponentNode } from "../form-engine/core/schema/types.js";
 
@@ -76,12 +75,7 @@ function form(): ComponentNode {
   };
 }
 
-const methodIs = (value: string): Expression => ({
-  kind: "binary",
-  operator: "eq",
-  left: { kind: "path", path: "contactMethod" },
-  right: { kind: "literal", value }
-});
+const methodIs = (value: string): string => `contactMethod = "${value}"`;
 
 function journey(): Journey {
   return {
@@ -290,7 +284,7 @@ describe("the Journeys designer's inspector", () => {
 
   it("says each finding again under the box it is about, the rest above the sections, holding no Save back", () => {
     const value = journey();
-    value.pages[0]!.routes![0]!.when = { kind: "binary", operator: "eq", left: { kind: "path", path: "nowhere" }, right: { kind: "literal", value: 1 } };
+    value.pages[0]!.routes![0]!.when = "nowhere = 1";
     const { controller } = designFor(value);
     const [about, where, finish] = [0, 1, 2].map((index) => pageNode(controller, index));
     const questions = (page: ComponentNode | undefined): ComponentNode[] => page?.children?.[JOURNEY_CONTENT_SLOT] ?? [];
@@ -398,13 +392,10 @@ describe("the Journeys designer's words", () => {
   it("reads a simple condition the way the Rules tab does", () => {
     const index = indexJourneyForm(form(), "en");
     expect(conditionInWords(methodIs("mail"), index)).toBe("Contact method equals “mail”");
-    expect(conditionInWords({ kind: "path", path: "consent" }, index)).toBe("I agree is checked / true");
-    expect(
-      conditionInWords({ kind: "logical", operator: "or", left: methodIs("mail"), right: { kind: "unary", operator: "not", operand: { kind: "path", path: "consent" } } }, index)
-    ).toBe("Contact method equals “mail” or I agree is unchecked / false");
-    // A shape the sentence cannot word is the printed formula, labels for fields; a formula string reads as a tree does.
-    expect(conditionInWords({ kind: "call", name: "len", args: [{ kind: "path", path: "fullName" }] }, index)).toBe("len(Full name)");
-    expect(conditionInWords('contactMethod = "mail"', index)).toBe("Contact method equals “mail”");
+    expect(conditionInWords("consent", index)).toBe("I agree is checked / true");
+    expect(conditionInWords(`${methodIs("mail")} or not(consent)`, index)).toBe("Contact method equals “mail” or I agree is unchecked / false");
+    // A shape the sentence cannot word is the printed formula, labels for fields.
+    expect(conditionInWords("len(fullName)", index)).toBe("len(Full name)");
     expect(conditionInWords("len(fullName) > 2 and consent", index)).toBe("len(Full name) > 2 and I agree");
     // One that does not parse, or cannot be evaluated, has no words: the canvas says it never holds.
     expect(conditionInWords("mail +", index)).toBeUndefined();

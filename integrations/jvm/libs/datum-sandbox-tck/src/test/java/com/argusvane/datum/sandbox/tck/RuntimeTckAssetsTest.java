@@ -15,15 +15,15 @@ class RuntimeTckAssetsTest {
 
     @Test
     void theFixturesAreInTheKitsOwnResources() throws Exception {
-        for (String name : new String[] {"golden.json", "fixture-form.json", "documents-3.8/hashes.json"}) {
+        for (String name : new String[] {"golden.json", "fixture-form.json", "documents/hashes.json"}) {
             try (InputStream in = getClass().getClassLoader().getResourceAsStream(RuntimeTckAssets.FIXTURES + name)) {
                 assertThat(in).as(RuntimeTckAssets.FIXTURES + name).isNotNull();
             }
         }
-        JsonNode hashes = RuntimeTckAssets.fixture("documents-3.8/hashes.json");
+        JsonNode hashes = RuntimeTckAssets.fixture("documents/hashes.json");
         assertThat(hashes.size()).as("the parity documents").isGreaterThan(0);
         hashes.propertyNames().forEach(theme ->
-            assertThat(RuntimeTckAssets.fixture("documents-3.8/" + theme + ".json").isObject()).as(theme).isTrue());
+            assertThat(RuntimeTckAssets.fixture("documents/" + theme + ".json").isObject()).as(theme).isTrue());
         assertThat(RuntimeTckAssets.fixture("golden.json").path("controls").has("CTL-01")).isTrue();
         assertThat(RuntimeTckAssets.fixture("fixture-form.json").path("root").isObject()).isTrue();
     }

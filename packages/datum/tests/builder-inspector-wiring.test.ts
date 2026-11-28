@@ -323,7 +323,7 @@ describe("the delete confirmation's references", () => {
     expect(content().find((node) => node.id === "email")!.rules?.visibleWhen).toBeUndefined();
     controller.undo();
     expect(content().some((node) => node.id === "subscribe")).toBe(true);
-    expect(content().find((node) => node.id === "email")!.rules).toEqual({ visibleWhen: { kind: "path", path: "subscribe" } });
+    expect(content().find((node) => node.id === "email")!.rules).toEqual({ visibleWhen: "subscribe" });
   });
 
   it("leaves the references when the box stays unticked, and draws the plain dialog for a component nothing reads", async () => {
@@ -339,7 +339,7 @@ describe("the delete confirmation's references", () => {
     inspector(element).querySelector<HTMLButtonElement>("[data-confirm-delete]")!.click();
     const content = controller.snapshot().children!.content!;
     expect(content.some((node) => node.id === "subscribe")).toBe(false);
-    expect(content.find((node) => node.id === "email")!.rules).toEqual({ visibleWhen: { kind: "path", path: "subscribe" } });
+    expect(content.find((node) => node.id === "email")!.rules).toEqual({ visibleWhen: "subscribe" });
   });
 
   it("does the same from the canvas's own confirmation", async () => {
@@ -357,7 +357,7 @@ describe("the delete confirmation's references", () => {
     expect(content().find((node) => node.id === "email")!.rules?.visibleWhen).toBeUndefined();
     controller.undo();
     expect(content().some((node) => node.id === "subscribe")).toBe(true);
-    expect(content().find((node) => node.id === "email")!.rules).toEqual({ visibleWhen: { kind: "path", path: "subscribe" } });
+    expect(content().find((node) => node.id === "email")!.rules).toEqual({ visibleWhen: "subscribe" });
   });
 });
 

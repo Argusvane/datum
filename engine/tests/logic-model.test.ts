@@ -59,19 +59,16 @@ function businessForm(): ComponentNode {
     field("structure", "Business structure", { type: "radio", configuration: { options: STRUCTURE_OPTIONS } }),
     field("agent", "Registered agent", {
       configuration: { hiddenValueBehavior: "exclude-from-submission" },
-      rules: { visibleWhen: or(eq("structure", "partnership"), eq("structure", "corp")) }
+      rules: { visibleWhen: 'structure = "partnership" or structure = "corp"' }
     }),
     field("employees", "Number of employees", { type: "number" }),
     field("consent", "Consent", { type: "checkbox" }),
-    field("email", "Email", { rules: { requiredWhen: not(path("consent")), enabledWhen: path("consent"), readonlyWhen: cmp("gte", "employees", 100) } }),
+    field("email", "Email", { rules: { requiredWhen: "not(consent)", enabledWhen: "consent", readonlyWhen: "employees >= 100" } }),
     field("fee", "Fee", {
       type: "number",
-      rules: {
-        value: { kind: "arithmetic", operator: "add", left: { kind: "arithmetic", operator: "multiply", left: path("employees"), right: lit(10) }, right: lit(5) },
-        defaultValue: lit(0)
-      }
+      rules: { value: "employees * 10 + 5", defaultValue: "0" }
     }),
-    field("province", "Province", { type: "select", rules: { filter: cmp("neq", "row.region", "north") } })
+    field("province", "Province", { type: "select", rules: { filter: 'row.region != "north"' } })
   ]);
 }
 
@@ -116,7 +113,7 @@ describe("rule sentences", () => {
       { kind: "value", text: "5" }
     ]);
     expect(calculate.formula).toBe("employees * 10 + 5");
-    expect(calculate.storedAsText).toBe(false);
+    expect(calculate.storedAsText).toBe(true);
     expect(calculate.run).toBe("both");
     expect(text(ruleById(model.rules, "form:fee:defaultValue").sentence)).toBe("Start Fee at 0");
     const filter = ruleById(model.rules, "form:province:filter");
@@ -153,23 +150,10 @@ describe("rule sentences", () => {
     expect(conditionSentence(undefined, { root })).toEqual([]);
   });
 
-  it("prints a call to a plugin function as its formula, like a built-in; a broken tree stays a custom condition", () => {
+  it("prints a call to a plugin function as its formula, like a built-in", () => {
     const root = businessForm();
     // A condition calling a function the sentences do not know (a plugin's): the printed formula.
     expect(text(conditionSentence({ kind: "call", name: "isPrime", args: [path("employees")] }, { root }))).toBe("isPrime(Number of employees)");
-    // A value rule calling one: the formula, not "a custom condition".
-    const plugged = form([
-      field("employees", "Employees", { type: "number" }),
-      field("fee", "Fee", { type: "number", rules: { value: { kind: "call", name: "double", args: [path("employees")] } } })
-    ]);
-    const model = buildLogicModel(plugged);
-    expect(text(ruleById(model.rules, "form:fee:value").sentence)).toBe("Calculate Fee as double(Employees)");
-    // The tree's own shape still decides: a call whose argument is not an expression cannot be read out.
-    const broken = form([
-      field("employees", "Employees", { type: "number" }),
-      field("fee", "Fee", { type: "number", rules: { value: { kind: "call", name: "double", args: [{ kind: "nope" }] } as unknown as Expression } })
-    ]);
-    expect(text(ruleById(buildLogicModel(broken).rules, "form:fee:value").sentence)).toBe("Calculate Fee as a custom condition");
   });
 
   it("names options and fields for the locale", () => {
@@ -239,23 +223,15 @@ describe("expressionText", () => {
 // --- formulas, hide rules, cases, run scopes --------------------------------------------------
 
 describe("formula rules", () => {
-  const ifFee: Expression = {
-    kind: "if",
-    cases: [
-      { when: and(cmp("gt", "employees", 10), eq("structure", "corp")), then: lit(250) },
-      { when: eq("structure", "partnership"), then: lit(180) }
-    ],
-    else: lit(120)
-  };
   const root = form([
     field("structure", "Business structure", { type: "radio", configuration: { options: STRUCTURE_OPTIONS } }),
     field("employees", "Number of employees", { type: "number" }),
     field("agent", "Registered agent", { rules: { visibleWhen: 'structure in ("partnership", "corp")' } }),
     field("bn", "Business number", { rules: { requiredWhen: { formula: "employees > 0", run: "browser" } } }),
-    field("fee", "Fee", { type: "number", rules: { value: ifFee } }),
+    field("fee", "Fee", { type: "number", rules: { value: 'if employees > 10 and structure = "corp" then 250 else if structure = "partnership" then 180 else 120' } }),
     field("score", "Eligibility score", { type: "number", rules: { value: { formula: "employees * 2", run: "server-secret" } } }),
-    field("notes", "Notes", { rules: { visibleWhen: not(cmp("gt", "employees", 10)) } }),
-    field("note2", "Second notes", { rules: { visibleWhen: { expression: not(cmp("gt", "employees", 10)), run: "server" } } }),
+    field("notes", "Notes", { rules: { visibleWhen: "not(employees > 10)" } }),
+    field("note2", "Second notes", { rules: { visibleWhen: { formula: "not(employees > 10)", run: "server" } } }),
     field("broken", "Broken", { rules: { visibleWhen: "employees >" } }),
     field("hosted", "Hosted", { rules: { requiredWhen: { formula: 'host.region = "west"', run: "server" } } }),
     field("dated", "Dated", { rules: { visibleWhen: { formula: "age(employees) > 1", run: "server" } } }),
@@ -381,8 +357,6 @@ describe("formula rules", () => {
   it("gives the editor the text of any stored shape", () => {
     expect(ruleFormulaText("a > 1")).toBe("a > 1");
     expect(ruleFormulaText({ formula: "a > 1", run: "server" })).toBe("a > 1");
-    expect(ruleFormulaText(cmp("gt", "a", 1))).toBe("a > 1");
-    expect(ruleFormulaText({ expression: not(path("a")), run: "both" })).toBe("not(a)");
     expect(ruleFormulaText(undefined)).toBe("");
   });
 
@@ -401,7 +375,7 @@ describe("formula rules", () => {
 
 function stepsForm(): ComponentNode {
   return form([
-    field("intro_ack", "Read the intro", { type: "checkbox", rules: { requiredWhen: path("consent_all") } }),
+    field("intro_ack", "Read the intro", { type: "checkbox", rules: { requiredWhen: "consent_all" } }),
     field("consent_all", "Consent to all", { type: "checkbox" }),
     {
       id: "wizard",
@@ -416,7 +390,7 @@ function stepsForm(): ComponentNode {
             children: {
               default: [
                 field("applicant_type", "Applicant type", { type: "select" }),
-                field("name", "Name", { rules: { requiredWhen: eq("applicant_type", "person") } })
+                field("name", "Name", { rules: { requiredWhen: 'applicant_type = "person"' } })
               ]
             }
           },
@@ -424,11 +398,11 @@ function stepsForm(): ComponentNode {
             id: "step2",
             type: "step",
             configuration: { label: "Business" },
-            rules: { visibleWhen: eq("applicant_type", "business") },
+            rules: { visibleWhen: 'applicant_type = "business"' },
             children: {
               default: [
-                field("revenue", "Revenue", { type: "number", rules: { visibleWhen: cmp("gt", "staff", 10) } }),
-                field("sector", "Sector", { rules: { requiredWhen: path("revenue") } })
+                field("revenue", "Revenue", { type: "number", rules: { visibleWhen: "staff > 10" } }),
+                field("sector", "Sector", { rules: { requiredWhen: "revenue" } })
               ]
             }
           },
@@ -436,7 +410,7 @@ function stepsForm(): ComponentNode {
             id: "step3",
             type: "step",
             configuration: { label: "Review" },
-            rules: { navigationGating: path("confirm") },
+            rules: { navigationGating: "confirm" },
             children: { default: [field("staff", "Staff", { type: "number" }), field("confirm", "I confirm", { type: "checkbox" })] }
           }
         ]
@@ -509,10 +483,7 @@ describe("path resolution", () => {
     field("group_box", "Box", { type: "fieldset", children: { default: [] } }),
     field("watcher", "Watcher", {
       rules: {
-        visibleWhen: and(
-          and(and(path("billing_street"), path("billing.street")), and(path("address.city"), path("ghost"))),
-          and(and(path("row.sku"), path("order.items[0].sku")), path("group_box"))
-        )
+        visibleWhen: "billing_street and billing.street and (address.city and ghost) and (row.sku and `order.items[0].sku` and group_box)"
       }
     })
   ]);
@@ -562,7 +533,7 @@ describe("journeys and variants", () => {
               id: "start",
               title: "Start",
               components: ["structure", "employees"],
-              routes: [{ when: eq("structure", "corp"), to: "corp_details" }, { to: "people" }, { when: path("consent"), to: "$end" }]
+              routes: [{ when: 'structure = "corp"', to: "corp_details" }, { to: "people" }, { when: "consent", to: "$end" }]
             },
             { id: "corp_details", components: ["agent"] },
             { id: "people", title: "People", components: ["employees"] },
@@ -617,7 +588,7 @@ describe("journeys and variants", () => {
           id: "j",
           name: "Apply",
           pages: [
-            { id: "a", title: "One", components: ["structure"], routes: [{ when: path("consent"), to: "c" }, { to: "b" }] },
+            { id: "a", title: "One", components: ["structure"], routes: [{ when: "consent", to: "c" }, { to: "b" }] },
             { id: "b", components: ["employees"] },
             { id: "b", components: ["agent"] },
             { id: "c", kind: "exit", title: "Declined", components: [] },
@@ -658,9 +629,9 @@ describe("PDF layouts", () => {
   const definition = definitionWith(root, {
     pdf: {
       layouts: [
-        { id: "large", kind: "generated", name: "Large print", when: path("consent"), root: { id: "doc", type: "pdf-document", configuration: {}, children: { body: [] } } },
+        { id: "large", kind: "generated", name: "Large print", when: "consent", root: { id: "doc", type: "pdf-document", configuration: {}, children: { body: [] } } },
         { id: "plain", kind: "generated", root: { id: "doc2", type: "pdf-document", configuration: {}, children: { body: [] } } },
-        { id: "corp", kind: "generated", when: eq("structure", "corp"), root: { id: "doc3", type: "pdf-document", configuration: {}, children: { body: [] } } }
+        { id: "corp", kind: "generated", when: 'structure = "corp"', root: { id: "doc3", type: "pdf-document", configuration: {}, children: { body: [] } } }
       ]
     }
   });
@@ -688,9 +659,9 @@ describe("visibility cycles", () => {
   it("finds two fields hiding each other", () => {
     const model = buildLogicModel(
       form([
-        field("a", "Alpha", { rules: { visibleWhen: path("b") } }),
-        field("b", "Beta", { rules: { visibleWhen: path("a") } }),
-        field("c", "Gamma", { rules: { visibleWhen: path("a") } })
+        field("a", "Alpha", { rules: { visibleWhen: "b" } }),
+        field("b", "Beta", { rules: { visibleWhen: "a" } }),
+        field("c", "Gamma", { rules: { visibleWhen: "a" } })
       ])
     );
     expect(model.diagnostics).toEqual([
@@ -701,8 +672,8 @@ describe("visibility cycles", () => {
   it("finds a cycle through a container whose visibility folds into its fields", () => {
     const model = buildLogicModel(
       form([
-        field("section", "Section", { type: "fieldset", rules: { visibleWhen: path("outside") }, children: { default: [field("inside", "Inside")] } }),
-        field("outside", "Outside", { rules: { visibleWhen: path("inside") } })
+        field("section", "Section", { type: "fieldset", rules: { visibleWhen: "outside" }, children: { default: [field("inside", "Inside")] } }),
+        field("outside", "Outside", { rules: { visibleWhen: "inside" } })
       ])
     );
     const cycles = model.diagnostics.filter((diagnostic) => diagnostic.code === "visibility-cycle");
@@ -716,15 +687,15 @@ describe("visibility cycles", () => {
   });
 
   it("finds a field hidden by its own answer, and lists three in a ring once", () => {
-    const self = buildLogicModel(form([field("x", "Ex", { rules: { visibleWhen: eq("x", "y") } })]));
+    const self = buildLogicModel(form([field("x", "Ex", { rules: { visibleWhen: 'x = "y"' } })]));
     expect(self.diagnostics).toEqual([
       { code: "visibility-cycle", message: "Ex is hidden by an answer it hides, so the form cannot settle.", ruleIds: ["form:x:visibleWhen"] }
     ]);
     const ring = buildLogicModel(
       form([
-        field("a", "A", { rules: { visibleWhen: path("b") } }),
-        field("b", "B", { rules: { visibleWhen: path("c") } }),
-        field("c", "C", { rules: { visibleWhen: path("a") } })
+        field("a", "A", { rules: { visibleWhen: "b" } }),
+        field("b", "B", { rules: { visibleWhen: "c" } }),
+        field("c", "C", { rules: { visibleWhen: "a" } })
       ])
     );
     expect(ring.diagnostics).toHaveLength(1);

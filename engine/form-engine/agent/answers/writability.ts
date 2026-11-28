@@ -5,7 +5,8 @@
  */
 
 import type { RenderComponentModel } from "../../render/core/component-model.js";
-import { isCalculated, isNestedCollection, unfillableStaticKind, type FieldKind } from "./kinds.js";
+import type { FieldKind } from "../../registry/kinds.js";
+import { isCalculated, isNestedCollection, unfillableStaticKind } from "./kinds.js";
 
 export type WhyNotWritable = "hidden" | "disabled" | "readonly" | "calculated" | "unfillable" | "group" | "presentation";
 export type UnfillableKind = "file" | "signature" | "button" | "static" | "nested-rows";

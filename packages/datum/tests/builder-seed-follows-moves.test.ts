@@ -57,7 +57,7 @@ function definition(): unknown {
 
 async function mount(): Promise<DatumFormBuilderElement> {
   const element = document.createElement("datum-form-builder") as DatumFormBuilderElement;
-  element.setAttribute("pdf", "off");
+  element.setAttribute("features", "-pdf");
   element.definition = definition() as never;
   document.body.append(element);
   await until(() => element.controller);
@@ -209,7 +209,7 @@ describe("the element's rename is the page's own copy", () => {
 describe("a rename's own path move is told by the direction of the step", () => {
   it("is not replayed from an older rename of the same ids when the later one moved no path", async () => {
     const element = document.createElement("datum-form-builder") as DatumFormBuilderElement;
-    element.setAttribute("pdf", "off");
+    element.setAttribute("features", "-pdf");
     const form = definition() as { root: { children: { content: Array<{ children: { content: unknown[] } }> } }; pdf: { layouts: Array<{ fields: unknown[] }> } };
     form.root.children.content[0]!.children.content.push({ id: "contact", type: "text", configuration: { label: "Contact" } });
     form.pdf.layouts[0]!.fields.push({ pdfField: "Contact", source: { kind: "path", path: "applicant.contact" } });
@@ -245,7 +245,7 @@ describe("a step the seed followed while a side had no mode", () => {
     expect(controller.commitDraft("email")).toBe(true);
     controller.setProperty("first", "dataKey", "given");
     expect(paths(element)).toEqual(["applicant.mail", "given", "second"]);
-    element.removeAttribute("pdf");
+    element.removeAttribute("features");
     await until(() => element.pdfMode !== undefined);
     expect(paths(element)).toEqual(["applicant.mail", "given", "second"]);
     controller.undo();
@@ -264,7 +264,7 @@ describe("a step the seed followed while a side had no mode", () => {
     controller.select("email");
     controller.setDraftId("email", "mail");
     expect(controller.commitDraft("email")).toBe(true);
-    element.removeAttribute("pdf");
+    element.removeAttribute("features");
     await until(() => element.pdfMode !== undefined);
     const layoutChanges: unknown[] = [];
     element.addEventListener("datum-pdf-layout-change", (event) => layoutChanges.push((event as CustomEvent).detail));
@@ -274,7 +274,7 @@ describe("a step the seed followed while a side had no mode", () => {
 
   it("is not taken back twice for a step the mode itself followed", async () => {
     const element = await mount();
-    element.removeAttribute("pdf");
+    element.removeAttribute("features");
     await until(() => element.pdfMode !== undefined);
     const controller = element.controller!;
     controller.select("email");
@@ -289,8 +289,7 @@ describe("a step the seed followed while a side had no mode", () => {
 
   it("is undone and redone in the journeys once the Journeys mode has registered", async () => {
     const element = document.createElement("datum-form-builder") as DatumFormBuilderElement;
-    element.setAttribute("pdf", "off");
-    element.setAttribute("journeys", "off");
+    element.setAttribute("features", "-pdf -journeys");
     element.definition = branchingJourneyForm();
     document.body.append(element);
     await until(() => element.controller);
@@ -300,7 +299,7 @@ describe("a step the seed followed while a side had no mode", () => {
     controller.setDraftId("email", "mail");
     expect(controller.commitDraft("email")).toBe(true);
     expect(pageOf("contact")).toEqual(["mail"]);
-    element.removeAttribute("journeys");
+    element.setAttribute("features", "-pdf");
     await until(() => element.journeyMode !== undefined);
     expect(pageOf("contact")).toEqual(["mail"]);
     controller.undo();

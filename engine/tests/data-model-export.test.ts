@@ -21,7 +21,7 @@ function form(): ComponentNode {
         { id: "fullName", type: "text", configuration: { label: "Full name", required: true, pattern: "[A-Za-z ]+", minLength: 2 } },
         { id: "notes", type: "textarea", configuration: { label: "Notes" } },
         { id: "age", type: "number", configuration: { label: "Age", min: 0 } },
-        { id: "agree", type: "checkbox", configuration: { label: "Agree" }, rules: { requiredWhen: { kind: "literal", value: true } } },
+        { id: "agree", type: "checkbox", configuration: { label: "Agree" }, rules: { requiredWhen: "true" } },
         { id: "country", type: "select", configuration: { label: "Country", options: [{ value: "CA", label: "Canada" }, { value: "FR", label: "France" }] } },
         { id: "size", type: "radio", configuration: { label: "Size", options: [{ value: "s" }, { value: "m" }] } },
         { id: "source", type: "radio", configuration: { label: "Source", data: { sourceId: "sources" } } },

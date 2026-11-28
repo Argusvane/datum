@@ -29,11 +29,13 @@ function strings(value: unknown): string[] | undefined {
  * own store, a tampered `localStorage`, a draft saved before a language was removed), so the
  * type is not taken on trust.
  *
- * Only a draft with no answers to give is refused (`values` not a record, or no `state`). The
- * rest falls back rather than lose the answers: a locale the form no longer offers reads as the
- * one in force (`current`), matched as a tag is (case, `_` for `-`, the primary subtag), and a
- * form that declares no locales takes any tag; a malformed `touched`, `dirty`, steps or journey
- * block is dropped (the journey block read as a draft file's is).
+ * A draft that is not one is refused (`draft.malformed`): `values` not a record, no `state`, or
+ * a `state` without its navigation — a `mode` of `normal` or `wizard` and the `visitedSteps` and
+ * `completedSteps` lists. The rest falls back rather than lose the answers: a locale the form no
+ * longer offers reads as the one in force (`current`), matched as a tag is (case, `_` for `-`,
+ * the primary subtag), and a form that declares no locales takes any tag; a malformed `touched`
+ * or `dirty` list or journey block is dropped (the journey block read as a draft file's is), and
+ * so is an entry of a list that is no string.
  */
 export function readDraft(draft: FormDraft, supported: readonly string[], current: string): ReadDraft {
   const raw = draft as unknown as Record<string, unknown>;
@@ -44,11 +46,16 @@ export function readDraft(draft: FormDraft, supported: readonly string[], curren
     );
   }
   const state = raw.state;
+  const mode = state.mode;
+  const visitedSteps = strings(state.visitedSteps);
+  const completedSteps = strings(state.completedSteps);
+  if ((mode !== "normal" && mode !== "wizard") || visitedSteps === undefined || completedSteps === undefined) {
+    throw new DraftError("draft.malformed", "Draft is malformed: its state has no navigation mode, visited steps or completed steps");
+  }
   const requested = typeof raw.locale === "string" && raw.locale !== "" ? raw.locale : undefined;
   const locale =
     requested === undefined ? current : supported.length === 0 ? requested : (negotiateLocale(requested, supported) ?? current);
   const currentStep = typeof state.currentStep === "string" && state.currentStep !== "" ? state.currentStep : undefined;
-  const mode = state.mode === "normal" || state.mode === "wizard" ? state.mode : currentStep !== undefined ? "wizard" : "normal";
   return {
     values: raw.values as FormValues,
     locale,
@@ -56,8 +63,8 @@ export function readDraft(draft: FormDraft, supported: readonly string[], curren
     dirty: strings(state.dirty) ?? [],
     mode,
     currentStep,
-    visitedSteps: strings(state.visitedSteps) ?? (currentStep !== undefined ? [currentStep] : []),
-    completedSteps: strings(state.completedSteps) ?? [],
+    visitedSteps,
+    completedSteps,
     journey: state.journey === undefined ? undefined : readDraftJourney(state.journey)
   };
 }

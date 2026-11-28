@@ -119,9 +119,7 @@ function okOf(name: string, result: AgentToolResult): Row {
 async function mount(attributes: Record<string, string> = {}, definition: FormDefinition = sampleDefinition()): Promise<Mounted> {
   const element = document.createElement("datum-form-builder") as DatumFormBuilderElement;
   const heard = listen(element);
-  element.setAttribute("features", "all agent");
-  element.setAttribute("pdf", "off");
-  element.setAttribute("journeys", "off");
+  element.setAttribute("features", "all agent -pdf -journeys");
   for (const [name, value] of Object.entries(attributes)) {
     element.setAttribute(name, value);
   }
@@ -202,7 +200,7 @@ describe("registration on the page", () => {
   });
 
   it('features="all" registers nothing and never calls the loader', async () => {
-    const mounted = await mount({ features: "all" });
+    const mounted = await mount({ features: "all -pdf -journeys" });
     await settle();
     expect(loads.builder).toBe(0);
     expect(agentAbortOf(mounted.element)).toBeUndefined();
@@ -322,11 +320,11 @@ describe("the banner, the notice and the live region", () => {
     const mounted = await mount();
     await mounted.ok("add_components", { components: [field("first")] });
     expect(notice(mounted.element)!.hidden).toBe(false);
-    mounted.element.features = "all";
+    mounted.element.features = "all -pdf -journeys";
     await settle();
     // The withdrawn registration takes its notice and banner down with it.
     expect(notice(mounted.element)!.hidden).toBe(true);
-    mounted.element.features = "all agent";
+    mounted.element.features = "all agent -pdf -journeys";
     await mounted.element.agentTools();
     await mounted.ok("add_components", { components: [field("second")] });
     await mounted.ok("begin_session", { purpose: "Again" });
@@ -788,8 +786,8 @@ function withJourneysAndPdf(): FormDefinition {
 async function sidesReady(element: DatumFormBuilderElement): Promise<void> {
   await until(
     () =>
-      (element.pdf === "off" || element.hiddenWorkspaces.includes("pdf") || element.pdfMode !== undefined) &&
-      (element.journeys === "off" || element.hiddenWorkspaces.includes("journeys") || element.journeyMode !== undefined)
+      (!element.featureEnabled("pdf") || element.hiddenWorkspaces.includes("pdf") || element.pdfMode !== undefined) &&
+      (!element.featureEnabled("journeys") || element.hiddenWorkspaces.includes("journeys") || element.journeyMode !== undefined)
   );
 }
 
@@ -828,7 +826,7 @@ describe("body chunks load through the element", () => {
 
 describe("Try it and the designers on the page", () => {
   it("canTry is true on an open journey's Step view and false on its map, which it opens on (the shell's gate, not the mode)", async () => {
-    const mounted = await mount({ journeys: "on" }, withJourneys());
+    const mounted = await mount({ features: "all agent -pdf" }, withJourneys());
     await sidesReady(mounted.element);
     const host = elementBuilderHost(mounted.element);
     mounted.element.mode = "journeys";
@@ -885,7 +883,7 @@ describe("Try it and the designers on the page", () => {
   });
 
   it("builds the designer adapters from wrapper.journeyMode and wrapper.pdfMode, 1:1", async () => {
-    const mounted = await mount({ journeys: "on", pdf: "on" }, withJourneysAndPdf());
+    const mounted = await mount({ features: "all agent" }, withJourneysAndPdf());
     await sidesReady(mounted.element);
     const host = elementBuilderHost(mounted.element);
     const journeys = host.ui!.journeys!();
@@ -919,7 +917,7 @@ describe("Try it and the designers on the page", () => {
     expect(elementBuilderHost(off.element).ui!.pdfLayouts!()).toEqual({ state: "off" });
     off.element.remove();
 
-    const mounted = await mount({ journeys: "on", pdf: "on" }, withJourneysAndPdf());
+    const mounted = await mount({ features: "all agent" }, withJourneysAndPdf());
     await sidesReady(mounted.element);
     const element = mounted.element;
     const host = elementBuilderHost(element);
@@ -938,7 +936,7 @@ describe("Try it and the designers on the page", () => {
   });
 
   it("selectDocument opens through the shell's selectDocument and resolves on builder-document-change; already open answers at once", async () => {
-    const mounted = await mount({ journeys: "on" }, withJourneys());
+    const mounted = await mount({ features: "all agent -pdf" }, withJourneys());
     await sidesReady(mounted.element);
     const shell = mounted.element.builder!;
     const host = elementBuilderHost(mounted.element);
@@ -972,7 +970,7 @@ describe("Try it and the designers on the page", () => {
   });
 
   it("selectDocument answers failed on the side's builder-mode-error, timeout after 10 s, and failed without a prompt while a draft holds the page", async () => {
-    const mounted = await mount({ journeys: "on" }, withJourneys());
+    const mounted = await mount({ features: "all agent -pdf" }, withJourneys());
     await sidesReady(mounted.element);
     const shell = mounted.element.builder!;
     const host = elementBuilderHost(mounted.element);
@@ -1091,7 +1089,7 @@ describe("the shell's seams on the page", () => {
   });
 
   it("activeController and leaveGuardSubject follow the designer on the page, not the form's controller", async () => {
-    const mounted = await mount({ journeys: "on" }, withJourneys());
+    const mounted = await mount({ features: "all agent -pdf" }, withJourneys());
     await sidesReady(mounted.element);
     const shell = mounted.element.builder!;
     const host = elementBuilderHost(mounted.element);

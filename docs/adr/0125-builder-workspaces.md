@@ -10,11 +10,11 @@ The strip holds the builder's panels, and the studio design groups the work by w
 
 ## Decision
 
-1. **Seven workspaces.** `BuilderWorkspace` is `"form" | "logic" | "data" | "languages" | "journeys" | "pdf" | "print"`. They are tabs on the bar after the leading group (`role="tablist"`, one Tab stop, arrows, Home and End, Enter or a click to switch). Under 1024px of shell (a container query) the tabs become one native menu. Journeys and PDF are offered only while their mode is registered: `journeys="off"` or `pdf="off"` removes the tab, and so does `removeMode`. If that workspace was on the page, the form's last workspace comes back.
+1. **Seven workspaces.** `BuilderWorkspace` is `"form" | "logic" | "data" | "languages" | "journeys" | "pdf" | "print"`. They are tabs on the bar after the leading group (`role="tablist"`, one Tab stop, arrows, Home and End, Enter or a click to switch). Under 1024px of shell (a container query) the tabs become one native menu. Journeys and PDF are offered only while their mode is registered: a `features` list that leaves the side out (`-journeys`, `-pdf`) removes the tab, and so does `removeMode`. If that workspace was on the page, the form's last workspace comes back.
 
    A host narrows the tabs two ways on `<datum-form-builder>`:
    - `hidden-workspaces` lists the ones to leave off;
-   - `workspaces` lists the only ones to offer (the wrapper turns it into the hidden list the shell is given; `features`, `pdf="off"`, `journeys="off"` and `hidden-workspaces` still take away from it).
+   - `workspaces` lists the only ones to offer (the wrapper turns it into the hidden list the shell is given; `features` and `hidden-workspaces` still take away from it).
 
    A `workspaces` list of `pdf` or `journeys` alone, with neither the form nor a workspace over it, is a designer alone: the wrapper adds the form to `hiddenModeIds`, opens on the first side listed once its mode registers, and keeps the shell hidden behind a loading card (then the failure card with Retry) while that mode's chunk is coming, so the form editor never shows in its place. It implies nothing else: the file actions and every other attribute behave as on any builder. One attribute serves both designers, where a tag per designer would be a subclass forwarding its mode's API for each.
 

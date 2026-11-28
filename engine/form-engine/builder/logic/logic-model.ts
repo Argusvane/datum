@@ -5,8 +5,8 @@
  * filter, with the problems that only show across rules (two fields hiding each other, a rule
  * reading a field that is not there or not yet answered, a rule the server can never run).
  *
- * A stored rule is text (a FEEL-subset formula, bare or in the object form with its run scope)
- * or a tree (`core/expressions/compile.ts` reads both). The walk reads every rule through
+ * A stored rule is text (a FEEL-subset formula, bare or in the object form with its run scope).
+ * The walk reads every rule through
  * `ruleExpression` and words it the same way: the shapes the catalog has sentences for
  * (`is`, `is not`, `is any of`, ticked, chains of `and` / `or`) read as sentences, anything
  * else reads as the formula printed with field labels as tokens (`formula/feel-print.ts`), an

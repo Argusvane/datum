@@ -6811,7 +6811,6 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
     state.text = text;
     const read = readComponentJson(text, node, {
       idEditable: this.jsonIdEditable(controller, nodeId),
-      knownFunctions: this.formulaContext(nodeId).functions.map((row) => row.name),
       // A setting the site manages is a note in the inspector, never a box: nor is it the text's to change.
       managed: this.managedSettingsValue
     });
@@ -9070,7 +9069,7 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
     return ruleExpressionOf(controller.draftRules(nodeId)?.[descriptor.key as RuleKey]);
   }
 
-  /** A rule as the draft stores it (a formula string, a tree, or the object form), or `undefined` for none. */
+  /** A rule as the draft stores it (a formula string, or the object form), or `undefined` for none. */
   private ruleSourceOf(nodeId: string, descriptor: RuleDescriptor): unknown {
     const controller = this.ctrl;
     if (!controller) {
@@ -9082,11 +9081,7 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
     return controller.draftRules(nodeId)?.[descriptor.key as RuleKey];
   }
 
-  /**
-   * A rule as the form holds it, the draft set aside: what `composeRuleSource` compares the
-   * box's text against, so a stored tree typed into and typed back is the tree again, and a run
-   * scope chosen over an untouched tree writes `{ expression, run }` rather than a string.
-   */
+  /** A rule as the form holds it, the draft set aside: what the draft is compared with to know a rule changed. */
   private committedRuleSourceOf(nodeId: string, descriptor: RuleDescriptor): unknown {
     const controller = this.ctrl;
     if (!controller) {
@@ -9127,8 +9122,7 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
 
   /**
    * A keystroke in a rule's box. The text goes to the draft as typed, parseable or not: as the
-   * formula string (or the object form, for a run scope other than both), or as the stored tree
-   * again when the text is that tree printed (`composeRuleSource` against what the form holds).
+   * formula string (or the object form, for a run scope other than both) (`composeRuleSource`).
    * The draft therefore always equals the box, and a text that does not parse is a problem the
    * controller reports (`problemsOf`) to Save, the leave guard and any `commitDraft`.
    * The write is `live`: this panel refreshes the rule's feedback and the footer in place when
@@ -9142,7 +9136,7 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
       return;
     }
     working.modes.set(key, "formula");
-    const next = composeRuleSource(this.committedRuleSourceOf(nodeId, descriptor), text, this.runFor(nodeId, key));
+    const next = composeRuleSource(text, this.runFor(nodeId, key));
     if (next !== undefined) {
       working.runs.delete(key);
     }
@@ -9268,8 +9262,7 @@ export class DatumBuilderPropertiesElement extends BuilderPanelElement {
       const run = runButton.dataset.ruleRun as RunScope;
       const working = this.rules(nodeId);
       const descriptor = this.ruleDescriptorFor(nodeId, key);
-      // Against what the form holds: an untouched tree carries its scope as { expression, run }.
-      const next = descriptor ? composeRuleSource(this.committedRuleSourceOf(nodeId, descriptor), this.formulaTextOf(nodeId, key), run) : undefined;
+      const next = descriptor ? composeRuleSource(this.formulaTextOf(nodeId, key), run) : undefined;
       this.liveRulePending = undefined;
       if (next !== undefined) {
         // The formula carries its scope: a rule that runs on both sides stays as it was written.

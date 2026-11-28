@@ -4,18 +4,14 @@
  * `agent/form/describe.ts` so the builder's Try it tool reads a field the way the renderer's
  * answer-writing tool does without carrying the renderer catalogue: nothing in `agent/answers/`
  * imports `agent/form/` or `agent/builder/`, and nothing here words a hint or names a tool
- * (guard 15 keeps the renderer's tool names out of the builder bundle). `describe.ts`
- * re-exports every name, so the form modules import them where they always did.
+ * (guard 15 keeps the renderer's tool names out of the builder bundle). The kind vocabulary
+ * itself is the kind registry's (`registry/kinds.ts`).
  */
 
 import { isGroupNode } from "../../core/tree/data-scope.js";
 import type { RenderComponentModel } from "../../render/core/component-model.js";
 import { kindOf as registryKindOf, type FieldKind } from "../../registry/kinds.js";
 import { cutString } from "../result-caps.js";
-
-// The kind vocabulary is the kind registry's (`registry/kinds.ts`); named here too, where every
-// agent module has always imported it.
-export type { FieldKind };
 
 export interface Option {
   value: string;

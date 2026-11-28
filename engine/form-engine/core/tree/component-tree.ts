@@ -52,7 +52,7 @@ function cloneNode(node: ComponentNode): ComponentNode {
         })
       ]);
     }
-    // `fromEntries`, as before: a slot named `__proto__` is a slot like any other.
+    // `fromEntries`: a slot named `__proto__` is a slot like any other.
     target.children = Object.fromEntries(slots);
   }
   return top;

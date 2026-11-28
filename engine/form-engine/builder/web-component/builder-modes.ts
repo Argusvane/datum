@@ -161,7 +161,7 @@ export interface BuilderModeRules {
   /**
    * The ways out of the node `nodeId` (a journey's step): its Logic tab lists them, in the
    * order they are tried, with the form's rule rows' markup, each opening in the Logic editor.
-   * `undefined` for a node that has none; the tab then lists its descriptors as before.
+   * `undefined` for a node that has none; the tab then lists its descriptors.
    */
   ways?(nodeId: string): BuilderModeWays | undefined;
 }
@@ -368,9 +368,9 @@ export interface BuilderModeContext {
    * the author answers the unsaved-edits prompt the inspector puts up for it (Apply or Discard
    * runs it, Keep editing drops it). A mode calls it before a move of its own that takes that
    * component out of sight (another step shown, a field moved to another step). Answers whether
-   * `run` ran now. Absent on a shell older than the seam: the mode runs `run` itself.
+   * `run` ran now.
    */
-  holdForInspector?(run: () => void): boolean;
+  holdForInspector(run: () => void): boolean;
 }
 
 /**

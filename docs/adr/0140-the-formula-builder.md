@@ -16,7 +16,7 @@ A formula problem never disables Apply (ADR 0111).
 
 2. **Chips store ids.** The stored text is always ids (`feelName(id)` backticks an id the grammar cannot take bare or a keyword); labels are a reading.
    - `printFormula(expression, { labelOf?, optionLabelOf?, multiline? })` (`feel-print.ts`) prints a tree in canonical spelling and is lossless by structure: `parse(print(tree))` deep-equals the tree for every tree.
-   - A tree-stored rule opens printed with ids; with `labelOf` the output is for reading only, never reparsed.
+   - A rule the builder works out itself (a generated default, a placeholder value) is written as printed text; with `labelOf` the output is for reading only, never reparsed.
    - `printFormulaTokens` gives the token form for "Reads as".
 
 3. **Helpers, snippets and suggestions** come from one table. The function rows are `formulaFunctionRows(registry)` (`feel-functions.ts`): built-ins merged with `FORMULA_FUNCTION_DOCS`, then the wired plugins' declarations, so a plugin's function is a first-class helper. The snippets are `FORMULA_SNIPPETS`, data in the same file, with a wired plugin's `snippets` joining them. The fields offered are `formulaFieldsOf(root)`. A helper inserts at the caret with each blank selected in turn and Tab moving through them (CodeMirror's `snippet()`), and a helper button or menu press keeps the box's focus. The "Formula reference" link (`referenceHref`) is drawn only when the host sets it: the builder has no documentation page of its own, and a default address would be a dead link in an application that embeds it. The Variables panel's intro and the inspector's editors follow the same rule, with no empty anchor and no spacer left behind.
@@ -51,10 +51,10 @@ A formula problem never disables Apply (ADR 0111).
 
 - **One editor, built as a sentence.** A non-technical author loses dropdown discovery and gains helpers, suggestions, live problems and sentences for the simple shapes. The alternative, keeping row editors beside a formula box, leaves two models of a condition that disagree about what they can express.
 - **Ids stored, labels shown.** A rename of a field must not change what a rule means, and a label can be reworded or translated.
-- **Lossless printing.** Because `parse(print(tree))` is the tree, a rule stored as a tree can be opened as text and written back without changing meaning, and untouched rules are never rewritten.
+- **Lossless printing.** Because `parse(print(tree))` is the tree, a rule the builder works out as a tree is written as text that means exactly that tree, and untouched rules are never rewritten.
 
 ## Consequences
 
 - One editor for the Logic workspace, the inspector, the journey designer and the PDF designer; one place that words a problem; one place that renames a path.
 - Keystrokes do not paint the inspector or the canvas; a controller change may be `live`.
-- A tree-stored rule opens printed as a formula and is written back as text only when edited. A `visibleWhen` whose top node is `not` over a non-path lists as "Hide X when …". Anything a sentence cannot word lists as the printed formula.
+- A stored rule is text, opened as written and written back only when edited. A `visibleWhen` whose top node is `not` over a non-path lists as "Hide X when …". Anything a sentence cannot word lists as the printed formula.

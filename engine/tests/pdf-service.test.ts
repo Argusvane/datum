@@ -761,7 +761,7 @@ describe("renderFormPdf — layouts chosen by the answers", () => {
       ...(when ? { when } : {}),
       root: { id: "document", type: "pdf-document", configuration: {}, children: { body: [{ id: "t", type: "pdf-text", configuration: { text: id } }] } }
     });
-    const quebec = { kind: "binary", operator: "eq", left: { kind: "path", path: "province" }, right: { kind: "literal", value: "QC" } } as const;
+    const quebec = 'province = "QC"';
     return {
       id: "intake",
       version: "1",
@@ -780,7 +780,7 @@ describe("renderFormPdf — layouts chosen by the answers", () => {
       pdf: {
         layouts: [
           layout("standard"),
-          layout("quebec", { kind: "binary", operator: "eq", left: { kind: "path", path: "detail" }, right: { kind: "literal", value: "oui" } })
+          layout("quebec", 'detail = "oui"')
         ],
         defaultLayoutId: "standard"
       }

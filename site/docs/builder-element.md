@@ -73,7 +73,7 @@ A page that wires both gets both events for one move. Set attributes before the 
 - A loading card stands in the builder's place until the workspace's code is in, so the form editor never shows first.
 - New, Open and Download still work over the whole form. `file-actions="off"` puts them away, or `file-actions="download"` keeps one.
 
-A longer list, such as `workspaces="form logic"`, only narrows the tabs. `features`, `pdf="off"`, `journeys="off"` and `hidden-workspaces` still take away from the list, and none of them brings a workspace back.
+A longer list, such as `workspaces="form logic"`, only narrows the tabs. `features` and `hidden-workspaces` still take away from the list, and none of them brings a workspace back.
 
 Two more attributes suit this page:
 

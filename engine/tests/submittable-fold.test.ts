@@ -42,7 +42,7 @@ import {
   runKernel
 } from "../form-engine/validation/wasm/portable-kernel.js";
 import { formulaFunctionSignatures } from "../form-engine/core/expressions/function-table.js";
-import { kernelCompileNode } from "../form-engine/core/expressions/compile.js";
+import { kernelCompileJourney, kernelCompileNode } from "../form-engine/core/expressions/compile.js";
 import { kernelParseFormula } from "../form-engine/core/expressions/formula.js";
 import type { FormulaProblem } from "../form-engine/core/expressions/formula-types.js";
 
@@ -62,12 +62,25 @@ function form(...children: ComponentNode[]): ComponentNode {
   return group("form", "form", children);
 }
 
-function eq(path: string, value: string | number | boolean | null): Expression {
-  return { kind: "binary", operator: "eq", left: { kind: "path", path }, right: { kind: "literal", value } };
+function eq(path: string, value: string | number | boolean | null): string {
+  return `${path} = ${JSON.stringify(value)}`;
 }
 
-function neq(path: string, value: string | number | boolean | null): Expression {
-  return { kind: "binary", operator: "neq", left: { kind: "path", path }, right: { kind: "literal", value } };
+function neq(path: string, value: string | number | boolean | null): string {
+  return `${path} != ${JSON.stringify(value)}`;
+}
+
+/**
+ * The compiled copy of an authored tree, and of a journey, as the runtime and the kernel compile
+ * them: the fold reads compiled rules (trees), never formula text.
+ */
+function compiled(root: ComponentNode, journey?: Journey): { root: ComponentNode; journey?: Journey } {
+  const problems: FormulaProblem[] = [];
+  const signatures = formulaFunctionSignatures();
+  const tree = kernelCompileNode(root, kernelParseFormula, signatures, problems);
+  const journeys = journey === undefined ? undefined : (kernelCompileJourney({ journeys: [journey] }, kernelParseFormula, signatures, problems) as { journeys: Journey[] }).journeys;
+  expect(problems).toEqual([]);
+  return journeys === undefined ? { root: tree } : { root: tree, journey: journeys[0] as Journey };
 }
 
 const EXCLUDE = { hiddenValueBehavior: "exclude-from-submission" };
@@ -78,7 +91,8 @@ const RETAIN = { hiddenValueBehavior: "retain" };
  * their owners from `data-scope.ts`, and each node's own state from the runtime's rules
  * resolver over the view the fold hands it.
  */
-function foldInput(root: ComponentNode, values: Record<string, unknown>, journey?: Journey, hostContext: Record<string, unknown> = {}): KernelFoldInput {
+function foldInput(authored: ComponentNode, values: Record<string, unknown>, authoredJourney?: Journey, hostContext: Record<string, unknown> = {}): KernelFoldInput {
+  const { root, journey } = compiled(authored, authoredJourney);
   const order: string[] = [];
   const nodeById: Record<string, ComponentNode> = {};
   const parentOf: Record<string, string> = {};
@@ -199,11 +213,7 @@ describe("kernelFoldSubmittable without a journey", () => {
 
   it("gives up after ten passes when rules feed each other through hidden answers", () => {
     // Written with empty() so each rule is a real yes or no: a condition holds only for true (strict truthiness).
-    const isEmpty = (id: string): Expression => ({ kind: "call", name: "empty", args: [{ kind: "path", path: id }] });
-    const root = form(
-      field("a", EXCLUDE, { visibleWhen: isEmpty("b") }),
-      field("b", EXCLUDE, { visibleWhen: { kind: "unary", operator: "not", operand: isEmpty("a") } })
-    );
+    const root = form(field("a", EXCLUDE, { visibleWhen: "empty(b)" }), field("b", EXCLUDE, { visibleWhen: "not(empty(a))" }));
     const result = fold(root, { a: 1, b: 1 });
     expect(result.converged).toBe(false);
     expect(result.passes).toBe(10);
@@ -442,7 +452,7 @@ describe("kernelFoldSubmittable with a journey", () => {
       { id: "toString", type: "text", configuration: {}, rules: { visibleWhen: null } } as unknown as ComponentNode
     );
     // The host path inside a logical expression counts like a bare one.
-    (tree.children!.content![4] as ComponentNode).rules = { visibleWhen: { kind: "logical", operator: "and", left: eq("plain", "x"), right: staff } };
+    (tree.children!.content![4] as ComponentNode).rules = { visibleWhen: `${eq("plain", "x")} and ${staff}` };
     const input = foldInput(tree, {});
     const reads = (id: string): boolean => kernelFoldVisibilityReadsHost(id, input.nodeById, input.parentOf);
     expect(reads("plain")).toBe(false);
@@ -644,7 +654,7 @@ describe("kernelFoldSubmittable: a data grid's rows follow their grid", () => {
       rules: { visibleWhen: eq("kind", "full") }
     };
     return kernelNormalizeDataGrids(
-      form(field("kind"), grid, field("rush", { required: true }, { visibleWhen: { kind: "binary", operator: "gt", left: { kind: "path", path: "orders[0].qty" }, right: { kind: "literal", value: 5 } } }), field("note"))
+      form(field("kind"), grid, field("rush", { required: true }, { visibleWhen: "`orders[0].qty` > 5" }), field("note"))
     );
   }
   const rows = { "orders[0].qty": 10, "orders[0].sku": "A1", "orders[1].qty": 1 };
@@ -714,7 +724,7 @@ describe("kernelFoldSubmittable: a data grid's rows follow their grid", () => {
     const stored = runKernel({ formId: "grids", values: { ...runtime.state().values }, locale: "en", form: root }, []);
     expect(stored.errors).toEqual([]);
     expect(stored.values).toEqual({ kind: "short" });
-    expect(kernelFoldSubmission(root, { kind: "short" }, undefined).submittable).toEqual({ kind: "short" });
+    expect(kernelFoldSubmission(compiled(root).root, { kind: "short" }, undefined).submittable).toEqual({ kind: "short" });
 
     // On a page the path skips: the same, through the journey.
     const plain = form(field("kind"), { id: "orders_grid", type: "dataGrid", configuration: { initialRows: 0 }, collection: { collectionPath: "orders" }, children: { content: [column("qty"), column("sku")] } }, field("note"));
@@ -748,7 +758,7 @@ describe("kernelFoldSubmittable over ids and keys named after Object.prototype m
     expect(Object.keys(result.effective)).toEqual(["form", "constructor", "toString", "valueOf"]);
 
     // Unanswered, `constructor` reads as nothing — not as `Object` — so "not constructor" holds.
-    const blank = form(field("constructor"), field("valueOf", {}, { visibleWhen: { kind: "unary", operator: "not", operand: { kind: "path", path: "constructor" } } }));
+    const blank = form(field("constructor"), field("valueOf", {}, { visibleWhen: "not(constructor)" }));
     const unanswered = fold(blank, { valueOf: 1 });
     expect(state(unanswered, "valueOf")?.visible).toBe(true);
     expect(unanswered.idValues.constructor).toBeUndefined();
@@ -800,7 +810,7 @@ describe("kernelFoldSubmittable reads the answers as the envelope carries them (
   });
 
   it("lets a NaN answer steer visibility and a route only as the null a server reads", () => {
-    const notNull: Expression = { kind: "binary", operator: "neq", left: { kind: "path", path: "ratio" }, right: { kind: "literal", value: null } };
+    const notNull = neq("ratio", null);
     const root = form(field("ratio"), field("explain", EXCLUDE, { visibleWhen: notNull }), field("q2"), field("q3"));
     const journey: Journey = {
       id: "ratio",
@@ -917,10 +927,9 @@ describe("kernelFoldSubmittable: requiredness over the settled view", () => {
 
   it("works requiredness out over the last view even when the fold does not settle", () => {
     // empty() keeps each rule a real yes or no: a condition holds only for true (strict truthiness).
-    const isEmpty = (id: string): Expression => ({ kind: "call", name: "empty", args: [{ kind: "path", path: id }] });
     const root = form(
-      field("a", EXCLUDE, { visibleWhen: isEmpty("b") }),
-      field("b", EXCLUDE, { visibleWhen: { kind: "unary", operator: "not", operand: isEmpty("a") } }),
+      field("a", EXCLUDE, { visibleWhen: "empty(b)" }),
+      field("b", EXCLUDE, { visibleWhen: "not(empty(a))" }),
       field("d"),
       field("c", {}, { requiredWhen: eq("d", "yes") })
     );
@@ -957,9 +966,9 @@ describe("kernelFoldSubmittable: requiredness over the settled view", () => {
  * its rule for a reason beyond `host.`.
  */
 describe("kernelCompiledRule and kernelRuleSkipped", () => {
-  const tree = eq("a", 1);
+  const tree: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "a" }, right: { kind: "literal", value: 1 } };
   const clock: Expression = { kind: "binary", operator: "gte", left: { kind: "call", name: "today", args: [] }, right: { kind: "literal", value: "2026-01-01" } };
-  const host: Expression = eq("host.region", "ca");
+  const host: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "host.region" }, right: { kind: "literal", value: "ca" } };
 
   it("reads a tree as it is, the object form's expression, and a formula string as no rule (compiled away before)", () => {
     expect(kernelCompiledRule(tree)).toBe(tree);
@@ -1005,15 +1014,17 @@ describe("kernelCompiledRule and kernelRuleSkipped", () => {
   });
 
   it("tells a field on no page whose rule the server cannot replay: host., a browser scope, or the clock with no day", () => {
-    const root = form(
-      field("by_host", {}, { visibleWhen: host }),
-      field("by_browser", {}, { visibleWhen: { expression: tree, run: "browser" } }),
-      field("by_server", {}, { visibleWhen: { expression: tree, run: "server" } }),
-      field("by_clock", {}, { visibleWhen: clock }),
-      field("plain", {}, { visibleWhen: tree }),
-      field("needed_by_clock", {}, { requiredWhen: clock }),
-      field("needed_by_browser", {}, { requiredWhen: { expression: tree, run: "browser" } }),
-      field("needed_by_server", {}, { requiredWhen: { expression: tree, run: "server-secret" } })
+    const { root } = compiled(
+      form(
+        field("by_host", {}, { visibleWhen: 'host.region = "ca"' }),
+        field("by_browser", {}, { visibleWhen: { formula: "a = 1", run: "browser" } }),
+        field("by_server", {}, { visibleWhen: { formula: "a = 1", run: "server" } }),
+        field("by_clock", {}, { visibleWhen: 'today() >= "2026-01-01"' }),
+        field("plain", {}, { visibleWhen: "a = 1" }),
+        field("needed_by_clock", {}, { requiredWhen: 'today() >= "2026-01-01"' }),
+        field("needed_by_browser", {}, { requiredWhen: { formula: "a = 1", run: "browser" } }),
+        field("needed_by_server", {}, { requiredWhen: { formula: "a = 1", run: "server-secret" } })
+      )
     );
     const nodeById: Record<string, ComponentNode> = {};
     const parentOf: Record<string, string> = {};
@@ -1109,15 +1120,16 @@ describe("kernelCompiledRule and kernelRuleSkipped", () => {
     const journey: Journey = {
       id: "j",
       pages: [
-        { id: "first", components: ["a"], routes: [{ when: { ...clock, operator: "lt" } as Expression, to: "$end" }] },
+        { id: "first", components: ["a"], routes: [{ when: 'today() < "2026-01-01"', to: "$end" }] },
         { id: "late", components: ["b"] }
       ]
     };
     const seen: Array<string | undefined> = [];
-    const fold = kernelFoldSubmission(root, { a: 1, b: 2 }, journey, { today: "2026-10-07" });
+    const compiledCopy = compiled(root, journey);
+    const fold = kernelFoldSubmission(compiledCopy.root, { a: 1, b: 2 }, compiledCopy.journey, { today: "2026-10-07" });
     expect(fold.trace?.pages).toEqual(["first", "late"]);
     expect(fold.submittable).toEqual({ a: 1, b: 2 });
-    const early = kernelFoldSubmission(root, { a: 1, b: 2 }, journey, { today: "2025-12-31" });
+    const early = kernelFoldSubmission(compiledCopy.root, { a: 1, b: 2 }, compiledCopy.journey, { today: "2025-12-31" });
     expect(early.trace?.pages).toEqual(["first"]);
     expect(early.submittable).toEqual({ a: 1 });
     // The same through the fold's input directly: the third argument is the input's day.
@@ -1136,9 +1148,9 @@ describe("kernelCompiledRule and kernelRuleSkipped", () => {
 });
 
 describe("kernelFoldRelaxUnreplayable: a visibility this side cannot replay is hidden for requiredness", () => {
-  const clock: Expression = { kind: "binary", operator: "lt", left: { kind: "call", name: "year", args: [{ kind: "call", name: "today", args: [] }] }, right: { kind: "literal", value: 2000 } };
+  const clock = "year(today()) < 2000";
   const relax = (root: ComponentNode, today?: string) => {
-    const index = kernelTreeIndex(root);
+    const index = kernelTreeIndex(compiled(root).root);
     const required = Object.create(null) as Record<string, boolean>;
     for (const id of index.order.slice(1)) {
       const node = index.nodeById[id] as ComponentNode;
@@ -1153,7 +1165,7 @@ describe("kernelFoldRelaxUnreplayable: a visibility this side cannot replay is h
       field("plain", { required: true }),
       field("hosted", { required: true }, { visibleWhen: eq("host.role", "staff") }),
       field("clocked", { required: true }, { visibleWhen: clock }),
-      field("browsery", { required: true }, { visibleWhen: { expression: eq("plain", "x"), run: "browser" } }),
+      field("browsery", { required: true }, { visibleWhen: { formula: eq("plain", "x"), run: "browser" } }),
       field("replayable", { required: true }, { visibleWhen: eq("plain", "x") })
     );
     const { skipped, required } = relax(root);
@@ -1300,7 +1312,7 @@ describe("kernelFoldSubmittable takes the path engine as input", () => {
     expect(walked.length).toBe(result.passes);
     expect(placed.length).toBe(result.passes);
     for (const call of walked) {
-      expect(call.journey).toBe(journey);
+      expect(call.journey).toBe(fold0.journey);
       expect(call.input.ownership).toBe(fold0.ownership);
       // The walk reads the values re-keyed by id.
       expect(call.input.values.eligible).toBe("yes");
@@ -1402,7 +1414,7 @@ describe("the fold and the kernel's browser-reachable code import no path engine
     expect(readers).toEqual(["kernelJourneyClockPages", "kernelFoldSubmission", "kernelFormTestServerChange", "kernelFormTestOpPerform"]);
   });
 
-  it("the shared helpers import types only, and the path engine re-exports each of them as it is", async () => {
+  it("the shared helpers import types only, and the path engine splices each of them as it is", () => {
     const source = sourceOf("../form-engine/core/journey/journey-shared.ts");
     expect(source.match(/^import\s+(?!type\b).*$/gm) ?? []).toEqual([]);
     const shared = Object.entries(journeyShared).filter(([, value]) => typeof value === "function");
@@ -1412,9 +1424,7 @@ describe("the fold and the kernel's browser-reachable code import no path engine
     const declared = [...source.matchAll(/^(?:export\s+)?(?:async\s+)?function\*?\s+(\w+)/gm)].map((match) => match[1]).sort();
     expect(declared).toEqual(shared.map(([name]) => name).sort());
     expect(source.match(/^(?:export\s+)?(?:const|let|var|class)\s/gm) ?? []).toEqual([]);
-    const path = (await import("../form-engine/core/journey/journey-path.js")) as Record<string, unknown>;
     for (const [name, fn] of shared) {
-      expect(path[name], name).toBe(fn);
       expect(JOURNEY_PATH_FUNCTIONS, name).toContain(fn);
       expect((fn as () => unknown).toString(), name).not.toMatch(/__vi(?:te)?_(?:ssr_)?import_\d+__/);
     }
@@ -1427,8 +1437,8 @@ describe("the fold and the kernel's browser-reachable code import no path engine
  * shape for every form without one.
  */
 describe("kernelFoldSubmittable: a data grid's bound formulas", () => {
-  const people: Expression = { kind: "path", path: "people" };
-  const readsRow: Expression = { kind: "path", path: "row.qty" };
+  const people = "people";
+  const readsRow = "row.qty";
   const gridOf = (id: string, rules: Record<string, unknown>, type = "dataGrid"): ComponentNode =>
     ({
       id,
@@ -1449,7 +1459,7 @@ describe("kernelFoldSubmittable: a data grid's bound formulas", () => {
   };
 
   it("reads each grid's minRows and maxRows over the settled view, in document order", () => {
-    const root = formOf({ id: "people", type: "number", configuration: {} }, gridOf("a", { minRows: people }), gridOf("b", { maxRows: people, minRows: { expression: { kind: "literal", value: 2 } } }));
+    const root = formOf({ id: "people", type: "number", configuration: {} }, gridOf("a", { minRows: people }), gridOf("b", { maxRows: people, minRows: { formula: "2" } }));
     const asked: string[] = [];
     const result = withBounds(root, { people: 3 }, asked);
     expect({ ...result.rowBounds }).toEqual({ a: { min: 3 }, b: { min: 2, max: 3 } });
@@ -1473,7 +1483,7 @@ describe("kernelFoldSubmittable: a data grid's bound formulas", () => {
   });
 
   it("reads the view the hidden-value policy settled on: a hidden answer it clears is no input to a bound", () => {
-    const hidden: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "show" }, right: { kind: "literal", value: true } };
+    const hidden = eq("show", true);
     const root = formOf(
       { id: "show", type: "checkbox", configuration: {} },
       { id: "people", type: "number", configuration: { hiddenValueBehavior: "clear" }, rules: { visibleWhen: hidden } },

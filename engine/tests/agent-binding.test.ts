@@ -33,15 +33,16 @@ describe("detectModelContext", () => {
     expect(detectModelContext({})).toBeUndefined();
   });
 
-  it("reads document.modelContext first, then navigator.modelContext, requiring registerTool", () => {
+  it("reads document.modelContext alone, requiring registerTool", () => {
     const mc = createFakeModelContext();
     expect(detectModelContext({ modelContext: mc })).toBe(mc);
     expect(detectModelContext({ modelContext: { getTools: () => [] } })).toBeUndefined();
+    // A navigator.modelContext is not WebMCP's registration point: it is never read.
     const navigatorSlot = globalThis as { navigator?: unknown };
     const previous = Object.getOwnPropertyDescriptor(globalThis, "navigator");
     Object.defineProperty(globalThis, "navigator", { value: { modelContext: mc }, configurable: true });
     try {
-      expect(detectModelContext({})).toBe(mc);
+      expect(detectModelContext({})).toBeUndefined();
     } finally {
       if (previous === undefined) {
         delete navigatorSlot.navigator;

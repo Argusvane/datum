@@ -205,16 +205,21 @@ gain what the renditions decide (`hint`, `labelSuffix`, `prefix`, `suffix`, `fra
 `width` on a label/value; `hint`, `labelSuffix`, `prefix`, `suffix` on a widget; `marker` (`check`
 or `radio`), `hint`, `labelSuffix` on a checklist; `tag`, `number`,
 `band`, `rule` on a heading; a `list` block; `header` and `radius` on a box; `weight`, `link` and
-`transform` on a run), all optional, so `PDF_DOCUMENT_MODEL_VERSION` stays `1`.
+`transform` on a run), each optional on its block. Every geometry block is required on the
+document: the program refuses a `render` or `layout` request whose document lacks one as an
+`invalid_request`. A fill plan always carries `typography` and `colors`, and a `fill` request with
+`areas` must send them.
 
-Two layers of defaults are kept apart. The kernel's fallbacks (`PDF_KERNEL_FALLBACKS`, read by
-`kernel/settings.ts`) are the constants it draws with when a document carries no setting;
-`tests/kernel-compat.test.ts` renders captured documents and holds their sha256. The engine's
-defaults (`DEFAULT_PDF_*`, what `resolvePdfTheme` fills in) are the form look, which every
-registered theme takes unless it says otherwise. `PLAIN_PDF_THEME` (`datum-plain`, registered
-beside the default in the web components' PDF theme registry) states the fallbacks as a theme —
-no frame, no bands, no numbering, no capitals, hints and markers left out — for a host that wants
-the plain record, and a document carrying none of the settings renders as that record draws it.
+Two layers of defaults are kept apart. The kernel's own settings (`PDF_KERNEL_FALLBACKS`, read by
+`kernel/settings.ts` and `kernel/areas.ts`) are the plain geometry a fill plan's content areas lay
+out with and the pair for a block kind a theme's spacing table leaves out;
+`tests/kernel-parity-documents.test.ts` renders documents the engine built (`tests/fixtures/documents/`,
+written by `packages/datum/scripts/pdf-parity-documents.ts`) and holds their sha256, the hashes every
+host's PDF render contract checks. The engine's defaults (`DEFAULT_PDF_*`, what `resolvePdfTheme`
+fills in) are the form look, which every registered theme takes unless it says otherwise.
+`PLAIN_PDF_THEME` (`datum-plain`, registered beside the default in the web components' PDF theme
+registry) states the kernel's own settings as a theme — no frame, no bands, no numbering, no
+capitals, hints and markers left out — for a host that wants a plain record of the answers.
 Affixes print under every theme, plain included.
 
 The form look, at print size: a 10 pt sans body on a 1.3 leading; 8 pt bold uppercase captions in
@@ -323,7 +328,7 @@ or make the default.
 ### Layouts chosen by the answers
 
 A layout may carry `when`, a condition in the rules language (ADR 0044), written as a formula
-(`province = "QC"`, ADR 0139; [formulas.md](formulas.md)) or as an expression tree: a download that names
+(`province = "QC"`, ADR 0139; [formulas.md](formulas.md)): a download that names
 no layout prints the first layout, in the list's order, whose `when` holds on the person's
 answers — a French copy for Quebec, a large-print copy for whoever asked for one — else the
 declared default.
@@ -1580,8 +1585,8 @@ page's proportions at any canvas width.
 Engine hosts register the side with `builder.addMode(createPdfBuilderMode({ formRoot, values,
 runtime, templates, pdf, onChange, … }))`; the embeddable `<datum-form-builder>` does that on
 connect, fetching the mode itself as a lazy chunk (ADR 0143) and the executor as another on the
-first preview (`pdf="off"`, or a `features` list without `pdf`, leaves the PDF side out and
-fetches neither). The bundle has no synchronous `createPdfBuilderMode`; it exports
+first preview (a `features` list without `pdf`, `features="-pdf"` for one, leaves the PDF side
+out and fetches neither). The bundle has no synchronous `createPdfBuilderMode`; it exports
 `loadPdfBuilderMode()` (`(await DatumBuilder.loadPdfBuilderMode()).createPdfBuilderMode(...)`),
 and `@argusvane/datum-engine` keeps the synchronous factory. `createPdfDesigner()` is there for a host that
 wants the raw `builderOptions` for its own `BuilderController`.

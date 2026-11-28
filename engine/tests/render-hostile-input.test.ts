@@ -42,7 +42,7 @@ async function runtimeHolding(root: unknown, values: Record<string, unknown>): P
     formVersion: "1",
     locale: "en",
     values,
-    state: { touched: [], dirty: [] },
+    state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [] },
     runtime: { schemaVersion: "1", rendererVersion: "1" },
     updatedAt: 0
   } as never);

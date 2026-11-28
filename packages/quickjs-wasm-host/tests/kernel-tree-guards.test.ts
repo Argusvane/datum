@@ -4,11 +4,10 @@ import { InProcessWasmHostAdapter, JsonWasmAbi, WASM_ABI_VERSION, WasmValidation
 import { QuickJsExecutionError, createQuickJsValidationHost } from "../src/index.js";
 
 /**
- * A rule written as an expression tree goes through the compile's guards in the sandbox as in
- * process: a function the server lacks refuses the run, a node the evaluator
- * cannot read is a typed `formula.invalid`, never a raw runtime error, and a tree nested past the
- * request limit is the host's typed `request_refused`, never a stack overflow while the request
- * is written.
+ * A rule written as an expression tree is refused (`invalidRule`) in the sandbox as in process:
+ * the run is a typed `formula.invalid`, never a raw runtime error, check fails it, and a tree
+ * nested past the request limit is the host's typed `request_refused`, never a stack overflow
+ * while the request is written.
  */
 
 type Host = Awaited<ReturnType<typeof createQuickJsValidationHost>>;
@@ -57,8 +56,8 @@ async function both(root: ComponentNode): Promise<{ sandbox: string[]; inProcess
 }
 
 describe("rule trees in the sandbox", () => {
-  it("a function the server lacks, as a bare tree or the object form, is refused as the formula is", async () => {
-    for (const rule of ['serverCheck(a) = true', visibleTree, { expression: visibleTree, run: "server" }]) {
+  it("a function the server lacks, in a formula or the object form, is refused", async () => {
+    for (const rule of ["serverCheck(a) = true", { formula: "serverCheck(a) = true", run: "server" }]) {
       const answer = await both(form(rule));
       expect(answer.sandbox).toEqual(["formula.invalid:rules:b:visibleWhen"]);
       expect(answer.inProcess).toEqual(answer.sandbox);
@@ -66,18 +65,21 @@ describe("rule trees in the sandbox", () => {
   });
 
   it.each([
+    ["a well-formed tree", visibleTree],
+    ["the object form around a tree", { expression: visibleTree, run: "server" }],
     ["logical with no operands", { kind: "logical", operator: "and" }],
     ["unary with no operand", { kind: "unary", operator: "not" }],
     ["binary with a null left", { kind: "binary", operator: "eq", left: null, right: { kind: "literal", value: 1 } }],
     ["call with no args", { kind: "call", name: "sum" }],
     ["if with no cases", { kind: "if" }],
     ["if with a null case", { kind: "if", cases: [null] }]
-  ])("a malformed tree (%s) is a typed refusal, and check fails", async (_name, rule) => {
+  ])("a rule written as a tree (%s) is a typed refusal, and check fails it as invalidRule", async (_name, rule) => {
     const answer = await both(form(rule));
     expect(answer.sandbox).toEqual(["formula.invalid:rules:b:visibleWhen"]);
     expect(answer.inProcess).toEqual(answer.sandbox);
-    const check = (await host.inspect({ abi: WASM_ABI_VERSION, op: "check", definition: { id: "f", version: "1", schemaVersion: "1", root: form(rule) } } as never)) as { verdict: string };
+    const check = (await host.inspect({ abi: WASM_ABI_VERSION, op: "check", definition: { id: "f", version: "1", schemaVersion: "1", root: form(rule) } } as never)) as { verdict: string; problems: Array<{ code: string; where: string }> };
     expect(check.verdict).toBe("fail");
+    expect(check.problems.map((problem) => problem.code + "@" + problem.where)).toEqual(["invalidRule@rules:b:visibleWhen"]);
   });
 
   it.each([
@@ -156,7 +158,7 @@ describe("a component tree no run can walk, in the sandbox", () => {
   });
 });
 
-describe("a tree written as JSON is cut where the sandbox's request limit would cut it", () => {
+describe("a tree nested past the sandbox's request limit", () => {
   const leaf = { kind: "path", path: "a" };
   const leftChain = (terms: number): unknown => {
     let node: unknown = leaf;
@@ -172,36 +174,12 @@ describe("a tree written as JSON is cut where the sandbox's request limit would 
     }
     return { kind: "binary", operator: "eq", left: node, right: { kind: "literal", value: 1 } };
   };
-  const nots = (levels: number): unknown => {
-    let node: unknown = leaf;
-    for (let i = 1; i < levels; i += 1) {
-      node = { kind: "unary", operator: "not", operand: node };
-    }
-    return node;
-  };
-  const checkOf = async (tree: ComponentNode): Promise<{ sandbox: string; inProcess: string }> => {
-    const request = { abi: WASM_ABI_VERSION, op: "check", definition: { id: "f", version: "1", schemaVersion: "1", root: tree } };
-    const sandbox = (await host.inspect(request as never)) as { verdict: string; problems: Array<{ code: string }> };
-    const inProcess = JSON.parse(new InProcessWasmHostAdapter().instantiate([], new JsonWasmAbi()).inspect!(stableStringify(request)) as string);
-    const said = (answer: { verdict: string; problems: Array<{ code: string }> }): string => answer.verdict + " " + answer.problems.map((problem) => problem.code).join(",");
-    return { sandbox: said(sandbox), inProcess: said(inProcess) };
-  };
-
-  it.each([
-    ["calls 150 deep", calls(150)],
-    ["210 levels of not", nots(210)]
-  ])("%s, within the request limit but past the cap: check fails tooDeep and the run refuses typed, on both hosts", async (_name, tree) => {
-    expect(await checkOf(form(tree))).toEqual({ sandbox: "fail tooDeep", inProcess: "fail tooDeep" });
-    const answer = await both(form(tree));
-    expect(answer.sandbox).toEqual(["formula.invalid:rules:b:visibleWhen"]);
-    expect(answer.inProcess).toEqual(answer.sandbox);
-  });
 
   it.each([
     ["a left chain of 400 terms", leftChain(400)],
     ["a left chain of 3,000 terms", leftChain(3000)],
     ["calls 250 deep", calls(250)]
-  ])("%s, past the request limit: the sandbox refuses the request and in process check and the run refuse it too", async (_name, tree) => {
+  ])("%s: the sandbox refuses the request, and in process check and the run refuse the tree", async (_name, tree) => {
     const request = { abi: WASM_ABI_VERSION, op: "check", definition: { id: "f", version: "1", schemaVersion: "1", root: form(tree) } };
     const refused = (failure: unknown): string => (failure instanceof QuickJsExecutionError ? failure.code : "answered");
     expect(await host.inspect(request as never).then(() => "answered", refused)).toBe("request_refused");
@@ -209,22 +187,9 @@ describe("a tree written as JSON is cut where the sandbox's request limit would 
     expect(await host.run({ context: context as never, policy: WasmValidationHost.STRICT_POLICY }).then(() => "answered", refused)).toBe("request_refused");
     const instance = new InProcessWasmHostAdapter().instantiate([], new JsonWasmAbi());
     const checked = JSON.parse(instance.inspect!(stableStringify(request)) as string) as { verdict: string; problems: Array<{ code: string }> };
-    expect(checked.verdict + " " + checked.problems.map((problem) => problem.code).join(",")).toBe("fail tooDeep");
+    expect(checked.verdict + " " + checked.problems.map((problem) => problem.code).join(",")).toBe("fail invalidRule");
     const ran = JSON.parse(instance.run(JSON.stringify(context)) as string) as { errors: Array<{ code: string }> };
     expect(ran.errors.map((error) => error.code)).toEqual(["formula.invalid"]);
-  });
-
-  it("a tree at the cap, on a field 32 components deep, reaches the sandbox and runs as in process", async () => {
-    // 200: the compile's cap on a tree written as JSON (`kernelExpressionMaxDepth`).
-    let deepest: Record<string, unknown> = { id: "b", type: "text", configuration: { required: true }, rules: { visibleWhen: { expression: nots(200), run: "both" } } };
-    for (let level = 31; level >= 2; level -= 1) {
-      deepest = { id: "c" + level, type: "container", configuration: {}, children: { content: [deepest] } };
-    }
-    const tree = { id: "form", type: "form", configuration: {}, children: { content: [{ id: "a", type: "text", configuration: {} }, deepest] } } as unknown as ComponentNode;
-    expect(await checkOf(tree)).toEqual({ sandbox: "ok ", inProcess: "ok " });
-    const answer = await both(tree);
-    expect(answer.sandbox.filter((entry) => entry.startsWith("formula.") || entry.startsWith("definition."))).toEqual([]);
-    expect(answer.inProcess).toEqual(answer.sandbox);
   });
 });
 

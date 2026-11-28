@@ -97,7 +97,7 @@ puts nothing there. Text between `{{` and `}}` is read as it prints:
 |---|---|
 | `{{title}}` | The form's title, in the print's language |
 | `{{date}}` | The day of printing, in the print's language |
-| `{{page}}`, `{{pages}}` | The page number and the page count (also `{{pageNumber}}`, `{{pageCount}}`) |
+| `{{page}}`, `{{pages}}` | The page number and the page count |
 | `{{receipt.<path>}}` | A value from the receipt the page showed after delivery (below) |
 | `{{host.<path>}}` | A value from the host context the page gave the form |
 | any other path | A field's answer, by the path it is stored at, as the printed copy reads it: a value hidden by a rule is left out, and a blank form reads none |

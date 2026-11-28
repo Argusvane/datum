@@ -58,7 +58,7 @@ export {
   type PluginRegistration,
   type RegisterPluginsOptions
 } from "./plugins.js";
-export { HOST_CONTEXT_MAX_DEPTH, HOST_CONTEXT_MAX_VALUES, plainHostContext, type PlainHostContext } from "./host-context.js";
+export { HOST_CONTEXT_MAX_DEPTH, HOST_CONTEXT_MAX_VALUES, plainHostContext, type PlainHostContext } from "@argusvane/datum-engine";
 export { toFormDefinition } from "./support.js";
 export {
   EagerJourneyEngine,

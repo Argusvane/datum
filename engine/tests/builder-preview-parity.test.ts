@@ -53,14 +53,7 @@ const ROOT: ComponentNode = {
               id: "email",
               type: "text",
               configuration: { label: "Email" },
-              rules: {
-                visibleWhen: {
-                  kind: "binary",
-                  operator: "eq",
-                  left: { kind: "path", path: "opt_in" },
-                  right: { kind: "literal", value: true }
-                }
-              }
+              rules: { visibleWhen: "opt_in = true" }
             }
           ]
         }
@@ -131,12 +124,7 @@ describe("builder preview model", () => {
 
 describe("BuilderPreviewRuntime", () => {
   it("keeps a ticked field's marker while its Required-when rule is false: Required OR Required when", async () => {
-    const contactIs = (value: string) => ({
-      kind: "binary" as const,
-      operator: "eq" as const,
-      left: { kind: "path" as const, path: "contact" },
-      right: { kind: "literal" as const, value }
-    });
+    const contactIs = (value: string): string => `contact = "${value}"`;
     const tree = form([
       { id: "contact", type: "text", configuration: { label: "Contact" } },
       { id: "both", type: "text", configuration: { label: "Both", required: true }, rules: { requiredWhen: contactIs("never") } },
@@ -221,12 +209,8 @@ describe("BuilderPreviewRuntime", () => {
   it("keeps rendering the last coherent tree when an edit introduces a rule cycle", () => {
     const preview = new BuilderPreviewRuntime(ROOT);
     const cyclic = structuredClone(ROOT);
-    cyclic.children!["content"]![0]!.rules = {
-      value: { kind: "path", path: "city" }
-    };
-    cyclic.children!["content"]![1]!.children!["column_2"]![0]!.rules = {
-      value: { kind: "path", path: "full_name" }
-    };
+    cyclic.children!["content"]![0]!.rules = { value: "city" };
+    cyclic.children!["content"]![1]!.children!["column_2"]![0]!.rules = { value: "full_name" };
 
     // Mid-edit a tree can be momentarily incoherent; the canvas must not go blank.
     expect(() => preview.setFormRoot(cyclic)).not.toThrow();

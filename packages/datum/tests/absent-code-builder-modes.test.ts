@@ -111,7 +111,7 @@ afterEach(() => {
 describe("a failed mode chunk, on retry", { timeout: 20000 }, () => {
   it("keeps the card and focus on Retry while the chunk comes back, busy but still the focused button", async () => {
     const first = await hold("journey");
-    const { element, errors } = await mount((el) => el.setAttribute("pdf", "off"));
+    const { element, errors } = await mount((el) => el.setAttribute("features", "-pdf"));
     first.reject(new Error("chunk missing"));
     await until(() => errors.length > 0);
     const root = element.shadowRoot!;
@@ -141,7 +141,7 @@ describe("a failed mode chunk, on retry", { timeout: 20000 }, () => {
 
   it("the PDF side fails the same way: datum-error, a Retry card, and Retry registers the mode", async () => {
     const first = await hold("pdf");
-    const { element, errors } = await mount((el) => el.setAttribute("journeys", "off"));
+    const { element, errors } = await mount((el) => el.setAttribute("features", "-journeys"));
     first.reject(new Error("pdf chunk missing"));
     await until(() => errors.length > 0);
     expect(errors[0]).toContain("PDF");
@@ -161,7 +161,7 @@ describe("a failed mode chunk, on retry", { timeout: 20000 }, () => {
 
   it("is not fetched again by unrelated flushes, only by Retry or a reconnect", async () => {
     const first = await hold("journey");
-    const { element, errors } = await mount((el) => el.setAttribute("pdf", "off"));
+    const { element, errors } = await mount((el) => el.setAttribute("features", "-pdf"));
     first.reject(new Error("chunk missing"));
     await until(() => errors.length === 1);
     const asked = control.journeyCalls;
@@ -184,7 +184,7 @@ describe("a failed mode chunk, on retry", { timeout: 20000 }, () => {
   it("forgets the side asked for by mode, so a later Retry does not yank the author into it", async () => {
     const first = await hold("journey");
     const { element, errors } = await mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.setAttribute("mode", "journeys");
     });
     first.reject(new Error("chunk missing"));
@@ -198,7 +198,7 @@ describe("a failed mode chunk, on retry", { timeout: 20000 }, () => {
   });
 
   it("reports a formula a rename could not follow into a layout of a side whose mode is not registered", async () => {
-    const { element, errors } = await mount((el) => el.setAttribute("pdf", "off"), definitionWith("fullName ="));
+    const { element, errors } = await mount((el) => el.setAttribute("features", "-pdf"), definitionWith("fullName ="));
     await settle();
     errors.length = 0;
     element.controller!.renameId("fullName", "applicantName");

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { PdfFillArea } from "@argusvane/datum-engine/render";
 import { fillTemplate, inspectTemplate } from "../src/kernel/template.js";
 import { formTemplate, templateWithClearMetadata } from "./encryption-fixtures.js";
-import { ENV, fonts, reload } from "./helpers.js";
+import { ENV, fonts, PLAN_THEME, reload } from "./helpers.js";
 import { FILL_OPTIONS } from "./pdfa-fixtures.js";
 
 /**
@@ -58,13 +58,13 @@ describe("encrypted templates", () => {
     expect(codes(flattened.warnings)).toEqual(["template.decrypted", "template.permissions"]);
     expect((await reload(flattened.bytes)).getForm().getFields()).toHaveLength(0);
 
-    const drawn = await fillTemplate(bytes, { Name: "Ada" }, FILL_OPTIONS, await fonts(), ENV, [AREA]);
+    const drawn = await fillTemplate(bytes, { Name: "Ada" }, FILL_OPTIONS, await fonts(), ENV, [AREA], undefined, undefined, PLAN_THEME);
     expect(codes(drawn.warnings)).toEqual(["template.decrypted", "template.permissions"]);
     expect(drawn.areas?.map((area) => area.status)).toEqual(["filled"]);
 
     // The owner allows modifying: the decryption is still said, the permissions are not in question.
     const modifiable = await template({ ...FILL_ONLY, permissions: { fillingForms: true, modifying: true } });
-    const flat = await fillTemplate(modifiable, { Name: "Ada" }, { ...FILL_OPTIONS, flatten: true }, await fonts(), ENV, [AREA]);
+    const flat = await fillTemplate(modifiable, { Name: "Ada" }, { ...FILL_OPTIONS, flatten: true }, await fonts(), ENV, [AREA], undefined, undefined, PLAN_THEME);
     expect(codes(flat.warnings)).toEqual(["template.decrypted"]);
   });
 
@@ -126,7 +126,7 @@ describe("encrypted templates", () => {
     const info = await inspectTemplate(bytes);
     expect(info.encrypted).toBe(false);
     expect(info).not.toHaveProperty("permissions");
-    const filled = await fillTemplate(bytes, { Name: "Ada" }, { ...FILL_OPTIONS, flatten: true }, await fonts(), ENV, [AREA]);
+    const filled = await fillTemplate(bytes, { Name: "Ada" }, { ...FILL_OPTIONS, flatten: true }, await fonts(), ENV, [AREA], undefined, undefined, PLAN_THEME);
     expect(filled.warnings).toEqual([]);
   });
 

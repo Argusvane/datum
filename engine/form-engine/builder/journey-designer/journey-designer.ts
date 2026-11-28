@@ -98,7 +98,6 @@ export type { JourneyAddChoice, JourneyAddPopover, JourneyAddPopoverContext, Jou
 // The try session's values (`createJourneyPreviewSession`, `previewJourney`, its texts) are its
 // own chunk's: import them from `journey-preview.js`. Only its types pass through here.
 export type {
-  JourneyPreview,
   JourneyPreviewSession,
   JourneyPreviewSessionOptions,
   JourneyPreviewSubject,
@@ -722,7 +721,7 @@ export function createJourneyDesigner(context: JourneyDesignerContext): JourneyD
     // before it, a route past it — would relax the form's Required without a word.
     // A tree that cannot be written, or a journey nothing can be submitted through (every path
     // ends at an exit page, which `journey.no-end` reports), gives no walk: then only exit pages
-    // are avoided, as before.
+    // are avoided.
     const written = journeyFromTreePlaced(tree, "journey", {
       pageIds: new Map(pageIds),
       routeLinks: new Map(routeLinks),

@@ -41,7 +41,7 @@ const pause = (ms: number): Promise<void> => new Promise((resolve) => setTimeout
 
 async function mount(setup?: (element: DatumFormBuilderElement) => void, definition: FormDefinition = sampleDefinition()): Promise<DatumFormBuilderElement> {
   const element = document.createElement("datum-form-builder");
-  element.setAttribute("pdf", "off");
+  element.setAttribute("features", "-pdf");
   element.definition = definition;
   setup?.(element);
   document.body.append(element);
@@ -340,7 +340,7 @@ describe("the Print workspace", () => {
   });
 
   it("offers no Print workspace when the features list leaves print out, and fetches nothing", async () => {
-    const element = await mount((el) => el.setAttribute("features", "all -print"));
+    const element = await mount((el) => el.setAttribute("features", "all -print -pdf"));
     const builder = element.builder!;
     expect(builder.availableWorkspaces()).not.toContain("print");
     expect(shell(element).querySelector<HTMLElement>('[data-workspace-tab="print"]')!.hidden).toBe(true);

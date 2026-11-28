@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import type { Journey } from "../form-engine/core/schema/journey.js";
 import type { ComponentNode, FormDefinition } from "../form-engine/core/schema/types.js";
 import { journeyOwnership, journeyPath } from "../form-engine/core/journey/journey-path.js";
@@ -13,9 +12,8 @@ import { createInProcessWasmValidationHost } from "../form-engine/validation/was
 
 /** Journey runtime and kernel: calculations over the settled view, the linear walk, run-time caps and a clock-reading page condition. */
 
-const path = (name: string): Expression => ({ kind: "path", path: name });
-const eq = (name: string, value: unknown): Expression => ({ kind: "binary", operator: "eq", left: path(name), right: { kind: "literal", value: value as never } });
-const lt = (name: string, value: number): Expression => ({ kind: "binary", operator: "lt", left: path(name), right: { kind: "literal", value } });
+const neq = (name: string, value: unknown): string => `${name} != ${JSON.stringify(value)}`;
+const lt = (name: string, value: number): string => `${name} < ${value}`;
 
 describe("a calculation reads the settled view, in the browser and on the server alike", () => {
   const root: ComponentNode = {
@@ -28,9 +26,9 @@ describe("a calculation reads the settled view, in the browser and on the server
     ] }
   } as never;
   const journey: Journey = { id: "j", pages: [
-    { id: "who", components: ["resident"], routes: [{ when: ({ ...eq("resident", "yes"), operator: "neq" } as Expression), to: "result" }] },
+    { id: "who", components: ["resident"], routes: [{ when: neq("resident", "yes"), to: "result" }] },
     { id: "money", components: ["income"] },
-    { id: "result", components: ["eligible"], routes: [{ when: ({ ...eq("eligible", true), operator: "neq" } as Expression), to: "$end" }] },
+    { id: "result", components: ["eligible"], routes: [{ when: neq("eligible", true), to: "$end" }] },
     { id: "extra", components: ["bonus"] }
   ] } as never;
   const definition = { id: "f", version: "1", schemaVersion: "1", root, journey: { journeys: [journey] } } as unknown as FormDefinition;
@@ -143,8 +141,8 @@ describe("the structure caps hold on the journey a host hands the run", () => {
 });
 
 describe("the settle loop re-decides each round, and an omitted on-path input is the person's own empty answer", () => {
-  const gt = (name: string, value: number): Expression => ({ kind: "binary", operator: "gt", left: path(name), right: { kind: "literal", value } });
-  const add = (a: string, b: string): Expression => ({ kind: "arithmetic", operator: "add", left: path(a), right: path(b) } as never);
+  const gt = (name: string, value: number): string => `${name} > ${value}`;
+  const add = (a: string, b: string): string => `${a} + ${b}`;
 
   function build(nodes: ComponentNode[], journey: Journey) {
     const root = { id: "form", type: "form", configuration: {}, children: { content: nodes } } as unknown as ComponentNode;
@@ -190,7 +188,7 @@ describe("the settle loop re-decides each round, and an omitted on-path input is
         { id: "n1", type: "number", configuration: {} },
         { id: "c0", type: "number", configuration: {}, rules: { value: add("n1", "n0") } }
       ] as never,
-      { id: "j", pages: [{ id: "p0", components: ["n0", "c0"], routes: [{ when: ({ ...gt("n0", 10), operator: "lte" } as Expression), to: "$end" }] }, { id: "p1", components: ["n1"] }] } as never
+      { id: "j", pages: [{ id: "p0", components: ["n0", "c0"], routes: [{ when: "n0 <= 10", to: "$end" }] }, { id: "p1", components: ["n1"] }] } as never
     );
     const outcome = server({ n0: 4, n1: 5, c0: 99 });
     expect(outcome.errors).toEqual([]);
@@ -206,9 +204,9 @@ describe("the settle loop re-decides each round, and an omitted on-path input is
         { id: "bonus", type: "text", configuration: { required: true } }
       ] as never,
       { id: "j", pages: [
-        { id: "who", components: ["resident"], routes: [{ when: ({ ...eq("resident", "yes"), operator: "neq" } as Expression), to: "result" }] },
+        { id: "who", components: ["resident"], routes: [{ when: neq("resident", "yes"), to: "result" }] },
         { id: "money", components: ["income"] },
-        { id: "result", components: ["eligible"], routes: [{ when: ({ ...eq("eligible", true), operator: "neq" } as Expression), to: "$end" }] },
+        { id: "result", components: ["eligible"], routes: [{ when: neq("eligible", true), to: "$end" }] },
         { id: "extra", components: ["bonus"] }
       ] } as never
     );

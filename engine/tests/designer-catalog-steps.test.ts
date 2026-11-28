@@ -58,7 +58,7 @@ function pdfMode(form: BuilderController, pdf: PdfConfiguration, options: Partia
 async function open(mode: PdfBuilderMode): Promise<void> {
   const host = document.createElement("div");
   document.body.append(host);
-  await mode.activate!({ host, root: host.attachShadow({ mode: "open" }), showCanvasSurface: () => undefined } as BuilderModeContext);
+  await mode.activate!({ host, root: host.attachShadow({ mode: "open" }), showCanvasSurface: () => undefined, holdForInspector: (run: () => void) => (run(), true) } as BuilderModeContext);
   await until(() => mode.ready);
 }
 
@@ -106,7 +106,7 @@ describe("Make default on a language that words a document's name", () => {
     const mode = createJourneyBuilderMode({ form, journey: { journeys: [{ id: "intake", name: "Intake", pages: [{ id: "about", components: ["province"] }] }] } });
     modes.push(mode);
     form.setOutsideDocuments(() => [mode.localeDocument()]);
-    await mode.activate!({ host: {} as HTMLElement, root: {} as ShadowRoot, showCanvasSurface: () => undefined });
+    await mode.activate!({ host: {} as HTMLElement, root: {} as ShadowRoot, showCanvasSurface: () => undefined, holdForInspector: (run: () => void) => (run(), true) });
     await until(() => mode.ready);
     const tree = mode.controller;
     expect(form.localizationActions.makeDefaultLocale("fr")).toBe(true);
@@ -361,7 +361,7 @@ describe("a form rename a built PDF layout follows", () => {
       id,
       kind: "generated",
       name,
-      when: { kind: "path", path: "province" },
+      when: "province",
       root: { id: "document", type: "pdf-document", configuration: {}, children: { body: [{ id: "field", type: "pdf-field", configuration: { componentId: "province" } }], header: [], footer: [] } }
     };
   }
@@ -383,12 +383,12 @@ describe("a form rename a built PDF layout follows", () => {
   /** The layout's condition and binding as the catalog has them. */
   const inCatalog = (mode: PdfBuilderMode, id: string): string => {
     const found = mode.layouts.find((entry) => entry.id === id) as PdfGeneratedLayout;
-    return `${(found.when as { path?: string } | undefined)?.path}/${(found.root.children!.body![0]!.configuration as { componentId: string }).componentId}`;
+    return `${String(found.when)}/${(found.root.children!.body![0]!.configuration as { componentId: string }).componentId}`;
   };
   /** The same as the layout's open tree has them. */
   const inTree = (tree: BuilderController): string => {
     const root = tree.snapshot();
-    return `${((root.configuration as { when?: { path?: string } }).when ?? {}).path}/${(root.children!.body![0]!.configuration as { componentId: string }).componentId}`;
+    return `${String((root.configuration as { when?: unknown }).when)}/${(root.children!.body![0]!.configuration as { componentId: string }).componentId}`;
   };
 
   it("takes the tree along with no entry of its own: one Undo puts back the id, the condition and the binding, and Redo renames them all again", async () => {
@@ -583,7 +583,7 @@ describe("a catalog step held by the designer, after a page edit with a follow-u
       }
     });
     modes.push(mode);
-    await mode.activate!({ host: {} as HTMLElement, root: {} as ShadowRoot, showCanvasSurface: () => undefined });
+    await mode.activate!({ host: {} as HTMLElement, root: {} as ShadowRoot, showCanvasSurface: () => undefined, holdForInspector: (run: () => void) => (run(), true) });
     await until(() => mode.ready);
     const page = mode.controller;
     const pageIds = (): string[] => (page.snapshot().children?.pages ?? []).map((node) => (node.configuration as { pageId: string }).pageId);
@@ -698,7 +698,7 @@ describe("a follow-up the page's Undo took back, after a new edit on the page", 
       journey: { journeys: [{ id: "intake", name: "Intake", pages: [{ id: "about", title: "About", components: ["fullName"] }, { id: "more", title: "More", components: ["notes"] }] }] }
     });
     modes.push(mode);
-    await mode.activate!({ host: {} as HTMLElement, root: {} as ShadowRoot, showCanvasSurface: () => undefined });
+    await mode.activate!({ host: {} as HTMLElement, root: {} as ShadowRoot, showCanvasSurface: () => undefined, holdForInspector: (run: () => void) => (run(), true) });
     await until(() => mode.ready);
     const page = mode.controller;
     const node = (pageId: string): ComponentNode => (page.snapshot().children?.pages ?? []).find((entry) => (entry.configuration as { pageId: string }).pageId === pageId)!;
@@ -766,7 +766,7 @@ describe("a restore that brings wording back through the agent's catalog seam", 
     form.replaceTranslations(structuredClone(wording), { silent: true });
     const mode = createJourneyBuilderMode({ form, journey: { journeys: ["a", "b", "c"].map((id) => ({ id, name: id.toUpperCase(), pages: [{ id: "p", components: ["province"] }] })) } });
     modes.push(mode);
-    await mode.activate!({ host: {} as HTMLElement, root: {} as ShadowRoot, showCanvasSurface: () => undefined });
+    await mode.activate!({ host: {} as HTMLElement, root: {} as ShadowRoot, showCanvasSurface: () => undefined, holdForInspector: (run: () => void) => (run(), true) });
     await until(() => mode.ready);
     const all = structuredClone(mode.journeyConfiguration);
     mode.removeJourney("b");

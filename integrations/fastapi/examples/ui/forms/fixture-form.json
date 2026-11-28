@@ -123,18 +123,7 @@
             ],
             "routes": [
               {
-                "when": {
-                  "kind": "binary",
-                  "operator": "eq",
-                  "left": {
-                    "kind": "path",
-                    "path": "name"
-                  },
-                  "right": {
-                    "kind": "literal",
-                    "value": "STOPZZ"
-                  }
-                },
+                "when": "name = \"STOPZZ\"",
                 "to": "stop"
               },
               {

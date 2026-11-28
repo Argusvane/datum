@@ -1,4 +1,4 @@
-import { sourceHash, type Expression, type FormDefinition, type Journey } from "@argusvane/datum-engine";
+import { sourceHash, type FormDefinition, type Journey } from "@argusvane/datum-engine";
 import type { DatumFormBuilderElement } from "../src/builder.js";
 import type { DatumFormElement } from "../src/form.js";
 
@@ -86,7 +86,7 @@ export function sampleDefinition(): FormDefinition {
             id: "email",
             type: "text",
             configuration: { label: "Email" },
-            rules: { visibleWhen: { kind: "path", path: "subscribe" } }
+            rules: { visibleWhen: "subscribe" }
           },
           {
             id: "submit",
@@ -116,8 +116,7 @@ export function withEngineWords(
 
 /** What `modesReady` reads of a `<datum-form-builder>` (typed loosely, so this file imports no element). */
 interface ModesHost {
-  pdf?: string | undefined;
-  journeys?: string | undefined;
+  featureEnabled(feature: "pdf" | "journeys"): boolean;
   hiddenWorkspaces: readonly string[];
   pdfMode?: unknown;
   journeyMode?: unknown;
@@ -130,15 +129,13 @@ interface ModesHost {
 export async function modesReady(element: ModesHost, timeoutMs = 4000): Promise<void> {
   await until(
     () =>
-      (element.pdf === "off" || element.hiddenWorkspaces.includes("pdf") || element.pdfMode !== undefined) &&
-      (element.journeys === "off" || element.hiddenWorkspaces.includes("journeys") || element.journeyMode !== undefined),
+      (!element.featureEnabled("pdf") || element.hiddenWorkspaces.includes("pdf") || element.pdfMode !== undefined) &&
+      (!element.featureEnabled("journeys") || element.hiddenWorkspaces.includes("journeys") || element.journeyMode !== undefined),
     timeoutMs
   );
 }
 
 // Journey fixtures shared by the journey tests.
-const journeyPath = (name: string): Expression => ({ kind: "path", path: name });
-const journeyEq = (name: string, value: string): Expression => ({ kind: "binary", operator: "eq", left: journeyPath(name), right: { kind: "literal", value } });
 const YES_NO = [{ value: "yes", label: "Yes" }, { value: "no", label: "No" }];
 
 /** A four-page journey: about, residence (resident yes) or overseas (otherwise), contact. */
@@ -146,7 +143,7 @@ export function branchingJourneyForm(): FormDefinition {
   const journey: Journey = {
     id: "apply",
     pages: [
-      { id: "about", title: "About you", components: ["resident"], routes: [{ when: { kind: "binary", operator: "neq", left: journeyPath("resident"), right: { kind: "literal", value: "yes" } }, to: "overseas" }] },
+      { id: "about", title: "About you", components: ["resident"], routes: [{ when: 'resident != "yes"', to: "overseas" }] },
       { id: "residence", title: "Where you live", components: ["province"], routes: [{ to: "contact" }] },
       { id: "overseas", title: "Where you live abroad", components: ["country"] },
       { id: "contact", title: "How to reach you", components: ["email"], routes: [{ to: "$end" }] }

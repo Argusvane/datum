@@ -1,9 +1,8 @@
 /**
  * The rename seam for formulas: when a component's id changes, every rule that reads it
- * follows, whatever its stored shape. A formula string is rewritten in place over the
- * parser's `paths` spans, so the author's spacing, quotes, comments-by-layout and case ladder
- * stay as written; a tree is walked; the object form has both its `formula` and its
- * `expression` renamed. The builder's `formRenamed` seams call this for component rules,
+ * follows. A formula string is rewritten in place over the parser's `paths` spans, so the
+ * author's spacing, quotes, comments-by-layout and case ladder stay as written; the object form
+ * has its `formula` renamed. The builder's `formRenamed` seams call this for component rules,
  * journey `when` and PDF layout `when`.
  *
  * A path follows the rename when its field segment is `from`: the bare id (`amount`), a value
@@ -11,7 +10,7 @@
  * `ancestor.amount`). `host.` and `component` paths name no field and never change.
  */
 import { isScopedExpressionPath } from "../../core/expressions/condition-shape.js";
-import type { Expression, RuleSource } from "../../core/expressions/expression.js";
+import type { RuleSource } from "../../core/expressions/expression.js";
 import { kernelParseFormula } from "../../core/expressions/formula.js";
 import type { FormulaFunctionSignature, FormulaParseResult } from "../../core/expressions/formula-types.js";
 import { formulaFunctionSignatures } from "../../core/expressions/function-table.js";
@@ -227,45 +226,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** A tree with every `path` node renamed, copied along the changed branches only; the tree itself when none changes. */
-function renameTree<T>(tree: T, from: string, to: string): T {
-  return mapTreePaths(tree, (path) => renameFormulaPath(path, from, to));
-}
-
-/** A tree with every `path` node `map` changes rewritten, copied along the changed branches only. */
-function mapTreePaths<T>(tree: T, map: (path: string) => string): T {
-  const visit = (value: unknown): unknown => {
-    if (Array.isArray(value)) {
-      let changed = false;
-      const next = value.map((item) => {
-        const renamed = visit(item);
-        changed ||= renamed !== item;
-        return renamed;
-      });
-      return changed ? next : value;
-    }
-    if (!isRecord(value)) {
-      return value;
-    }
-    if (value.kind === "path" && typeof value.path === "string") {
-      const path = map(value.path);
-      return path === value.path ? value : { ...value, path };
-    }
-    let changed = false;
-    const entries = Object.entries(value).map(([key, item]) => {
-      const renamed = visit(item);
-      changed ||= renamed !== item;
-      return [key, renamed] as const;
-    });
-    return changed ? Object.fromEntries(entries) : value;
-  };
-  return visit(tree) as T;
-}
-
 /**
  * A stored rule with `from` renamed to `to`: a formula string through
- * {@link renamePathsInFormula}, a tree through its `path` nodes, the object form through both
- * its `formula` and its `expression`. The same reference comes back when nothing changed, so
+ * {@link renamePathsInFormula}, the object form through its `formula`. The same reference comes
+ * back when nothing changed, so
  * a caller can tell an untouched rule apart and keep it byte for byte.
  */
 export function renameInRuleSource<T extends RuleSource | unknown>(
@@ -331,34 +295,16 @@ export function renameRowKeysInRuleSource<T extends RuleSource | unknown>(
   return mapRuleSourcePaths(source, map, signatures);
 }
 
-/** {@link renameInRuleSource} over any path rewrite `map`. */
-function mapRuleSourcePaths<T>(source: T, map: (path: string) => string, signatures: readonly FormulaFunctionSignature[]): T {
+/** {@link renameInRuleSource} over any path rewrite `map`: a formula that does not parse stays as written. */
+export function mapRuleSourcePaths<T>(source: T, map: (path: string) => string, signatures: readonly FormulaFunctionSignature[] = formulaFunctionSignatures()): T {
   if (typeof source === "string") {
     return mapPathsInFormula(source, map, signatures) as T;
   }
-  if (!isRecord(source)) {
+  if (!isRecord(source) || typeof source.formula !== "string") {
     return source;
   }
-  if (typeof source.kind === "string") {
-    return mapTreePaths(source as unknown as Expression, map) as T;
-  }
-  let changed = false;
-  const next: Record<string, unknown> = { ...source };
-  if (typeof source.formula === "string") {
-    const formula = mapPathsInFormula(source.formula, map, signatures);
-    if (formula !== source.formula) {
-      next.formula = formula;
-      changed = true;
-    }
-  }
-  if (isRecord(source.expression)) {
-    const expression = mapTreePaths(source.expression, map);
-    if (expression !== source.expression) {
-      next.expression = expression;
-      changed = true;
-    }
-  }
-  return changed ? (next as T) : source;
+  const formula = mapPathsInFormula(source.formula, map, signatures);
+  return formula !== source.formula ? ({ ...source, formula } as T) : source;
 }
 
 /** Whether the formula `text` reads the field `from` in any form a rename would follow; false for text that does not parse. */

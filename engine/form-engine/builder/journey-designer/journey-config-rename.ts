@@ -2,7 +2,7 @@
  * A form component's rename followed into the journeys' stored block: the
  * configuration-level half of `journey-references.ts`, kept out of the Journeys mode's chunk.
  * `<datum-form-builder>` rewrites the definition's journeys with it whenever its
- * Journeys mode is not registered — `journeys="off"`, a hidden workspace, the chunk still coming
+ * Journeys mode is not registered — a `features` list without `journeys`, a hidden workspace, the chunk still coming
  * or failed — so a rename is followed whether or not the mode ever loads. The mode itself reaches
  * the same functions through `journey-references.ts`, which re-exports them.
  *
@@ -18,7 +18,7 @@ import {
   type JourneyPage,
   type JourneyPageEntry
 } from "../../core/schema/journey.js";
-import { journeyLeadingSegment } from "../../core/journey/journey-path.js";
+import { journeyLeadingSegment } from "../../core/journey/journey-shared.js";
 import { renamePathsInFormula } from "../formula/rename.js";
 
 function isRecord(value: unknown): value is Record<string, unknown> {

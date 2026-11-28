@@ -9,7 +9,6 @@ import { tryMapState } from "../form-engine/builder/journey-designer/journey-try
 import { treeFromJourney } from "../form-engine/builder/journey-designer/journey-tree.js";
 import { createJourneyMap, journeyMapEdgeId, type JourneyMap, type JourneyMapSubject } from "../form-engine/builder/journey-map/journey-map.js";
 import { mapWords } from "./flowmap-words.js";
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import type { JourneyDecision } from "../form-engine/core/journey/journey-types.js";
 import type { Journey } from "../form-engine/core/schema/journey.js";
 import type { ComponentNode } from "../form-engine/core/schema/types.js";
@@ -93,12 +92,7 @@ describe("tryMapState (the pure helper)", () => {
 
 // --- the session over a real runtime, and a real map ---------------------------------------------
 
-const methodIs = (value: string): Expression => ({
-  kind: "binary",
-  operator: "eq",
-  left: { kind: "path", path: "contactMethod" },
-  right: { kind: "literal", value }
-});
+const methodIs = (value: string): string => `contactMethod = "${value}"`;
 
 function formRoot(): ComponentNode {
   return {

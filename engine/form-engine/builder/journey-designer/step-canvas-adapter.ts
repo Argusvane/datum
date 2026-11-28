@@ -626,7 +626,7 @@ export interface StepInspectionContext {
  * id, with its usual tabs, and offers "Take it off this step" (one undo step on the journey's
  * controller; the form field and its other steps untouched), which is also what the canvas bar's
  * Delete does for it. A journey-only field, an alias, a worked-out value and the step itself are
- * inspected on the journey's controller (`inspection()` is `undefined`), as before.
+ * inspected on the journey's controller (`inspection()` is `undefined`).
  */
 export interface StepInspection {
   inspection(): BuilderModeInspection | undefined;

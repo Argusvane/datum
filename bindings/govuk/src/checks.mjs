@@ -356,14 +356,13 @@ try {
   // ── The worked-out line: GOV.UK hint text under the id the control is described by ──────────
   await check("worked out: a journey page's worked-out line is drawn as a hint, named by aria-describedby after the field's own hint", async () => {
     const c = await open();
-    const path = (name) => ({ kind: "path", path: name });
     const definition = form(
       [{ id: "annual_income", type: "number", configuration: { label: "Annual income", description: "Before tax" } }],
       {
         journey: { journeys: [{ id: "apply", name: "Apply", pages: [{ id: "income", title: "Income", components: [
           { id: "m1", type: "number", configuration: { label: "Month one" } },
           { id: "m2", type: "number", configuration: { label: "Month two" } },
-          { id: "income_total", type: "journey-value", configuration: { to: "annual_income", value: { kind: "call", name: "sum", args: [path("m1"), path("m2")] }, label: "Annual income" } }
+          { id: "income_total", type: "journey-value", configuration: { to: "annual_income", value: "sum(m1, m2)", label: "Annual income" } }
         ] }] }] }
       }
     );

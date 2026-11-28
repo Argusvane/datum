@@ -1,0 +1,913 @@
+{
+  "version": "1",
+  "page": {
+    "size": "Letter",
+    "orientation": "portrait",
+    "margins": {
+      "top": 54,
+      "right": 54,
+      "bottom": 54,
+      "left": 54
+    },
+    "footer": {
+      "height": 21
+    }
+  },
+  "metadata": {
+    "title": "Audit d'accessibilité",
+    "lang": "fr-CA",
+    "textDirection": "ltr"
+  },
+  "accessibility": {
+    "tagged": true,
+    "displayDocTitle": true
+  },
+  "typography": {
+    "body": {
+      "family": "sans-serif",
+      "size": 10,
+      "lineHeight": 1.3
+    },
+    "label": {
+      "family": "sans-serif",
+      "size": 8,
+      "lineHeight": 1.3,
+      "weight": 700,
+      "transform": "uppercase"
+    },
+    "heading": {
+      "family": "sans-serif",
+      "sizes": [
+        16,
+        11,
+        10,
+        10,
+        10,
+        10
+      ],
+      "lineHeights": [
+        1.25,
+        1.3,
+        1.3,
+        1.3,
+        1.3,
+        1.3
+      ],
+      "weight": 700
+    },
+    "mono": {
+      "family": "monospace",
+      "size": 9,
+      "lineHeight": 1.3
+    },
+    "hint": {
+      "family": "sans-serif",
+      "size": 8,
+      "lineHeight": 1.3,
+      "weight": 400
+    },
+    "option": {
+      "family": "sans-serif",
+      "size": 10,
+      "lineHeight": 1.3,
+      "weight": 400
+    },
+    "legend": {
+      "family": "sans-serif",
+      "size": 8,
+      "lineHeight": 1.3,
+      "weight": 700,
+      "transform": "uppercase"
+    },
+    "required": {
+      "family": "sans-serif",
+      "size": 8,
+      "lineHeight": 1.3,
+      "weight": 400
+    },
+    "small": {
+      "family": "sans-serif",
+      "size": 8,
+      "lineHeight": 1.3,
+      "weight": 400
+    },
+    "affix": {
+      "family": "sans-serif",
+      "size": 10,
+      "lineHeight": 1.3,
+      "weight": 400
+    },
+    "stepTag": {
+      "family": "sans-serif",
+      "size": 8,
+      "lineHeight": 1.3,
+      "weight": 700
+    }
+  },
+  "colors": {
+    "text": "#111111",
+    "muted": "#555555",
+    "border": "#999999",
+    "accent": "#1a4480",
+    "surface": "#f2f2f2",
+    "controlBorder": "#555555",
+    "controlFill": "#ffffff",
+    "choiceMark": "#111111",
+    "link": "#1a4480",
+    "onAccent": "#ffffff"
+  },
+  "controls": {
+    "borderWidth": 0.75,
+    "radius": 2,
+    "padding": 4,
+    "minHeight": 22,
+    "textareaRows": 3,
+    "fontSize": 10,
+    "valueFrame": "box",
+    "selectMark": "chevron"
+  },
+  "choice": {
+    "size": 11,
+    "widgetSize": 11,
+    "borderWidth": 0.75,
+    "radius": 2,
+    "markStroke": 1.5,
+    "dotSize": 5,
+    "labelGap": 5,
+    "optionGap": 4,
+    "legendGap": 3,
+    "columns": 1
+  },
+  "fields": {
+    "labelToValue": 2,
+    "labelToControl": 2,
+    "labelToHint": 1,
+    "hintToControl": 3,
+    "hints": "shown",
+    "hintPosition": "afterLabel"
+  },
+  "headings": {
+    "numbered": true,
+    "band": "surface",
+    "bandPadding": 3,
+    "titleRule": true,
+    "titleRuleWidth": 1
+  },
+  "table": {
+    "cellPadding": 4,
+    "borderWidth": 0.5,
+    "rowMinHeight": 12,
+    "headerWeight": 700
+  },
+  "box": {
+    "borderWidth": 0.75,
+    "padding": 6,
+    "radius": 2
+  },
+  "panel": {
+    "borderWidth": 0.75,
+    "radius": 2,
+    "padding": 6,
+    "headerPadding": 4
+  },
+  "list": {
+    "indent": 12,
+    "gap": 2,
+    "bullet": "•"
+  },
+  "spacing": {
+    "heading": [
+      12,
+      6
+    ],
+    "paragraph": [
+      0,
+      4
+    ],
+    "labelValue": [
+      0,
+      8
+    ],
+    "widget": [
+      0,
+      8
+    ],
+    "checkmark": [
+      0,
+      8
+    ],
+    "checklist": [
+      0,
+      8
+    ],
+    "list": [
+      0,
+      4
+    ],
+    "table": [
+      2,
+      8
+    ],
+    "image": [
+      2,
+      6
+    ],
+    "rule": [
+      4,
+      4
+    ],
+    "spacer": [
+      0,
+      0
+    ],
+    "box": [
+      2,
+      8
+    ],
+    "group": [
+      0,
+      0
+    ],
+    "pageBreak": [
+      0,
+      0
+    ]
+  },
+  "footer": [
+    {
+      "id": "table-54",
+      "kind": "table",
+      "role": "Div",
+      "columns": [
+        {
+          "width": {
+            "fraction": 0.5
+          }
+        },
+        {
+          "width": {
+            "fraction": 0.5
+          }
+        }
+      ],
+      "rows": [
+        {
+          "id": "row-53",
+          "cells": [
+            {
+              "id": "cell-49",
+              "blocks": [
+                {
+                  "id": "text-50",
+                  "kind": "paragraph",
+                  "runs": [
+                    {
+                      "text": "Audit d'accessibilité"
+                    }
+                  ],
+                  "role": "P",
+                  "style": {
+                    "spacingBefore": 0,
+                    "spacingAfter": 0,
+                    "color": "#555555",
+                    "size": 8
+                  }
+                }
+              ]
+            },
+            {
+              "id": "cell-51",
+              "blocks": [
+                {
+                  "id": "text-52",
+                  "kind": "paragraph",
+                  "runs": [
+                    {
+                      "text": "Page "
+                    },
+                    {
+                      "text": "#",
+                      "token": "pageNumber"
+                    },
+                    {
+                      "text": " of "
+                    },
+                    {
+                      "text": "#",
+                      "token": "pageCount"
+                    }
+                  ],
+                  "role": "P",
+                  "style": {
+                    "align": "end",
+                    "spacingBefore": 0,
+                    "spacingAfter": 0,
+                    "color": "#555555",
+                    "size": 8
+                  }
+                }
+              ]
+            }
+          ],
+          "keepTogether": true
+        }
+      ],
+      "repeatHeader": false,
+      "borders": "none",
+      "style": {
+        "spacingBefore": 0,
+        "spacingAfter": 0
+      }
+    }
+  ],
+  "blocks": [
+    {
+      "id": "text-1",
+      "kind": "heading",
+      "level": 1,
+      "runs": [
+        {
+          "text": "Audit d'accessibilité"
+        }
+      ],
+      "rule": true
+    },
+    {
+      "id": "stacked-2",
+      "kind": "labelValue",
+      "componentId": "fullName",
+      "label": "Nom complet",
+      "value": [
+        {
+          "text": "Ada Lovelace"
+        }
+      ],
+      "arrangement": "stacked",
+      "hint": "Prénom et nom",
+      "labelSuffix": " *",
+      "frame": true,
+      "control": "text"
+    },
+    {
+      "id": "stacked-3",
+      "kind": "labelValue",
+      "componentId": "amount",
+      "label": "Montant",
+      "value": [
+        {
+          "text": "1250"
+        }
+      ],
+      "arrangement": "stacked",
+      "prefix": "$",
+      "suffix": "$ CA",
+      "frame": true,
+      "control": "text"
+    },
+    {
+      "id": "stacked-4",
+      "kind": "labelValue",
+      "componentId": "bio",
+      "label": "À propos de vous",
+      "value": [
+        {
+          "text": "Mathematician and writer.\nKnown for her work on the Analytical Engine."
+        }
+      ],
+      "arrangement": "stacked",
+      "frame": true,
+      "control": "textarea"
+    },
+    {
+      "id": "stacked-5",
+      "kind": "labelValue",
+      "componentId": "province",
+      "label": "Province",
+      "value": [
+        {
+          "text": "Colombie-Britannique"
+        }
+      ],
+      "arrangement": "stacked",
+      "frame": true,
+      "control": "select"
+    },
+    {
+      "id": "stacked-6",
+      "kind": "labelValue",
+      "componentId": "birthDate",
+      "label": "Date de naissance",
+      "value": [
+        {
+          "text": "1984-03-09"
+        }
+      ],
+      "arrangement": "stacked",
+      "hint": "Par exemple, 27 3 2007",
+      "frame": true,
+      "control": "date"
+    },
+    {
+      "id": "stacked-7",
+      "kind": "labelValue",
+      "componentId": "attachment",
+      "label": "Document à l'appui",
+      "value": [
+        {
+          "text": "—"
+        }
+      ],
+      "arrangement": "stacked",
+      "frame": true,
+      "control": "file"
+    },
+    {
+      "id": "checklist-8",
+      "kind": "checklist",
+      "componentId": "contactMethod",
+      "label": "Mode de contact préféré",
+      "items": [
+        {
+          "label": "Courriel",
+          "checked": true,
+          "description": "Réponse sous deux jours"
+        },
+        {
+          "label": "Téléphone",
+          "checked": false
+        }
+      ],
+      "marker": "radio"
+    },
+    {
+      "id": "checklist-9",
+      "kind": "checklist",
+      "componentId": "interests",
+      "label": "Intérêts",
+      "items": [
+        {
+          "label": "Infolettre",
+          "checked": true
+        },
+        {
+          "label": "Événements",
+          "checked": false
+        }
+      ],
+      "marker": "check"
+    },
+    {
+      "id": "checkmark-10",
+      "kind": "checkmark",
+      "componentId": "agree",
+      "label": "J'accepte les conditions",
+      "checked": true
+    },
+    {
+      "id": "stacked-11",
+      "kind": "labelValue",
+      "componentId": "hiddenLabel",
+      "label": "",
+      "value": [
+        {
+          "text": "analytical engine"
+        }
+      ],
+      "arrangement": "stacked",
+      "frame": true,
+      "control": "text"
+    },
+    {
+      "id": "stacked-12",
+      "kind": "labelValue",
+      "componentId": "disabledField",
+      "label": "Numéro de référence",
+      "value": [
+        {
+          "text": "REF-2026-0091"
+        }
+      ],
+      "arrangement": "stacked",
+      "frame": true,
+      "control": "text"
+    },
+    {
+      "id": "stacked-13",
+      "kind": "labelValue",
+      "componentId": "readOnlyField",
+      "label": "Compte",
+      "value": [
+        {
+          "text": "ACC-1815"
+        }
+      ],
+      "arrangement": "stacked",
+      "frame": true,
+      "control": "text"
+    },
+    {
+      "id": "h-14",
+      "kind": "heading",
+      "componentId": "intro",
+      "level": 2,
+      "runs": [
+        {
+          "text": "About this form"
+        }
+      ]
+    },
+    {
+      "id": "p-15",
+      "kind": "paragraph",
+      "componentId": "intro",
+      "runs": [
+        {
+          "text": "Read the "
+        },
+        {
+          "text": "terms",
+          "link": "#terms"
+        },
+        {
+          "text": " before you continue."
+        }
+      ],
+      "role": "P"
+    },
+    {
+      "id": "list-16",
+      "kind": "list",
+      "componentId": "intro",
+      "ordered": false,
+      "items": [
+        {
+          "runs": [
+            {
+              "text": "One"
+            }
+          ]
+        },
+        {
+          "runs": [
+            {
+              "text": "Two"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "image-18",
+      "kind": "image",
+      "componentId": "logo",
+      "resourceId": "img-17",
+      "alt": "Datum",
+      "role": "Figure",
+      "width": 90,
+      "height": 30
+    },
+    {
+      "id": "section-heading-19",
+      "kind": "heading",
+      "level": 2,
+      "runs": [
+        {
+          "text": "Adresse"
+        }
+      ],
+      "keepWithNext": true,
+      "number": "1",
+      "band": true
+    },
+    {
+      "id": "section-20",
+      "kind": "group",
+      "role": "Sect",
+      "blocks": [
+        {
+          "id": "stacked-21",
+          "kind": "labelValue",
+          "componentId": "street",
+          "label": "Rue",
+          "value": [
+            {
+              "text": "1 Main Street"
+            }
+          ],
+          "arrangement": "stacked",
+          "frame": true,
+          "control": "text"
+        },
+        {
+          "id": "stacked-22",
+          "kind": "labelValue",
+          "componentId": "city",
+          "label": "Ville",
+          "value": [
+            {
+              "text": "Ottawa"
+            }
+          ],
+          "arrangement": "stacked",
+          "frame": true,
+          "control": "text"
+        }
+      ],
+      "keepTogether": false
+    },
+    {
+      "id": "section-heading-23",
+      "kind": "heading",
+      "level": 2,
+      "runs": [
+        {
+          "text": "Contact"
+        }
+      ],
+      "keepWithNext": true,
+      "number": "2",
+      "band": true
+    },
+    {
+      "id": "section-24",
+      "kind": "group",
+      "role": "Sect",
+      "blocks": [
+        {
+          "id": "table-30",
+          "kind": "table",
+          "role": "Div",
+          "columns": [
+            {
+              "width": {
+                "fraction": 0.5
+              }
+            },
+            {
+              "width": {
+                "fraction": 0.5
+              }
+            }
+          ],
+          "rows": [
+            {
+              "id": "row-29",
+              "cells": [
+                {
+                  "id": "cell-25",
+                  "blocks": [
+                    {
+                      "id": "stacked-26",
+                      "kind": "labelValue",
+                      "componentId": "email",
+                      "label": "Courriel",
+                      "value": [
+                        {
+                          "text": "ada@example.ca"
+                        }
+                      ],
+                      "arrangement": "stacked",
+                      "frame": true,
+                      "control": "text"
+                    }
+                  ]
+                },
+                {
+                  "id": "cell-27",
+                  "blocks": [
+                    {
+                      "id": "stacked-28",
+                      "kind": "labelValue",
+                      "componentId": "phone",
+                      "label": "Téléphone",
+                      "value": [
+                        {
+                          "text": "613 555 0100"
+                        }
+                      ],
+                      "arrangement": "stacked",
+                      "frame": true,
+                      "control": "text"
+                    }
+                  ]
+                }
+              ],
+              "keepTogether": true
+            }
+          ],
+          "repeatHeader": false,
+          "borders": "none"
+        }
+      ],
+      "keepTogether": false
+    },
+    {
+      "id": "heading-32",
+      "kind": "heading",
+      "componentId": "panel",
+      "level": 2,
+      "runs": [
+        {
+          "text": "Emploi"
+        }
+      ],
+      "keepWithNext": true,
+      "number": "3",
+      "band": true
+    },
+    {
+      "id": "group-33",
+      "kind": "group",
+      "componentId": "panel",
+      "role": "Sect",
+      "blocks": [
+        {
+          "id": "stacked-31",
+          "kind": "labelValue",
+          "componentId": "employer",
+          "label": "Employeur",
+          "value": [
+            {
+              "text": "Analytical Engines Ltd."
+            }
+          ],
+          "arrangement": "stacked",
+          "frame": true,
+          "control": "text"
+        }
+      ],
+      "keepTogether": false
+    },
+    {
+      "id": "section-heading-34",
+      "kind": "heading",
+      "level": 2,
+      "runs": [
+        {
+          "text": "Personnel"
+        }
+      ],
+      "keepWithNext": true,
+      "number": "4",
+      "band": true
+    },
+    {
+      "id": "section-35",
+      "kind": "group",
+      "role": "Sect",
+      "blocks": [
+        {
+          "id": "stacked-36",
+          "kind": "labelValue",
+          "componentId": "nickname",
+          "label": "Surnom",
+          "value": [
+            {
+              "text": "Ada"
+            }
+          ],
+          "arrangement": "stacked",
+          "frame": true,
+          "control": "text"
+        }
+      ],
+      "keepTogether": false
+    },
+    {
+      "id": "section-heading-37",
+      "kind": "heading",
+      "level": 2,
+      "runs": [
+        {
+          "text": "Travail"
+        }
+      ],
+      "keepWithNext": true,
+      "number": "5",
+      "band": true
+    },
+    {
+      "id": "section-38",
+      "kind": "group",
+      "role": "Sect",
+      "blocks": [
+        {
+          "id": "stacked-39",
+          "kind": "labelValue",
+          "componentId": "jobTitle",
+          "label": "Titre du poste",
+          "value": [
+            {
+              "text": "Engineer"
+            }
+          ],
+          "arrangement": "stacked",
+          "frame": true,
+          "control": "text"
+        }
+      ],
+      "keepTogether": false
+    },
+    {
+      "id": "section-heading-40",
+      "kind": "heading",
+      "level": 2,
+      "runs": [
+        {
+          "text": "Admissibilité"
+        }
+      ],
+      "keepWithNext": true,
+      "tag": "Step 1 of 2",
+      "number": "6",
+      "band": true
+    },
+    {
+      "id": "section-41",
+      "kind": "group",
+      "role": "Sect",
+      "blocks": [
+        {
+          "id": "checkmark-42",
+          "kind": "checkmark",
+          "componentId": "resident",
+          "label": "Je suis résident",
+          "checked": true
+        }
+      ],
+      "keepTogether": false
+    },
+    {
+      "id": "section-heading-43",
+      "kind": "heading",
+      "level": 2,
+      "runs": [
+        {
+          "text": "Révision"
+        }
+      ],
+      "keepWithNext": true,
+      "tag": "Step 2 of 2",
+      "number": "7",
+      "band": true
+    },
+    {
+      "id": "section-44",
+      "kind": "group",
+      "role": "Sect",
+      "blocks": [
+        {
+          "id": "stacked-45",
+          "kind": "labelValue",
+          "componentId": "notes",
+          "label": "Notes",
+          "value": [
+            {
+              "text": "Reviewed on paper."
+            }
+          ],
+          "arrangement": "stacked",
+          "frame": true,
+          "control": "textarea"
+        }
+      ],
+      "keepTogether": false
+    },
+    {
+      "id": "section-heading-46",
+      "kind": "heading",
+      "level": 2,
+      "runs": [
+        {
+          "text": "Consentement"
+        }
+      ],
+      "keepWithNext": true,
+      "number": "8",
+      "band": true
+    },
+    {
+      "id": "section-47",
+      "kind": "group",
+      "role": "Sect",
+      "blocks": [
+        {
+          "id": "checkmark-48",
+          "kind": "checkmark",
+          "componentId": "consent",
+          "label": "Me contacter au sujet de ma demande",
+          "checked": false
+        }
+      ],
+      "keepTogether": false
+    }
+  ],
+  "anchored": [],
+  "resources": {
+    "images": {
+      "img-17": {
+        "url": "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='40'%3E%3Crect width='120' height='40' fill='%23345'/%3E%3C/svg%3E"
+      }
+    }
+  }
+}

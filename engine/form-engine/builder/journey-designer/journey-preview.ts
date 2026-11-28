@@ -343,12 +343,6 @@ export interface JourneyPreviewSession {
 }
 
 /**
- * Try it draws the journey on the Form canvas over the session; this is the name the builder's
- * index exports for that session.
- */
-export type JourneyPreview = JourneyPreviewSession;
-
-/**
  * The answers a new runtime is given: every form answer, and the own answers of the
  * presentation it previews — kept under `@<its id>.<own id>`, which the runtime's index of that journey
  * reads back. Another presentation's own answers (`@<another id>`) are no answer of this one's.

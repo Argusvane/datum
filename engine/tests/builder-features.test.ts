@@ -97,11 +97,6 @@ describe("parseBuilderFeatures", () => {
     expect(parseBuilderFeatures([])?.size).toBe(0);
   });
 
-  it("accepts form, which is always there, without a word", () => {
-    expect(listed("form logic")).toEqual(["logic"]);
-    expect(warn).not.toHaveBeenCalled();
-  });
-
   it("ignores an unknown token and warns once for it", () => {
     expect(listed("logic wrong")).toEqual(["logic"]);
     expect(listed("wrong pdf")).toEqual(["pdf"]);
@@ -243,44 +238,40 @@ describe("what each part owns", () => {
   });
 });
 
-describe("builderSides: the list is the master, the other attributes only restrict", () => {
-  const states = [undefined, "auto", "off", "/pdf.js"] as const;
+describe("builderSides: the list is the master, a hidden workspace only restricts", () => {
+  const states = [undefined, "auto", "/pdf.js"] as const;
 
-  it.each(states)("pdf=%s with pdf listed: on unless the attribute says off or the workspace is hidden", (pdf) => {
-    const on = builderSides({ features: parseBuilderFeatures("pdf"), pdf, journeys: undefined, hiddenWorkspaces: [] });
-    expect(on.pdf).toBe(pdf !== "off");
-    const hidden = builderSides({ features: parseBuilderFeatures("pdf"), pdf, journeys: undefined, hiddenWorkspaces: ["pdf"] });
-    expect(hidden.pdf).toBe(false);
+  it.each(states)("pdf=%s with pdf listed: on unless the workspace is hidden", (pdf) => {
+    expect(builderSides({ features: parseBuilderFeatures("pdf"), pdf, hiddenWorkspaces: [] }).pdf).toBe(true);
+    expect(builderSides({ features: parseBuilderFeatures("pdf"), pdf, hiddenWorkspaces: ["pdf"] }).pdf).toBe(false);
   });
 
-  it.each(states)("pdf=%s with pdf unlisted: never on, and a request warns once", (pdf) => {
-    const sides = builderSides({ features: parseBuilderFeatures("logic"), pdf, journeys: undefined, hiddenWorkspaces: [] });
+  it.each(states)("pdf=%s with pdf unlisted: never on, and a pdf that names an executor warns once", (pdf) => {
+    const sides = builderSides({ features: parseBuilderFeatures("logic"), pdf, hiddenWorkspaces: [] });
     expect(sides.pdf).toBe(false);
-    builderSides({ features: parseBuilderFeatures("logic"), pdf, journeys: undefined, hiddenWorkspaces: [] });
-    const asked = pdf === "auto" || pdf === "/pdf.js";
+    builderSides({ features: parseBuilderFeatures("logic"), pdf, hiddenWorkspaces: [] });
+    const asked = pdf !== undefined;
     expect(warn).toHaveBeenCalledTimes(asked ? 1 : 0);
     if (asked) {
       expect(String(warn.mock.calls[0]?.[0])).toContain("pdf attribute ignored: not in features");
     }
   });
 
-  it.each(["auto", "off", undefined] as const)("journeys=%s follows the same rule", (journeys) => {
-    const listedOn = builderSides({ features: parseBuilderFeatures("journeys"), pdf: undefined, journeys, hiddenWorkspaces: [] });
-    expect(listedOn.journeys).toBe(journeys !== "off");
-    expect(builderSides({ features: parseBuilderFeatures("journeys"), pdf: undefined, journeys, hiddenWorkspaces: ["journeys"] }).journeys).toBe(false);
-    expect(builderSides({ features: parseBuilderFeatures("pdf"), pdf: undefined, journeys, hiddenWorkspaces: [] }).journeys).toBe(false);
+  it("the journeys side follows the list and the hidden workspaces alone", () => {
+    expect(builderSides({ features: parseBuilderFeatures("journeys"), pdf: undefined, hiddenWorkspaces: [] }).journeys).toBe(true);
+    expect(builderSides({ features: parseBuilderFeatures("journeys"), pdf: undefined, hiddenWorkspaces: ["journeys"] }).journeys).toBe(false);
+    expect(builderSides({ features: parseBuilderFeatures("pdf"), pdf: undefined, hiddenWorkspaces: [] }).journeys).toBe(false);
+    expect(builderSides({ features: parseBuilderFeatures("-journeys"), pdf: undefined, hiddenWorkspaces: [] })).toEqual({ pdf: true, journeys: false });
   });
 
-  it("is today's behaviour without a list", () => {
-    expect(builderSides({ features: undefined, pdf: undefined, journeys: undefined, hiddenWorkspaces: [] })).toEqual({ pdf: true, journeys: true });
-    expect(builderSides({ features: undefined, pdf: "off", journeys: "off", hiddenWorkspaces: [] })).toEqual({ pdf: false, journeys: false });
-    expect(builderSides({ features: undefined, pdf: undefined, journeys: undefined, hiddenWorkspaces: ["pdf", "journeys"] })).toEqual({ pdf: false, journeys: false });
+  it("has both sides without a list", () => {
+    expect(builderSides({ features: undefined, pdf: undefined, hiddenWorkspaces: [] })).toEqual({ pdf: true, journeys: true });
+    expect(builderSides({ features: undefined, pdf: undefined, hiddenWorkspaces: ["pdf", "journeys"] })).toEqual({ pdf: false, journeys: false });
     expect(warn).not.toHaveBeenCalled();
   });
 
   it("does not warn for a side the list leaves out when nothing asked for it", () => {
-    builderSides({ features: parseBuilderFeatures("minimal"), pdf: undefined, journeys: undefined, hiddenWorkspaces: [] });
-    builderSides({ features: parseBuilderFeatures("minimal"), pdf: "off", journeys: "off", hiddenWorkspaces: [] });
+    builderSides({ features: parseBuilderFeatures("minimal"), pdf: undefined, hiddenWorkspaces: [] });
     expect(warn).not.toHaveBeenCalled();
   });
 });

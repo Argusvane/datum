@@ -20,7 +20,7 @@ const surface = (element: DatumFormBuilderElement): ShadowRoot | null => shell(e
 
 async function mount(): Promise<DatumFormBuilderElement> {
   const element = document.createElement("datum-form-builder");
-  element.setAttribute("pdf", "off");
+  element.setAttribute("features", "-pdf");
   element.definition = sampleDefinition();
   document.body.append(element);
   await until(() => element.builder?.shadowRoot?.querySelector("datum-builder-canvas"));

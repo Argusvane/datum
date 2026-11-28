@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BuilderController, BuilderPreviewRuntime, addressOf } from "@argusvane/datum-engine";
-import type { Expression, FormDefinition } from "@argusvane/datum-engine";
+import type { FormDefinition } from "@argusvane/datum-engine";
 
 import "../src/builder.js";
 import type { DatumFormBuilderElement } from "../src/builder.js";
@@ -121,7 +121,7 @@ describe("the Logic workspace", () => {
     expect(shell(element).querySelector<HTMLElement>("[data-logic-host]")!.hidden).toBe(true);
   });
 
-  it("opens a tree-stored rule as text, selecting its field, and applies a change beside it without rewriting the tree", async () => {
+  it("opens a rule as text, selecting its field, and applies a change beside it without rewriting the rule", async () => {
     const element = await mountInLogic();
     const controller = element.builder!.controller;
     ruleCard(element).click();
@@ -143,14 +143,14 @@ describe("the Logic workspace", () => {
     apply(element).click();
     const email = (): Record<string, unknown> => nodeOf(element, "email").configuration as Record<string, unknown>;
     expect(email().hiddenValueBehavior).toBe("clear");
-    // The rule itself was not edited: the tree stays a tree, byte for byte.
-    expect((nodeOf(element, "email").rules as Record<string, unknown>).visibleWhen).toEqual({ kind: "path", path: "subscribe" });
+    // The rule itself was not edited: it stays as written.
+    expect((nodeOf(element, "email").rules as Record<string, unknown>).visibleWhen).toBe("subscribe");
     await until(() => logic(element).querySelector(".chip")?.textContent === "Sent empty when hidden");
     controller.undo();
     expect(email().hiddenValueBehavior).toBeUndefined();
   });
 
-  it("writes a tree-stored rule back as a string once its text is edited, as one undo step", async () => {
+  it("writes a rule back once its text is edited, as one undo step", async () => {
     const element = await mountInLogic();
     const controller = element.builder!.controller;
     ruleCard(element).click();
@@ -161,7 +161,7 @@ describe("the Logic workspace", () => {
     expect((nodeOf(element, "email").rules as Record<string, unknown>).visibleWhen).toBe('subscribe and fullName = "Ada"');
     await until(() => ruleCard(element).querySelectorAll(".token--field").length === 3);
     controller.undo();
-    expect((nodeOf(element, "email").rules as Record<string, unknown>).visibleWhen).toEqual({ kind: "path", path: "subscribe" });
+    expect((nodeOf(element, "email").rules as Record<string, unknown>).visibleWhen).toBe("subscribe");
     await until(() => box(element).value === "subscribe");
   });
 
@@ -230,7 +230,7 @@ describe("the Logic workspace", () => {
     expect(discard.disabled).toBe(false);
     discard.click();
     expect(logic(element).querySelector("[data-logic-editor]")).toBeNull();
-    expect((nodeOf(element, "email").rules as Record<string, unknown>).visibleWhen).toEqual({ kind: "path", path: "subscribe" });
+    expect((nodeOf(element, "email").rules as Record<string, unknown>).visibleWhen).toBe("subscribe");
     ruleCard(element).click();
     await until(() => box(element));
     expect(box(element).value).toBe("subscribe");
@@ -308,15 +308,15 @@ describe("the Logic workspace", () => {
     expect(problem.compareDocumentPosition(logic(element).querySelector("[data-logic-reads]")!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(apply(element).disabled).toBe(false);
     apply(element).click();
-    expect((nodeOf(element, "email").rules as Record<string, unknown>).visibleWhen).toEqual({ kind: "path", path: "subscribe" });
+    expect((nodeOf(element, "email").rules as Record<string, unknown>).visibleWhen).toBe("subscribe");
     expect(logic(element).querySelector("[data-logic-editor]")).not.toBeNull();
-    // Fixed, Apply writes it as one undo step, and undo brings the tree back.
+    // Fixed, Apply writes it as one undo step, and undo brings the rule back.
     type(element, "subscribe and country = \"CA\"");
     expect(problemLine(element).hidden).toBe(true);
     apply(element).click();
     expect((nodeOf(element, "email").rules as Record<string, unknown>).visibleWhen).toBe('subscribe and country = "CA"');
     element.builder!.controller.undo();
-    expect((nodeOf(element, "email").rules as Record<string, unknown>).visibleWhen).toEqual({ kind: "path", path: "subscribe" });
+    expect((nodeOf(element, "email").rules as Record<string, unknown>).visibleWhen).toBe("subscribe");
   });
 
   it("warns about a field the form does not have, with the nearest name, and still applies", async () => {
@@ -514,7 +514,7 @@ describe("the Logic workspace", () => {
       id: "agree",
       type: "checkbox",
       configuration: { label: "Agree" },
-      rules: { value: { kind: "literal", value: false } }
+      rules: { value: "false" }
     });
     element.definition = definition;
     document.body.append(element);
@@ -810,7 +810,7 @@ describe("the Logic filters at the narrow tiers", () => {
  * (the form's controller is never written), the target list the path accepts.
  */
 describe("Go to rules in the Logic workspace", () => {
-  const subscribed: Expression = { kind: "path", path: "subscribe" };
+  const subscribed = "subscribe";
 
   function journeyDefinition(): FormDefinition {
     return {
@@ -833,7 +833,7 @@ describe("Go to rules in the Logic workspace", () => {
 
   async function mountJourneyLogic(): Promise<DatumFormBuilderElement> {
     const element = document.createElement("datum-form-builder");
-    element.setAttribute("pdf", "off");
+    element.setAttribute("features", "-pdf");
     element.definition = journeyDefinition();
     document.body.append(element);
     await until(() => element.builder?.shadowRoot?.querySelector("datum-builder-canvas"));
@@ -1064,7 +1064,7 @@ describe("Go to rules in the Logic workspace", () => {
   /** The journey of the first describe with other routes on its first step, and extra steps after the others. */
   async function mountWith(routes: unknown[], extra: unknown[] = [], attributes: Record<string, string> = {}): Promise<DatumFormBuilderElement> {
     const element = document.createElement("datum-form-builder");
-    element.setAttribute("pdf", "off");
+    element.setAttribute("features", "-pdf");
     for (const [name, value] of Object.entries(attributes)) {
       element.setAttribute(name, value);
     }
@@ -1142,11 +1142,11 @@ describe("Go to rules in the Logic workspace", () => {
   });
 
   it("takes up the journeys when the Journeys mode arrives after the surface looked", async () => {
-    const element = await mountWith([{ when: subscribed, to: "news" }, { to: "plain" }], [], { features: "-journeys" });
+    const element = await mountWith([{ when: subscribed, to: "news" }, { to: "plain" }], [], { features: "-pdf -journeys" });
     // No mode yet: the rules are listed as the definition has them, read-only, and New rule has no Go to a step.
     expect(element.journeyMode).toBeUndefined();
     expect(routeCard(element, 0).classList.contains("rule--readonly")).toBe(true);
-    element.removeAttribute("features");
+    element.setAttribute("features", "-pdf");
     await until(() => element.journeyMode !== undefined && !logic(element).querySelector('[data-logic-rule^="journeys:"].rule--readonly'));
     logic(element).querySelector<HTMLButtonElement>("[data-logic-new]")!.click();
     expect(logic(element).querySelector('[data-logic-new-kind="route"]')).not.toBeNull();
@@ -1186,7 +1186,7 @@ describe("Go to rules in the Logic workspace", () => {
 
   it("tries a condition over what the path has: an answer asked on a later step is not read, and the editor says so", async () => {
     // "plain" asks country, a step after the one the rule leaves.
-    const element = await mountWith([{ when: { kind: "binary", operator: "eq", left: { kind: "path", path: "country" }, right: { kind: "literal", value: "CA" } }, to: "news" }]);
+    const element = await mountWith([{ when: 'country = "CA"', to: "news" }]);
     await until(() => !logic(element).querySelector('[data-logic-rule^="journeys:"].rule--readonly'));
     routeCard(element, 0).click();
     const country = logic(element).querySelector<HTMLSelectElement | HTMLInputElement>('[data-logic-try="country"]')!;

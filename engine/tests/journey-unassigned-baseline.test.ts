@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import { diagnoseJourneys } from "../form-engine/core/journey/journey-diagnostics.js";
 import type { Journey } from "../form-engine/core/schema/journey.js";
 import type { ComponentNode } from "../form-engine/core/schema/types.js";
@@ -23,14 +22,7 @@ import { runKernel } from "../form-engine/validation/wasm/portable-kernel.js";
  *   the opt-in, so the field is required when left out too.
  */
 
-const path = (name: string): Expression => ({ kind: "path", path: name });
-const literal = (value: string | number | boolean | null): Expression => ({ kind: "literal", value });
-const eq = (name: string, value: string | number | boolean | null): Expression => ({
-  kind: "binary",
-  operator: "eq",
-  left: path(name),
-  right: literal(value)
-});
+const eq = (name: string, value: string | number | boolean | null): string => `${name} = ${JSON.stringify(value)}`;
 
 const text = (id: string, configuration: Record<string, unknown> = {}, rules?: ComponentNode["rules"]): ComponentNode => ({
   id,
@@ -82,7 +74,7 @@ describe("form fields a journey leaves out or routes around", () => {
     const conditionSkips: Journey = {
       id: "cond",
       pages: [
-        { id: "p1", components: ["a"], routes: [{ when: ({ ...eq("a", "never"), operator: "neq" } as Expression), to: "$end" }] },
+        { id: "p1", components: ["a"], routes: [{ when: 'a != "never"', to: "$end" }] },
         { id: "p2", components: ["req"] }
       ]
     };

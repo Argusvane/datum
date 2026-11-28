@@ -297,14 +297,14 @@ describe("a rule switched off", () => {
           id: "email",
           type: "text",
           configuration: { label: "Email" },
-          rules: { visibleWhen: "optIn", requiredWhen: { kind: "path", path: "optIn" } }
+          rules: { visibleWhen: "optIn", requiredWhen: "optIn" }
         }
       ])
     );
     await selected(element, "email");
     tab(element, "rules");
     propsOf(element).querySelector<HTMLButtonElement>('[data-rule="visibleWhen"][data-rule-mode="off"]')!.click();
-    expect(element.builder!.controller.draftRules("email")).toEqual({ requiredWhen: { kind: "path", path: "optIn" } });
+    expect(element.builder!.controller.draftRules("email")).toEqual({ requiredWhen: "optIn" });
     expect(idsOf(element)).toEqual(["optIn", "email"]);
   });
 });

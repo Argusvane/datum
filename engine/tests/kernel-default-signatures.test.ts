@@ -26,8 +26,6 @@ function form(rules: Record<string, unknown>): ComponentNode {
   };
 }
 
-const sumTree = { kind: "call", name: "sum", args: [{ kind: "path", path: "a" }, { kind: "literal", value: 2 }] };
-
 describe("a kernel given no signatures", () => {
   it("carries the function table's built-ins, name for name and count for count", () => {
     expect(kernelBuiltInFunctionSignatures()).toEqual(formulaFunctionSignatures());
@@ -35,8 +33,8 @@ describe("a kernel given no signatures", () => {
     expect(kernelBuiltInFunctionSignatures()).not.toBe(kernelBuiltInFunctionSignatures());
   });
 
-  it("runs a tree and a formula calling a built-in, as a host's run does", () => {
-    for (const value of [sumTree, "sum(a, 2)", { expression: sumTree }]) {
+  it("runs a formula calling a built-in, as text or as a rule object, as a host's run does", () => {
+    for (const value of ["sum(a, 2)", { formula: "sum(a, 2)" }]) {
       const outcome = runKernel({ formId: "f", values: { a: 3 }, locale: "en", form: form({ value }) }, []);
       expect(outcome.errors, JSON.stringify(value)).toEqual([]);
       expect(outcome.values, JSON.stringify(value)).toEqual({ a: 3, b: 5 });
@@ -44,14 +42,14 @@ describe("a kernel given no signatures", () => {
   });
 
   it("still refuses a call to a function no built-in names, and checks a built-in's argument count", () => {
-    const tree = runKernel({ formId: "f", values: { a: 3 }, locale: "en", form: form({ value: { kind: "call", name: "shout", args: [] } }) }, []);
-    expect(tree.errors).toEqual([expect.objectContaining({ code: "formula.invalid", parameters: expect.objectContaining({ where: "rules:b:value" }) })]);
+    const unknown = runKernel({ formId: "f", values: { a: 3 }, locale: "en", form: form({ value: "shout()" }) }, []);
+    expect(unknown.errors).toEqual([expect.objectContaining({ code: "formula.invalid", parameters: expect.objectContaining({ where: "rules:b:value" }) })]);
     const arity = runKernel({ formId: "f", values: { a: 3 }, locale: "en", form: form({ value: "abs(a, 2)" }) }, []);
     expect(arity.errors).toEqual([expect.objectContaining({ code: "formula.invalid" })]);
   });
 
   it("checks a definition calling a built-in as passing in inspect", () => {
-    const definition = { id: "f", version: "1", root: form({ value: sumTree }) };
+    const definition = { id: "f", version: "1", root: form({ value: "sum(a, 2)" }) };
     const answer = kernelRunInspect({ op: "check", abi: "1.0.0", definition }) as { verdict?: string; problems?: unknown[] };
     expect(answer.problems ?? []).toEqual([]);
   });

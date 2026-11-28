@@ -27,7 +27,6 @@ import { journeyPagesFromForm } from "../form-engine/builder/journey-designer/jo
 import { readJourneyMapLayout } from "../form-engine/builder/journey-map/journey-map-preferences.js";
 import type { BuilderFormSettingRow, BuilderModeContext, BuilderModeRules } from "../form-engine/builder/web-component/builder-modes.js";
 import type { TryPanelView } from "../form-engine/builder/web-component/try-it-types.js";
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import type { ComponentDefinition } from "../form-engine/core/schema/contracts.js";
 import type { ComponentNode } from "../form-engine/core/schema/types.js";
 import { renameJourneyReferences } from "../form-engine/builder/journey-designer/journey-references.js";
@@ -76,7 +75,7 @@ function formController(): BuilderController {
   return new BuilderController({ initialRoot: formRoot() });
 }
 
-const phone: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "contactMethod" }, right: { kind: "literal", value: "phone" } };
+const phone = 'contactMethod = "phone"';
 
 /** Two journeys, unknown keys on the block, a journey and a page, and an unreadable journey kept as written. */
 function seed(): JourneyConfiguration {
@@ -107,6 +106,7 @@ function context(): BuilderModeContext & { surfaces: Array<HTMLElement | undefin
     showCanvasSurface: (surface) => {
       surfaces.push(surface);
     },
+    holdForInspector: (run) => (run(), true),
     surfaces
   };
 }
@@ -887,11 +887,11 @@ describe("editing a journey", () => {
     expect(changes.at(-1)?.reason).toBe("form-rename");
     const journeys = mode.journeyConfiguration?.journeys ?? [];
     expect(journeys[0]?.pages[0]?.components).toEqual(["fullName", "howToReach"]);
-    expect(journeys[0]?.pages[0]?.routes?.[0]?.when).toEqual({ ...phone, left: { kind: "path", path: "howToReach" } });
+    expect(journeys[0]?.pages[0]?.routes?.[0]?.when).toEqual('howToReach = "phone"');
     expect(journeys[1]?.pages[0]?.components?.[1]).toBe("howToReach");
     // The open tree was rewritten, not rebuilt: its history is there.
     const question = (): unknown => (pages(controller)[0]!.children?.[JOURNEY_CONTENT_SLOT]?.[1]?.configuration as { componentId: string }).componentId;
-    const routeWhen = (): unknown => (pages(controller)[0]!.children?.[JOURNEY_ROUTES_SLOT]?.[0]?.configuration as { when: Expression }).when;
+    const routeWhen = (): unknown => (pages(controller)[0]!.children?.[JOURNEY_ROUTES_SLOT]?.[0]?.configuration as { when: string }).when;
     expect(question()).toBe("howToReach");
     expect(mode.controller).toBe(controller);
     // The follow-up is no entry of the tree's: the title is still its last edit.
@@ -906,7 +906,7 @@ describe("editing a journey", () => {
     expect(mode.journey?.pages[0]?.title).toBe("About");
     form.redo();
     expect(question()).toBe("howToReach");
-    expect(routeWhen()).toEqual({ ...phone, left: { kind: "path", path: "howToReach" } });
+    expect(routeWhen()).toEqual('howToReach = "phone"');
     expect(controller.undoMark()).toBe(titled);
     // The tree's own Undo takes back its own edit, the title, and leaves the id as the form has it.
     controller.undo();
@@ -1760,7 +1760,7 @@ describe("a journey with nodes of its own", () => {
       id: "m1_note",
       type: "text",
       configuration: { label: "Why so low?" },
-      rules: { visibleWhen: { kind: "path", path: "email" }, requiredWhen: { kind: "path", path: "name" } }
+      rules: { visibleWhen: "email", requiredWhen: "name" }
     });
     const { form, mode, changes } = await opened({ journeys: [withRules, publicVariant()] });
     const apply = mode.controller;
@@ -1773,7 +1773,7 @@ describe("a journey with nodes of its own", () => {
     // The open tree wrote exactly what the catalog's own rename wrote.
     const expected = renameJourneyReferences(renameJourneyReferences(renameJourneyReferences(withRules, "email", "contact_email"), "annual_income", "income"), "name", "full_name");
     expect(JSON.stringify(mode.journeyConfiguration?.journeys?.[0])).toBe(JSON.stringify(expected));
-    expect(note().rules).toEqual({ visibleWhen: { kind: "path", path: "contact_email" }, requiredWhen: { kind: "path", path: "full_name" } });
+    expect(note().rules).toEqual({ visibleWhen: "contact_email", requiredWhen: "full_name" });
     expect((content(apply, 1)[4]!.configuration as { to: string }).to).toBe("income");
     expect(fills()).toBe("contact_email");
     // The one-page journey follows too.
@@ -1783,14 +1783,14 @@ describe("a journey with nodes of its own", () => {
     expect(apply.canUndo()).toBe(false);
     // The last Undo takes back the rule the third rename moved, alone.
     form.undo();
-    expect(note().rules).toEqual({ visibleWhen: { kind: "path", path: "contact_email" }, requiredWhen: { kind: "path", path: "name" } });
+    expect(note().rules).toEqual({ visibleWhen: "contact_email", requiredWhen: "name" });
     form.undo();
     expect((content(apply, 1)[4]!.configuration as { to: string }).to).toBe("annual_income");
     // The first rename moved a configuration and a rule; one undo takes both back.
     expect(fills()).toBe("contact_email");
     form.undo();
     expect(fills()).toBe("email");
-    expect(note().rules).toEqual({ visibleWhen: { kind: "path", path: "email" }, requiredWhen: { kind: "path", path: "name" } });
+    expect(note().rules).toEqual({ visibleWhen: "email", requiredWhen: "name" });
     expect(JSON.stringify(mode.journeyConfiguration?.journeys?.[0])).toBe(JSON.stringify(withRules));
     expect(apply.canUndo()).toBe(false);
   });
@@ -1813,17 +1813,17 @@ describe("a journey with nodes of its own", () => {
 
   it("follows an own node renamed in its tree into the journey's own rules and worked-out values, in one step, reported once", async () => {
     const withRules = JSON.parse(JSON.stringify(applyJourney())) as Journey;
-    (withRules.pages[1]!.components![1] as { rules?: unknown }).rules = { visibleWhen: { kind: "path", path: "m1" } };
+    (withRules.pages[1]!.components![1] as { rules?: unknown }).rules = { visibleWhen: "m1" };
     const { form, mode, changes, errors } = await opened({ journeys: [withRules] });
     const apply = mode.controller;
     apply.renameId("m1", "month_1");
     expect(apply.idError).toBeUndefined();
     expect(changes).toHaveLength(1);
     const written = JSON.stringify(mode.journeyConfiguration?.journeys?.[0]);
-    expect(written).toBe(JSON.stringify(withRules).replace('"id":"m1"', '"id":"month_1"').replace(/"path":"m1"/g, '"path":"month_1"'));
+    expect(written).toBe(JSON.stringify(withRules).replace('"id":"m1"', '"id":"month_1"').replace('"visibleWhen":"m1"', '"visibleWhen":"month_1"').replace("sum(m1,", "sum(month_1,"));
     expect(changes[0]?.journey).toEqual(JSON.parse(written));
     // The form's own components and the pages' conditions read form values; nothing there moved.
-    expect(written).toContain('"path":"annual_income"');
+    expect(written).toContain('"when":"annual_income >= 50000"');
 
     // The rename and its follow-up are one step of the journey's history: Undo puts the id and
     // the reads back together.
@@ -1896,7 +1896,7 @@ describe("a journey with nodes of its own", () => {
               "approved_amount"
             ]
           },
-          { id: "income", components: [{ id: "m1", type: "number", configuration: { label: "Month 1" } }, { id: "total", type: "journey-value", configuration: { to: "annual_income", value: { kind: "path", path: "m1" } } }] }
+          { id: "income", components: [{ id: "m1", type: "number", configuration: { label: "Month 1" } }, { id: "total", type: "journey-value", configuration: { to: "annual_income", value: "m1" } }] }
         ]
       })
     ) as Journey;
@@ -2009,7 +2009,7 @@ describe("a journey with nodes of its own", () => {
 });
 
 describe("journey designer regressions", () => {
-  const not = (path: string): Expression => ({ kind: "unary", operator: "not", operand: { kind: "path", path } }) as Expression;
+  const not = (path: string): string => `not(${path})`;
   /** What the kernel refuses a submission through `journey` for, by field. */
   const refused = (form: BuilderController, journey: Journey, values: Record<string, unknown>): Array<string | undefined> =>
     runKernel({ formId: "f", values, locale: "en", form: form.snapshot(), journey } as never, []).errors.map((error: { componentId?: string }) => error.componentId);
@@ -2048,7 +2048,7 @@ describe("journey designer regressions", () => {
         {
           id: "j",
           pages: [
-            { id: "p1", components: ["fullName", "consent"], routes: [{ when: { kind: "unary", operator: "not", operand: { kind: "path", path: "consent" } } as Expression, to: "$end" }] },
+            { id: "p1", components: ["fullName", "consent"], routes: [{ when: "not(consent)", to: "$end" }] },
             { id: "partner", components: ["contactMethod"] }
           ]
         }
@@ -2075,7 +2075,7 @@ describe("journey designer regressions", () => {
     const controller = mode.controller;
     controller.add(JOURNEY_ROUTE_TYPE, pages(controller)[0]!.id, JOURNEY_ROUTES_SLOT);
     const routeId = pages(controller)[0]!.children![JOURNEY_ROUTES_SLOT]![0]!.id;
-    const reads = (path: string): Expression => ({ kind: "binary", operator: "eq", left: { kind: "path", path }, right: { kind: "literal", value: "x" } }) as Expression;
+    const reads = (path: string): string => `${path} = "x"`;
     controller.setProperty(routeId, "when", reads("notes"));
     const heard = changes.length;
     form.renameId("notes", "remarks");
@@ -2961,7 +2961,7 @@ describe("a blank journey, its findings card and the Form fields panel", () => {
               components: [
                 "fullName",
                 { id: "nick", type: "text", configuration: { label: "Nick" } },
-                { id: "again", type: "journey-value", configuration: { to: "fullName", value: { kind: "path", path: "nick" } } },
+                { id: "again", type: "journey-value", configuration: { to: "fullName", value: "nick" } },
                 // Read by nothing and filling nothing: its answer goes nowhere.
                 { id: "lonely", type: "text", configuration: { label: "Lonely" } }
               ]
@@ -2989,7 +2989,7 @@ describe("a blank journey, its findings card and the Form fields panel", () => {
         {
           id: "intake",
           pages: [
-            { id: "about", title: "About you", components: ["fullName"], routes: [{ when: { kind: "path", path: "consent" }, to: "bye" }] },
+            { id: "about", title: "About you", components: ["fullName"], routes: [{ when: "consent", to: "bye" }] },
             { id: "check", kind: "review", title: "Check your answers", components: [] },
             { id: "bye", kind: "exit", title: "Goodbye", components: [] }
           ]

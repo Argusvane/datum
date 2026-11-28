@@ -14,7 +14,7 @@ import type { LocalizedText, PropertyEditorValueMap } from "../../core/schema/co
 import { addressOf, readTranslation, resolveText, type FormTranslations, type TextAddress, type TextSources, type TranslationCatalog } from "../../core/localization/translations.js";
 import { readSourceId } from "../../core/schema/data-source-capability.js";
 import { parseInlineOptions } from "../../core/schema/inline-options.js";
-import type { Expression } from "../../core/expressions/expression.js";
+import type { RuleSource } from "../../core/expressions/expression.js";
 import { DEFAULT_PDF_AREA_DRAW, pdfFieldNameProblem, readPdfValueMap, resolvePdfAreaFields, type PdfFieldMapping, type PdfFieldMappingSource, type PdfMappingBinding, type PdfTemplateArea, type PdfTemplateAreaDraw, type PdfTemplateAreaField, type PdfTemplateLayout, type PdfTemplateSource, type PdfValueFormat } from "../../core/schema/pdf-layout.js";
 import type { ComponentNode } from "../../core/schema/types.js";
 import type { PdfTemplateFieldInfo, PdfTemplateInfo } from "../../render/pdf/pdf-abi.js";
@@ -37,7 +37,7 @@ import { isScopedExpressionPath } from "../../core/expressions/condition-shape.j
 import { kernelRuleExpression } from "../../core/expressions/compile.js";
 import { kernelParseFormula } from "../../core/expressions/formula.js";
 import { formulaFunctionSignatures } from "../../core/expressions/function-table.js";
-import { journeyLeadingSegment } from "../../core/journey/journey-path.js";
+import { journeyLeadingSegment } from "../../core/journey/journey-shared.js";
 import { buildDataPaths, collectionPathOf, dataKeyOf } from "../../core/tree/data-scope.js";
 import { kernelFoldHoldsOwnAnswer } from "../../core/state/submittable-fold.js";
 import type { BuilderTextCatalog, BuilderTextOptions } from "../logic/builder-texts.js";
@@ -720,7 +720,7 @@ export function createPdfTemplateDesigner(options: PdfTemplateDesignerOptions): 
     // The layout's condition, as written: one the evaluator cannot run never holds,
     // and is the author's to mend rather than the designer's to drop. Cleared, there is none.
     if (when !== undefined && when !== null) {
-      next.when = when as Expression;
+      next.when = when as RuleSource;
     }
     const areaList = childrenOf(tree, PDF_TEMPLATE_AREAS_SLOT).map((node) => areaFromNode(node, pageOf));
     if (areaList.length > 0) {

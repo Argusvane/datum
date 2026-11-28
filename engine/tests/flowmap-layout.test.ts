@@ -17,7 +17,6 @@ import { journeyMapGraph, journeyMapLayoutInput, type JourneyMapGraph, type Jour
 import { journeyFlow } from "../form-engine/core/journey/journey-flow.js";
 import { mapSource, mapWords } from "./flowmap-words.js";
 import { applyJourney, presentationRoot, publicVariant } from "./fixtures/presentation-form.js";
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import type { Journey, JourneyPage } from "../form-engine/core/schema/journey.js";
 import type { ComponentNode } from "../form-engine/core/schema/types.js";
 
@@ -499,8 +498,8 @@ describe("layoutFlow", () => {
   });
 });
 
-function eq(path: string, value: string): Expression {
-  return { kind: "binary", operator: "eq", left: { kind: "path", path }, right: { kind: "literal", value } };
+function eq(path: string, value: string): string {
+  return `${path} = "${value}"`;
 }
 
 const FORM: ComponentNode = {
@@ -511,7 +510,7 @@ const FORM: ComponentNode = {
     content: [
       ...Array.from({ length: 24 }, (_value, index): ComponentNode => ({ id: `q${index}`, type: "text", configuration: { label: `Question ${index}` } })),
       { id: "sorry", type: "html", configuration: { content: "Sorry" } },
-      { id: "hid", type: "text", configuration: { label: "Hideable" }, rules: { visibleWhen: { kind: "literal", value: true } } }
+      { id: "hid", type: "text", configuration: { label: "Hideable" }, rules: { visibleWhen: "true" } }
     ]
   }
 };
@@ -618,7 +617,7 @@ describe("the main line stays straight", () => {
         {
           id: "join",
           components: ["q4"],
-          routes: [{ when: eq("q4", "x"), to: "$end" }, { when: eq("q4", "y"), to: "last" }, { when: { ...eq("q4", "z"), operator: "neq" } as Expression, to: "more" }]
+          routes: [{ when: eq("q4", "x"), to: "$end" }, { when: eq("q4", "y"), to: "last" }, { when: 'q4 != "z"', to: "more" }]
         },
         { id: "stop", kind: "exit", components: ["sorry"] },
         { id: "more", components: ["q5"] },
@@ -1124,7 +1123,7 @@ describe("presentations' own nodes", () => {
   /** The shared fixture's journey with a second page a route may pass, holding an own layout of a reference and a paragraph. */
   function withRoute(): Journey {
     const journey = applyJourney();
-    journey.pages[0]!.routes = [{ when: { ...eq("name", "x"), operator: "neq" } as Expression, to: "income" }];
+    journey.pages[0]!.routes = [{ when: 'name != "x"', to: "income" }];
     journey.pages.splice(1, 0, {
       id: "extra",
       title: "More about you",

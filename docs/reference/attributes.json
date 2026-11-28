@@ -473,10 +473,10 @@
       {
         "attribute": "pdf",
         "prop": "pdf",
-        "values": "auto | off | URL of the PDF module",
-        "default": "auto (on)",
+        "values": "auto | URL of the PDF module",
+        "default": "auto",
         "category": "D",
-        "notes": "Default ON: the executor is fetched as a chunk of this bundle on the first preview. off removes the PDF mode and the PDF seed. A page-built executor is the pdfSupport property. Held to the page's origin: a URL on another origin is reported as datum-error and the attribute is treated as absent (auto), unless allow-origins lists that origin; the property may name any."
+        "notes": "How the PDF side's executor arrives: auto fetches it as a chunk of this bundle on the first preview, a URL loads it from that module. Whether the PDF side exists is the features list's: features=\"-pdf\" leaves out the PDF mode and the PDF seed. A page-built executor is the pdfSupport property. Held to the page's origin: a URL on another origin is reported as datum-error and the attribute is treated as absent (auto), unless allow-origins lists that origin; the property may name any."
       },
       {
         "attribute": "pdf-pages",
@@ -485,14 +485,6 @@
         "default": "auto",
         "category": "D",
         "notes": "Where the page imagery for template areas loads from; off draws on blank sheets. A template resolver is the pdfTemplates property. Held to the page's origin: a URL on another origin is reported as datum-error and the attribute is treated as absent (auto), unless allow-origins lists that origin; the property may name any."
-      },
-      {
-        "attribute": "journeys",
-        "prop": "journeys",
-        "values": "auto | off",
-        "default": "auto (on)",
-        "category": "D",
-        "notes": "Default ON. off removes the Journeys mode; the definition's journeys pass through untouched."
       },
       {
         "attribute": "values",
@@ -572,7 +564,7 @@
         "values": "space or comma list of workspaces",
         "default": "absent: every workspace",
         "category": "O",
-        "notes": "The only workspaces the bar offers; hidden-workspaces, pdf, journeys and features still take away from it. A list of pdf or journeys alone is that designer on its own: the builder opens on it, the form's documents leave the bar, and a loading card stands in until its code is in. It does not remove the other workspaces' code."
+        "notes": "The only workspaces the bar offers; hidden-workspaces and features still take away from it. A list of pdf or journeys alone is that designer on its own: the builder opens on it, the form's documents leave the bar, and a loading card stands in until its code is in. It does not remove the other workspaces' code."
       },
       {
         "attribute": "hidden-workspaces",
@@ -612,7 +604,7 @@
         "values": "space or comma list of logic, data, languages, translations, journeys, pdf, print, variables, header-footer, data-model, palette, try-it, tests, json, binding-picker, advanced-fields, agent; presets all, minimal; -name leaves one out",
         "default": "absent: every feature but agent",
         "category": "O",
-        "notes": "Present means only the listed parts exist, besides the Form workspace with its canvas, inspector and component palette; minimal is that alone, so minimal logic is the form plus Logic. The list is the master: pdf, journeys, hidden-workspaces, hidden-panels, component-types and file-actions can only take more away, and a pdf or journeys that asks for a side the list omits is ignored with one console warning, as is a workspace for one (the form opens). translations is the pointer line under a component's texts, which says how much of it each language has and opens the Languages workspace on it, tests the Tests panel, print the Print workspace (the form's print settings beside a preview of the printed form, a lazy chunk), json the JSON view and editor, binding-picker the binding picker (the binding property still sets the binding), advanced-fields the inspector's component id and data key. agent is opt-in: not part of all; write all agent to add it (the agent tools over the builder, a lazy chunk: twenty-four tools besides the session pair). A part that is left out fetches none of its chunks. A word with a minus in front takes that part out: all -pdf is every part but the PDF side, and so is -pdf alone, since a list of only exclusions starts from all; an exclusion wins wherever it stands. A word that names nothing (a mistyped exclusion included) is reported as datum-error and left out, and a list holding one never starts from all. Changing it after connect rebuilds the sides, workspaces, strip, bar and inspector, except an agent-only change, which only registers or withdraws the agent tools."
+        "notes": "Present means only the listed parts exist, besides the Form workspace with its canvas, inspector and component palette; minimal is that alone, so minimal logic is the form plus Logic. The list is the master: hidden-workspaces, hidden-panels, component-types and file-actions can only take more away, and a pdf that names an executor for a side the list omits is ignored with one console warning, as is a workspace for one (the form opens). -journeys leaves the Journeys mode out; the definition's journeys pass through untouched. translations is the pointer line under a component's texts, which says how much of it each language has and opens the Languages workspace on it, tests the Tests panel, print the Print workspace (the form's print settings beside a preview of the printed form, a lazy chunk), json the JSON view and editor, binding-picker the binding picker (the binding property still sets the binding), advanced-fields the inspector's component id and data key. agent is opt-in: not part of all; write all agent to add it (the agent tools over the builder, a lazy chunk: twenty-four tools besides the session pair). A part that is left out fetches none of its chunks. A word with a minus in front takes that part out: all -pdf is every part but the PDF side, and so is -pdf alone, since a list of only exclusions starts from all; an exclusion wins wherever it stands. A word that names nothing (a mistyped exclusion included) is reported as datum-error and left out, and a list holding one never starts from all. Changing it after connect rebuilds the sides, workspaces, strip, bar and inspector, except an agent-only change, which only registers or withdraws the agent tools."
       },
       {
         "attribute": "full-window",

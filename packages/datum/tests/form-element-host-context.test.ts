@@ -11,7 +11,7 @@ import type { FormDefinition } from "@argusvane/datum-engine";
 import "../src/form.js";
 import type { DatumFormElement, DatumFormSubmitDetail } from "../src/form.js";
 import type { DatumErrorDetail } from "../src/support.js";
-import { plainHostContext } from "../src/host-context.js";
+import { plainHostContext } from "@argusvane/datum-engine";
 
 import { paintedForm, until } from "./helpers.js";
 import { control, type } from "./live-dom.js";

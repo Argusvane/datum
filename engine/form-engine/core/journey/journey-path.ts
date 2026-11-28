@@ -15,10 +15,6 @@ import {
   journeyOwn
 } from "./journey-shared.js";
 
-// The helpers every form needs live apart, so a bundle without journeys does not carry the
-// path engine; they are re-exported here for importers of the path engine.
-export { journeyCollectionPathOf, journeyHoldsOwnAnswer, journeyLeadingSegment, journeyOwn };
-
 /**
  * The journey path engine: which pages a set of answers takes, and where each
  * component stands against that path.
@@ -390,7 +386,7 @@ export function journeyEntryPlacesForm(entry: PresentationNode): boolean {
  *
  * An ancestor of anything placed that is on no page itself is structural. `order` stays the
  * form's own: no walker of it sees a presentation's node. The presentation records are attached only when a page holds an object
- * entry, so a journey of component ids alone has the ownership it always had.
+ * entry.
  *
  * A review page (`kind: "review"`) places no form component: it lists the path's answers, it
  * does not ask them. Its string entries and references are skipped, and an own entry that

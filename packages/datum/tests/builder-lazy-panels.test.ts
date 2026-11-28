@@ -93,7 +93,7 @@ let tagsDefinedBefore = false;
 
 async function mount(setup?: (element: DatumFormBuilderElement) => void): Promise<DatumFormBuilderElement> {
   const element = document.createElement("datum-form-builder");
-  element.setAttribute("pdf", "off");
+  element.setAttribute("features", "-pdf");
   element.definition = sampleDefinition();
   setup?.(element);
   document.body.append(element);

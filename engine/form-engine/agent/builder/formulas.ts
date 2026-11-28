@@ -9,9 +9,8 @@
  * the sandbox run, so a formula the agent is told parses is one the person's form runs.
  */
 import { isScopedExpressionPath } from "../../core/expressions/condition-shape.js";
-import { kernelExpressionFault, kernelIsExpressionTree, kernelJsonTypeOf, kernelRiskGuardParser, kernelRiskyMatchesIn, kernelRiskyPatternMessage, kernelRuleShape } from "../../core/expressions/compile.js";
+import { kernelIsExpressionTree, kernelJsonTypeOf, kernelRiskGuardParser, kernelRiskyPatternMessage, kernelRuleShape } from "../../core/expressions/compile.js";
 import { kernelParseFormula } from "../../core/expressions/formula.js";
-import type { Expression } from "../../core/expressions/expression.js";
 import type { FormulaFunctionSignature, FormulaParseResult, FormulaPathRef } from "../../core/expressions/formula-types.js";
 import { formulaFieldsOf, isKnownFormulaPath, suggestFormulaField, type FormulaField } from "../../builder/formula/formula-fields.js";
 import { ruleText } from "../../builder/property-editor/rule-source.js";
@@ -65,7 +64,7 @@ export interface PendingNames {
 }
 
 export interface FormulaChecker {
-  /** Parses one stored rule (bare text or `{ formula, run }`); blank text parses (the rule goes); an expression tree is taken as it is. */
+  /** Parses one stored rule (bare text or `{ formula, run }`); blank text parses (the rule goes); any other value (an expression tree among them) is a problem. */
   parseRule(scope: BuilderCallScope, rule: RuleRef & { source: unknown }): RuleParse;
   /** `unknownField` warnings for the names a parsed rule reads. */
   unknownFields(scope: BuilderCallScope, rule: RuleRef & { formula: string; paths: readonly FormulaPathRef[] }, pending?: PendingNames): FormulaProblem[];
@@ -85,46 +84,13 @@ export function formulaWarning(problem: FormulaProblem): string {
   return `lint: ${where} ${problem.message}`;
 }
 
-/** The expression tree a rule is written as (bare, or the object form's `expression`), else `undefined`. */
-function ruleTree(source: unknown): Expression | undefined {
-  if (kernelIsExpressionTree(source)) {
-    return source;
-  }
-  if (typeof source === "object" && source !== null && !Array.isArray(source)) {
-    const expression = (source as { expression?: unknown }).expression;
-    return kernelIsExpressionTree(expression) ? expression : undefined;
-  }
-  return undefined;
-}
-
-/** The spanless problem for a stored rule that is none of a formula, an expression tree or the object form. */
+/** The spanless problem for a stored rule that is neither a formula nor the object form (an expression tree among them). */
 function invalidShapeProblem(rule: RuleRef, source: unknown): FormulaProblem {
   const problem: FormulaProblem = {
     propertyPath: `rules.${rule.key}`,
     formula: "",
     code: "unexpected",
-    message: `A ${rule.key} rule is a formula, an expression tree or an object with a formula or an expression; this one is ${kernelJsonTypeOf(source)}.`,
-    start: 0,
-    end: 0
-  };
-  if (rule.componentId !== undefined) {
-    problem.componentId = rule.componentId;
-  }
-  return problem;
-}
-
-/** What the compile would refuse in a rule written as a tree, as a formula problem with no span (the tree has no text). */
-function treeProblem(tree: Expression, rule: RuleRef, signatures: FormulaFunctionSignature[]): FormulaProblem | undefined {
-  const fault = kernelExpressionFault(tree, signatures);
-  const risky = fault === undefined ? kernelRiskyMatchesIn(tree) : undefined;
-  if (fault === undefined && risky === undefined) {
-    return undefined;
-  }
-  const problem: FormulaProblem = {
-    propertyPath: `rules.${rule.key}`,
-    formula: "",
-    code: fault === undefined ? "pattern.risky" : fault.code === "invalidRule" ? "unexpected" : fault.code,
-    message: fault !== undefined ? fault.message : risky !== undefined ? kernelRiskyPatternMessage(risky) : "",
+    message: `A ${rule.key} rule is a formula or an object with a formula; this one is ${kernelIsExpressionTree(source) || (typeof source === "object" && source !== null && kernelIsExpressionTree((source as { expression?: unknown }).expression)) ? "an expression tree" : kernelJsonTypeOf(source)}.`,
     start: 0,
     end: 0
   };
@@ -180,18 +146,10 @@ export function createFormulaChecker(signatures: () => readonly FormulaFunctionS
     parseRule(scope, rule) {
       const text = ruleText(rule.source);
       if (text === undefined) {
-        const tree = ruleTree(rule.source);
-        if (tree !== undefined) {
-          // An expression tree (a host's or an import's) is not FEEL text, but the compile judges it
-          // like one: a node of no shape, a tree nested too deep, a call to no function, or a literal
-          // risky pattern is refused there, so it is refused here too.
-          const problem = treeProblem(tree, rule, [...signatures()]);
-          if (problem !== undefined) {
-            return { ok: false, formula: "", problem };
-          }
-        }
-        if (kernelRuleShape(rule.source) === "invalid") {
-          // The compile drops a rule of no recognised shape as `invalidRule`; a form loaded with one is not clean.
+        const shape = kernelRuleShape(rule.source);
+        if (shape !== "absent") {
+          // The compile drops a rule that is neither a formula nor the object form (an expression
+          // tree among them) as `invalidRule`; a form loaded with one is not clean.
           return { ok: false, formula: "", problem: invalidShapeProblem(rule, rule.source) };
         }
         return { ok: true, formula: "", blank: rule.source === undefined || rule.source === null, paths: [], parsed: { ok: true, expression: undefined, paths: [] } };

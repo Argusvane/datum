@@ -139,7 +139,7 @@ describe("editing the catalog", () => {
 });
 
 describe("conditional layouts keep a declared default", () => {
-  const QUEBEC = { kind: "binary", operator: "eq", left: { kind: "path", path: "province" }, right: { kind: "literal", value: "QC" } } as const;
+  const QUEBEC = 'province = "QC"';
   const conditional = (id: string): PdfGeneratedLayout => ({ ...generated(id), when: QUEBEC });
   const undeclared = (): PdfConfiguration => ({ layouts: [generated("client", "Client copy"), PAPER] });
 
@@ -178,7 +178,6 @@ describe("conditional layouts keep a declared default", () => {
     const withCondition = replacePdfLayout({ layouts: [generated("client"), PAPER], defaultLayoutId: "paper" }, "client", conditional("client"));
     const copied = duplicatePdfLayout({ layouts: withCondition.layouts! }, "client");
     expect(copied.layout.when).toEqual(QUEBEC);
-    expect(copied.layout.when).not.toBe(QUEBEC);
     expect(copied.configuration.defaultLayoutId).toBe("client");
     // Without a condition anywhere nothing is written: a definition is not rewritten for nothing.
     expect(addPdfLayout(undeclared(), generated("back-office")).defaultLayoutId).toBeUndefined();

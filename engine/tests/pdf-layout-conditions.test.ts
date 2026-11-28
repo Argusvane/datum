@@ -16,7 +16,7 @@ import {
   type PdfLayoutFindingCode
 } from "../form-engine/builder/pdf-designer/layout-conditions.js";
 import { conditionInWords } from "../form-engine/builder/property-editor/condition-words.js";
-import type { Expression } from "../form-engine/core/expressions/expression.js";
+import type { Expression, RuleSource } from "../form-engine/core/expressions/expression.js";
 import {
   PDF_DOCUMENT_COMPONENT_TYPE,
   readPdfLayoutCondition,
@@ -73,8 +73,8 @@ const FORM: ComponentNode = {
 
 const CONTEXT: PdfLayoutConditionContext = { formRoot: FORM, locale: "en" };
 
-const QUEBEC: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "province" }, right: { kind: "literal", value: "QC" } };
-const LARGE: Expression = { kind: "path", path: "largePrint" };
+const QUEBEC = 'province = "QC"';
+const LARGE = "largePrint";
 
 function generated(id: string, name: string, when?: unknown): PdfGeneratedLayout {
   return {
@@ -87,11 +87,11 @@ function generated(id: string, name: string, when?: unknown): PdfGeneratedLayout
       configuration: {},
       children: { body: [{ id: "f", type: "pdf-field", configuration: { componentId: "province" } }], header: [], footer: [] }
     },
-    ...(when !== undefined ? { when: when as Expression } : {})
+    ...(when !== undefined ? { when: when as RuleSource } : {})
   };
 }
 
-function template(id: string, name: string, storage: string, when?: Expression): PdfTemplateLayout {
+function template(id: string, name: string, storage: string, when?: RuleSource): PdfTemplateLayout {
   return {
     id,
     kind: "template",
@@ -148,18 +148,8 @@ describe("advisory findings on the layouts' conditions", () => {
     const configuration: PdfConfiguration = {
       layouts: [
         // Reads host., an entry field and no component.
-        generated("quebec", "Quebec copy", {
-          kind: "logical",
-          operator: "and",
-          left: QUEBEC,
-          right: {
-            kind: "logical",
-            operator: "or",
-            left: { kind: "path", path: "host.role" },
-            right: { kind: "logical", operator: "or", left: { kind: "path", path: "applicantName" }, right: { kind: "path", path: "missing" } }
-          }
-        }),
-        generated("broken", "Broken", { kind: "binary", operator: "eq", left: { kind: "path", path: "province" } }),
+        generated("quebec", "Quebec copy", `${QUEBEC} and (host.role or (applicantName or missing))`),
+        generated("broken", "Broken", "province ="),
         template("paper", "Paper form", "url", LARGE),
         // The same condition as "Paper form" before it: never prints by its own condition. And the default.
         generated("standard", "Standard", LARGE)
@@ -203,7 +193,7 @@ describe("advisory findings on the layouts' conditions", () => {
 
     // A condition that always holds pre-empts every one after it.
     const always = pdfLayoutConditionFindings(CONTEXT, {
-      layouts: [generated("always", "Always", { kind: "literal", value: true }), generated("quebec", "Quebec copy", QUEBEC), generated("standard", "Standard")],
+      layouts: [generated("always", "Always", "true"), generated("quebec", "Quebec copy", QUEBEC), generated("standard", "Standard")],
       defaultLayoutId: "standard"
     });
     expect(always).toEqual([expect.objectContaining({ code: "pdf-layout.condition.shadowed", layoutId: "quebec", message: expect.stringContaining('after "Always", whose condition always holds') })]);
@@ -216,7 +206,7 @@ describe("advisory findings on the layouts' conditions", () => {
     expect(copied).toEqual([expect.objectContaining({ code: "pdf-layout.condition.shadowed", layoutId: "quebec-copy", message: expect.stringContaining("is the same") })]);
 
     // Counting the entries reads nothing: the section has no key, so len() of it is 0.
-    const many: Expression = { kind: "binary", operator: "gt", left: { kind: "call", name: "len", args: [{ kind: "path", path: "applicants" }] }, right: { kind: "literal", value: 1 } };
+    const many = "len(applicants) > 1";
     const counted = pdfLayoutConditionFindings(CONTEXT, { layouts: [generated("many", "Many", many), generated("standard", "Standard")], defaultLayoutId: "standard" });
     expect(counted).toEqual([
       expect.objectContaining({
@@ -227,7 +217,7 @@ describe("advisory findings on the layouts' conditions", () => {
       })
     ]);
     // One entry's answer by its instance path is a key of its own: nothing to say.
-    const first: Expression = { kind: "path", path: "applicants[0].applicantName" };
+    const first = "`applicants[0].applicantName`";
     expect(pdfLayoutConditionFindings(CONTEXT, { layouts: [generated("first", "First", first), generated("standard", "Standard")], defaultLayoutId: "standard" })).toEqual([]);
 
     // Inline template bytes, conditions over plain answers and a plain default: nothing to say.
@@ -242,16 +232,15 @@ describe("the conditions in words", () => {
   it("says a simple condition the way the Rules tab's editor reads it", () => {
     const labels = (path: string): string | undefined => ({ province: "Province", largePrint: "Large print" })[path];
     expect(conditionInWords(QUEBEC, labels)).toBe("Province equals “QC”");
-    expect(conditionInWords({ kind: "logical", operator: "or", left: QUEBEC, right: LARGE }, labels)).toBe("Province equals “QC” or Large print is checked / true");
-    expect(conditionInWords({ kind: "unary", operator: "not", operand: { kind: "path", path: "other" } }, labels)).toBe("other is unchecked / false");
-    // A shape the sentence cannot word is the printed formula with labels; a formula string reads as a tree does.
-    expect(conditionInWords({ kind: "call", name: "len", args: [{ kind: "path", path: "applicants" }] }, labels)).toBe("len(applicants)");
+    expect(conditionInWords(`${QUEBEC} or ${LARGE}`, labels)).toBe("Province equals “QC” or Large print is checked / true");
+    expect(conditionInWords("not(other)", labels)).toBe("other is unchecked / false");
+    // A shape the sentence cannot word is the printed formula with labels.
+    expect(conditionInWords("len(applicants)", labels)).toBe("len(applicants)");
     expect(conditionInWords('province = "QC" and len(applicants) > 1', labels)).toBe('len(applicants) > 1 and Province equals “QC”'.replace("len(applicants) > 1 and Province equals “QC”", 'Province = "QC" and len(applicants) > 1'));
     expect(conditionInWords('province = "QC"', labels)).toBe("Province equals “QC”");
     // One that does not parse, or cannot be evaluated, has no words.
     expect(conditionInWords("x +", labels)).toBeUndefined();
     expect(conditionInWords(7, labels)).toBeUndefined();
-    expect(conditionInWords({ kind: "binary", operator: "eq", left: QUEBEC }, labels)).toBeUndefined();
   });
 
   it("says the automatic order for the Form panel, else what prints with no condition", () => {
@@ -259,7 +248,7 @@ describe("the conditions in words", () => {
       layouts: [
         generated("standard", "Standard"),
         generated("quebec", "Quebec copy", QUEBEC),
-        generated("large", "Large print", { kind: "call", name: "len", args: [{ kind: "path", path: "applicants" }] }),
+        generated("large", "Large print", "len(applicants)"),
         // A string is a formula: one the parser rejects never holds.
         generated("broken", "Broken", "x +")
       ],
@@ -293,14 +282,14 @@ describe("the conditions in words", () => {
 describe("following a form rename, and a draft laid over the catalog", () => {
   it("rewrites every layout's when that names the old id, and nothing else", () => {
     const configuration: PdfConfiguration = {
-      layouts: [generated("quebec", "Quebec copy", QUEBEC), template("paper", "Paper", "base64", { kind: "path", path: "province.code" }), generated("large", "Large print", LARGE)],
+      layouts: [generated("quebec", "Quebec copy", QUEBEC), template("paper", "Paper", "base64", "province.code"), generated("large", "Large print", LARGE)],
       defaultLayoutId: "large"
     };
     const followed = renamePdfLayoutConditions(configuration, "province", "region");
     expect(followed.renamed).toEqual(["quebec", "paper", "large"]);
     const [quebec, paper, large] = followed.configuration.layouts!;
-    expect(quebec!.when).toEqual({ ...QUEBEC, left: { kind: "path", path: "region" } });
-    expect(paper!.when).toEqual({ kind: "path", path: "region.code" });
+    expect(quebec!.when).toBe('region = "QC"');
+    expect(paper!.when).toBe("region.code");
     // Bindings follow: the template fills from region now, and the generated layouts' fields bind it.
     expect((paper as PdfTemplateLayout).fields[0]!.source).toEqual({ kind: "component", componentId: "region" });
     expect((quebec as PdfGeneratedLayout).root.children!.body![0]!.configuration).toEqual({ componentId: "region" });
@@ -312,7 +301,6 @@ describe("following a form rename, and a draft laid over the catalog", () => {
   });
 
   it("follows a rename into an open layout's tree: the committed condition in one undo step, an unsaved one renamed rather than overwritten", () => {
-    const region = (path: string): Expression => ({ kind: "path", path });
     const controller = new BuilderController({
       initialRoot: { id: "document", type: PDF_DOCUMENT_COMPONENT_TYPE, configuration: { name: "Quebec copy", when: QUEBEC }, children: { body: [], header: [], footer: [] } }
     });
@@ -324,32 +312,32 @@ describe("following a form rename, and a draft laid over the catalog", () => {
 
     // No draft: the committed condition follows, as one step a later Undo takes back.
     expect(followRenameInLayoutTree(controller, "province", "region")).toBe(true);
-    expect(when()).toEqual({ ...QUEBEC, left: region("region") });
+    expect(when()).toBe('region = "QC"');
     controller.undo();
     expect(when()).toEqual(QUEBEC);
 
     // An unsaved condition of the Rules tab's own, beside another drafted edit: both conditions
     // follow, the draft keeps its own, and its other edit stays.
-    controller.setDraftProperty("document", "when", region("province.code"));
+    controller.setDraftProperty("document", "when", "province.code");
     controller.setDraftProperty("document", "name", "Quebec (draft)");
     expect(followRenameInLayoutTree(controller, "province", "region")).toBe(true);
-    expect(when()).toEqual({ ...QUEBEC, left: region("region") });
-    expect(controller.draftProperty("document", "when")).toEqual(region("region.code"));
+    expect(when()).toBe('region = "QC"');
+    expect(controller.draftProperty("document", "when")).toBe("region.code");
     expect(controller.draftProperty("document", "name")).toBe("Quebec (draft)");
     expect(controller.commitDraft("document")).toBe(true);
-    expect(when()).toEqual(region("region.code"));
+    expect(when()).toBe("region.code");
 
     // A draft that only renamed the layout: its condition is the committed one, renamed with it.
     controller.setDraftProperty("document", "name", "Renamed");
     expect(followRenameInLayoutTree(controller, "region", "area")).toBe(true);
-    expect(controller.draftProperty("document", "when")).toEqual(region("area.code"));
+    expect(controller.draftProperty("document", "when")).toBe("area.code");
     expect(controller.draftProperty("document", "name")).toBe("Renamed");
     controller.discardDraft("document");
 
     // An unsaved clearing of the condition stays cleared; the committed one still follows.
     controller.setDraftProperty("document", "when", undefined);
     expect(followRenameInLayoutTree(controller, "area", "zone")).toBe(true);
-    expect(when()).toEqual(region("zone.code"));
+    expect(when()).toBe("zone.code");
     expect(controller.draftProperty("document", "when")).toBeUndefined();
     expect(controller.hasPendingChanges("document")).toBe(true);
   });
@@ -369,7 +357,7 @@ describe("following a form rename, and a draft laid over the catalog", () => {
 describe("a layout's when as a formula", () => {
   const QC: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "province" }, right: { kind: "literal", value: "QC" } };
 
-  it("reads a string, the object form and a tree alike, and keeps what the author wrote when it cannot be read", () => {
+  it("reads a string, the object form and a compiled copy's tree alike, and keeps what the author wrote when it cannot be read", () => {
     expect(readPdfLayoutCondition({ when: 'province = "QC"' })).toEqual({ evaluable: true, expression: QC });
     expect(readPdfLayoutCondition({ when: { formula: 'province = "QC"', run: "both" } })).toEqual({ evaluable: true, expression: QC });
     expect(readPdfLayoutCondition({ when: { expression: QC } })).toEqual({ evaluable: true, expression: QC });
@@ -388,7 +376,7 @@ describe("a layout's when as a formula", () => {
       when,
       root: { id: "d", type: PDF_DOCUMENT_COMPONENT_TYPE, configuration: {}, children: { body: [] } }
     });
-    for (const when of ['province = "QC"', "not a formula (((", { formula: "x" }, { expression: QC, run: "server" }, undefined, 5]) {
+    for (const when of ['province = "QC"', "not a formula (((", { formula: "x" }, { formula: "x", run: "server" }, undefined, 5]) {
       expect(validatePdfLayout(layout(when))).toEqual([]);
     }
     const template = (expression: unknown): unknown => ({
@@ -398,7 +386,7 @@ describe("a layout's when as a formula", () => {
       fields: [{ pdfField: "Name", source: { kind: "expression", expression } }],
       areas: [{ id: "a", page: 1, rect: { x: 0, y: 0, width: 10, height: 10 }, source: { kind: "expression", expression } }]
     });
-    for (const expression of ["firstName", { formula: "firstName" }, QC, "firstName +"]) {
+    for (const expression of ["firstName", { formula: "firstName" }, "firstName +"]) {
       expect(validatePdfLayout(template(expression))).toEqual([]);
     }
   });
@@ -412,7 +400,6 @@ describe("a form rename followed into a template layout's expression sources", (
         { pdfField: "Province", source: { kind: "component", componentId: "province" } },
         { pdfField: "Code", source: { kind: "path", path: "province.code" } },
         { pdfField: "Upper", source: { kind: "expression", expression: "upper(province.code)" } },
-        { pdfField: "Tree", source: { kind: "expression", expression: { kind: "path", path: "province" } } },
         { pdfField: "Other", source: { kind: "expression", expression: "upper(notes)" } }
       ],
       areas: [
@@ -428,10 +415,9 @@ describe("a form rename followed into a template layout's expression sources", (
       { kind: "component", componentId: "region" },
       { kind: "path", path: "region.code" },
       { kind: "expression", expression: "upper(region.code)" },
-      { kind: "expression", expression: { kind: "path", path: "region" } },
       { kind: "expression", expression: "upper(notes)" }
     ]);
-    expect(renamed.fields[4]).toBe(paper.fields[4]);
+    expect(renamed.fields[3]).toBe(paper.fields[3]);
     expect(renamed.areas?.[0]?.source).toEqual({ kind: "expression", expression: { formula: 'region = "QC"', run: "server" } });
     expect(renamed.template).toBe(paper.template);
     // The generated layout's field binds the renamed component too.
@@ -440,7 +426,7 @@ describe("a form rename followed into a template layout's expression sources", (
 
   it("leaves a formula that does not parse as written and reports it", () => {
     const paper: PdfTemplateLayout = {
-      ...template("paper", "Paper", "base64", "province = " as unknown as Expression),
+      ...template("paper", "Paper", "base64", "province = "),
       fields: [{ pdfField: "Broken", source: { kind: "expression", expression: "upper(province" } }]
     };
     const followed = renamePdfLayoutConditions({ layouts: [paper] }, "province", "region");
@@ -457,16 +443,14 @@ describe("a form rename follows without substring traps", () => {
   const cfg: PdfConfiguration = {
     layouts: [
       generated("g1", "G1", 'name = "name" and username = "x" and a2 = 1 and a = 2'),
-      generated("g2", "G2", { kind: "binary", operator: "and", left: { kind: "path", path: "name" }, right: { kind: "path", path: "username" } })
+      generated("g2", "G2", "name and username")
     ]
   };
 
   it("renames only the exact path in a formula string, quoted strings untouched", () => {
     const out = renamePdfLayoutConditions(cfg, "name", "label2");
     expect((out.configuration.layouts![0] as PdfGeneratedLayout).when).toBe('label2 = "name" and username = "x" and a2 = 1 and a = 2');
-    const tree = (out.configuration.layouts![1] as PdfGeneratedLayout).when as unknown as { left: { path: string }; right: { path: string } };
-    expect(tree.left.path).toBe("label2");
-    expect(tree.right.path).toBe("username");
+    expect((out.configuration.layouts![1] as PdfGeneratedLayout).when).toBe("label2 and username");
   });
 
   it("renaming a leaves a2 and a quoted a alone", () => {

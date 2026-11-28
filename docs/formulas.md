@@ -658,7 +658,7 @@ is not a valid pattern is not flagged (its own compile refuses it).
 
 | Where | What happens to a risky pattern |
 |---|---|
-| A literal pattern in `matches(text, "...")` | The formula is refused at compile with the problem code `pattern.risky` (`params.pattern`, span on the word `matches`), judged by `formulaErrors` exactly like a formula that does not parse: refused under `fail`, the rule dropped and a warning logged under `warn`. Browser, sandbox and PDF program share the check. A rule written as a tree rather than text is not looked at by a form's or a journey's compile (a PDF's is: a tree-written layout `when`, mapping or area expression, and a layout block's expression and rules are reported too), and a pattern read from a field (`matches(a, b)`) is not a literal and is not looked at at compile. Every PDF expression runs under a cache that refuses a risky pattern at the call, whatever wrote it. |
+| A literal pattern in `matches(text, "...")` | The formula is refused at compile with the problem code `pattern.risky` (`params.pattern`, span on the word `matches`), judged by `formulaErrors` exactly like a formula that does not parse: refused under `fail`, the rule dropped and a warning logged under `warn`. Browser, sandbox and PDF program share the check. A layout's own tree is looked at too (a layout block's expression and rules), and a pattern read from a field (`matches(a, b)`) is not a literal and is not looked at at compile. Every PDF expression runs under a cache that refuses a risky pattern at the call, whatever wrote it. |
 | A pattern built at run time (`matches(t, concat(...))`, a pattern read from a field) | The sandbox's kernel checks the pattern when `matches` is called: one of the shapes above gives no result and one warning (`matches: the pattern repeats a repeat and can take very long`), unless the host allows risky patterns. The browser leaves it to its own time. |
 | A field's `configuration.pattern` | A definition problem like a pattern that does not compile: the browser's stage and the sandbox skip it; the sandbox logs `pattern is risky` and, under `formulaErrors: "fail"`, refuses a non-empty answer (`pattern`, `parameters.invalid: true` and `parameters.risky: true`). |
 | The builder | The formula editor underlines the pattern with the same message; the inspector's Pattern box shows the problem under it. Neither blocks Save. |
@@ -784,7 +784,7 @@ sentence rather than code.
 - **Chips.** A field reference is a chip: the label is shown and the id is stored, so a rename or a
   reworded label never changes what a rule means. Backspace removes a chip whole. A name the form
   does not store is not a chip but a mark, so a misspelt field can be corrected a letter at a time,
-  with a "Did you mean ...?" fix. A tree-stored rule opens printed as a formula with ids.
+  with a "Did you mean ...?" fix.
 - **Layout.** A calculation is multiline: each `then` and `else` case on its own indented line,
   Enter after `then` or `else` starting the next. A condition is one line and Enter commits.
 - **Helpers.** Under the box: `+ Field` (the form's data-holding fields in document order, with
@@ -816,8 +816,7 @@ sentence rather than code.
   plugin functions are evaluated there too.
 - **Apply.** The text is written as a bare string, or `{ formula, run }` when the scope is not
   `both` (a browser-only key is always a bare string). A rule key is written only when its text or
-  run changed or the rule is new, so an untouched rule stays byte for byte as it was and a tree
-  rule stays a tree. The inspector's Logic tab shows each rule as an Off / Formula switch with a
+  run changed or the rule is new, so an untouched rule stays byte for byte as it was. The inspector's Logic tab shows each rule as an Off / Formula switch with a
   compact box, and "Open in Logic" for the form's own rules.
 - **Renaming a field** rewrites every rule that reads the old id (components, a journey route's
   `when`, worked-out values, and a PDF layout's `when` and field or area expressions) in one undo
@@ -923,35 +922,27 @@ the same bytes, only slower.
 
 ## What is stored
 
-A rule may be stored in any of three shapes, and a runtime reads all three:
+A rule is stored in one of two shapes:
 
 ```jsonc
 // 1. A formula string (what the builder writes)
 "visibleWhen": "country = \"CA\" and age(dateOfBirth) >= 18"
 
-// 2. The expression tree
-"visibleWhen": { "kind": "binary", "operator": "eq",
-                 "left": { "kind": "path", "path": "country" },
-                 "right": { "kind": "literal", "value": "CA" } }
-
-// 3. The object form, when the rule needs a run scope
+// 2. The object form, when the rule needs a run scope
 "visibleWhen": { "formula": "country = \"CA\"", "run": "server" }
-"visibleWhen": { "expression": { "kind": "path", "path": "wantsPaper" }, "run": "browser" }
 ```
 
-A tree written as JSON is capped at 200 JSON levels (every record and list counts, the left side of a chain included); a deeper one is refused. A formula written as text is never cut by that cap: the tree it compiles to is only checked for shape.
-
 Before anything reads a rule, each runtime compiles the definition into a copy in which every
-string is a tree, and reads the copy. **The author's object is never changed**: a host that
-hashes the stored JSON keeps the same hash, and the submissions validator passes its catalog's
-definition straight to the kernel. The builder opens a tree-stored rule by printing it back as a
-formula, and writes a formula only when you Apply a change; a rule you did not touch stays
-byte for byte as it was. Printing and parsing are inverses: the formula you see reads back as the
-same tree.
+formula is the expression tree the engine evaluates, and reads the copy. **The author's object is
+never changed**: a host that hashes the stored JSON keeps the same hash, and the submissions
+validator passes its catalog's definition straight to the kernel. The builder writes a formula
+only when you Apply a change; a rule you did not touch stays byte for byte as it was.
 
-A rule value that is none of the three (a number, `{}`, `{ "run": "server" }` with neither
-formula nor expression) is reported as `invalidRule`. Under `rules` the key is dropped; at a
-`when` or a source the value stays as written for the shape checks to refuse. `null` is no rule,
+A rule value that is neither shape is reported as `invalidRule`: a number, `{}`,
+`{ "run": "server" }` with no formula, and an expression tree written as JSON (bare, or as an
+object form's `expression`; `params.got` is `"tree"`), which is the compiled copy's shape, never
+an author's. Under `rules` the key is dropped. At a `when` or a source a tree is dropped as well,
+and any other value stays as written for the shape checks to refuse. `null` is no rule,
 and a blank formula text is no expression and no problem. Only the eleven `ComponentRules` keys compile (the nine in [Where a formula is used](#where-a-formula-is-used) and a data grid's `minRows` / `maxRows`); any other key under `rules` is copied as written.
 
 **Where a problem is reported.** The compile lists its problems in document order. Each has a
@@ -1019,4 +1010,4 @@ catalog, with the span underlined.
 
 Two more problem codes come from the definition compile rather than the parser: `runScope` (a
 `run` the place may not take; the rule runs on both sides) and `invalidRule` (a value that is
-neither text, tree nor the object form).
+neither text nor the object form, an expression tree among them).

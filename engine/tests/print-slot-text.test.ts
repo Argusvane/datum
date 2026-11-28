@@ -41,9 +41,8 @@ describe("resolvePrintSlot", () => {
     expect(resolvePrintSlot("Printed {{ date }}", scope())).toEqual([{ text: "Printed March 15, 2026" }]);
   });
 
-  it("leaves the page counters to the printer, under either spelling", () => {
+  it("leaves the page counters to the printer", () => {
     expect(resolvePrintSlot("Page {{page}} of {{pages}}", scope())).toEqual([{ text: "Page " }, { counter: "page" }, { text: " of " }, { counter: "pages" }]);
-    expect(resolvePrintSlot("{{pageNumber}}/{{pageCount}}", scope())).toEqual([{ counter: "page" }, { text: "/" }, { counter: "pages" }]);
     // A counter alone prints, whatever else is empty.
     expect(resolvePrintSlot("{{receipt.missing}}{{page}}", scope())).toEqual([{ counter: "page" }]);
   });

@@ -15,7 +15,8 @@
 import { collectionPathOf } from "../../core/tree/data-scope.js";
 import type { RenderComponentModel } from "../../render/core/component-model.js";
 import type { FormRuntime } from "../../runtime/browser/form-runtime.js";
-import { isNestedCollection, kindOf, unfillableStaticKind, writabilityOfState, type FieldKind, type UnfillableKind, type WhyNotWritable, type WritabilityPlace } from "../answers/index.js";
+import type { FieldKind } from "../../registry/kinds.js";
+import { isNestedCollection, kindOf, unfillableStaticKind, writabilityOfState, type UnfillableKind, type WhyNotWritable, type WritabilityPlace } from "../answers/index.js";
 import type { Refusal } from "./coerce.js";
 import type { RenderMemo } from "./describe.js";
 

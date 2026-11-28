@@ -21,7 +21,7 @@ const pause = (ms: number): Promise<void> => new Promise((resolve) => setTimeout
 
 async function mount(definition: FormDefinition = sampleDefinition(), setup?: (element: DatumFormBuilderElement) => void): Promise<DatumFormBuilderElement> {
   const element = document.createElement("datum-form-builder");
-  element.setAttribute("pdf", "off");
+  element.setAttribute("features", "-pdf");
   element.definition = definition;
   setup?.(element);
   document.body.append(element);

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "../src/form.js";
 import type { DatumFormElement, JourneyValidationRequest } from "../src/form.js";
-import type { Expression, FormDefinition, Journey } from "@argusvane/datum-engine";
+import type { FormDefinition, Journey } from "@argusvane/datum-engine";
 
 import { journeyTitleOf, until } from "./helpers.js";
 
@@ -24,12 +24,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const eq = (name: string, value: string): Expression => ({
-  kind: "binary",
-  operator: "eq",
-  left: { kind: "path", path: name },
-  right: { kind: "literal", value }
-});
+const eq = (name: string, value: string): string => `${name} = "${value}"`;
 
 function checkedJourney(): Journey {
   return {

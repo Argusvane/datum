@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { submissionEnvelopeOf, type CanonicalSubmission, type ComponentNode, type Expression, type FormDefinition } from "@argusvane/datum-engine";
+import { submissionEnvelopeOf, type CanonicalSubmission, type ComponentNode, type FormDefinition } from "@argusvane/datum-engine";
 
 import {
   InMemorySubmissionStore,
@@ -18,12 +18,7 @@ import {
  * hidden and excluded — which nothing validated; it must not be printed, exported or counted.
  */
 
-const eq = (path: string, value: string | boolean): Expression => ({
-  kind: "binary",
-  operator: "eq",
-  left: { kind: "path", path },
-  right: { kind: "literal", value }
-});
+const eq = (path: string, value: string | boolean): string => `${path} = ${JSON.stringify(value)}`;
 
 const BUSINESS_NAME: ComponentNode = { id: "business_name", type: "text", configuration: { required: true, maxLength: 5, pattern: "[a-z]+" } };
 
@@ -56,7 +51,7 @@ const JOURNEY_FORM = formWith([
   { id: "employed", type: "checkbox", configuration: {} },
   BUSINESS_NAME,
   { id: "employer", type: "text", configuration: { required: true } },
-  { id: "age", type: "number", configuration: {}, rules: { value: { kind: "arithmetic", operator: "subtract", left: { kind: "literal", value: 2026 }, right: { kind: "path", path: "born" } } } },
+  { id: "age", type: "number", configuration: {}, rules: { value: "2026 - born" } },
   { id: "born", type: "number", configuration: {} }
 ]);
 
@@ -177,20 +172,20 @@ describe("SubmissionService: the values a record stands for", () => {
     expect(kept.rendered[0]?.values).toEqual({ employed: true, nickname: "ace" });
   });
 
-  it("reads a record written before the judged values were kept from its document", () => {
-    const older: SubmissionRecord = {
-      id: "old",
+  it("reads a record refused before anything was judged (journey.unknown) from its document", () => {
+    const unjudged: SubmissionRecord = {
+      id: "unjudged",
       formId: "apply-form",
       formVersion: "1",
       receivedAt: "2026-09-01T00:00:00.000Z",
-      status: "accepted",
+      status: "rejected",
       document: envelopeOf(JOURNEY_FORM, { employed: true, employer: "ACME" }),
       digest: "d",
-      submissionKey: "k-old",
+      submissionKey: "k-unjudged",
       locale: "en",
       source: "api",
-      errors: []
+      errors: [{ code: "journey.unknown", stage: "journey", source: "server", parameters: { journey: "elsewhere" } }]
     };
-    expect(recordValuesOf(older)).toEqual({ employed: true, employer: "ACME" });
+    expect(recordValuesOf(unjudged)).toEqual({ employed: true, employer: "ACME" });
   });
 });

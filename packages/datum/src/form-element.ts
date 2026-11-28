@@ -117,16 +117,16 @@ import { loadJourneyReview } from "./journey-review-loader.js";
 import { createFetchJourneyValidator, loadServerValidator } from "./server-validator-loader.js";
 import { createUrlDraftStore, parseDraftStoreSpec, type DraftStoreSpec } from "./draft-store-url.js";
 import { adoptPreUpgradeProperties } from "./pre-upgrade.js";
-import { plainHostContext } from "./host-context.js";
 import {
   AGENT_ACCESS_VALUES,
   DEFAULT_AGENT_ACCESS,
   FORM_FEATURE_PRESETS,
   parseFormFeatures,
+  plainHostContext,
   type AgentAccess,
   type FormFeature,
   type FormFeaturesInput
-} from "./form-features.js";
+} from "@argusvane/datum-engine";
 // The agent tools: a lazy chunk the opt-in `agent` token asks for; the entry holds only the loader and types.
 import { loadAgent } from "./agent-loader.js";
 import type { AgentMarks, FormAgentAttachment } from "./agent.js";
@@ -3082,7 +3082,7 @@ export class DatumFormElement extends ElementBase {
   private confirmationWord(key: "confirmationTitle" | "confirmationMessage" | "confirmationReference"): LocalizedText {
     const runtime = this.runtimeValue;
     const words = runtime !== undefined ? { translations: runtime.translations(), catalog: runtime.translationCatalog() } : undefined;
-    const at = (locale: string): string => resolveFormText(this.textsValue, key, locale, undefined, undefined, undefined, words);
+    const at = (locale: string): string => resolveFormText(this.textsValue, key, locale, undefined, undefined, words);
     const tags = new Set<string>([...Object.keys(words?.translations ?? {}), ...Object.keys(words?.catalog ?? {})]);
     const page = this.textsValue?.[key];
     if (page !== undefined && typeof page === "object") {
@@ -3223,7 +3223,7 @@ export class DatumFormElement extends ElementBase {
 
   /** Back: the page before this one on the path as the answers stand now. Nothing is checked. */
   public previousPage(): Promise<JourneyNavigationResult> {
-    // Not `async`: with no runtime `requireRuntime()` throws synchronously, as it always did.
+    // Not `async`: with no runtime `requireRuntime()` throws synchronously.
     if (!this.allows("journeys")) {
       return Promise.reject(this.leftOut("journeys", "previousPage()"));
     }
@@ -3624,7 +3624,7 @@ export class DatumFormElement extends ElementBase {
 
   /** The alert the form's PDF button leaves when the PDF module is missing: `data-form-error` with `data-pdf-error`, worded by the form's `pdfUnavailable` text. */
   private showPdfUnavailable(): void {
-    const message = resolveFormText(this.textsValue, "pdfUnavailable", this.localeValue ?? "en", this.runtimeValue?.translationCatalog());
+    const message = resolveFormText(this.textsValue, "pdfUnavailable", this.localeValue ?? "en", undefined, undefined, { catalog: this.runtimeValue?.translationCatalog() });
     this.showFormError(new Error(message)).setAttribute("data-pdf-error", "");
   }
 
@@ -3901,7 +3901,7 @@ export class DatumFormElement extends ElementBase {
 
   /** A text the element words itself when the form has no runtime: the page's `texts` in the page's locale, else the engine's English (`DEFAULT_FORM_TEXTS`). */
   private ownText(key: "definitionUnavailable" | "journeysUnavailable" | "retry"): string {
-    return resolveFormText(this.textsValue, key, this.localeValue ?? "en", this.allows("translations") ? this.translationsValue : undefined);
+    return resolveFormText(this.textsValue, key, this.localeValue ?? "en", undefined, undefined, { catalog: this.allows("translations") ? this.translationsValue : undefined });
   }
 
   /**

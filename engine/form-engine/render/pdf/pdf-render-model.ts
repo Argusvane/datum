@@ -134,9 +134,9 @@ import {
 import { evaluateTemplateExpression, pdfRegexCache, renderTemplateText, templateSegmentsToRuns } from "./template-text.js";
 
 export interface PdfRenderModelOptions {
-  /** The layout to render. Wins over `pdf` + `layoutId`, and no condition is tried. */
+  /** The layout to render, as authored. Wins over `pdf` + `layoutId`, and no condition is tried. */
   layout?: PdfLayoutDocument | undefined;
-  /** The definition's `pdf` block, for finding a layout by id, by its condition, or as the default. */
+  /** The definition's `pdf` block, compiled (a runtime's, the program's), for finding a layout by id, by its condition, or as the default. */
   pdf?: PdfConfiguration | undefined;
   /** An explicit choice from `pdf`: it wins over every layout's `when`. */
   layoutId?: string | undefined;
@@ -225,7 +225,9 @@ function problemMessage(problem: FormulaProblem): string {
  * author's objects are never changed. The policy then applies: `fail` (the default, over
  * the form's `configuration.formulaErrors`) throws `PdfKernelError` with the `formula_invalid`
  * code; `warn`, the explicit opt-in, reports `formula.invalid` once per problem. A rule the parser
- * rejected is absent from the copies under every policy.
+ * rejected, or one written as a tree, is absent from the copies under every policy. With
+ * `recompile` the form tree and the `pdf` block are a compiled copy already (a runtime's, the
+ * program's), whose trees pass through; the layout handed over is always read as authored.
  */
 export function compilePdfDefinition(
   root: ComponentNode,
@@ -238,6 +240,8 @@ export function compilePdfDefinition(
     riskyPatterns?: "refuse" | "allow" | undefined;
     /** The definition's `kinds` map: a component of a type it names is read as its base engine type. */
     kinds?: Readonly<Record<string, string>> | undefined;
+    /** The form tree and the `pdf` block are a compiled copy: a tree in them is a compiled rule, not an authored one. */
+    recompile?: boolean | undefined;
   } = {}
 ): CompiledPdfDefinition {
   const signatures = pdfFormulaSignatures(options.functions ? Object.keys(options.functions) : undefined);
@@ -249,7 +253,7 @@ export function compilePdfDefinition(
   // here on: every rendition, value format and unknown-component check below switches on types,
   // and prints a `gcds-date` as the date it is. A tree the map renames nothing in is kept as is.
   root = withBaseTypes(root, options.kinds);
-  const compiled = kernelCompileDefinition(root, undefined, pdf, kernelParseFormula, signatures, options.riskyPatterns);
+  const compiled = kernelCompileDefinition(root, undefined, pdf, kernelParseFormula, signatures, options.riskyPatterns, options.recompile === true);
   const problems = [...compiled.problems];
   let compiledLayout = layout;
   if (layout) {
@@ -1597,20 +1601,22 @@ function printedAnswers(root: ComponentNode, values: Record<string, unknown>): R
 }
 
 export async function buildPdfRenderModel(
-  authored: ComponentNode,
+  given: ComponentNode,
   held: FormState,
   resolver: DataSourceResolver,
   modelContext: Omit<RenderModelContext, "readOnlyByMode"> = {},
   options: PdfRenderModelOptions = {}
 ): Promise<PdfRenderModel> {
   // Formulas first: every rule the layouts and the tree carry as a string becomes a
-  // tree in a copy, under the policy; the author's objects stay as they were. A tree compiled
-  // already (a runtime's, the program's after its own compile) passes through unchanged.
-  const compiled = compilePdfDefinition(authored, options.pdf, options.layout, {
+  // tree in a copy, under the policy; the author's objects stay as they were. The tree and the
+  // `pdf` block come compiled already (a runtime's, the program's after its own compile), and
+  // their trees pass through unchanged; a layout handed over is the author's.
+  const compiled = compilePdfDefinition(given, options.pdf, options.layout, {
     formulaErrors: options.formulaErrors,
     functions: options.functions,
     riskyPatterns: options.riskyPatterns,
-    kinds: options.kinds
+    kinds: options.kinds,
+    recompile: true
   });
   const root = compiled.root;
   // What prints reads the answers as the envelope carries them: a

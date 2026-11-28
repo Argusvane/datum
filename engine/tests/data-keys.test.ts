@@ -324,13 +324,13 @@ describe("data keys: the runtime", () => {
               id: "billing_note",
               type: "text",
               configuration: { dataKey: "note", hiddenValueBehavior: "exclude-from-submission" },
-              rules: { visibleWhen: { kind: "binary", operator: "eq", left: { kind: "path", path: "billing_street" }, right: { kind: "literal", value: "Main" } } }
+              rules: { visibleWhen: 'billing_street = "Main"' }
             },
             {
               id: "billing_copy",
               type: "text",
               configuration: { dataKey: "copy" },
-              rules: { value: { kind: "path", path: "billing_street" } }
+              rules: { value: "billing_street" }
             }
           ]
         }

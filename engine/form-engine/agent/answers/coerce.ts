@@ -11,7 +11,8 @@
 import { kernelIsDateAnswer } from "../../core/schema/answer-kinds.js";
 import type { RenderComponentModel } from "../../render/core/component-model.js";
 import { readTypedNumber } from "../../render/web-component/typed-answers.js";
-import type { FieldColumn, FieldKind } from "./kinds.js";
+import type { FieldKind } from "../../registry/kinds.js";
+import type { FieldColumn } from "./kinds.js";
 import { matchOption } from "./match.js";
 import { invalidValueProblem, type AnswerProblem, type AnswerResult } from "./problems.js";
 

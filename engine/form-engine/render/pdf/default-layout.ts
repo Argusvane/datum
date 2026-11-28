@@ -30,7 +30,7 @@ import {
   type PdfGeneratedLayout
 } from "../../core/schema/pdf-layout.js";
 import { STEP_COMPONENT_TYPE, STEPS_COMPONENT_TYPE } from "../../core/schema/steps.js";
-import { LAYOUT_CONTAINER_TYPES } from "../core/component-model.js";
+import { LAYOUT_CONTAINER_TYPES } from "../../registry/engine-component-types.js";
 import { readLegendMark } from "../../core/schema/legend-mark.js";
 import { TABS_COMPONENT_TYPE, configuredSlotIds, readTabDescriptors } from "../core/tab-slots.js";
 import { createFormTextResolver } from "../../core/localization/form-texts.js";
@@ -122,7 +122,7 @@ export function deriveDefaultPdfLayout(authored: ComponentNode, options: Default
     return locale === undefined ? authored : resolveText(authored, address, locale, sources);
   };
   // The engine's own wording (an untitled tab's "Tab 2"), in the language asked for.
-  const engineText = createFormTextResolver(locale ?? "en", undefined, options.translationCatalog, undefined, { translations: options.translations });
+  const engineText = createFormTextResolver(locale ?? "en", undefined, undefined, { translations: options.translations, catalog: options.translationCatalog });
   // A tree handed over raw (a builder's, before its controller read it) may hold a grid with no
   // collection binding; it is bound at its id, so the grid binds below as any
   // collection does. The same tree when it holds none.

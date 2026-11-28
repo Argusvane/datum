@@ -410,9 +410,12 @@ describe("form runtime", () => {
       locale: "fr-CA",
       values: { firstName: "Ada" },
       state: {
+        mode: "wizard",
         currentStep: "step1",
         touched: ["firstName"],
-        dirty: ["firstName"]
+        dirty: ["firstName"],
+        visitedSteps: ["step1"],
+        completedSteps: []
       },
       updatedAt: 1
     });
@@ -1160,7 +1163,7 @@ describe("form runtime", () => {
 
 describe("form runtime: a hidden answer that is still submitted keeps its shape", () => {
   const byEmail: NonNullable<ComponentNode["rules"]> = {
-    visibleWhen: { kind: "binary", operator: "eq", left: { kind: "path", path: "by_email" }, right: { kind: "literal", value: true } }
+    visibleWhen: "by_email = true"
   };
 
   function shapes(hiddenValueBehavior?: string): FormDefinition {
@@ -1288,7 +1291,7 @@ describe("form runtime: component ids named like Object.prototype members", () =
         id: "constructor",
         type: "text",
         configuration: { required: true },
-        rules: { visibleWhen: { kind: "unary", operator: "not", operand: { kind: "path", path: "component" } } }
+        rules: { visibleWhen: "not(component)" }
       }
     ]);
     expect(ruled.effectiveState("constructor")?.visible).toBe(true);
@@ -1297,7 +1300,7 @@ describe("form runtime: component ids named like Object.prototype members", () =
 
   it("applies a default to such a field, which never held an inherited value", () => {
     const runtime = runtimeFor([
-      { id: "valueOf", type: "text", configuration: {}, rules: { defaultValue: { kind: "literal", value: "seeded" } } }
+      { id: "valueOf", type: "text", configuration: {}, rules: { defaultValue: '"seeded"' } }
     ]);
     const values = runtime.state().values;
     expect(Object.prototype.hasOwnProperty.call(values, "valueOf")).toBe(true);
@@ -1684,21 +1687,27 @@ describe("form runtime: formulas, the policy, the day and the run scopes", () =>
     }
   });
 
-  it("evaluates a string rule exactly as its tree, and defaults the policy to fail", () => {
+  it("evaluates a string rule through its compiled tree, refuses a rule written as a tree, and defaults the policy to fail", () => {
     const tree: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "name" }, right: { kind: "literal", value: "Ada" } };
-    const asTrees = build(definition({ name: undefined, greeting: { visibleWhen: tree, value: { kind: "call", name: "concat", args: [{ kind: "literal", value: "Hi " }, { kind: "path", path: "name" }] } } }));
     const asText = build(definition({ name: undefined, greeting: { visibleWhen: 'name = "Ada"', value: 'concat("Hi ", name)' } }));
-    for (const runtime of [asTrees, asText]) {
-      expect(runtime.formulaErrorPolicy()).toBe("fail");
-      expect(runtime.formulaProblems()).toEqual([]);
-      expect(runtime.effectiveState("greeting")?.visible).toBe(false);
-      runtime.setValue("name", "Ada");
-      expect(runtime.effectiveState("greeting")?.visible).toBe(true);
-      expect(runtime.state().values.greeting).toBe("Hi Ada");
-    }
-    // The compiled root the runtime reads holds the same trees either way; the author's definition is handed back as given.
-    expect(asText.formRoot().children?.content?.[1]?.rules).toEqual(asTrees.formRoot().children?.content?.[1]?.rules);
+    expect(asText.formulaErrorPolicy()).toBe("fail");
+    expect(asText.formulaProblems()).toEqual([]);
+    expect(asText.effectiveState("greeting")?.visible).toBe(false);
+    asText.setValue("name", "Ada");
+    expect(asText.effectiveState("greeting")?.visible).toBe(true);
+    expect(asText.state().values.greeting).toBe("Hi Ada");
+    // The compiled root the runtime reads holds the trees; the author's definition is handed back as given.
+    expect(asText.formRoot().children?.content?.[1]?.rules).toEqual({
+      visibleWhen: tree,
+      value: { kind: "call", name: "concat", args: [{ kind: "literal", value: "Hi " }, { kind: "path", path: "name" }] }
+    });
     expect(asText.definition().root.children?.content?.[1]?.rules).toEqual({ visibleWhen: 'name = "Ada"', value: 'concat("Hi ", name)' });
+    // A tree is no authored rule: the default policy refuses it, the warn opt-in reports it and drops it.
+    const asTree = definition({ name: undefined, greeting: { visibleWhen: tree as never } });
+    expect(() => build(asTree)).toThrow(FormulaError);
+    expect(build(asTree, { formulaErrors: "warn" }).formulaProblems()).toEqual([
+      expect.objectContaining({ where: "rules:greeting:visibleWhen", code: "invalidRule", params: { key: "visibleWhen", got: "tree" } })
+    ]);
   });
 
   it("leaves the author's definition byte-identical through construction and submit, hands that very object back from definition(), and reads a compiled copy of its own", async () => {

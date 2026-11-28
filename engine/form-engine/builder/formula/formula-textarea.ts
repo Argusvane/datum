@@ -287,7 +287,7 @@ export function mountFormulaTextarea(parent: HTMLElement, options: FormulaEditor
     const invalid = current.problems.some((problem) => problem.kind === "parse");
     if (invalid) {
       textarea.setAttribute("aria-invalid", "true");
-      textarea.style.borderColor = "var(--db-danger-line, var(--db-danger))";
+      textarea.style.borderColor = "var(--db-danger-line)";
     } else {
       textarea.removeAttribute("aria-invalid");
       textarea.style.borderColor = "";

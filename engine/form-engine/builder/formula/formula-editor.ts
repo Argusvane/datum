@@ -611,9 +611,9 @@ function baseLook(): Extension {
     ".cm-tooltip": {
       backgroundColor: "var(--db-surface)",
       color: "var(--db-ink)",
-      border: "var(--db-border-w, 1px) solid var(--db-line-card, var(--db-line-input))"
+      border: "var(--db-border-w, 1px) solid var(--db-line-card)"
     },
-    "&.cm-focused": { outline: "2px solid var(--db-focus, var(--db-accent))", outlineOffset: "1px" }
+    "&.cm-focused": { outline: "2px solid var(--db-focus)", outlineOffset: "1px" }
   });
   return look;
 }

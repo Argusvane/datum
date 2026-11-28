@@ -465,10 +465,10 @@ const SCHEME_LOOK_TOKENS: readonly string[] = ["--db-surface", "--db-ink", "--db
  * PDF layouts, the PDF side being the same builder over a layout tree, with its own Layouts
  * and template-mode dialogs. The PDF executor — the kernel that previews, test-fills and
  * inspects — is fetched on the first use, as a chunk of this bundle, so nothing needs
- * configuring; `pdf="off"` hides the PDF side for a page that never wants it. The form's
+ * configuring; `features="-pdf"` leaves the PDF side out for a page that never wants it. The form's
  * journeys are a side of their own: a Journeys entry per journey in the
  * documents dropdown, each edited as pages of the form's questions with routes between them,
- * its designer a chunk of this bundle loaded when the side is first opened; `journeys="off"`
+ * its designer a chunk of this bundle loaded when the side is first opened; `features="-journeys"`
  * leaves it out, the definition's journeys passing through as they are.
  *
  * ```html
@@ -518,7 +518,6 @@ export class DatumFormBuilderElement extends ElementBase {
       "component-types",
       "pdf",
       "pdf-pages",
-      "journeys",
       "values",
       "translations",
       "mode",
@@ -620,12 +619,11 @@ export class DatumFormBuilderElement extends ElementBase {
   private valuesValue: Record<string, unknown> = {};
   private translationsValue: TranslationCatalog | undefined;
   private pdfModeValue: PdfBuilderMode | undefined;
-  private journeysValue: string | undefined;
   private journeyModeValue: JourneyBuilderMode | undefined;
   /**
    * The PDF and Journeys modes are chunks, fetched only for a side that is on and a
    * workspace that is shown. Each apply bumps its token, so a load that resolves after
-   * `pdf="off"` / `journeys="off"`, a hidden workspace or a later apply registers nothing; the
+   * the `features` list drops the side, a hidden workspace or a later apply registers nothing; the
    * flag says a load is in flight, for a switch to that side asked for meanwhile.
    */
   private pdfModeToken = 0;
@@ -1109,9 +1107,6 @@ export class DatumFormBuilderElement extends ElementBase {
           break;
         case "pdf-pages":
           this.pdfPages = value ?? undefined;
-          break;
-        case "journeys":
-          this.journeys = value ?? undefined;
           break;
         case "values":
           this.values = value === null ? {} : parseJsonAttribute("values", value);
@@ -1788,9 +1783,9 @@ export class DatumFormBuilderElement extends ElementBase {
   // --- the PDF side ---------------------------------------------------------
 
   /**
-   * The PDF side. Absent (or `"auto"`): on, with the executor fetched as a chunk of this bundle
-   * on the first preview, test fill or inspection. `"off"`: no PDF mode at all. A URL: on, with
-   * the executor loaded from that module instead (see `<datum-form pdf>`).
+   * How the PDF side's executor arrives. Absent (or `"auto"`): fetched as a chunk of this bundle
+   * on the first preview, test fill or inspection. A URL: loaded from that module instead (see
+   * `<datum-form pdf>`). Whether the side exists at all is the `features` list's (`-pdf`).
    */
   public get pdf(): string | undefined {
     return this.pdfValue;
@@ -1985,22 +1980,6 @@ export class DatumFormBuilderElement extends ElementBase {
 
   // --- the journeys ---------------------------------------------
 
-  /**
-   * The Journeys side. Absent (or `"auto"`): on — each of the definition's journeys a document
-   * in the dropdown under "Journeys", the `+` making one from the form, and the Form panel an
-   * "Opens as" row while the form has one; its designer is a chunk of this bundle, loaded when
-   * the side is first opened. `"off"`: no Journeys side; the definition's journeys, with any
-   * edits made while it was on, pass through as they are.
-   */
-  public get journeys(): string | undefined {
-    return this.journeysValue;
-  }
-
-  public set journeys(value: string | undefined) {
-    this.journeysValue = value;
-    this.request("journeys");
-  }
-
   /** The Journeys mode, once the side is set up: its catalog API (`journeys`, `newJourney`, `selectJourney`, `setOpensAs`, …). */
   public get journeyMode(): JourneyBuilderMode | undefined {
     return this.journeyModeValue;
@@ -2044,7 +2023,7 @@ export class DatumFormBuilderElement extends ElementBase {
    * Switches workspaces now; returns whether the switch started (a held unsaved-edits prompt means
    * not yet). Journeys or PDF asked for while that mode's chunk is still coming is
    * entered once the mode registers, and counts as started; a side that is off or hidden is
-   * refused, as before.
+   * refused.
    */
   public setWorkspace(id: BuilderWorkspace): boolean {
     this.workspaceValue = id;
@@ -2136,7 +2115,7 @@ export class DatumFormBuilderElement extends ElementBase {
   /**
    * The only workspaces the bar offers (`workspaces`), as a list of `form`, `logic`, `data`,
    * `languages`, `journeys`, `pdf` and `print`; `undefined` without the attribute, where every
-   * workspace is offered. `hidden-workspaces`, `pdf="off"`, `journeys="off"` and `features` still
+   * workspace is offered. `hidden-workspaces` and `features` still
    * take away from it. A list with neither the form nor a workspace over it (Logic, Data,
    * Languages, Print) is a designer alone: `workspaces="pdf"` is the PDF layouts and nothing
    * else, `workspaces="journeys"` the journeys. The builder opens on the first one listed, the
@@ -2244,10 +2223,9 @@ export class DatumFormBuilderElement extends ElementBase {
    * `journeys`, `pdf`, `variables`, `header-footer`, `data-model`, `palette`, `try-it`, `json`,
    * `binding-picker`, `advanced-fields` — besides the Form workspace with its canvas, inspector and
    * component palette; `all` names every part and `minimal` none (`minimal logic` is the form plus
-   * Logic). The list is the master: `pdf="off"`, `journeys="off"`, `hidden-workspaces`,
-   * `hidden-panels`, `component-types` and `file-actions` can only take more away, and a
-   * `pdf` or `journeys` that asks for a side the list leaves out is ignored with one console
-   * warning, as is a `workspace` for one. A part left out fetches none of its chunks. Assigning a
+   * Logic). The list is the master: `hidden-workspaces`, `hidden-panels`, `component-types` and
+   * `file-actions` can only take more away, and a `pdf` that names an executor for a side the
+   * list leaves out is ignored with one console warning, as is a `workspace` for one. A part left out fetches none of its chunks. Assigning a
    * string or an array of tokens sets the attribute; a change after the builder is up rebuilds what
    * it touches (the sides, the workspaces, the strip, the bar, the inspector). `agent` (the agent
    * tools) is opt-in: not part of `all` and never on without a list; `features="all agent"`
@@ -2355,19 +2333,19 @@ export class DatumFormBuilderElement extends ElementBase {
     return "form";
   }
 
-  /** Whether the PDF side is off: by its attribute, or because the `features` list leaves it out. */
+  /** Whether the PDF side is off: the `features` list leaves it out. */
   private pdfOff(): boolean {
-    return this.pdfValue === "off" || !this.featureEnabled("pdf");
+    return !this.featureEnabled("pdf");
   }
 
-  /** Whether the Journeys side is off: by its attribute, or because the `features` list leaves it out. */
+  /** Whether the Journeys side is off: the `features` list leaves it out. */
   private journeysOff(): boolean {
-    return this.journeys === "off" || !this.featureEnabled("journeys");
+    return !this.featureEnabled("journeys");
   }
 
-  /** Warns once for a `pdf` or `journeys` that asks for a side the `features` list leaves out (the sides stay off either way). */
+  /** Warns once for a `pdf` that names how the executor arrives while the `features` list leaves the PDF side out (it stays off either way). */
   private reportIgnoredSides(): void {
-    builderSides({ features: this.featuresValue, pdf: this.pdfValue, journeys: this.journeys, hiddenWorkspaces: this.effectiveHiddenWorkspaces() });
+    builderSides({ features: this.featuresValue, pdf: this.pdfValue, hiddenWorkspaces: this.effectiveHiddenWorkspaces() });
   }
 
   /** The modes the builder offers: the form, the PDF side and the journeys, each when it is on. */
@@ -2750,7 +2728,7 @@ export class DatumFormBuilderElement extends ElementBase {
   }
 
   /**
-   * @internal Each designer side as the agent tools read it: `"off"` while the side is off (its attribute or the `features` list),
+   * @internal Each designer side as the agent tools read it: `"off"` while the `features` list leaves the side out,
    * `"hidden"` while the host hides its workspace, else its mode's load state. A side that is on
    * and shown but whose load has not started yet (`"none"`: the moment before the next mode sync
    * fetches it) reads `"loading"`, so a call then is told to come back rather than that the side
@@ -3336,7 +3314,7 @@ export class DatumFormBuilderElement extends ElementBase {
       this.applyPdfMode();
     }
     // After the PDF side, so the bar lists the form, its layouts, then its journeys: the PDF
-    // side, added again later (pdf="off" lifted), takes its place ahead of the journeys itself.
+    // side, added again later (the `features` list naming it again), takes its place ahead of the journeys itself.
     if (pending.has("journeys")) {
       reached("journeys");
       this.applyJourneyMode();
@@ -3355,7 +3333,7 @@ export class DatumFormBuilderElement extends ElementBase {
     this.syncModeStatus();
   }
 
-  /** Registers the PDF mode (with its executor, or a loader for it), or removes it for `pdf="off"`. */
+  /** Registers the PDF mode (with its executor, or a loader for it), or removes it when the `features` list leaves it out. */
   private applyPdfMode(): void {
     const builder = this.builderEl;
     if (!builder) {
@@ -3363,7 +3341,7 @@ export class DatumFormBuilderElement extends ElementBase {
     }
     this.reportIgnoredSides();
     // Try it's Preview PDF renders through the PDF side's own support, loaded on the first preview.
-    // Off by `pdf="off"` or a `features` list without `pdf`: no PDF mode, no support, no chunk.
+    // Off by a `features` list without `pdf`: no PDF mode, no support, no chunk.
     builder.tryPdf =
       this.pdfOff()
         ? undefined
@@ -3784,7 +3762,7 @@ export class DatumFormBuilderElement extends ElementBase {
       onError: (message, cause) => reportError(this, "pdf.designer-failed", message, cause)
     });
     this.pdfModeValue = mode;
-    // Ahead of the journeys when they are already on (a page lifting pdf="off" later), so the
+    // Ahead of the journeys when they are already on (a `features` list naming `pdf` later), so the
     // dropdown and the + menu keep the layouts before the journeys; appended when they are not.
     builder.addMode(mode, { before: JOURNEY_BUILDER_MODE });
     this.retakeLoadBaseline();
@@ -3815,8 +3793,8 @@ export class DatumFormBuilderElement extends ElementBase {
   }
 
   /**
-   * Registers the Journeys mode over the form's controller, or, for `journeys="off"`,
-   * removes it — its block folded back into the seed first, so edits made while it was on
+   * Registers the Journeys mode over the form's controller, or, when the `features` list leaves
+   * it out, removes it — its block folded back into the seed first, so edits made while it was on
    * stay in `definition` and come back with it. The mode is a chunk, fetched only
    * while the side is on and its workspace shown; until it registers, the definition's journeys
    * pass through from the seed as given.

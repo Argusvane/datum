@@ -712,7 +712,7 @@ describe("Try it in a mode", () => {
     const host = fakeTryMode({ id: "notes", session: "none" });
     delete host.mode.tryIt!.pdf;
     host.mode.definitionPdf = () => ({
-      layouts: [layout("ada", { kind: "binary", operator: "eq", left: { kind: "path", path: "fullName" }, right: { kind: "literal", value: "Ada" } }), layout("plain")],
+      layouts: [layout("ada", 'fullName = "Ada"'), layout("plain")],
       defaultLayoutId: "plain"
     });
     element.addMode(host.mode);

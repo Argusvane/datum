@@ -205,7 +205,7 @@ describe("builder workspaces", () => {
   });
 
   it("offers Journeys and PDF only while their modes are on, and leaves an overview whose mode goes", async () => {
-    const element = await mount((el) => el.setAttribute("journeys", "off"));
+    const element = await mount((el) => el.setAttribute("features", "-journeys"));
     const builder = element.builder!;
     expect(builder.availableWorkspaces()).toEqual(["form", "logic", "data", "languages", "pdf", "print"]);
     expect(tab(element, "journeys").hidden).toBe(true);

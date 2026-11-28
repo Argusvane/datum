@@ -53,7 +53,7 @@ function seed(): JourneyConfiguration {
 }
 
 function context(): BuilderModeContext {
-  return { host: {} as HTMLElement, root: {} as ShadowRoot, showCanvasSurface: () => undefined };
+  return { host: {} as HTMLElement, root: {} as ShadowRoot, showCanvasSurface: () => undefined, holdForInspector: (run: () => void) => (run(), true) };
 }
 
 async function activated(): Promise<{ mode: JourneyBuilderMode; changes: JourneyBuilderModeChangeDetail[] }> {
@@ -174,7 +174,7 @@ async function activatedInTree(): Promise<{ mode: JourneyBuilderMode; events: Re
   root.addEventListener("builder-journey-rename", (event) => events.push((event as CustomEvent<RenameEvent>).detail));
   outer.addEventListener("builder-journey-rename", (event) => bubbled.push(event));
   const mode = createJourneyBuilderMode({ form, journey: seed(), onChange: () => undefined });
-  await mode.activate?.({ host: root, root: root as unknown as ShadowRoot, showCanvasSurface: () => undefined });
+  await mode.activate?.({ host: root, root: root as unknown as ShadowRoot, showCanvasSurface: () => undefined, holdForInspector: (run: () => void) => (run(), true) });
   return { mode, events, outer: bubbled };
 }
 
@@ -211,11 +211,11 @@ describe("the Journeys mode tells the shell itself about a rename", () => {
     mode.replaceJourney("intake", { ...mode.journey!, id: "intake_v2" });
     mode.replaceJourney("intake_v2", { ...mode.journey!, id: "intake_v3" });
     expect(events).toEqual([]);
-    await mode.activate?.({ host: root, root: root as unknown as ShadowRoot, showCanvasSurface: () => undefined });
+    await mode.activate?.({ host: root, root: root as unknown as ShadowRoot, showCanvasSurface: () => undefined, holdForInspector: (run: () => void) => (run(), true) });
     expect(events).toEqual([{ kind: "journey", journeyId: "intake_v3", from: "intake", to: "intake_v3" }]);
     // Told once: a second activation has nothing waiting.
     mode.deactivate?.();
-    await mode.activate?.({ host: root, root: root as unknown as ShadowRoot, showCanvasSurface: () => undefined });
+    await mode.activate?.({ host: root, root: root as unknown as ShadowRoot, showCanvasSurface: () => undefined, holdForInspector: (run: () => void) => (run(), true) });
     expect(events).toHaveLength(1);
   });
 
@@ -227,7 +227,7 @@ describe("the Journeys mode tells the shell itself about a rename", () => {
     const mode = createJourneyBuilderMode({ form, journey: seed(), onChange: () => undefined });
     mode.replaceJourney("intake", { ...mode.journey!, id: "intake_v2" });
     mode.replaceJourney("intake_v2", { ...mode.journey!, id: "intake" });
-    await mode.activate?.({ host: root, root: root as unknown as ShadowRoot, showCanvasSurface: () => undefined });
+    await mode.activate?.({ host: root, root: root as unknown as ShadowRoot, showCanvasSurface: () => undefined, holdForInspector: (run: () => void) => (run(), true) });
     expect(events).toEqual([]);
   });
 

@@ -25,7 +25,7 @@ async function mount(attributes: Record<string, string> = {}): Promise<DatumForm
   element.definition = sampleDefinition();
   document.body.append(element);
   await until(() => element.builder?.shadowRoot?.querySelector("datum-builder-canvas"));
-  if (attributes.pdf !== "off") {
+  if (element.featureEnabled("pdf")) {
     await until(() => element.pdfMode !== undefined);
   }
   return element;
@@ -77,7 +77,7 @@ describe("the Formula reference link", () => {
   const link = (element: DatumFormBuilderElement): HTMLAnchorElement | null => panel(element).shadowRoot!.querySelector<HTMLAnchorElement>("[data-variables-reference]");
 
   it("is not drawn in the Variables panel until the host sets formulaReferenceHref", async () => {
-    const element = await mount({ pdf: "off" });
+    const element = await mount({ features: "-pdf" });
     element.builder!.panel = "variables";
     await until(() => panel(element).shadowRoot!.querySelector("[data-variables-group]"));
     expect(link(element)).toBeNull();

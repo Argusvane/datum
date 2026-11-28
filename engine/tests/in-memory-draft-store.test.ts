@@ -14,7 +14,7 @@ describe("in-memory draft store", () => {
       runtime: { schemaVersion: "3", rendererVersion: "5.8.1" },
       locale: "fr-CA",
       values: { firstName: "Ada" },
-      state: { currentStep: "address", touched: ["firstName"], dirty: ["firstName"] },
+      state: { mode: "wizard", currentStep: "address", touched: ["firstName"], dirty: ["firstName"], visitedSteps: ["address"], completedSteps: [] },
       updatedAt: 2
     });
 
@@ -25,7 +25,7 @@ describe("in-memory draft store", () => {
       runtime: { schemaVersion: "3", rendererVersion: "5.8.1" },
       locale: "en-CA",
       values: { firstName: "Grace" },
-      state: { currentStep: "address", touched: [], dirty: [] },
+      state: { mode: "wizard", currentStep: "address", touched: [], dirty: [], visitedSteps: ["address"], completedSteps: [] },
       updatedAt: 3
     });
 

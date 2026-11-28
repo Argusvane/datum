@@ -317,9 +317,9 @@ describe("the print model", () => {
         id: "email",
         type: "text",
         configuration: { label: "Email", print: { show: "always", note: "Complete only if you ticked Subscribe." } },
-        rules: { visibleWhen: { kind: "path", path: "subscribe" } }
+        rules: { visibleWhen: "subscribe" }
       },
-      { id: "phone", type: "text", configuration: { label: "Phone", print: { show: "always" } }, rules: { visibleWhen: { kind: "path", path: "subscribe" } } },
+      { id: "phone", type: "text", configuration: { label: "Phone", print: { show: "always" } }, rules: { visibleWhen: "subscribe" } },
       { id: "office", type: "text", configuration: { label: "Office use only", print: { on: "screen" } } },
       { id: "reference", type: "text", configuration: { label: "Reference", print: { show: "answered" } } }
     ]);
@@ -360,14 +360,14 @@ describe("the print model", () => {
         id: "spouse",
         type: "fieldset",
         configuration: { label: "Spouse", print: { show: "always", note: "ONLY-IF-MARRIED" } },
-        rules: { visibleWhen: { kind: "path", path: "married" } },
+        rules: { visibleWhen: "married" },
         children: { content: [{ id: "spouseName", type: "text", configuration: { label: "Spouse name" } }] }
       },
       {
         id: "assets",
         type: "dataGrid",
         configuration: { label: "Assets", print: { show: "always", note: "GRID-NOTE" } },
-        rules: { visibleWhen: { kind: "path", path: "married" } },
+        rules: { visibleWhen: "married" },
         collection: { collectionPath: "assets" },
         children: { content: [{ id: "what", type: "text", configuration: { label: "What" } }] }
       },
@@ -375,7 +375,7 @@ describe("the print model", () => {
         id: "previous",
         type: "fieldset",
         configuration: { label: "Previous marriage" },
-        rules: { visibleWhen: { kind: "path", path: "married" } },
+        rules: { visibleWhen: "married" },
         children: {
           content: [
             { id: "exName", type: "text", configuration: { label: "Former spouse", print: { show: "always" } } },
@@ -680,7 +680,7 @@ describe("the filled rendition", () => {
   it("prints the components the answers print does: a field printed only when answered, a hidden one with its note", async () => {
     const live = definition([
       { id: "subscribe", type: "checkbox", configuration: { label: "Subscribe" } },
-      { id: "email", type: "text", configuration: { label: "Email", print: { show: "always", note: "Only if subscribed." } }, rules: { visibleWhen: { kind: "path", path: "subscribe" } } },
+      { id: "email", type: "text", configuration: { label: "Email", print: { show: "always", note: "Only if subscribed." } }, rules: { visibleWhen: "subscribe" } },
       { id: "reference", type: "text", configuration: { label: "Reference", print: { show: "answered" } } }
     ]);
     const ids = async (rendition: "answers" | "filled", runtime: FormRuntime): Promise<string[]> => all((await modelOf(runtime, { rendition })).nodes).map((node) => node.id);
@@ -1628,7 +1628,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       { id: "name", type: "checkbox", configuration: { label: "Name" } },
       // "answered" on a blank form prints as on screen, but never a screen-only field.
       { id: "office", type: "text", configuration: { label: "Office", print: { on: "screen", show: "answered" } } },
-      { id: "always", type: "text", configuration: { label: "Always", print: { show: "always" } }, rules: { visibleWhen: { kind: "path", path: "name" } } }
+      { id: "always", type: "text", configuration: { label: "Always", print: { show: "always" } }, rules: { visibleWhen: "name" } }
     ]);
     const runtime = runtimeOf(form);
     expect(ids(await modelOf(runtime, { rendition: "blank" }))).toEqual(["name", "always"]);

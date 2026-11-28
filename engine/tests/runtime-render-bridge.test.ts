@@ -148,7 +148,7 @@ describe("buildRuntimeRenderOutput — a presentation's own nodes", () => {
       fields: [
         { pdfField: "ByPath", source: { kind: "path", path: "@apply.m1" } },
         { pdfField: "ByText", source: { kind: "template", text: "{{@apply.m1}}" } },
-        { pdfField: "ByExpr", source: { kind: "expression", expression: { kind: "path", path: "@apply.m1" } } },
+        { pdfField: "ByExpr", source: { kind: "expression", expression: "`@apply.m1`" } },
         { pdfField: "Email", source: { kind: "path", path: "email" } }
       ]
     };
@@ -255,7 +255,7 @@ describe("buildRuntimeRenderOutput — a presentation's own nodes", () => {
       // An own field naming a source draws its inline options alone (a v1 limit): the host's set is not asked for it.
       { id: "own_topic", type: "select", configuration: { label: "Own topic", data: { sourceId: "topics" }, options: [{ value: "z", label: "Zed" }] } },
       // A worked-out value's copy is drawn with its form field's options, from the host's set.
-      { id: "shelf_copy", type: "journey-value", configuration: { to: "shelf", value: { kind: "path", path: "nickname" } } }
+      { id: "shelf_copy", type: "journey-value", configuration: { to: "shelf", value: "nickname" } }
     );
     const modes = new SubmissionModeRegistry();
     modes.register({ id: "submit", validate: true, sign: false, serverValidation: false });
@@ -305,7 +305,7 @@ describe("buildRuntimeRenderOutput — a worked-out copy's texts", () => {
     const copy = (id: string, label?: string) => ({
       id,
       type: "journey-value" as const,
-      configuration: { to: "shelf", value: { kind: "literal", value: "a" }, ...(label !== undefined ? { label } : {}) }
+      configuration: { to: "shelf", value: '"a"', ...(label !== undefined ? { label } : {}) }
     });
     definition.journey!.journeys![0]!.pages[1]!.components!.push((ownLabel !== undefined ? copy("shelf_copy", ownLabel) : copy("shelf_copy")) as never);
     const modes = new SubmissionModeRegistry();

@@ -5,13 +5,10 @@ import {
   WasmValidationHost,
   createInProcessWasmValidationHost,
   type ComponentNode,
-  type Expression,
   type WasmPlugin
 } from "@argusvane/datum-engine";
 
 import { QuickJsWasmHostAdapter, buildSandboxProgram, toSourcePlugin } from "../src/index.js";
-
-const path = (name: string): Expression => ({ kind: "path", path: name });
 
 // requiredWhen: double(n) > 10 (a plugin function through the evaluator's call dispatch).
 const root: ComponentNode = {
@@ -21,26 +18,14 @@ const root: ComponentNode = {
   children: {
     content: [
       { id: "n", type: "number", configuration: {} },
-      {
-        id: "extra",
-        type: "text",
-        configuration: {},
-        rules: {
-          requiredWhen: {
-            kind: "binary",
-            operator: "gt",
-            left: { kind: "call", name: "double", args: [path("n")] } as unknown as Expression,
-            right: { kind: "literal", value: 10 }
-          }
-        }
-      }
+      { id: "extra", type: "text", configuration: {}, rules: { requiredWhen: "double(n) > 10" } }
     ]
   }
 };
 
 const module = `({ functions: { double: (args) => (typeof args[0] === "number" ? args[0] * 2 : undefined) } })`;
 
-// The same rule as a formula: the parser must know the plugin's name, or the call is unknownFunction.
+// The rule beside a built-in, under fail: the parser must know the plugin's name, or the call is unknownFunction.
 const formulaRoot: ComponentNode = {
   id: "form",
   type: "form",

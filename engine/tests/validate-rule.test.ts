@@ -122,14 +122,16 @@ describe("the rule's shape", () => {
     return { compiled: kernelCompileRules(rules, "rules:f", true, kernelParseFormula, signatures, problems), problems };
   };
 
-  it("accepts a formula, a tree and the object form, a server scope included", () => {
+  it("accepts a formula and the object form, a server scope included, and refuses a tree as never holding", () => {
     const tree = { kind: "binary", operator: "gt", left: { kind: "path", path: "component" }, right: { kind: "literal", value: 1 } };
     expect(compile({ validWhen: "component > 1" })).toEqual({ compiled: { validWhen: tree }, problems: [] });
-    expect(compile({ validWhen: tree })).toEqual({ compiled: { validWhen: tree }, problems: [] });
     expect(compile({ validWhen: { formula: "component > 1", run: "server-secret" } })).toEqual({
       compiled: { validWhen: { expression: tree, run: "server-secret" } },
       problems: []
     });
+    const written = compile({ validWhen: tree });
+    expect(written.problems.map((problem) => [problem.code, problem.params])).toEqual([["invalidRule", { key: "validWhen", got: "tree" }]]);
+    expect(written.compiled.validWhen).toEqual({ expression: { kind: "literal", value: false } });
   });
 
   it("refuses a value of none of the shapes, and fails closed on it and on a formula that does not parse", () => {

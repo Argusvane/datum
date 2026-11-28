@@ -1,9 +1,9 @@
-"""`PdfRenderContract`: the PDF program renders the theme documents to their pinned hashes.
+"""`PdfRenderContract`: the PDF program renders the parity documents to their pinned hashes.
 
 Only a PDF-capable engine implements it.
 
-The requests are the PDF kernel's compatibility test: the fixed environment and the whole DejaVu pack through the PDF
-program, each output's SHA-256 equal to `documents-3.8/hashes.json`. An engine that cannot run the PDF program declares
+The requests are the PDF kernel's parity test: the fixed environment and the whole DejaVu pack through the PDF
+program, each output's SHA-256 equal to `documents/hashes.json`. An engine that cannot run the PDF program declares
 `Capability.PDF` as lacking, so the case is an expected failure.
 """
 

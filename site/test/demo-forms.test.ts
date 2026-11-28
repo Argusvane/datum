@@ -11,7 +11,7 @@ import { evaluateExpression } from "../../engine/form-engine/rules/evaluator/eva
 // And the browser runtime and the server's kernel, so the presentations are held to what a
 // person filling them would get: a submission, judged on both sides.
 import { SubmissionModeRegistry } from "../../engine/form-engine/core/submission/submission-modes";
-import { FormRuntime } from "../../engine/form-engine/runtime/browser/form-runtime";
+import { FormRuntime, compileFormDefinition } from "../../engine/form-engine/runtime/browser/form-runtime";
 import { createFieldConstraintsStage } from "../../engine/form-engine/validation/core/field-constraints";
 import { ValidationPipeline } from "../../engine/form-engine/validation/core/validation-pipeline";
 import { runKernel } from "../../engine/form-engine/validation/wasm/portable-kernel";
@@ -175,10 +175,12 @@ describe("demo forms", () => {
     });
 
     it("branches on the answers and stops at the exit page", () => {
-      if (!journey) throw new Error("no journey");
-      const ownership = journeyOwnership(definition.root, journey);
+      // The path reads the compiled copy: its routes' formulas as trees.
+      const compiled = readJourneys(compileFormDefinition(definition as unknown as FormDefinition).definition).find((candidate) => candidate.id === "eligibility");
+      if (!compiled) throw new Error("no journey");
+      const ownership = journeyOwnership(definition.root, compiled);
       const walk = (values: Record<string, unknown>) =>
-        journeyPath(journey, { values, ownership, evaluate: (expression, view) => evaluateExpression(expression, { values: view }) });
+        journeyPath(compiled, { values, ownership, evaluate: (expression, view) => evaluateExpression(expression, { values: view }) });
 
       // Nothing answered yet: an owner's path, four questions pages.
       expect(walk({})).toMatchObject({ pages: ["home", "ownership", "work", "contact"], end: "end" });

@@ -347,7 +347,6 @@ export function pdfFontNeed(document: PdfDocument): PdfFontNeed {
  * The families and scripts a fill plan needs: the theme's typography the plan carries (what a
  * content area draws in) and the scripts its values use,
  * which the font the kernel draws areas (and regenerated field appearances) with must cover.
- * A plan from an older engine carries no typography and names no families.
  */
 export function pdfFillFontNeed(plan: PdfFillPlan): PdfFontNeed {
   const collector = scriptCollector();
@@ -360,7 +359,7 @@ export function pdfFillFontNeed(plan: PdfFillPlan): PdfFontNeed {
   };
   Object.values(plan.values).forEach(scanValue);
   plan.areas.forEach((area) => scanValue(area.value));
-  const families = plan.typography ? typographyFamilies(plan.typography) : new Set<string>();
+  const families = typographyFamilies(plan.typography);
   return { families: [...families], scripts: collector.scripts() };
 }
 
@@ -399,8 +398,8 @@ export function buildPdfFillRequest(plan: PdfFillPlan, templateBytes: Uint8Array
     options: plan.options,
     ...(plan.conformance ? { conformance: plan.conformance } : {}),
     ...(plan.attachments && plan.attachments.length > 0 ? { attachments: plan.attachments } : {}),
-    ...(plan.typography ? { typography: plan.typography } : {}),
-    ...(plan.colors ? { colors: plan.colors } : {}),
+    typography: plan.typography,
+    colors: plan.colors,
     ...(signature ? { signature } : {})
   };
 }

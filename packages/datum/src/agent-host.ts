@@ -41,9 +41,6 @@ import { AGENT_HIGHLIGHT_MS, AGENT_HIGHLIGHT_RULE, AGENT_UI_BASE_STYLES, button 
 import type { DatumFormElement } from "./form-element.js";
 import { emit } from "./support.js";
 
-// Re-exported so `agent.ts` (the form chunk) keeps naming them from here.
-export { AGENT_HIGHLIGHT_MS, AGENT_HIGHLIGHT_RULE };
-
 /**
  * The banner's and the live region's own styles, inside `<datum-form>`'s shadow root: the form's
  * spacing, radius and focus tokens with the renderer's fallbacks and the text colour inherited,
@@ -85,7 +82,7 @@ function languagePackOf(form: DatumFormElement): LanguagePack | undefined {
 function textsOf(form: DatumFormElement): FormTextResolver {
   const runtime = form.runtime;
   const locale = runtime?.state().locale ?? form.locale ?? "en";
-  return createFormTextResolver(locale, form.texts, runtime?.translationCatalog(), undefined, { translations: runtime?.translations(), pack: languagePackOf(form) });
+  return createFormTextResolver(locale, form.texts, undefined, { translations: runtime?.translations(), catalog: runtime?.translationCatalog(), pack: languagePackOf(form) });
 }
 
 /**

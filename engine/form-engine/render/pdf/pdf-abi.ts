@@ -522,7 +522,10 @@ export type PdfKernelRequest =
       attachments?: PdfDocumentAttachment[];
       /** Prepare a signature over the filled PDF. */
       signature?: PdfSignatureSpec;
-      /** The theme the plan was built under: what a content area draws with when its `draw` says nothing. */
+      /**
+       * The theme the plan was built under: what a content area draws with when its `draw` says
+       * nothing. The plan always carries both; a request with `areas` and without them is an `invalid_request`.
+       */
       typography?: PdfTypography;
       colors?: PdfThemeColors;
     }

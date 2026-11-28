@@ -52,21 +52,14 @@ export function engineTexts(): readonly EngineText[] {
 }
 
 /**
- * The counted texts and the English each one's other categories are fingerprinted against:
- * `resolveFormTextPlural` reads `<base>.<category>` for the count's CLDR category, so a language
- * with more forms than English (Polish `few` and `many`, Arabic `zero`, `two`) words them here.
+ * The counted texts, by base: every key the engine words as `<base>.other`, whose English each of
+ * the base's other categories is fingerprinted against. `resolveFormTextPlural` reads
+ * `<base>.<category>` for the count's CLDR category, so a language with more forms than English
+ * (Polish `few` and `many`, Arabic `zero`, `two`) words them here.
  */
-const PLURAL_BASES: Readonly<Record<string, string>> = {
-  summaryHeading: "summaryHeading",
-  countLeft: "countLeft",
-  countOver: "countOver",
-  fileAnnounced: "fileAnnouncedMany",
-  tabHasErrors: "tabHasErrors",
-  agentFilled: "agentFilled",
-  agentRowsAdded: "agentRowsAdded",
-  agentUndone: "agentUndone",
-  agentStopped: "agentStopped"
-};
+const PLURAL_BASES: readonly string[] = Object.keys(DEFAULT_FORM_TEXTS)
+  .filter((key) => key.endsWith(".other"))
+  .map((key) => key.slice(0, -".other".length));
 
 /** The categories beyond `one` and `other` a count can take, in the order the plural rules list them. */
 const EXTRA_PLURAL_CATEGORIES: readonly string[] = ["zero", "two", "few", "many"];
@@ -87,14 +80,14 @@ function pluralCategoriesOf(locale: string): string[] {
 
 function pluralText(base: string, category: string): EngineText {
   const key = `${base}.${category}`;
-  return { address: addressOf.formText(key), key, table: "form", default: DEFAULT_FORM_TEXTS[PLURAL_BASES[base] as keyof typeof DEFAULT_FORM_TEXTS] };
+  return { address: addressOf.formText(key), key, table: "form", default: DEFAULT_FORM_TEXTS[`${base}.other` as keyof typeof DEFAULT_FORM_TEXTS] };
 }
 
 /** The counted texts' extra category rows a language needs (`countLeft.few` for Polish); none for English or French. */
 export function enginePluralTexts(locale: string): readonly EngineText[] {
   const out: EngineText[] = [];
   for (const category of pluralCategoriesOf(locale)) {
-    for (const base of Object.keys(PLURAL_BASES)) {
+    for (const base of PLURAL_BASES) {
       out.push(pluralText(base, category));
     }
   }
@@ -103,7 +96,7 @@ export function enginePluralTexts(locale: string): readonly EngineText[] {
 
 /** Every counted text with every extra category: the addresses a translation edit may name, whatever the language. */
 export function enginePluralAddresses(): readonly EngineText[] {
-  return EXTRA_PLURAL_CATEGORIES.flatMap((category) => Object.keys(PLURAL_BASES).map((base) => pluralText(base, category)));
+  return EXTRA_PLURAL_CATEGORIES.flatMap((category) => PLURAL_BASES.map((base) => pluralText(base, category)));
 }
 
 /** Whether `address` is one of the engine's own words (kind `texts`), whose source is English. */

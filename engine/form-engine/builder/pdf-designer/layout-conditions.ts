@@ -19,7 +19,7 @@
 import type { TranslationCatalog } from "../../core/schema/contracts.js";
 import type { ComponentNode } from "../../core/schema/types.js";
 import { isScopedExpressionPath } from "../../core/expressions/condition-shape.js";
-import { journeyLeadingSegment } from "../../core/journey/journey-path.js";
+import { journeyLeadingSegment } from "../../core/journey/journey-shared.js";
 import { addressOf, type FormTranslations, type TextSources, resolveText } from "../../core/localization/translations.js";
 import { PDF_TEMPLATE_COMPONENT_TYPE } from "../../render/pdf/pdf-template-constants.js";
 import {
@@ -41,6 +41,7 @@ import type { BuilderController } from "../controller/builder-controller.js";
 import { formulaFieldsOf, type FormulaField } from "../formula/formula-fields.js";
 import { renameAnswerPath, renameFormulaPath, renameInRuleSource, unparsedFormulaNaming, type ValuePathMoves } from "../formula/rename.js";
 import { conditionInWords } from "../property-editor/condition-words.js";
+import { ruleExpression } from "../property-editor/rule-source.js";
 import type { InspectorChoice } from "../property-editor/inspector-model.js";
 import type { RuleDescriptor } from "../property-editor/rules-model.js";
 import { buildNestedTreeView, type NestedTreeNodeView } from "../tree-editor/nested-tree-view.js";
@@ -221,9 +222,10 @@ export interface PdfLayoutFinding {
   message: string;
 }
 
-/** A condition that holds whatever the answers: a literal the evaluator reads as true. */
+/** A condition that holds whatever the answers: a formula that is a literal the evaluator reads as true (`true`). */
 function alwaysHolds(when: unknown): boolean {
-  return isRecord(when) && when.kind === "literal" && Boolean(when.value);
+  const tree = ruleExpression(when);
+  return tree !== undefined && tree.kind === "literal" && Boolean(tree.value);
 }
 
 /**
@@ -469,7 +471,7 @@ export function withPdfLayoutCondition(configuration: PdfConfiguration, layoutId
 /**
  * A form component renamed from `from` to `to`: every layout's `when` with the
  * paths that lead with `from` renamed (`renameInRuleSource`: a formula string over the parser's
- * spans, a tree through its path nodes), a template layout's field and area `expression`
+ * spans), a template layout's field and area `expression`
  * sources the same way, and the ids of the layouts that changed. The configuration itself when
  * none did. PDF bindings follow too: a generated layout's `pdf-field` `componentId` and the
  * `collectionPath` of a `pdf-repeat` or `pdf-table`, a template layout's `component` and `path`

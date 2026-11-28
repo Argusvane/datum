@@ -7,7 +7,6 @@ import {
   ValidationPipeline,
   createFieldConstraintsStage,
   type CanonicalSubmission,
-  type Expression,
   type FormDefinition,
   type KernelValidator,
   type ServerValidationContext,
@@ -38,12 +37,7 @@ import {
  * and writes nothing.
  */
 
-const eq = (path: string, value: string | boolean): Expression => ({
-  kind: "binary",
-  operator: "eq",
-  left: { kind: "path", path },
-  right: { kind: "literal", value }
-});
+const eq = (path: string, value: string | boolean): string => `${path} = ${JSON.stringify(value)}`;
 
 const ELIGIBILITY: FormDefinition = {
   id: "eligibility",

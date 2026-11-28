@@ -636,7 +636,7 @@ export async function verifySignatures(bytes: Uint8Array, options: VerifyOptions
       if (cms.essCertHash) {
         certificateMatches = bytesEqual(cms.essCertHash, sha256(leaf.der));
       } else {
-        // A carried certificate without the attribute is the signer's by the CMS's own word, as before; a known one is
+        // A carried certificate without the attribute is the signer's by the CMS's own word; a known one is
         // named only by the unsigned SignerIdentifier, so without the attribute nothing binds it.
         certificateMatches = carriedLeaf !== undefined;
         warnings.push({ code: "signature.noSigningCertificate", message: `The signature in "${label}" carries no signing-certificate attribute; the certificate is not bound to the signed attributes.` });

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import "../src/builder.js";
 import type { DatumFormBuilderElement } from "../src/builder.js";
-import type { ComponentNode, Expression, FormDefinition, JourneyConfiguration } from "@argusvane/datum-engine";
+import type { ComponentNode, FormDefinition, JourneyConfiguration } from "@argusvane/datum-engine";
 
 import { sampleDefinition, until } from "./helpers.js";
 
@@ -79,7 +79,7 @@ function drawerOpen(element: DatumFormBuilderElement): boolean {
   return !shell(element).querySelector(".wrap")!.hasAttribute("data-side-collapsed");
 }
 
-const subscribed: Expression = { kind: "path", path: "subscribe" };
+const subscribed = "subscribe";
 
 /**
  * Over the sample form: Start asks the name and whether to subscribe, and goes to News when
@@ -109,7 +109,7 @@ function withMapJourney(): FormDefinition {
 
 function mount(setup?: (element: DatumFormBuilderElement) => void): DatumFormBuilderElement {
   const element = document.createElement("datum-form-builder");
-  element.setAttribute("pdf", "off");
+  element.setAttribute("features", "-pdf");
   element.definition = withMapJourney();
   setup?.(element);
   document.body.append(element);
@@ -832,7 +832,6 @@ describe("<datum-form-builder> journeys: the Map view", () => {
   });
 
   it("draws a journey with nodes of its own: its own fields among the questions, and what each page fills and works out", async () => {
-    const read = (path: string): Expression => ({ kind: "path", path });
     const own: JourneyConfiguration = {
       journeys: [
         {
@@ -846,7 +845,7 @@ describe("<datum-form-builder> journeys: the Map view", () => {
               components: [
                 { id: "first", type: "text", configuration: { label: "First name" } },
                 { id: "last", type: "text", configuration: { label: "Last name" } },
-                { id: "whole", type: "journey-value", configuration: { to: "fullName", value: { kind: "call", name: "concat", args: [read("first"), { kind: "literal", value: " " }, read("last")] } } }
+                { id: "whole", type: "journey-value", configuration: { to: "fullName", value: 'concat(first, " ", last)' } }
               ]
             },
             {

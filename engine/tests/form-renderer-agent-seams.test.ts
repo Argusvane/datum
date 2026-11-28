@@ -195,34 +195,34 @@ describe("painted(): every change so far drawn", () => {
   });
 });
 
-describe("the agent texts: every counted one is a pair .plural reads on its own", () => {
+describe("the agent texts: every counted one is worded per plural category, as .plural reads it", () => {
   const counted = Object.keys(DEFAULT_FORM_TEXTS).filter((key) => key.startsWith("agent") && DEFAULT_FORM_TEXTS[key as keyof typeof DEFAULT_FORM_TEXTS].includes("{{count}}"));
 
-  it("names the singular {base}One beside {base}, in both languages, so no caller passes fallback keys", () => {
+  it("names `<base>.one` beside `<base>.other`, in both languages", () => {
     expect(counted.length).toBeGreaterThan(0);
     const params = { count: 1, label: "Pets" };
     for (const key of counted) {
-      const base = key.endsWith("One") ? key.slice(0, -3) : key;
-      expect(Object.keys(DEFAULT_FORM_TEXTS), base).toContain(base);
-      expect(Object.keys(DEFAULT_FORM_TEXTS), `${base}One`).toContain(`${base}One`);
+      const base = key.replace(/\.(one|other)$/, "");
+      expect(Object.keys(DEFAULT_FORM_TEXTS), `${base}.other`).toContain(`${base}.other`);
+      expect(Object.keys(DEFAULT_FORM_TEXTS), `${base}.one`).toContain(`${base}.one`);
       for (const locale of ["en", "fr-CA"]) {
         const texts = createFormTextResolver(locale);
         const one = texts.plural(base, 1, params);
         const many = texts.plural(base, 3, { ...params, count: 3 });
         // A key nobody worded comes back as the key itself; neither count may read that way.
-        expect(one, `${base} ×1 ${locale}`).not.toMatch(/^agent\w+$/);
-        expect(many, `${base} ×3 ${locale}`).not.toMatch(/^agent\w+$/);
+        expect(one, `${base} ×1 ${locale}`).not.toMatch(/^agent[\w.]+$/);
+        expect(many, `${base} ×3 ${locale}`).not.toMatch(/^agent[\w.]+$/);
         // The singular and the plural are worded apart: compared with the count taken out, so a
-        // {base}One mistakenly given the plural sentence cannot hide behind "1" differing from "3".
+        // `.one` mistakenly given the plural sentence cannot hide behind "1" differing from "3".
         expect(one.replace(/\b1\b/, "#"), `${base} pair ${locale}`).not.toBe(many.replace(/\b3\b/, "#"));
       }
     }
     expect(createFormTextResolver("en").plural("agentRowsAdded", 1, params)).toBe("An assistant added 1 row to Pets");
-    // Another language is the form's `texts` translation of each of the pair (the engine words only English).
+    // Another language is the form's `texts` translation of each category (the engine words only English).
     const translations = {
-      fr: { texts: { form: { agentRowsAdded: { text: "Un assistant a ajouté {{count}} lignes à {{label}}", source: "x" }, agentRowsAddedOne: { text: "Un assistant a ajouté {{count}} ligne à {{label}}", source: "x" } } } }
+      fr: { texts: { form: { "agentRowsAdded.other": { text: "Un assistant a ajouté {{count}} lignes à {{label}}", source: "x" }, "agentRowsAdded.one": { text: "Un assistant a ajouté {{count}} ligne à {{label}}", source: "x" } } } }
     };
-    const french = createFormTextResolver("fr", undefined, undefined, undefined, { translations });
+    const french = createFormTextResolver("fr", undefined, undefined, { translations });
     expect(french.plural("agentRowsAdded", 2, { count: 2, label: "Animaux" })).toBe("Un assistant a ajouté 2 lignes à Animaux");
     expect(french.plural("agentRowsAdded", 1, { count: 1, label: "Animaux" })).toBe("Un assistant a ajouté 1 ligne à Animaux");
   });

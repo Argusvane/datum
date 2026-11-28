@@ -220,9 +220,16 @@ function knownCertificatesOf(value: unknown): Uint8Array[] {
   return certificates;
 }
 
+/** The theme geometry every document carries: the engine writes each block whole. */
+const DOCUMENT_GEOMETRY = ["controls", "choice", "fields", "headings", "table", "box", "panel", "list", "spacing"] as const;
+
 function requireDocument(value: unknown): asserts value is Record<string, unknown> {
   if (!isRecord(value) || !Array.isArray(value.blocks) || !isRecord(value.page) || !isRecord(value.metadata)) {
     throw new PdfKernelError("invalid_request", "The request carries no document");
+  }
+  const missing = DOCUMENT_GEOMETRY.filter((key) => !isRecord(value[key]));
+  if (missing.length > 0) {
+    throw new PdfKernelError("invalid_request", `The document carries no ${missing.join(", ")}: send the document as the engine builds it, with the theme's geometry`);
   }
 }
 
@@ -367,7 +374,7 @@ export async function handlePdfRequest(raw: unknown): Promise<PdfKernelResponse>
           Array.isArray(request.areas) ? request.areas : [],
           isRecord(request.conformance) ? (request.conformance as PdfDocumentConformance) : undefined,
           Array.isArray(request.attachments) ? (request.attachments as PdfDocumentAttachment[]) : undefined,
-          { typography: isRecord(request.typography) ? request.typography : undefined, colors: isRecord(request.colors) ? request.colors : undefined }
+          isRecord(request.typography) && isRecord(request.colors) ? { typography: request.typography, colors: request.colors } : undefined
         );
         const warnings = [...filled.warnings];
         const signed = await signProduced(filled.bytes, signatureToPrepare(undefined, request.signature, warnings), request.fonts ?? [], request.env, warnings);

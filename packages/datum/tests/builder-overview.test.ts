@@ -165,7 +165,7 @@ describe("the PDF overview", () => {
       pdf: {
         layouts: [
           layout("standard", "Standard"),
-          layout("canada", "Canada copy", { kind: "binary", operator: "eq", left: { kind: "path", path: "country" }, right: { kind: "literal", value: "CA" } })
+          layout("canada", "Canada copy", 'country = "CA"')
         ],
         defaultLayoutId: "standard"
       }

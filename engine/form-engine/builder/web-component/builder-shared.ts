@@ -2614,7 +2614,7 @@ export const PROPERTIES_STYLES = `
   .rule-formula { display: grid; gap: var(--db-space-2); min-width: 0; }
   /* The shared textarea (SHARED_CONTROL_STYLES), at the formula's size. */
   .rule-formula-box { width: 100%; min-height: 44px; resize: vertical; font: inherit; font-size: var(--db-text-sm); line-height: 1.6; }
-  .rule-formula-box[aria-invalid="true"] { border-color: var(--db-danger-line, var(--db-danger)); }
+  .rule-formula-box[aria-invalid="true"] { border-color: var(--db-danger-line); }
   .rule-formula-box[hidden] { display: none; }
   .rule-try { display: flex; flex-wrap: wrap; gap: var(--db-space-1); align-items: center; font-size: var(--db-text-xs); color: var(--db-ink-muted); }
   .rule-reads { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 5px; margin: 0; font-size: var(--db-text-xs); color: var(--db-ink-muted); line-height: 24px; }

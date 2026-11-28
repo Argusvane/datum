@@ -662,7 +662,7 @@ describe("a CSV row that does not line up with its header", () => {
 
 describe("texts a language has no cell for, and texts the page's catalog words", () => {
   const engine = (patch: Partial<ExchangeText> = {}): ExchangeText =>
-    one({ address: { kind: "texts", owner: "form", path: ["summaryHeading"] }, default: "Summary", applicable: new Set(["fr-CA"]), ...patch });
+    one({ address: { kind: "texts", owner: "form", path: ["summaryHeading.other"] }, default: "Summary", applicable: new Set(["fr-CA"]), ...patch });
 
   it("never counts a language without a cell missing, and leaves its cell and status blank", () => {
     const text = engine();
@@ -678,7 +678,7 @@ describe("texts a language has no cell for, and texts the page's catalog words",
 
   it("skips an imported cell for a language the text has no cell for, and for a cell the catalog words", () => {
     const text = engine({ catalog: { "fr-CA": "overridden" } });
-    const csv = ["kind,key,path,lang:fr-CA,lang:es", "texts,form,summaryHeading,Sommaire,Resumen", ""].join("\r\n");
+    const csv = ["kind,key,path,lang:fr-CA,lang:es", "texts,form,summaryHeading.other,Sommaire,Resumen", ""].join("\r\n");
     const result = preview(csv, "replace", [text]);
     expect(result.rows.map((row) => [row.locale, row.status])).toEqual([
       ["fr-CA", "pageWorded"],
@@ -737,7 +737,7 @@ describe("the CSV file's byte-order mark", () => {
 });
 
 describe("the engine's own words in a non-English default language", () => {
-  const summary = addressOf.formText("summaryHeading");
+  const summary = addressOf.formText("summaryHeading.other");
   const engine = (patch: Partial<ExchangeText> = {}): ExchangeText => ({
     address: summary,
     default: "Summary",
@@ -760,7 +760,7 @@ describe("the engine's own words in a non-English default language", () => {
   });
 
   it("reads the default language's column for an engine word and refuses it, once, for any other text", () => {
-    const csv = ["kind,key,path,lang:fr,lang:es", "texts,form,summaryHeading,Sommaire,Resumen", "components,a,label,Nom,Nombre", "components,a,description,Texte,", ""].join("\r\n");
+    const csv = ["kind,key,path,lang:fr,lang:es", "texts,form,summaryHeading.other,Sommaire,Resumen", "components,a,label,Nom,Nombre", "components,a,description,Texte,", ""].join("\r\n");
     const result = french(csv, [engine(), field(), field({ address: { kind: "components", owner: "a", path: ["description"] } })]);
     expect(result.rows.map((row) => [row.address.kind, row.locale, row.status])).toEqual([
       ["texts", "fr", "new"],
@@ -777,7 +777,7 @@ describe("the engine's own words in a non-English default language", () => {
 
   it("skips the default language's cell of an engine word when that language is English", () => {
     const rows = [engine({ applicable: new Set(["es"]) })];
-    const result = previewImport({ name: "f", text: "kind,key,path,lang:en\ntexts,form,summaryHeading,Summary" }, rows, ["en", "es"], { mode: "replace", defaultLocale: "en" });
+    const result = previewImport({ name: "f", text: "kind,key,path,lang:en\ntexts,form,summaryHeading.other,Summary" }, rows, ["en", "es"], { mode: "replace", defaultLocale: "en" });
     expect(result.rows.map((row) => row.status)).toEqual(["noCell"]);
     expect(applyImport(result, { addLocales: [], mode: "replace" }).edits).toEqual([]);
   });
@@ -785,7 +785,7 @@ describe("the engine's own words in a non-English default language", () => {
   it("judges the engine words of a language the import adds by their address", () => {
     const plural = addressOf.formText("summaryHeading.few");
     const rows = [engine(), engine({ address: plural })];
-    const csv = (code: string) => `kind,key,path,lang:${code}\ntexts,form,summaryHeading,Words\ntexts,form,summaryHeading.few,Words`;
+    const csv = (code: string) => `kind,key,path,lang:${code}\ntexts,form,summaryHeading.other,Words\ntexts,form,summaryHeading.few,Words`;
     // English is the engine words' own language: nothing to write there.
     const english = french(csv("en"), rows);
     expect(english.rows.map((row) => row.status)).toEqual(["noCell", "noCell"]);
@@ -799,10 +799,10 @@ describe("the engine's own words in a non-English default language", () => {
   });
   it("finds the engine word of a language the import adds in the engine's own list when the form has no row for it", () => {
     // The form lists no engine rows (a fr-only form): once pl is added the grid has them.
-    const csv = "kind,key,path,lang:pl\ntexts,form,summaryHeading,Podsumowanie\ntexts,form,summaryHeading.few,Podsumowania\ntexts,form,notAWord,x";
+    const csv = "kind,key,path,lang:pl\ntexts,form,summaryHeading.other,Podsumowanie\ntexts,form,summaryHeading.few,Podsumowania\ntexts,form,notAWord,x";
     const result = previewImport({ name: "f", text: csv }, [field()], ["fr"], { mode: "replace", defaultLocale: "fr" });
     expect(result.rows.map((row) => [row.address.path.join("."), row.status])).toEqual([
-      ["summaryHeading", "new"],
+      ["summaryHeading.other", "new"],
       ["summaryHeading.few", "new"],
       ["notAWord", "unknown"]
     ]);

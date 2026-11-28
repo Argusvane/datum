@@ -59,7 +59,7 @@ A page or journey `validation`:
 | `onUnavailable` | `block` or `continue` | `block` | What a check that gets no verdict does: keep the person on the page with a message, or let them on |
 | `end` | `client` or `server` | `client` | On the journey only. What Submit does on the last page: `server` asks your server to check the whole journey before the answers are signed or delivered |
 
-A condition is a [formula](/formulas), or the expression tree the builder writes. A route with no `when` always matches.
+A condition is a [formula](/formulas). A route with no `when` always matches.
 
 ## Pages and the routes between them
 
@@ -463,7 +463,7 @@ A slot is written with double braces. A page's `texts` win over the journey's fo
 
 ## The `journeys` feature and the journeys runtime
 
-`journeys` is a feature name for the `features` attribute of `<datum-form>`. When `features` is set, only the parts it lists exist, so list `journeys` for a form that has journeys, as in `features="journeys print"`. On `<datum-form-builder>`, `journeys="off"` removes the Journeys workspace and leaves the definition's journeys untouched.
+`journeys` is a feature name for the `features` attribute of `<datum-form>`. When `features` is set, only the parts it lists exist, so list `journeys` for a form that has journeys, as in `features="journeys print"`. On `<datum-form-builder>`, `features="-journeys"` removes the Journeys workspace and leaves the definition's journeys untouched.
 
 The journeys runtime is a separate file beside the bundle, `datum-form-journey-engine-chunk-<hash>.js`, fetched only when a form has journeys and the feature is on. Preload it with `loadJourneyEngine()`, which the bundle exports.
 

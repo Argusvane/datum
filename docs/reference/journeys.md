@@ -182,7 +182,7 @@ form and every journey by name. The journey's `⋯` menu renames it (the id stay
 and sets it as default, marked Default in the dropdown. Journey texts are translated in the per-node
 grids and listed in the builder's translations catalog after the form's, keyed
 `journey.<journeyId>.<pageId>.<prop>`, and a form component renamed on the form's side is followed into
-every journey. `<datum-form-builder>` has the mode on by default, reseeded on Open and New: `journeys="off"` leaves it out, the
+every journey. `<datum-form-builder>` has the mode on by default, reseeded on Open and New: `features="-journeys"` leaves it out, the
 definition's journeys passing through untouched, and a `workspaces` list without `journeys` leaves the side out as a
 hidden workspace does; the Form panel's "Opens as" row has a link, "Open the journeys", to the default journey; `journeyMode` is its catalog API and
 `journeyConfiguration` the block as edited (assigning it reseeds the journeys, and a shape the builder refuses is

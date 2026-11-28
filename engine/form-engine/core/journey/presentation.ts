@@ -6,7 +6,8 @@ import type { Journey, PresentationNode, PresentationReference } from "../schema
 import type { ComponentNode, ComponentRules } from "../schema/types.js";
 import { ComponentTree } from "../tree/component-tree.js";
 import { buildValuePaths } from "../tree/data-scope.js";
-import { journeyEntryPlacesForm, journeyFormKeys, journeyHoldsOwnAnswer, journeyMaxDepth, journeyOwn, journeyOwnNodeUsable } from "./journey-path.js";
+import { journeyEntryPlacesForm, journeyFormKeys, journeyMaxDepth, journeyOwnNodeUsable } from "./journey-path.js";
+import { journeyHoldsOwnAnswer, journeyOwn } from "./journey-shared.js";
 import type { JourneyOwnership } from "./journey-types.js";
 export { workedOutTextOwner } from "./worked-out-text.js";
 
@@ -179,7 +180,8 @@ function settingsOf(node: { configuration?: unknown }): Record<string, unknown> 
 
 /**
  * Whether `value` reads as a rule source: what a worked-out value's `configuration.value` must
- * be. A formula string, an expression tree, or the object form (`RuleSource`); the shape only.
+ * be. A formula string or the object form (`RuleSource`), or the tree a compiled journey holds
+ * in its place; the shape only.
  */
 function isExpression(value: unknown): value is RuleSource {
   if (typeof value === "string") {
@@ -217,7 +219,7 @@ const COPY_DROPS: readonly string[] = [
 
 /**
  * The index of a journey's own nodes, or `undefined` for a journey that holds none — one of
- * component ids alone (`ownership.ownNodes` absent), which runs exactly as it always did.
+ * component ids alone (`ownership.ownNodes` absent).
  *
  * `root` is the form's tree, `ownership` the journey's (`journeyOwnership(root, journey)`), and
  * `defines` says whether the form defines a value key (`kernelDefinesKey` over

@@ -62,7 +62,7 @@
             "id": "p1",
             "components": ["name", "code", "addr", "tags", "rows", "risky", "doc", "secret"],
             "routes": [
-              { "when": { "kind": "binary", "operator": "eq", "left": { "kind": "path", "path": "name" }, "right": { "kind": "literal", "value": "STOPZZ" } }, "to": "stop" },
+              { "when": "name = \"STOPZZ\"", "to": "stop" },
               { "to": "$end" }
             ]
           },

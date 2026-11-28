@@ -1962,7 +1962,7 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
       stored === "" ? undefined : working.run === "both" || BROWSER_ONLY_KEYS.has(working.ruleKey) ? stored : { formula: stored, run: working.run };
     const edits: Array<{ componentId: string; propertyPath: string; value: unknown; target?: "rules" }> = [];
     // The rule itself is written only when its text or run scope changed (or it is new): an
-    // untouched rule stays byte-for-byte, a tree a tree.
+    // untouched rule stays byte-for-byte.
     if (working.ruleId === undefined || working.text.trim() !== working.openedText.trim() || working.run !== working.openedRun) {
       edits.push({ componentId: working.componentId, propertyPath: working.ruleKey, value, target: "rules" });
     }

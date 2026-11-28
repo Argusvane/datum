@@ -4,7 +4,6 @@ import { afterEach, describe, expect, it } from "vitest";
 import { checkJourneyTree, indexJourneyTree } from "../form-engine/builder/journey-designer/journey-checks.js";
 import { createJourneyMap, type JourneyMap, type JourneyMapContext, type JourneyMapEdit, type JourneyMapSubject } from "../form-engine/builder/journey-map/journey-map.js";
 import { journeyMapGraph } from "../form-engine/builder/journey-map/journey-map-model.js";
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import type { Journey } from "../form-engine/core/schema/journey.js";
 import type { ComponentNode } from "../form-engine/core/schema/types.js";
 import { mapSource, mapWords } from "./flowmap-words.js";
@@ -17,8 +16,8 @@ import { mapSource, mapWords } from "./flowmap-words.js";
  * from the roving tab stop.
  */
 
-function eq(path: string, value: string): Expression {
-  return { kind: "binary", operator: "eq", left: { kind: "path", path }, right: { kind: "literal", value } };
+function eq(path: string, value: string): string {
+  return `${path} = ${JSON.stringify(value)}`;
 }
 
 const FORM: ComponentNode = {

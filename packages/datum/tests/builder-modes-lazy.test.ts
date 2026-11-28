@@ -116,11 +116,10 @@ afterEach(() => {
 
 // Each case mounts a whole builder; a busy machine takes several seconds over one.
 describe("<datum-form-builder>'s PDF and Journeys modes as chunks", { timeout: 20000 }, () => {
-  it("fetches neither mode for pdf=\"off\" journeys=\"off\", and passes the definition's layouts and journeys through", async () => {
+  it("fetches neither mode for features=\"-pdf -journeys\", and passes the definition's layouts and journeys through", async () => {
     const definition = fullDefinition();
     const element = await mount((el) => {
-      el.setAttribute("pdf", "off");
-      el.setAttribute("journeys", "off");
+      el.setAttribute("features", "-pdf -journeys");
     }, definition);
     await settle();
     expect(control.pdfCalls).toBe(0);
@@ -177,9 +176,9 @@ describe("<datum-form-builder>'s PDF and Journeys modes as chunks", { timeout: 2
 
   it("registers nothing when the side goes off while its mode is coming, and once when it comes back on", async () => {
     await hold("pdf");
-    const element = await mount((el) => el.setAttribute("journeys", "off"));
+    const element = await mount((el) => el.setAttribute("features", "-journeys"));
     expect(control.pdfCalls).toBe(1);
-    element.setAttribute("pdf", "off");
+    element.setAttribute("features", "-pdf -journeys");
     await settle();
     control.holdPdf!.resolve();
     await settle();
@@ -187,14 +186,14 @@ describe("<datum-form-builder>'s PDF and Journeys modes as chunks", { timeout: 2
     expect(element.modes.map((mode) => mode.id)).toEqual(["form"]);
 
     // Back on: one more ask, one mode.
-    element.removeAttribute("pdf");
+    element.setAttribute("features", "-journeys");
     await until(() => element.pdfMode !== undefined);
     expect(element.modes.map((mode) => mode.id)).toEqual(["form", "pdf"]);
   });
 
   it("registers one mode when the side is applied again while its chunk is coming", async () => {
     await hold("pdf");
-    const element = await mount((el) => el.setAttribute("journeys", "off"));
+    const element = await mount((el) => el.setAttribute("features", "-journeys"));
     // Another pdf-* change re-applies the side mid-load.
     element.setAttribute("pdf-theme", "default");
     await settle();
@@ -207,7 +206,7 @@ describe("<datum-form-builder>'s PDF and Journeys modes as chunks", { timeout: 2
 
   it("registers a mode whose chunk came while the element was off the page on the next connect", async () => {
     await hold("journey");
-    const element = await mount((el) => el.setAttribute("pdf", "off"));
+    const element = await mount((el) => el.setAttribute("features", "-pdf"));
     element.remove();
     control.holdJourney!.resolve();
     await settle();
@@ -220,7 +219,7 @@ describe("<datum-form-builder>'s PDF and Journeys modes as chunks", { timeout: 2
 
   it("enters the PDF workspace asked for while the mode was coming, once it registers", async () => {
     await hold("pdf");
-    const element = await mount((el) => el.setAttribute("journeys", "off"));
+    const element = await mount((el) => el.setAttribute("features", "-journeys"));
     expect(element.builder!.availableWorkspaces()).not.toContain("pdf");
     expect(element.setWorkspace("pdf")).toBe(true);
     control.holdPdf!.resolve();
@@ -230,7 +229,7 @@ describe("<datum-form-builder>'s PDF and Journeys modes as chunks", { timeout: 2
 
   it("follows a workspace the author chose meanwhile over the one asked for", async () => {
     await hold("pdf");
-    const element = await mount((el) => el.setAttribute("journeys", "off"));
+    const element = await mount((el) => el.setAttribute("features", "-journeys"));
     element.setWorkspace("pdf");
     element.setWorkspace("logic");
     control.holdPdf!.resolve();
@@ -242,7 +241,7 @@ describe("<datum-form-builder>'s PDF and Journeys modes as chunks", { timeout: 2
   it("puts the side `mode` names on the page once its mode registers", async () => {
     await hold("journey");
     const element = await mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.setAttribute("mode", "journeys");
     });
     expect(element.builder!.mode).toBe("form");
@@ -253,7 +252,7 @@ describe("<datum-form-builder>'s PDF and Journeys modes as chunks", { timeout: 2
   it("reports a failed load and tries again on the next apply", async () => {
     await hold("pdf");
     const errors: string[] = [];
-    const element = create((el) => el.setAttribute("journeys", "off"));
+    const element = create((el) => el.setAttribute("features", "-journeys"));
     element.addEventListener("datum-error", (event) => errors.push((event as CustomEvent<{ message: string }>).detail.message));
     document.body.append(element);
     control.holdPdf!.reject(new Error("chunk missing"));
@@ -270,7 +269,7 @@ describe("<datum-form-builder>'s PDF and Journeys modes as chunks", { timeout: 2
   it("shows a failed Journeys load inline with Retry, keeps the form working, and registers on Retry", async () => {
     await hold("journey");
     const errors: Array<{ message: string; cause: unknown }> = [];
-    const element = create((el) => el.setAttribute("pdf", "off"));
+    const element = create((el) => el.setAttribute("features", "-pdf"));
     element.addEventListener("datum-error", (event) => errors.push((event as CustomEvent<{ message: string; cause: unknown }>).detail));
     document.body.append(element);
     await until(() => element.builder?.shadowRoot?.querySelector("datum-builder-canvas"));
@@ -300,7 +299,7 @@ describe("<datum-form-builder>'s PDF and Journeys modes as chunks", { timeout: 2
   it("tries a failed load again when the element is connected again", async () => {
     await hold("pdf");
     const errors: string[] = [];
-    const element = create((el) => el.setAttribute("journeys", "off"));
+    const element = create((el) => el.setAttribute("features", "-journeys"));
     element.addEventListener("datum-error", (event) => errors.push((event as CustomEvent<{ message: string }>).detail.message));
     document.body.append(element);
     control.holdPdf!.reject(new Error("chunk missing"));
@@ -330,7 +329,7 @@ describe("<datum-form-builder>'s PDF and Journeys modes as chunks", { timeout: 2
     };
     control.holdPdf = { promise: Promise.resolve(throwing), resolve: () => undefined, reject: () => undefined };
     const errors: string[] = [];
-    const element = create((el) => el.setAttribute("journeys", "off"));
+    const element = create((el) => el.setAttribute("features", "-journeys"));
     element.addEventListener("datum-error", (event) => errors.push((event as CustomEvent<{ message: string }>).detail.message));
     document.body.append(element);
     await until(() => errors.length > 0);
@@ -346,7 +345,7 @@ describe("<datum-form-builder>'s PDF and Journeys modes as chunks", { timeout: 2
 
   it("enters the workspace asked for while the mode was coming when its chunk came while off the page", async () => {
     await hold("pdf");
-    const element = await mount((el) => el.setAttribute("journeys", "off"));
+    const element = await mount((el) => el.setAttribute("features", "-journeys"));
     expect(element.setWorkspace("pdf")).toBe(true);
     element.remove();
     control.holdPdf!.resolve();
@@ -360,7 +359,7 @@ describe("<datum-form-builder>'s PDF and Journeys modes as chunks", { timeout: 2
 
   it("drops a side asked for while its chunk was coming once the author moves elsewhere", async () => {
     await hold("journey");
-    const element = await mount((el) => el.setAttribute("pdf", "off"));
+    const element = await mount((el) => el.setAttribute("features", "-pdf"));
     expect(element.setMode("journeys")).toBe(true);
     // The author opens Logic meanwhile: the chunk's arrival must not pull them off it.
     element.builder!.setWorkspace("logic");
@@ -376,7 +375,7 @@ describe("<datum-form-builder>'s PDF and Journeys modes as chunks", { timeout: 2
     await hold("pdf");
     await hold("journey");
     const definition = fullDefinition();
-    (definition.pdf!.layouts![0]! as { when?: unknown }).when = { kind: "path", path: "fullName" };
+    (definition.pdf!.layouts![0]! as { when?: unknown }).when = "fullName";
     const element = await mount(undefined, definition);
     const changes: Array<{ mode: string; reason: string }> = [];
     element.addEventListener("datum-builder-change", (event) => changes.push((event as CustomEvent<{ mode: string; reason: string }>).detail));
@@ -384,7 +383,7 @@ describe("<datum-form-builder>'s PDF and Journeys modes as chunks", { timeout: 2
     await until(() => changes.some((change) => change.mode === "journeys"));
     expect(changes.map((change) => `${change.mode}:${change.reason}`)).toEqual(expect.arrayContaining(["pdf:layouts", "journeys:form-rename"]));
     expect(element.definition.journey!.journeys![0]!.pages[0]!.components).toEqual(["applicantName"]);
-    expect((element.definition.pdf!.layouts![0]! as { when?: unknown }).when).toEqual({ kind: "path", path: "applicantName" });
+    expect((element.definition.pdf!.layouts![0]! as { when?: unknown }).when).toBe("applicantName");
     const renamed = JSON.stringify(element.definition);
 
     control.holdJourney!.resolve();
@@ -398,9 +397,9 @@ describe("<datum-form-builder>'s PDF and Journeys modes as chunks", { timeout: 2
 
   it("follows a rename into the journeys and layouts of sides that are off or hidden", async () => {
     const definition = fullDefinition();
-    (definition.pdf!.layouts![0]! as { when?: unknown }).when = { kind: "path", path: "fullName" };
+    (definition.pdf!.layouts![0]! as { when?: unknown }).when = "fullName";
     const element = await mount((el) => {
-      el.setAttribute("journeys", "off");
+      el.setAttribute("features", "-journeys");
       el.setAttribute("hidden-workspaces", "pdf");
     }, definition);
     await settle();
@@ -411,7 +410,7 @@ describe("<datum-form-builder>'s PDF and Journeys modes as chunks", { timeout: 2
     await until(() => journeyChanges.length > 0);
     expect(journeyChanges).toEqual(["form-rename"]);
     expect(element.definition.journey!.journeys![0]!.pages[0]!.components).toEqual(["applicantName"]);
-    expect((element.definition.pdf!.layouts![0]! as { when?: unknown }).when).toEqual({ kind: "path", path: "applicantName" });
+    expect((element.definition.pdf!.layouts![0]! as { when?: unknown }).when).toBe("applicantName");
     expect(control.pdfCalls + control.journeyCalls).toBe(0);
     // Round trip: the definition as read back seeds an element that reads it back the same.
     const saved = JSON.stringify(element.definition);
@@ -423,7 +422,7 @@ describe("<datum-form-builder>'s PDF and Journeys modes as chunks", { timeout: 2
   it("follows a rename made after a failed load, and the retried mode registers with it", async () => {
     await hold("journey");
     const errors: string[] = [];
-    const element = create((el) => el.setAttribute("pdf", "off"));
+    const element = create((el) => el.setAttribute("features", "-pdf"));
     element.addEventListener("datum-error", (event) => errors.push((event as CustomEvent<{ message: string }>).detail.message));
     document.body.append(element);
     await until(() => element.builder?.shadowRoot?.querySelector("datum-builder-canvas"));

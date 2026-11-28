@@ -128,28 +128,7 @@
                 "type": "journey-value",
                 "configuration": {
                   "to": "annualIncome",
-                  "value": {
-                    "kind": "arithmetic",
-                    "operator": "multiply",
-                    "left": {
-                      "kind": "call",
-                      "name": "sum",
-                      "args": [
-                        {
-                          "kind": "path",
-                          "path": "monthlyPay"
-                        },
-                        {
-                          "kind": "path",
-                          "path": "monthlyOther"
-                        }
-                      ]
-                    },
-                    "right": {
-                      "kind": "literal",
-                      "value": 12
-                    }
-                  }
+                  "value": "sum(monthlyPay, monthlyOther) * 12"
                 }
               }
             ]

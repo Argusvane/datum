@@ -25,7 +25,6 @@ const PACKAGE_SOURCES = new Set([
   "src/standard-components.ts",
   "src/plugins.ts",
   "src/support.ts",
-  "src/host-context.ts",
   "src/server-validator.ts",
   "src/server-validator-error.ts"
 ]);

@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import type { ComponentNode } from "../form-engine/core/schema/types.js";
 import { validateJourneyShape, type Journey } from "../form-engine/core/schema/journey.js";
 import { isValidComponentId } from "../form-engine/core/tree/component-id.js";
@@ -24,8 +23,8 @@ import {
 } from "../form-engine/builder/journey-designer/journey-tree.js";
 import { applyJourney, presentationForm, presentationRoot, publicVariant } from "./fixtures/presentation-form.js";
 
-function contactMethodIs(value: string): Expression {
-  return { kind: "binary", operator: "eq", left: { kind: "path", path: "contactMethod" }, right: { kind: "literal", value } };
+function contactMethodIs(value: string): string {
+  return `contactMethod = ${JSON.stringify(value)}`;
 }
 
 /** A journey that every piece of a journey appears in once. */
@@ -130,7 +129,7 @@ describe("treeFromJourney", () => {
   it("shares nothing with the journey it was made from", () => {
     const journey = structuredClone(DEMO_JOURNEY);
     const root = treeFromJourney(journey);
-    (config(slot(pageNode(root, 1), JOURNEY_ROUTES_SLOT)[0]).when as { operator: string }).operator = "neq";
+    config(slot(pageNode(root, 1), JOURNEY_ROUTES_SLOT)[0]).when = 'contactMethod != "phone"';
     (config(root).texts as Record<string, unknown>).back = "Go back";
     expect(journey).toEqual(DEMO_JOURNEY);
   });
@@ -564,7 +563,7 @@ describe("a presentation's own nodes", () => {
                 id: "outer",
                 type: "fieldset",
                 configuration: { label: "Outer" },
-                rules: { visibleWhen: { kind: "path", path: "name" } },
+                rules: { visibleWhen: "name" },
                 children: {
                   content: [
                     {
@@ -595,7 +594,7 @@ describe("a presentation's own nodes", () => {
     expect(slot(inner, "content")[0]).toEqual({ id: "journey-field_2", type: JOURNEY_FIELD_TYPE, configuration: { componentId: "email" } });
     expect(slot(middle, "content")[1]?.id).toBe("journey-field_3");
     expect(slot(outer, "content")[1]?.id).toBe("journey-field_4");
-    expect(outer.rules).toEqual({ visibleWhen: { kind: "path", path: "name" } });
+    expect(outer.rules).toEqual({ visibleWhen: "name" });
     expect(JSON.stringify(written)).toBe(given);
     expect(validateJourneyShape(written)).toEqual([]);
   });
@@ -695,7 +694,7 @@ describe("a presentation's own nodes", () => {
               { id: "rows", type: "repeatingSection", configuration: { label: "Rows" }, children: { content: [{ id: "row_name", type: "text" }] } },
               { id: "bound", type: "text", configuration: { label: "Bound", dataKey: "elsewhere" } },
               { id: "alias", type: "text", configuration: { label: "Fills the form", fills: "money" } },
-              { id: "worked", type: "journey-value", configuration: { to: "ghost", value: { kind: "literal", value: 1 } } }
+              { id: "worked", type: "journey-value", configuration: { to: "ghost", value: "1" } }
             ]
           }
         ]

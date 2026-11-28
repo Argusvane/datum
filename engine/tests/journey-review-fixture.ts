@@ -59,7 +59,7 @@ export function homeFields(): ComponentNode[] {
       }
     },
     { id: "cost", type: "number", configuration: { label: "Estimated cost", prefix: "$" } },
-    { id: "secret", type: "text", configuration: { label: "Only for the roof" }, rules: { visibleWhen: { kind: "binary", operator: "eq", left: { kind: "path", path: "work" }, right: { kind: "literal", value: "roof" } } } } as ComponentNode,
+    { id: "secret", type: "text", configuration: { label: "Only for the roof" }, rules: { visibleWhen: 'work = "roof"' } } as ComponentNode,
     { id: "notes", type: "textarea", configuration: { label: "Notes" } },
     { id: "unplaced", type: "text", configuration: { label: "On no step" } }
   ];
@@ -71,7 +71,7 @@ export function homeJourney(review: Journey["pages"][number]["review"] = undefin
     progress: "count",
     pages: [
       { id: "home", title: "Your home", components: ["main", "address", "people"] },
-      { id: "owning", title: "Owning or renting", components: ["tenure"], routes: [{ when: { kind: "binary", operator: "eq", left: { kind: "path", path: "tenure" }, right: { kind: "literal", value: "own" } }, to: "work" }] } as Journey["pages"][number],
+      { id: "owning", title: "Owning or renting", components: ["tenure"], routes: [{ when: 'tenure = "own"', to: "work" }] } as Journey["pages"][number],
       { id: "landlord", title: "Your landlord", components: ["landlord", "agreed"] },
       // A step with no title is headed by its first answer; a field listed twice stays on the first step.
       { id: "work", components: ["work", "cost", "secret", "address"] },

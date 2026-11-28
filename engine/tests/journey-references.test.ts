@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { Expression } from "../form-engine/core/expressions/expression.js";
+import type { RuleSource } from "../form-engine/core/expressions/expression.js";
 import type { ComponentNode } from "../form-engine/core/schema/types.js";
 import { validateJourneyShape, type Journey, type JourneyConfiguration, type JourneyPageEntry } from "../form-engine/core/schema/journey.js";
 import {
@@ -20,12 +20,9 @@ import {
 import { journeyFromTree, treeFromJourney } from "../form-engine/builder/journey-designer/journey-tree.js";
 import { applyJourney, presentationForm, publicVariant } from "./fixtures/presentation-form.js";
 
-function path(value: string): Expression {
-  return { kind: "path", path: value };
-}
-
-function eq(read: string, value: string): Expression {
-  return { kind: "binary", operator: "eq", left: path(read), right: { kind: "literal", value } };
+/** The formula `read = "value"`. */
+function eq(read: string, value: string): string {
+  return `${read} = ${JSON.stringify(value)}`;
 }
 
 const JOURNEY: Journey = {
@@ -41,15 +38,7 @@ const JOURNEY: Journey = {
       id: "address",
       components: ["mailingAddress"],
       routes: [
-        {
-          when: {
-            kind: "logical",
-            operator: "and",
-            left: { kind: "unary", operator: "not", operand: eq("contactMethod", "none") },
-            right: { kind: "call", name: "contains", args: [path("applicants[0].name"), path("contactMethodology")] }
-          },
-          to: "details"
-        },
+        { when: 'not(contactMethod = "none") and contains(`applicants[0].name`, contactMethodology)', to: "details" },
         { to: "$end" }
       ]
     },
@@ -77,18 +66,12 @@ describe("renamePathSegment", () => {
 });
 
 describe("renameConditionPaths", () => {
-  it("renames every path node that reads the component, however deep, and nothing else", () => {
-    const condition = JOURNEY.pages[1]?.routes?.[0]?.when as Expression;
+  it("renames every path that reads the component, however deep, and nothing else", () => {
+    const condition = JOURNEY.pages[1]?.routes?.[0]?.when;
     const renamed = renameConditionPaths(condition, "contactMethod", "contact");
-    expect(renamed).toEqual({
-      kind: "logical",
-      operator: "and",
-      left: { kind: "unary", operator: "not", operand: eq("contact", "none") },
-      right: { kind: "call", name: "contains", args: [path("applicants[0].name"), path("contactMethodology")] }
-    });
-    // Unchanged branches are the same objects; the input is left alone.
-    expect((renamed as { right: unknown }).right).toBe((condition as { right: unknown }).right);
-    expect(condition).toEqual(JOURNEY.pages[1]?.routes?.[0]?.when);
+    expect(renamed).toBe('not(contact = "none") and contains(`applicants[0].name`, contactMethodology)');
+    // The input is left alone.
+    expect(condition).toBe('not(contactMethod = "none") and contains(`applicants[0].name`, contactMethodology)');
   });
 
   it("gives back the same condition when nothing reads the component", () => {
@@ -124,7 +107,7 @@ describe("renameJourneyReferences", () => {
     expect(journeyReferencesComponent(JOURNEY, "applicants")).toBe(true);
     expect(journeyReferencesComponent(JOURNEY, "birthDate")).toBe(false);
     expect(conditionReadsComponent(JOURNEY.pages[1]?.routes?.[0]?.when, "contactMethodology")).toBe(true);
-    expect(conditionReadsComponent({ kind: "path", path: "row.contactMethod" }, "row")).toBe(false);
+    expect(conditionReadsComponent("row.contactMethod", "row")).toBe(false);
   });
 });
 
@@ -222,18 +205,13 @@ describe("a rename followed into a presentation's own nodes", () => {
     expect(Object.keys(total.configuration)).toEqual(["to", "value", "label"]);
     // The own fields beside it are the same objects; the route reading the form field follows.
     expect(renamed.pages[1]?.components?.[0]).toBe(journey.pages[1]?.components?.[0]);
-    expect(renamed.pages[1]?.routes?.[0]?.when).toEqual({
-      kind: "binary",
-      operator: "gte",
-      left: path("income"),
-      right: { kind: "literal", value: 50000 }
-    });
+    expect(renamed.pages[1]?.routes?.[0]?.when).toBe("income >= 50000");
     expect(renamed.pages[0]).toBe(journey.pages[0]);
     expect(validateJourneyShape(renamed)).toEqual([]);
   });
 
   it("never renames a worked-out value's expression, even where it spells the old id", () => {
-    const value: Expression = { kind: "call", name: "sum", args: [path("m1"), path("bonus")] };
+    const value = "sum(m1, bonus)";
     const journey = journeyWith(
       { id: "m1", type: "number", configuration: { label: "Month 1" } },
       { id: "total", type: "journey-value", configuration: { to: "annual_income", value } }
@@ -285,7 +263,7 @@ describe("a rename followed into a presentation's own nodes", () => {
     const journey = journeyWith({
       id: "extra",
       type: "text",
-      rules: { visibleWhen: { kind: "logical", operator: "and", left: eq("host.contactMethod", "x"), right: eq("contactMethodology", "y") } }
+      rules: { visibleWhen: `${eq("host.contactMethod", "x")} and ${eq("contactMethodology", "y")}` }
     });
     expect(renameJourneyReferences(journey, "contactMethod", "contact")).toBe(journey);
   });
@@ -311,15 +289,15 @@ describe("a rename followed into a presentation's own nodes", () => {
   it("keeps a __proto__ key inside an own node's rule as a key of the copy, byte for byte", () => {
     const text =
       '{"journeys":[{"id":"g","pages":[{"id":"p","title":"P","components":["email",' +
-      '{"id":"own","type":"text","configuration":{"label":"Own"},"rules":{"visibleWhen":{"kind":"binary","operator":"eq","__proto__":{"note":"kept"},"left":{"kind":"path","path":"name"},"right":{"kind":"literal","value":"x"}}}}]}]}]}';
+      '{"id":"own","type":"text","configuration":{"label":"Own"},"rules":{"visibleWhen":{"formula":"name = \\"x\\"","__proto__":{"note":"kept"},"run":"both"}}}]}]}]}';
     const renamed = renameReferencesInConfiguration(JSON.parse(text) as JourneyConfiguration, "name", "full_name");
-    expect(JSON.stringify(renamed)).toBe(text.replace('"path":"name"', '"path":"full_name"'));
+    expect(JSON.stringify(renamed)).toBe(text.replace('"formula":"name ', '"formula":"full_name '));
     const own = renamed?.journeys?.[0]?.pages[0]?.components?.[1] as unknown as { rules: { visibleWhen: object } };
     expect(Object.getPrototypeOf(own.rules.visibleWhen)).toBe(Object.prototype);
     expect(Object.prototype.hasOwnProperty.call(own.rules.visibleWhen, "__proto__")).toBe(true);
     // A condition of a page, the same.
-    const when = JSON.parse('{"kind":"binary","operator":"eq","__proto__":{"x":1},"left":{"kind":"path","path":"name"},"right":{"kind":"literal","value":1}}');
-    expect(JSON.stringify(renameConditionPaths(when, "name", "full_name"))).toBe(JSON.stringify(when).replace('"path":"name"', '"path":"full_name"'));
+    const when = JSON.parse('{"__proto__":{"x":1},"formula":"name = 1"}');
+    expect(JSON.stringify(renameConditionPaths(when, "name", "full_name"))).toBe(JSON.stringify(when).replace('"formula":"name ', '"formula":"full_name '));
   });
 
   it("lists every id a presentation's own nodes carry, all the way down, in every journey and variant", () => {
@@ -363,7 +341,7 @@ describe("renames in a designer's tree holding a presentation's own nodes", () =
       id: "why",
       type: "text",
       configuration: { label: "Why?" },
-      rules: { visibleWhen: eq("email", "x"), enabledWhen: path("m1"), readonlyWhen: { kind: "call", name: "not", args: [path("name")] } }
+      rules: { visibleWhen: eq("email", "x"), enabledWhen: "m1", readonlyWhen: "not(name)" }
     });
     return journey;
   }
@@ -397,8 +375,8 @@ describe("renames in a designer's tree holding a presentation's own nodes", () =
     const root = treeFromJourney(journey);
     const edits = journeyOwnRenames(root, "m1", "month_1");
     expect(edits).toEqual([
-      { nodeId: "why", property: "enabledWhen", value: path("month_1"), rules: true },
-      { nodeId: "income_total", property: "value", value: { kind: "call", name: "sum", args: [path("month_1"), path("m2"), path("m3")] } }
+      { nodeId: "why", property: "enabledWhen", value: "month_1", rules: true },
+      { nodeId: "income_total", property: "value", value: "sum(month_1, m2, m3)" }
     ]);
     // Renamed with its reads, the tree writes the journey with the new id everywhere it was read.
     const m1 = treeFromJourney(journey);
@@ -406,9 +384,9 @@ describe("renames in a designer's tree holding a presentation's own nodes", () =
     const page = renamed.children!.pages![1]!;
     page.children!.content![0]!.id = "month_1";
     const written = JSON.stringify(journeyFromTree(renamed, "apply"));
-    expect(written).toBe(JSON.stringify(journey).replace('"id":"m1"', '"id":"month_1"').replace(/"path":"m1"/g, '"path":"month_1"'));
+    expect(written).toBe(JSON.stringify(journey).replace('"id":"m1"', '"id":"month_1"').replace('"enabledWhen":"m1"', '"enabledWhen":"month_1"').replace("sum(m1, m2, m3)", "sum(month_1, m2, m3)"));
     // A page's condition or a route reads form values only: never rewritten by an own rename.
-    const routed = treeFromJourney({ id: "j", pages: [{ id: "p", components: [{ id: "own", type: "text" }], routes: [{ when: path("own"), to: "$end" }] }] });
+    const routed = treeFromJourney({ id: "j", pages: [{ id: "p", components: [{ id: "own", type: "text" }], routes: [{ when: "own", to: "$end" }] }] });
     expect(journeyOwnRenames(routed, "own", "mine")).toEqual([]);
     expect(journeyOwnRenames(root, "m1", "m1")).toEqual([]);
   });
@@ -432,7 +410,7 @@ describe("journeyRenameEdits", () => {
             components: [
               "email",
               { id: "journey", type: "text", configuration: { label: "J", fills: "name" } },
-              { id: "dup", type: "text", configuration: { label: "D1", fills: "name" }, rules: { visibleWhen: path("name") } },
+              { id: "dup", type: "text", configuration: { label: "D1", fills: "name" }, rules: { visibleWhen: "name" } },
               { id: "dup", type: "text", configuration: { label: "D2", fills: "name" } }
             ]
           }
@@ -445,7 +423,7 @@ describe("journeyRenameEdits", () => {
     const root = treeFromJourney(applyJourney());
     expect(journeyRenameEdits(root, "form", "email", "mail")).toEqual([{ componentId: "work_email", propertyPath: "fills", value: "mail" }]);
     expect(journeyRenameEdits(root, "own", "m1", "month_1")).toEqual([
-      { componentId: "income_total", propertyPath: "value", value: { kind: "call", name: "sum", args: [path("month_1"), path("m2"), path("m3")] } }
+      { componentId: "income_total", propertyPath: "value", value: "sum(month_1, m2, m3)" }
     ]);
   });
 
@@ -455,7 +433,7 @@ describe("journeyRenameEdits", () => {
     expect(edits).toHaveLength(1);
     expect(edits[0]).toMatchObject({ componentId: root.id, propertyPath: "", target: "children" });
     const renamed = { ...root, children: edits[0]!.value as Record<string, ComponentNode[]> };
-    const expected = JSON.stringify(sharing()).replace(/"fills":"name"/g, '"fills":"fullname"').replace('"path":"name"', '"path":"fullname"');
+    const expected = JSON.stringify(sharing()).replace(/"fills":"name"/g, '"fills":"fullname"').replace('"visibleWhen":"name"', '"visibleWhen":"fullname"');
     expect(JSON.stringify(journeyFromTree(renamed, "j"))).toBe(expected);
     // The tree it was given is left as it was; nothing to rename, nothing to write.
     expect(JSON.stringify(journeyFromTree(root, "j"))).toBe(JSON.stringify(sharing()));
@@ -503,12 +481,12 @@ describe("journeyOwnNodeIds and references written with an id", () => {
 });
 
 describe("a journey condition stored as a formula", () => {
-  const journeyWithWhen = (when: unknown, routeWhen: unknown): Journey => ({
+  const journeyWithWhen = (when: RuleSource, routeWhen: RuleSource): Journey => ({
     id: "j",
     name: "J",
     pages: [
-      { id: "p1", components: ["contactMethod"], routes: [{ when: routeWhen as Expression, to: "p2" }, { to: "$end" }] },
-      { id: "p2", components: ["notes"], routes: [{ when: when as Expression, to: "$end" }] }
+      { id: "p1", components: ["contactMethod"], routes: [{ when: routeWhen, to: "p2" }, { to: "$end" }] },
+      { id: "p2", components: ["notes"], routes: [{ when, to: "$end" }] }
     ]
   });
 
@@ -523,18 +501,18 @@ describe("a journey condition stored as a formula", () => {
     expect(conditionReadsComponent('other = "contactMethod"', "contactMethod")).toBe(false);
   });
 
-  it("renames the object form's formula and expression both, and keeps its run scope", () => {
-    const when = { formula: "`contactMethod` = \"mail\"", expression: eq("contactMethod", "mail"), run: "server" as const };
+  it("renames the object form's formula, and keeps its run scope", () => {
+    const when = { formula: "`contactMethod` = \"mail\"", run: "server" as const };
     const renamed = renameConditionPaths(when, "contactMethod", "contact");
-    expect(renamed).toEqual({ formula: 'contact = "mail"', expression: eq("contact", "mail"), run: "server" });
+    expect(renamed).toEqual({ formula: 'contact = "mail"', run: "server" });
     expect(conditionReadsComponent(when, "contactMethod")).toBe(true);
     expect(conditionReadsComponent({ formula: "other = 1" }, "contactMethod")).toBe(false);
   });
 
-  it("leaves an unrelated string, a string inside a tree and a formula that does not parse byte for byte", () => {
+  it("leaves an unrelated string, a text literal inside a formula and a formula that does not parse byte for byte", () => {
     const unrelated = 'country = "CA"';
     expect(renameConditionPaths(unrelated, "contactMethod", "contact")).toBe(unrelated);
-    const literal: Expression = { kind: "binary", operator: "eq", left: path("other"), right: { kind: "literal", value: "contactMethod = 1" } };
+    const literal = 'other = "contactMethod = 1"';
     expect(renameConditionPaths(literal, "contactMethod", "contact")).toBe(literal);
     const broken = "contactMethod = ";
     expect(renameConditionPaths(broken, "contactMethod", "contact")).toBe(broken);

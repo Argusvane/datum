@@ -69,12 +69,10 @@ Take several away with one list: `features="-pdf -journeys -tests"`.
 
 ### The narrower switches
 
-These can only take more away from what `features` allows. They never bring a part back, and asking for a side the list left out is ignored with one warning.
+These can only take more away from what `features` allows. They never bring a part back.
 
 | Attribute | Takes | What it does |
 |---|---|---|
-| `pdf="off"` | `auto`, `off` or the URL of the PDF module | `off` removes the PDF mode |
-| `journeys="off"` | `auto` or `off` | `off` removes the Journeys mode. The definition's journeys pass through untouched |
 | `workspaces` | List of `form`, `logic`, `data`, `languages`, `journeys`, `pdf`, `print` | The only workspaces the bar offers. `pdf` or `journeys` alone is [that workspace on its own](/builder-element#one-workspace-alone). It does not remove the others' code |
 | `hidden-workspaces` | List of `form`, `logic`, `data`, `languages`, `journeys`, `pdf`, `print` | Leaves workspaces off the bar. It does not remove their code |
 | `hidden-panels` | List of `form`, `chrome`, `components`, `fields`, `outline`, `variables`, `tests`, `view`, `settings` | Leaves strip panels off. A hidden panel is never loaded and never the open one |

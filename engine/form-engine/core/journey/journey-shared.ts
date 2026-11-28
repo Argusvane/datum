@@ -5,8 +5,7 @@ import type { ComponentNode } from "../schema/types.js";
  * record, a value key's leading segment, where a repeating section's entries live (a data grid's
  * rows among them), and whether a node holds an answer of its own. The validation kernel, the browser
  * runtime, the builder and the PDF designer read them without a journey, so they live apart from
- * the path engine (`journey-path.ts`), which the journeys runtime alone needs and which re-exports
- * each of them: an importer of the path engine sees no change.
+ * the path engine (`journey-path.ts`), which the journeys runtime alone needs.
  *
  * The path engine's rules hold here too: type-only imports, top-level
  * `function` declarations only, standard globals, no module constants, plain records. Each is

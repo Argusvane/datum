@@ -176,7 +176,7 @@ describe("resolvePdfTheme — the form look and the kernel's fallbacks", () => {
     expect(resolvePdfTheme(DEFAULT_PDF_THEME)).toEqual(resolved);
   });
 
-  it("resolves the plain theme to the kernel's own fallbacks — the document drawn before the form look", () => {
+  it("resolves the plain theme to the kernel's own settings", () => {
     const plain = resolvePdfTheme(PLAIN_PDF_THEME);
     expect(plain.id).toBe("datum-plain");
     expect(plain.controls).toEqual({ ...PDF_KERNEL_FALLBACKS.controls });

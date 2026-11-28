@@ -90,8 +90,9 @@ export interface ErrorSummaryInput {
  */
 export function wordErrorSummary(input: ErrorSummaryInput): WordedErrorSummary {
   const { components, locale } = input;
-  const text: FormTextResolver = createFormTextResolver(locale, input.wording.texts, input.wording.translationCatalog, input.wording.bindingTexts, {
+  const text: FormTextResolver = createFormTextResolver(locale, input.wording.texts, input.wording.bindingTexts, {
     translations: input.wording.translations,
+    catalog: input.wording.translationCatalog,
     pack: input.wording.pack
   });
   const sources: TextSources = { translations: input.wording.translations, catalog: input.wording.translationCatalog };

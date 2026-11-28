@@ -302,10 +302,8 @@ describe("wasm validation host: formulas, the day and the run scopes cross the A
             type: "text",
             configuration: {},
             rules: {
-              // Trees, since the in-process adapter hands the kernel no parser signatures (its
-              // owner's request); the keys cross the ABI the same way for a formula.
-              visibleWhen: { kind: "binary", operator: "gt", left: { kind: "call", name: "today", args: [] }, right: { kind: "path", path: "start" } },
-              requiredWhen: { expression: { kind: "literal", value: true }, run: "server" }
+              visibleWhen: "today() > start",
+              requiredWhen: { formula: "true", run: "server" }
             }
           }
         ]

@@ -172,13 +172,9 @@ export interface DrawAreasOptions {
   strict?: boolean;
   /** PDF/A level "a": every drawn area and every widget made joins the template's structure tree. */
   tagging?: ExistingTagging;
-  /**
-   * The theme the fill plan was built under: what a content area draws with when
-   * its own `draw` says nothing. Absent (a plan from an older engine): the kernel's fallbacks,
-   * in the first resource's family.
-   */
-  typography?: PdfTypography;
-  colors?: PdfThemeColors;
+  /** The theme the fill plan was built under: what a content area draws with when its own `draw` says nothing. */
+  typography: PdfTypography;
+  colors: PdfThemeColors;
 }
 
 export async function drawAreas(
@@ -186,8 +182,8 @@ export async function drawAreas(
   areas: readonly PdfFillArea[],
   fonts: PdfFontResource[],
   warnings: PdfWarning[],
-  form?: PDFForm,
-  options: DrawAreasOptions = {}
+  form: PDFForm | undefined,
+  options: DrawAreasOptions
 ): Promise<PlacedAreas> {
   const fields = new Map<string, PDFTextField | PDFCheckBox>();
   if (areas.length === 0) {
@@ -196,14 +192,13 @@ export async function drawAreas(
   const { tagging } = options;
   // Embeds nothing until a content area needs a face, so fillable-only requests cost no font.
   const fontSet = new FontSet(pdf, fonts, {}, { strict: options.strict === true, noPrivateUse: tagging !== undefined });
-  const fallback = PDF_KERNEL_FALLBACKS.typography;
-  const family = fonts[0]?.family ?? fallback.body.family;
-  const colors = options.colors ?? PDF_KERNEL_FALLBACKS.colors;
+  const { colors } = options;
   const ctx: LayoutContext = {
     fonts: fontSet,
-    typography: options.typography ?? { ...fallback, body: { ...fallback.body, family } },
+    typography: options.typography,
     colors,
-    settings: resolveLayoutSettings(),
+    // A fill plan carries the theme's type and colours, not its geometry: an area lays out with the kernel's.
+    settings: resolveLayoutSettings(PDF_KERNEL_FALLBACKS),
     textDirection: "ltr",
     images: new Map(),
     warnings

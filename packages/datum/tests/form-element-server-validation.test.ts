@@ -9,7 +9,7 @@ import {
   type JourneyValidationRequest,
   type JourneyValidationResponse
 } from "../src/form.js";
-import type { CanonicalSubmission, DatumDownloadDetail, Expression, FormDefinition, Journey } from "@argusvane/datum-engine";
+import type { CanonicalSubmission, DatumDownloadDetail, FormDefinition, Journey } from "@argusvane/datum-engine";
 
 import { EMBED_SUBMISSION_MODE, versionContextFor } from "../src/runtime-factory.js";
 import { control } from "./live-dom.js";
@@ -27,12 +27,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const eq = (name: string, value: string): Expression => ({
-  kind: "binary",
-  operator: "eq",
-  left: { kind: "path", path: name },
-  right: { kind: "literal", value }
-});
+const eq = (name: string, value: string): string => `${name} = "${value}"`;
 
 /** about -> residence (resident) | overseas (not resident; checked with the service) -> contact. */
 function checkedJourney(overrides: Partial<Journey> = {}): Journey {

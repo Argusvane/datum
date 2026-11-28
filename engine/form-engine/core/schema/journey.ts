@@ -68,7 +68,7 @@ export interface JourneyValidationSettings extends JourneyValidation {
 }
 
 export interface JourneyRoute {
-  /** Absent: the route always matches. A formula, a tree or the object form (`RuleSource`); compiled to a tree before it is read. */
+  /** Absent: the route always matches. A formula or the object form (`RuleSource`); compiled to a tree before it is read. */
   when?: RuleSource;
   /** A later page's id, or {@link JOURNEY_END}. */
   to: string;
@@ -244,9 +244,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Whether `value` reads as a rule source (`RuleSource`): a formula string, an expression tree
- * (a record with a string `kind`), or the object form (a record with a string `formula` or a
- * tree `expression`). The shape only: whether a formula parses is the compile step's to report.
+ * Whether `value` reads as a rule source: a formula string or the object form (a record with a
+ * string `formula`), or what a compiled journey holds in its place (a tree, or the object form's
+ * tree `expression`). The shape only: whether a formula parses, and that an authored rule is no
+ * tree, is the compile step's to report.
  */
 function isExpressionLike(value: unknown): boolean {
   if (typeof value === "string") {

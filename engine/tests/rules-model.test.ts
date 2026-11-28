@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import {
   applicableRuleDescriptors,
   buildRuleEditorState,
@@ -10,7 +9,6 @@ import {
   parseConditionValue,
   parseExpressionJson,
   RULE_DESCRIPTORS,
-  ruleEditorText,
   ruleRunControl,
   withRule
 } from "../form-engine/builder/property-editor/rules-model.js";
@@ -52,10 +50,7 @@ describe("applicable rules", () => {
       "readonlyWhen"
     ]);
     // A rule authored under another key is the panel's to leave alone, not to drop.
-    expect(withRule({ requiredWhen: { kind: "path", path: "a" } }, "visibleWhen", { kind: "path", path: "b" })).toEqual({
-      requiredWhen: { kind: "path", path: "a" },
-      visibleWhen: { kind: "path", path: "b" }
-    });
+    expect(withRule({ requiredWhen: "a" }, "visibleWhen", "b")).toEqual({ requiredWhen: "a", visibleWhen: "b" });
   });
 
   it("leaves Required when out for a component that cannot be required, and offers everything else as before", () => {
@@ -129,12 +124,6 @@ describe("expression JSON", () => {
   });
 });
 
-const CONTAINS: Expression = {
-  kind: "call",
-  name: "contains",
-  args: [{ kind: "path", path: "tags" }, { kind: "literal", value: "x" }]
-};
-
 describe("rule editor state", () => {
   it("covers every rule the engine evaluates", () => {
     expect(RULE_DESCRIPTORS.map((entry) => entry.key)).toEqual([
@@ -163,19 +152,6 @@ describe("rule editor state", () => {
       text: "amount > 100",
       run: "server-secret"
     });
-    expect(buildRuleEditorState("value", { expression: { kind: "path", path: "a" }, run: "server" })).toMatchObject({ text: "a", run: "server" });
-  });
-
-  it("opens a legacy tree printed with ids, never labels, and a value rule's cases one per line", () => {
-    expect(buildRuleEditorState("visibleWhen", { kind: "path", path: "a" }).text).toBe("a");
-    expect(buildRuleEditorState("visibleWhen", CONTAINS).text).toBe('contains(tags, "x")');
-    const cases: Expression = {
-      kind: "if",
-      cases: [{ when: { kind: "binary", operator: "eq", left: { kind: "path", path: "size" }, right: { kind: "literal", value: "L" } }, then: { kind: "literal", value: 250 } }],
-      else: { kind: "literal", value: 120 }
-    };
-    expect(buildRuleEditorState("value", cases).text).toBe('if size = "L"\n  then 250\nelse 120');
-    expect(ruleEditorText(cases, RULE_DESCRIPTORS[0]!)).toBe('if size = "L" then 250 else 120');
   });
 
   it("lays the panel's working copy over the draft: the mode chosen, the text typed, the problem said", () => {
@@ -200,44 +176,24 @@ describe("rule editor state", () => {
 
 describe("what the draft gets", () => {
   it("writes the text as a string, or the object form for a scope other than both, and nothing for a blank box", () => {
-    expect(composeRuleSource(undefined, "a > 1", "both")).toBe("a > 1");
-    expect(composeRuleSource(undefined, "a > 1", "server")).toEqual({ formula: "a > 1", run: "server" });
-    expect(composeRuleSource("old", "   ", "both")).toBeUndefined();
-    expect(composeRuleSource({ formula: "old", run: "server" }, "", "server")).toBeUndefined();
-  });
-
-  it("keeps a stored tree byte for byte while the text still prints it, and carries its scope", () => {
-    expect(composeRuleSource(CONTAINS, 'contains(tags, "x")', "both")).toBe(CONTAINS);
-    expect(composeRuleSource(CONTAINS, 'contains(tags, "x")', "server-secret")).toEqual({ expression: CONTAINS, run: "server-secret" });
-    expect(composeRuleSource({ expression: CONTAINS, run: "server" }, 'contains(tags, "x")', "both")).toBe(CONTAINS);
-    // Edited, it is a string from then on.
-    expect(composeRuleSource(CONTAINS, 'contains(tags, "y")', "both")).toBe('contains(tags, "y")');
-  });
-
-  it("compares against what the form holds, never the draft: a tree typed into and typed back is the tree again", () => {
-    // The first keystroke turned the draft into a string; the comparison is still against the stored tree.
-    expect(composeRuleSource(CONTAINS, 'contains(tags, "y")', "both")).toBe('contains(tags, "y")');
-    expect(composeRuleSource(CONTAINS, 'contains(tags, "x")', "both")).toBe(CONTAINS);
-    // A run scope chosen over an untouched tree carries the tree; over a stored string, the string.
-    expect(composeRuleSource(CONTAINS, 'contains(tags, "x")', "server")).toEqual({ expression: CONTAINS, run: "server" });
-    expect(composeRuleSource('contains(tags, "x")', 'contains(tags, "x")', "server")).toEqual({ formula: 'contains(tags, "x")', run: "server" });
+    expect(composeRuleSource("a > 1", "both")).toBe("a > 1");
+    expect(composeRuleSource("a > 1", "server")).toEqual({ formula: "a > 1", run: "server" });
+    expect(composeRuleSource("   ", "both")).toBeUndefined();
+    expect(composeRuleSource("", "server")).toBeUndefined();
     // Text that does not parse is written as typed all the same: the draft equals the box.
-    expect(composeRuleSource(CONTAINS, "contains(tags, +", "both")).toBe("contains(tags, +");
+    expect(composeRuleSource("contains(tags, +", "both")).toBe("contains(tags, +");
   });
 
-  it("knows the three stored shapes, and refuses the rest", () => {
+  it("knows the two stored shapes, and refuses the rest, an expression tree among them", () => {
     expect(isRuleSourceShape("a > 1")).toBe(true);
-    expect(isRuleSourceShape(CONTAINS)).toBe(true);
     expect(isRuleSourceShape({ formula: "a", run: "browser" })).toBe(true);
-    expect(isRuleSourceShape({ expression: CONTAINS })).toBe(true);
     expect(isRuleSourceShape({ formula: "a", run: "sometimes" })).toBe(false);
     expect(isRuleSourceShape({ run: "server" })).toBe(false);
-    expect(isRuleSourceShape({ expression: { kind: "pathh", path: "a" } })).toBe(false);
+    expect(isRuleSourceShape({ kind: "path", path: "a" })).toBe(false);
+    expect(isRuleSourceShape({ expression: { kind: "path", path: "a" } })).toBe(false);
+    expect(isRuleSourceShape({ formula: "a", expression: { kind: "path", path: "a" } })).toBe(false);
     expect(isRuleSourceShape(7)).toBe(false);
     expect(isRuleSourceShape([])).toBe(false);
-    // A call to a plugin function is a tree when the name is known.
-    expect(isRuleSourceShape({ kind: "call", name: "regionTax", args: [] })).toBe(false);
-    expect(isRuleSourceShape({ kind: "call", name: "regionTax", args: [] }, ["regionTax"])).toBe(true);
   });
 });
 
@@ -251,7 +207,7 @@ describe("a builder mode's own rule", () => {
   };
 
   it("builds its editor state from the descriptor itself, under its own key", () => {
-    const state = buildRuleEditorState(when, { kind: "path", path: "contactMethod" });
+    const state = buildRuleEditorState(when, "contactMethod");
     expect(state.key).toBe("when");
     expect(state.descriptor).toBe(when);
     expect(state.mode).toBe("formula");
@@ -267,20 +223,20 @@ describe("a builder mode's own rule", () => {
 
 describe("withRule", () => {
   it("writes one rule and leaves the others alone, strings and object forms alike", () => {
-    const rules = withRule({ visibleWhen: { kind: "path", path: "a" } }, "requiredWhen", "b");
+    const rules = withRule({ visibleWhen: "a" }, "requiredWhen", "b");
     expect(rules).toEqual({
-      visibleWhen: { kind: "path", path: "a" },
+      visibleWhen: "a",
       requiredWhen: "b"
     });
     expect(withRule(rules, "value", { formula: "a + 1", run: "server" })).toEqual({
-      visibleWhen: { kind: "path", path: "a" },
+      visibleWhen: "a",
       requiredWhen: "b",
       value: { formula: "a + 1", run: "server" }
     });
   });
 
   it("drops the key on no rule, and the whole object once nothing is left", () => {
-    expect(withRule({ visibleWhen: { kind: "path", path: "a" } }, "visibleWhen", undefined)).toBeUndefined();
+    expect(withRule({ visibleWhen: "a" }, "visibleWhen", undefined)).toBeUndefined();
     expect(withRule(undefined, "visibleWhen", undefined)).toBeUndefined();
   });
 });

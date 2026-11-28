@@ -371,11 +371,9 @@ export class QuickJsWorkerHost {
   private startWorker(): void {
     const steps = [
       // A sandbox serves one call and never sees a definition twice, so the program's
-      // prepared-definition cache is sized to nothing (it reads the number as it starts; a program
-      // that keeps the cache on its global, a shipped older one, is bounded after it loads).
+      // prepared-definition cache is sized to nothing (it reads the number as it starts).
       { label: "sandbox-cache-bound", code: "globalThis.__datum_cache_chars = 0;" },
       { label: "sandbox-program", code: this.program },
-      { label: "sandbox-cache-bound", code: 'if (typeof __datum_prepared !== "undefined") { __datum_prepared.maxChars = 0; }' },
       ...(this.freezeIntrinsics ? [{ label: "sandbox-freeze", code: FREEZE_INTRINSICS_SNIPPET }] : [])
     ];
     const worker = new Worker(WORKER_FILE, {

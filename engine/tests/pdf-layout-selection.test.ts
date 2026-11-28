@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it, vi } from "vitest";
 
-import type { Expression } from "../form-engine/core/expressions/expression.js";
+import type { Expression, RuleSource } from "../form-engine/core/expressions/expression.js";
 import {
   PDF_DOCUMENT_COMPONENT_TYPE,
   findPdfLayout,
@@ -24,20 +24,23 @@ import { buildPdfRenderModel, compilePdfDefinition } from "../form-engine/render
 // `when` holds on the submittable answers by component id; else the declared default; else
 // the first; else one derived from the form. An explicit id or layout wins over conditions.
 
-const QUEBEC: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "province" }, right: { kind: "literal", value: "QC" } };
-const LARGE: Expression = { kind: "path", path: "largePrint" };
-const ALWAYS: Expression = { kind: "literal", value: true };
+const QUEBEC = 'province = "QC"';
+const LARGE = "largePrint";
+const ALWAYS = "true";
+/** The trees the parser reads the first two as. */
+const QUEBEC_TREE: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "province" }, right: { kind: "literal", value: "QC" } };
+const LARGE_TREE: Expression = { kind: "path", path: "largePrint" };
 
 function generated(id: string, when?: unknown): PdfGeneratedLayout {
   return {
     id,
     kind: "generated",
-    ...(when !== undefined ? { when: when as Expression } : {}),
+    ...(when !== undefined ? { when: when as RuleSource } : {}),
     root: { id: "document", type: PDF_DOCUMENT_COMPONENT_TYPE, configuration: {}, children: { body: [], header: [], footer: [] } }
   };
 }
 
-function template(id: string, when?: Expression): PdfTemplateLayout {
+function template(id: string, when?: RuleSource): PdfTemplateLayout {
   return {
     id,
     kind: "template",
@@ -120,7 +123,7 @@ describe("selectPdfLayout", () => {
 
   it("counts a condition that throws as not holding, and lists it", () => {
     const throwing: PdfConditionEvaluate = (expression, values) => {
-      if (expression === QUEBEC) {
+      if (JSON.stringify(expression) === JSON.stringify(QUEBEC_TREE)) {
         throw new Error("boom");
       }
       return evaluate(expression, values);
@@ -153,11 +156,11 @@ describe("selectPdfLayout", () => {
   it("reads a layout's condition at its top level only", () => {
     expect(readPdfLayoutCondition(generated("a"))).toBeUndefined();
     expect(readPdfLayoutCondition(generated("a", null))).toBeUndefined();
-    expect(readPdfLayoutCondition(generated("a", QUEBEC))).toEqual({ evaluable: true, expression: QUEBEC });
+    expect(readPdfLayoutCondition(generated("a", QUEBEC))).toEqual({ evaluable: true, expression: QUEBEC_TREE });
     expect(readPdfLayoutCondition(generated("a", "x +"))).toEqual({ evaluable: false, written: "x +" });
     // A string that parses is a condition: a formula over the answers.
     expect(readPdfLayoutCondition(generated("a", "x"))).toEqual({ evaluable: true, expression: { kind: "path", path: "x" } });
-    expect(readPdfLayoutCondition(template("t", LARGE))).toEqual({ evaluable: true, expression: LARGE });
+    expect(readPdfLayoutCondition(template("t", LARGE))).toEqual({ evaluable: true, expression: LARGE_TREE });
     // A `when` on the document root is not the layout's: the designer lifts one back to the top.
     const onRoot = { ...generated("a"), root: { ...generated("a").root, configuration: { when: ALWAYS } } };
     expect(readPdfLayoutCondition(onRoot)).toBeUndefined();
@@ -228,17 +231,14 @@ describe("selectPdfLayoutForValues", () => {
   });
 
   it("reads host., row. and ancestor. paths as unanswered: no host context reaches a condition", () => {
-    const hostly: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "host.region" }, right: { kind: "literal", value: "QC" } };
-    const unanswered: Expression = { kind: "unary", operator: "not", operand: { kind: "path", path: "row.province" } };
-    const scoped = { layouts: [generated("host", hostly), generated("row", unanswered), generated("standard")], defaultLayoutId: "standard" };
+    const scoped = { layouts: [generated("host", 'host.region = "QC"'), generated("row", "not(row.province)"), generated("standard")], defaultLayoutId: "standard" };
     expect(selectPdfLayoutForValues({ root, pdf: scoped }, { "address.province": "QC", "host.region": "QC" })).toMatchObject({ layout: { id: "row" }, choice: "condition" });
+    const hostly: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "host.region" }, right: { kind: "literal", value: "QC" } };
     expect(evaluate(hostly, { host: { region: "QC" } })).toBe(false);
   });
 
   it("reads each answer as the envelope's JSON carries it, and only the keys the schema defines", () => {
-    const answered: Expression = { kind: "binary", operator: "neq", left: { kind: "path", path: "largePrint" }, right: { kind: "literal", value: null } };
-    const spring: Expression = { kind: "binary", operator: "eq", left: { kind: "path", path: "campaign" }, right: { kind: "literal", value: "spring" } };
-    const reading = { layouts: [generated("standard"), generated("campaign", spring), generated("answered", answered)], defaultLayoutId: "standard" };
+    const reading = { layouts: [generated("standard"), generated("campaign", 'campaign = "spring"'), generated("answered", "largePrint != null")], defaultLayoutId: "standard" };
     // A calculation's NaN (or Infinity) is null on the wire, so it holds nowhere; an undefined entry is absent.
     for (const odd of [Number.NaN, Number.POSITIVE_INFINITY, null]) {
       expect(selectPdfLayoutForValues({ root, pdf: reading }, { largePrint: odd }).layout?.id, String(odd)).toBe("standard");
@@ -252,7 +252,6 @@ describe("selectPdfLayoutForValues", () => {
   });
 
   it("reads an unbound data grid's rows at its id, as the kernel and the browser do, so a condition on a row holds", () => {
-    const bigOrder: Expression = { kind: "binary", operator: "gt", left: { kind: "path", path: "orders[0].qty" }, right: { kind: "literal", value: 5 } };
     const columns: ComponentNode = {
       id: "root",
       type: "form",
@@ -261,7 +260,7 @@ describe("selectPdfLayoutForValues", () => {
         content: [{ id: "orders", type: "dataGrid", configuration: {}, children: { content: [{ id: "qty", type: "number", configuration: {} }] } }]
       }
     };
-    const layouts = { layouts: [generated("standard"), generated("bulk", bigOrder)], defaultLayoutId: "standard" };
+    const layouts = { layouts: [generated("standard"), generated("bulk", "`orders[0].qty` > 5")], defaultLayoutId: "standard" };
     // The kernel and the browser read `orders[0].qty` as the grid's row; so does the selection, flat or posted whole.
     expect(selectPdfLayoutForValues({ root: columns, pdf: layouts }, { "orders[0].qty": 10 }).layout?.id).toBe("bulk");
     expect(selectPdfLayoutForValues({ root: columns, pdf: layouts }, { orders: [{ qty: 10 }] }).layout?.id).toBe("bulk");
@@ -291,11 +290,11 @@ describe("formulas in a layout's when", () => {
     expect(selectPdfLayoutForValues({ root, pdf }, { province: "QC" })).toMatchObject({ layout: { id: "quebec" }, choice: "condition", failed: [] });
     expect(selectPdfLayoutForValues({ root, pdf }, { province: "ON" })).toMatchObject({ layout: { id: "object" }, choice: "condition" });
     expect(selectPdfLayoutForValues({ root, pdf }, { province: "BC" })).toMatchObject({ layout: { id: "standard" }, choice: "default" });
-    expect(readPdfLayoutCondition(generated("a", { expression: QUEBEC, run: "both" }))).toEqual({ evaluable: true, expression: QUEBEC });
+    expect(readPdfLayoutCondition(generated("a", { formula: QUEBEC, run: "both" }))).toEqual({ evaluable: true, expression: QUEBEC_TREE });
   });
 
   it("chooses by an if over today() with the day given, and falls to the default without one", () => {
-    const pdf = { layouts: [generated("standard"), generated("current", TODAY_2026)], defaultLayoutId: "standard" };
+    const pdf = { layouts: [generated("standard"), generated("current", 'if today() >= "2026-01-01" then true')], defaultLayoutId: "standard" };
     expect(selectPdfLayoutForValues({ root, pdf }, {}, { today: "2026-06-01" })).toMatchObject({ layout: { id: "current" }, choice: "condition" });
     expect(selectPdfLayoutForValues({ root, pdf }, {}, { today: "2025-12-31" })).toMatchObject({ layout: { id: "standard" }, choice: "default" });
     // No day: the clock reads as no answer, no case matches, the if yields nothing, and the condition never holds.
@@ -315,10 +314,10 @@ describe("formulas in a layout's when", () => {
     expect(selectPdfLayoutForValues({ root, pdf }, { province: "ON" }, { functions })).toMatchObject({ layout: { id: "standard" }, choice: "default" });
     // Without the registry the name is unknown to the parser: the condition is invalid and never holds.
     expect(selectPdfLayoutForValues({ root, pdf }, { province: "QC" })).toMatchObject({ layout: { id: "standard" }, choice: "default", failed: [{ layoutId: "quebec", reason: "invalid" }] });
-    // A tree calling it is evaluable only with the registry's names.
+    // A formula calling it is evaluable only with the registry's names.
     const call: Expression = { kind: "call", name: "isQuebec" as never, args: [{ kind: "path", path: "province" }] };
-    expect(readPdfLayoutCondition(generated("a", call))).toEqual({ evaluable: false, written: call });
-    expect(readPdfLayoutCondition(generated("a", call), ["isQuebec"])).toEqual({ evaluable: true, expression: call });
+    expect(readPdfLayoutCondition(generated("a", "isQuebec(province)"))).toEqual({ evaluable: false, written: "isQuebec(province)" });
+    expect(readPdfLayoutCondition(generated("a", "isQuebec(province)"), ["isQuebec"])).toEqual({ evaluable: true, expression: call });
   });
 });
 
@@ -379,7 +378,7 @@ describe("the formulaErrors policy in the render model", () => {
     const clean: ComponentNode = { id: "root", type: "form", configuration: {}, children: { content: [] } };
     expect(() => compilePdfDefinition(clean, undefined, generated("given", "x +"), { formulaErrors: "fail" })).toThrow(/A formula could not be read: pdf:given/);
     const compiled = compilePdfDefinition(form(), undefined, generated("given", 'province = "QC"'), { formulaErrors: "warn" });
-    expect(compiled.layout).toMatchObject({ id: "given", when: QUEBEC });
+    expect(compiled.layout).toMatchObject({ id: "given", when: QUEBEC_TREE });
     expect(compiled.warnings.map((warning) => warning.componentId)).toEqual(["note"]);
   });
 });

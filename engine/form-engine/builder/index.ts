@@ -1,6 +1,7 @@
 export * from "./history/command-history.js";
 export * from "./drag-drop/html5-drag-drop.js";
 export * from "./controller/builder-controller.js";
+export * from "./controller/simulated-options.js";
 export * from "./web-component/builder-panels.js";
 export * from "./web-component/default-builder-element.js";
 export * from "./web-component/host-control-styles.js";
@@ -56,11 +57,6 @@ export type {
   JourneyMap,
   JourneyMapContext,
   JourneyMapSubject,
-  // Kept for hosts that import them: the journey preview is Try it's session, so
-  // `JourneyPreview` names the try session (`JourneyPreviewSession`) and `JourneyPreviewContext`
-  // what the mode hands one; the DOM preview surface they named before is gone.
-  JourneyPreview,
-  JourneyPreviewContext,
   JourneyPreviewSession,
   JourneyPreviewSubject,
   JourneyShape,

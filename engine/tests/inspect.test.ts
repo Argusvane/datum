@@ -211,9 +211,6 @@ describe("inspect: public", () => {
     expect(answer.definition.pdf).toEqual(form.pdf);
     expect(JSON.stringify(form)).toBe(before);
   });
-
-  // `public` strips over the tree the run reads, so a server-secret
-  // rule on a legacy column's component (a child once the grid is normalized) is stripped too.
 });
 
 describe("inspect: check", () => {
@@ -452,17 +449,7 @@ describe("inspect: the rules inventory", () => {
     form.root.children = {
       content: [
         node("x", "text", {
-          visibleWhen: {
-            kind: "logical",
-            operator: "and",
-            left: { kind: "binary", operator: "eq", left: { kind: "path", path: "a" }, right: { kind: "path", path: "a" } },
-            right: {
-              kind: "logical",
-              operator: "or",
-              left: { kind: "path", path: "row.b" },
-              right: { kind: "logical", operator: "or", left: { kind: "path", path: "ancestor.c" }, right: { kind: "path", path: "component.value" } }
-            }
-          } as Expression
+          visibleWhen: "a = a and (row.b or (ancestor.c or component.value))"
         })
       ]
     };

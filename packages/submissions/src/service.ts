@@ -10,9 +10,7 @@ import {
   kernelErrorPassesFold,
   kernelCompileDefinition,
   kernelHoldsSecretSource,
-  kernelProblemRunsOnServer,
   kernelRedactSecretProblems,
-  kernelTreeIndex,
   kernelFormulaPolicy,
   kernelNormalizePath,
   kernelParseFormula,
@@ -871,9 +869,10 @@ export function createSubmissionService(deps: SubmissionServiceDeps): Submission
   }> {
     const { settings, definition } = entry;
     // The compiled copy of the full definition as registered (secret rules included) is what the
-    // sandbox and the server's own fold read: formulas parsed once at register, not on every
-    // delivery. Compiling is idempotent, so a kernel that compiles again changes nothing. It is
-    // never the served definition, and the stored original is never touched.
+    // server's own reads (a page's scope) use: formulas parsed once at register, not on every
+    // delivery. The sandbox is handed the definition as registered, which it compiles for itself
+    // as every runtime does (a compiled copy's trees would read to it as an author's). Neither
+    // is the served definition, and the stored original is never touched.
     const compiled = entry.compiled ?? compileDefinition(definition, settings.validation.riskyPatterns).compiled;
     const policy = policyOf(definition, settings);
     const today = deps.today ? deps.today() : localCalendarDate(clock());
@@ -958,10 +957,10 @@ export function createSubmissionService(deps: SubmissionServiceDeps): Submission
     const hostCatalog = deps.translationCatalog;
     const context: WasmSubmissionContext & { today?: string; formulaErrors?: FormulaErrorPolicy; riskyPatterns?: "refuse" | "allow" } = {
       formId: definition.id,
-      form: compiled.root,
-      ...(compiled.translations !== undefined ? { translations: compiled.translations } : {}),
+      form: definition.root,
+      ...(definition.translations !== undefined ? { translations: definition.translations } : {}),
       // The definition's `kinds` map: the kernel reads a plugin's or a binding's type as its base.
-      ...(compiled.kinds !== undefined ? { kinds: compiled.kinds } : {}),
+      ...(definition.kinds !== undefined ? { kinds: definition.kinds } : {}),
       // Beside the definition's map, never merged into it: the
       // kernel reads the catalog rung first, so the two stay apart on the wire.
       ...(hostCatalog !== null && typeof hostCatalog === "object" && !Array.isArray(hostCatalog) && Object.keys(hostCatalog).length > 0 ? { catalog: hostCatalog } : {}),
@@ -971,7 +970,7 @@ export function createSubmissionService(deps: SubmissionServiceDeps): Submission
       unknownFields: settings.validation.unknownFields,
       ...(settings.validation.logLevel ? { logLevel: settings.validation.logLevel } : {}),
       ...(optionSnapshot !== undefined ? { optionSnapshot } : {}),
-      ...(compiledJourney ? { journey: compiledJourney } : {}),
+      ...(journey ? { journey } : {}),
       today,
       // The server's own host context for this request (never one the browser sent).
       ...(options.hostContext !== undefined ? { hostContext: options.hostContext } : {}),
@@ -1006,35 +1005,6 @@ export function createSubmissionService(deps: SubmissionServiceDeps): Submission
       );
     }
     const errors = outcome.errors.filter(inScope);
-    // A rule the server runs that calls a function this server does not have was dropped when the
-    // form was registered (the compiled copy the sandbox reads has no such rule), and under the
-    // `warn` policy that would read as no rule: the browser, which has the function,
-    // enforces what this server then accepts. So the submission is refused, naming the rule and
-    // the function, as the kernel does for a definition it
-    // compiles itself. A rule scoped to the browser keeps the policy (`fail` never registers
-    // such a form).
-    if (policy === "warn" && entry.formulaProblems !== undefined && entry.formulaProblems.length > 0) {
-      const authoredIndex = kernelTreeIndex(definition.root);
-      for (const problem of entry.formulaProblems) {
-        if (problem.code !== "unknownFunction" || !kernelProblemRunsOnServer(authoredIndex, problem.where)) {
-          continue;
-        }
-        const refusal: WasmValidationError = {
-          code: "formula.invalid",
-          stage: "definition",
-          source: "wasm",
-          parameters: {
-            where: problem.where,
-            message: problem.message,
-            ...(problem.params !== undefined && problem.params.name !== undefined ? { function: problem.params.name } : {})
-          }
-        };
-        if (inScope(refusal)) {
-          errors.push(refusal);
-        }
-      }
-    }
-
     // The sandbox reports what its fold settled (`reportFold`): `withheld`, `effectiveState`,
     // `submittable` of a blocked run and `trace`, so nothing here folds or partitions again. The
     // keys are absent only when the fold did not run (the kernel refused the definition, which

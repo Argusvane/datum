@@ -41,7 +41,7 @@ function journeyBlock(): JourneyConfiguration {
           name: "Intake",
           pages: [
             { id: "about", title: "About you", components: ["fullName"] },
-            { id: "contact", title: "Keeping in touch", components: ["subscribe"], routes: [{ when: { kind: "path", path: "subscribe" }, to: "$end" }] }
+            { id: "contact", title: "Keeping in touch", components: ["subscribe"], routes: [{ when: "subscribe", to: "$end" }] }
           ],
           "x-journey-note": "kept"
         },
@@ -186,7 +186,7 @@ function ownNodesBlock(): JourneyConfiguration {
               title: "Who",
               components: [
                 { id: "legal_name", type: "text", configuration: { label: "Legal name", fills: "fullName", required: true } },
-                { id: "nick", type: "text", configuration: { label: "Nickname" }, rules: { visibleWhen: { kind: "path", path: "subscribe" } } }
+                { id: "nick", type: "text", configuration: { label: "Nickname" }, rules: { visibleWhen: "subscribe" } }
               ]
             },
             {
@@ -231,7 +231,7 @@ function branching(): JourneyConfiguration {
         id: "branch",
         name: "Branch",
         pages: [
-          { id: "start", title: "Start", components: ["fullName", "subscribe"], routes: [{ when: { kind: "path", path: "subscribe" }, to: "news" }] },
+          { id: "start", title: "Start", components: ["fullName", "subscribe"], routes: [{ when: "subscribe", to: "news" }] },
           { id: "plain", title: "Plain", components: ["country"] },
           { id: "news", title: "News", components: ["email"] }
         ]
@@ -321,7 +321,7 @@ describe("<datum-form-builder> journeys", () => {
     let element: DatumFormBuilderElement;
     try {
       element = mount((el) => {
-        el.setAttribute("pdf", "off");
+        el.setAttribute("features", "-pdf");
         el.definition = withJourneys();
       });
       element.addEventListener("datum-error", (event) => errors.push((event as CustomEvent<{ message: string }>).detail.message));
@@ -362,7 +362,7 @@ describe("<datum-form-builder> journeys", () => {
   // first load of it meets. The load is retried after a failure, so the cases below load it.
   it("loads the Try it chunk on the first Try it; a failed load is reported and leaves the form visible, and loads on the next try", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys();
     });
     const errors: string[] = [];
@@ -539,15 +539,15 @@ describe("<datum-form-builder> journeys", () => {
     expect(canvasRoot.activeElement?.classList.contains("canvas-page") ?? false).toBe(false);
   });
 
-  it('keeps the PDF side ahead of the journeys when pdf="off" is set and lifted again', async () => {
+  it('keeps the PDF side ahead of the journeys when features="-pdf" is set and lifted again', async () => {
     const element = mount((el) => {
       el.definition = withJourneys();
     });
     await ready(element);
     await until(() => element.modes.length === 3);
-    element.setAttribute("pdf", "off");
+    element.setAttribute("features", "-pdf");
     await until(() => element.modes.length === 2);
-    element.removeAttribute("pdf");
+    element.removeAttribute("features");
     await until(() => element.modes.length === 3);
 
     // The shell lists its sides in the order they were added: the PDF side comes back in its
@@ -560,7 +560,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("renames, copies, makes the default and deletes journeys from the document label's menu, down to none, and the page comes back to the form", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys({
         journeys: [
           { id: "intake", name: "Intake", pages: [{ id: "about", components: ["fullName"] }] },
@@ -634,7 +634,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("offers Opens as on the Form panel while the form has a journey, drafted with the form's settings and written on Save", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys();
     });
     const journeys = journeyChanges(element);
@@ -681,7 +681,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("keeps focus on Opens as, and the Form panel where it was scrolled, when a choice repaints the panel at once", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys();
     });
     await ready(element);
@@ -707,7 +707,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("focuses the new journey's first page once it is made from the New journey popover", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = sampleDefinition();
     });
     await ready(element);
@@ -729,7 +729,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("names a deleted node by its label alone, once the delete is confirmed it is gone", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys();
     });
     await ready(element);
@@ -752,7 +752,7 @@ describe("<datum-form-builder> journeys", () => {
   it("click-adds from the palette onto the selected page", async () => {
     {
       const element = mount((el) => {
-        el.setAttribute("pdf", "off");
+        el.setAttribute("features", "-pdf");
         el.definition = withJourneys();
       });
       await ready(element);
@@ -772,7 +772,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("has no Add unassigned or Remove missing on the bar: the fields on no step are the Form fields panel's, one undo each", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys();
     });
     await ready(element);
@@ -791,7 +791,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("edits a route's condition in the Logic workspace, not on a Rules tab: the route's own when, never its rules, read back when the form is opened again", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys();
     });
     const journeys = journeyChanges(element);
@@ -832,7 +832,7 @@ describe("<datum-form-builder> journeys", () => {
     const saved = JSON.parse(JSON.stringify(element.definition)) as FormDefinition;
     document.body.innerHTML = "";
     const reopened = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = saved;
     });
     await ready(reopened);
@@ -843,7 +843,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("follows a form component's new id into every journey, and says so on both changes", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys();
     });
     const changes = builderChanges(element);
@@ -857,19 +857,19 @@ describe("<datum-form-builder> journeys", () => {
     const form = changes.find((change) => change.mode === "form" && change.renamed);
     // The rename also carries the data path it moved (`dataPath`, a data key being a path of its own): not what this checks.
     expect(form?.renamed).toMatchObject({ from: "subscribe", to: "wantsNews", rules: ["email"] });
-    expect(JSON.stringify(element.definition)).toContain('"visibleWhen":{"kind":"path","path":"wantsNews"}');
-    expect(JSON.stringify(element.definition)).not.toContain('"path":"subscribe"');
+    expect(JSON.stringify(element.definition)).toContain('"visibleWhen":"wantsNews"');
+    expect(JSON.stringify(element.definition)).not.toContain('"subscribe"');
     expect(changes.at(-1)).toMatchObject({ mode: "journeys", reason: "form-rename" });
     const intake = journeyOf(element.definition, "intake")!;
     expect(pageComponents(intake)).toEqual([["fullName"], ["wantsNews"]]);
-    expect(intake.pages[1]!.routes![0]!.when).toEqual({ kind: "path", path: "wantsNews" });
+    expect(intake.pages[1]!.routes![0]!.when).toBe("wantsNews");
     expect(pageComponents(journeyOf(element.definition, "quick"))).toEqual([["fullName", "country", "wantsNews", "email"]]);
   });
 
   it("does not forward a page rename to the builder: the mode tells the shell itself, and datum-journey-change keeps its reason", async () => {
     const tests = { scenarios: [{ id: "test-1", source: 'test "contact page"\n  given journey = intake\n  expect page = contact' }] };
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = { ...withJourneys(), tests };
     });
     const journeys = journeyChanges(element);
@@ -889,20 +889,20 @@ describe("<datum-form-builder> journeys", () => {
     expect(rewrite).toHaveBeenCalledTimes(1);
   });
 
-  it('leaves the journeys out for journeys="off", keeping what was edited, and brings them back', async () => {
+  it('leaves the journeys out for features="-pdf -journeys", keeping what was edited, and brings them back', async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys();
     });
     await ready(element);
     await openJourneys(element);
     element.journeyMode!.renameJourney("intake", "Intake, edited");
 
-    element.setAttribute("journeys", "off");
+    element.setAttribute("features", "-pdf -journeys");
     await until(() => element.modes.length === 1);
     expect(element.builder!.mode).toBe("form");
     expect(element.journeyMode).toBeUndefined();
-    expect(element.journeys).toBe("off");
+    expect(element.featureEnabled("journeys")).toBe(false);
     // The form alone on the bar, and nothing to add a journey to.
     expect(barLabel(element)).toEqual({ name: "Sample", kind: "Form", badges: [] });
     expect(element.builder!.newDocument("journeys")).toBe(false);
@@ -914,16 +914,15 @@ describe("<datum-form-builder> journeys", () => {
     element.journeyConfiguration = other;
     expect(element.definition.journey).toBe(other);
 
-    element.removeAttribute("journeys");
+    element.setAttribute("features", "-pdf");
     await until(() => element.modes.length === 2);
     expect(element.journeyMode!.journeys.map((journey) => journey.id)).toEqual(["solo"]);
     expect(element.definition.journey).toBe(other);
   });
 
-  it("gives the PDF layouts alone (workspaces=\"pdf\") no journeys, whatever the journeys attribute says, and passes the definition's through", async () => {
+  it("gives the PDF layouts alone (workspaces=\"pdf\") no journeys, and passes the definition's through", async () => {
     const seed = withJourneys();
     const designer = pdfAlone();
-    designer.setAttribute("journeys", "auto");
     designer.definition = seed;
     document.body.append(designer);
     await until(() => designer.builder?.shadowRoot?.querySelector("datum-builder-canvas") && designer.modes.length === 2);
@@ -935,7 +934,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("runs the journey in the Try panel on the canvas, following a route as the answers are given; Submit stays inside", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys(branching());
     });
     await ready(element);
@@ -991,7 +990,7 @@ describe("<datum-form-builder> journeys", () => {
     const deferred = branching();
     deferred.journeys![0] = { ...deferred.journeys![0]!, validation: { continue: "defer" } };
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys(deferred);
     });
     await ready(element);
@@ -1015,7 +1014,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("follows an edit to the journey live, and keeps Cmd+Z typed in the form and a language switch to itself", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys(branching());
     });
     await ready(element);
@@ -1059,7 +1058,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("keeps the page the try session is on while its page id is typed and saved, and Open this step opens it", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys(branching());
     });
     await ready(element);
@@ -1140,7 +1139,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("lists every journey's texts after the form's, addressed by journey and page id", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys();
     });
     await ready(element);
@@ -1165,14 +1164,14 @@ describe("<datum-form-builder> journeys", () => {
     ]);
 
     // With the Journeys side off, the form's texts alone.
-    element.setAttribute("journeys", "off");
+    element.setAttribute("features", "-pdf -journeys");
     await until(() => element.journeyMode === undefined);
     expect(element.builder!.translatableTexts().some((text) => text.address.kind === "journeys")).toBe(false);
   });
 
   it("words the journey rows in the builder's catalog the shell hands the mode", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys();
     });
     await ready(element);
@@ -1186,7 +1185,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("folds a page's Wording, shows the id a blank page id takes, and says the journey's findings under the boxes they are about", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys({
         journeys: [
           {
@@ -1247,7 +1246,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("takes a question whose form component was deleted off the journey from its finding in the Journey panel, in one undo step", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys();
     });
     await ready(element);
@@ -1272,7 +1271,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("makes a step Check answers in the element: its own boxes, its row wording among the texts, the map's count, and Move to the end for a step after it", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys({
         journeys: [
           {
@@ -1320,17 +1319,17 @@ describe("<datum-form-builder> journeys", () => {
     for (const value of [null, []]) {
       const seed = { ...sampleDefinition(), journey: value } as unknown as FormDefinition;
       const element = mount((el) => {
-        el.setAttribute("pdf", "off");
+        el.setAttribute("features", "-pdf");
         el.definition = seed;
       });
       await ready(element);
       await until(() => element.journeyMode !== undefined);
       expect(JSON.stringify(element.definition)).toBe(JSON.stringify(seed));
-      // Through journeys="off" and back, still as given.
-      element.setAttribute("journeys", "off");
+      // Through the Journeys side left out and back, still as given.
+      element.setAttribute("features", "-pdf -journeys");
       await until(() => element.journeyMode === undefined);
       expect(JSON.stringify(element.definition)).toBe(JSON.stringify(seed));
-      element.removeAttribute("journeys");
+      element.setAttribute("features", "-pdf");
       await until(() => element.journeyMode !== undefined);
       await element.journeyMode!.newJourney({ from: "one-page" });
       // A nameless one-page start is a journey like any other, its page heading hidden,
@@ -1342,7 +1341,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("keeps an author's link in the try session from navigating, and says so", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withLinkNote();
     });
     await ready(element);
@@ -1363,7 +1362,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("starts the try session over on a new definition, with no answers carried from before", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withLinkNote();
     });
     await ready(element);
@@ -1381,7 +1380,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("walks a journey's menu on the document label with the arrows, Home and End, and Escape puts focus back on the label", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys();
     });
     await ready(element);
@@ -1419,7 +1418,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("makes a journey from the one popover as one empty step, worded as any journey, on its map even with one step; Enter in the Name box starts the same", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = sampleDefinition();
     });
     await ready(element);
@@ -1483,11 +1482,11 @@ describe("<datum-form-builder> journeys", () => {
         id: "total",
         type: "number",
         configuration: { label: "Total", required: true },
-        rules: { value: { kind: "arithmetic", operator: "multiply", left: { kind: "path", path: "cost" }, right: { kind: "literal", value: 2 } } }
+        rules: { value: "cost * 2" }
       }
     );
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = {
         ...definition,
         // Every question but `cost`; the calculated `total` is on the page, and empty without it.
@@ -1520,7 +1519,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("offers a journey of one step its Map, as any journey has: a route added makes the way out the map draws, and Undo keeps the map", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = {
         ...sampleDefinition(),
         journey: { journeys: [{ id: "public", name: "Public", pages: [{ id: "one", title: "Public", components: ["fullName", "submit"] }] }] }
@@ -1558,7 +1557,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("puts focus on the bar's Step when the control holding it goes: Open this step", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withLinkNote();
     });
     await ready(element);
@@ -1575,7 +1574,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("describes the add dialog by its stakes and its hint", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withLinkNote();
     });
     await ready(element);
@@ -1592,7 +1591,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("opens a folded Wording while the filter matches inside it, and folds it again after, without remembering it opened", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withLinkNote();
     });
     await ready(element);
@@ -1627,7 +1626,7 @@ describe("<datum-form-builder> journeys", () => {
 
   it("keeps Map | Step in the menu drawer at the phone tier, with no Add unassigned", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.setAttribute("mode", "journeys");
       el.definition = withJourneys();
     });
@@ -1652,7 +1651,7 @@ describe("<datum-form-builder> journeys", () => {
     const given = JSON.stringify(seed);
     const own = JSON.stringify(seed.journey!.journeys![0]);
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.setAttribute("mode", "journeys");
       el.definition = seed;
     });
@@ -1682,7 +1681,7 @@ describe("<datum-form-builder> journeys", () => {
       ["legal_name", "text"],
       ["nick", "text"]
     ]);
-    expect(who!.children!.content![1]!.rules).toEqual({ visibleWhen: { kind: "path", path: "subscribe" } });
+    expect(who!.children!.content![1]!.rules).toEqual({ visibleWhen: "subscribe" });
     const [box, country] = news!.children!.content!;
     expect([box!.id, box!.type, country!.type]).toEqual(["box", "fieldset", "journey-field"]);
     expect(box!.children!.content!.map((node) => [node.type, (node.configuration as { componentId: string }).componentId])).toEqual([
@@ -1722,7 +1721,7 @@ describe("<datum-form-builder> journeys", () => {
     const seed = withJourneys({ ...ownNodesBlock(), defaultJourneyId: "plain" });
     const pagesGiven = JSON.stringify(seed.journey!.journeys![0]!.pages);
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = seed;
     });
     const journeys = journeyChanges(element);
@@ -1785,7 +1784,7 @@ describe("<datum-form-builder> journeys", () => {
     await until(() => journeys.filter((change) => change.reason === "form-rename").length === 2);
     const renamed = pagesGiven
       .replace('"fills":"fullName"', '"fills":"legalName"')
-      .replace('"path":"subscribe"', '"path":"wantsNews"')
+      .replace('"visibleWhen":"subscribe"', '"visibleWhen":"wantsNews"')
       .replace('"componentId":"subscribe"', '"componentId":"wantsNews"');
     expect(JSON.stringify(journeyOf(element.definition, "guarded")!.pages)).toBe(renamed);
     expect(pageComponents(journeyOf(element.definition, "plain"))).toEqual([["legalName", "country"], ["wantsNews", "email"]]);
@@ -1801,7 +1800,7 @@ describe("<datum-form-builder> journeys", () => {
   it("authors a journey's own nodes from the form's own types: the page-only palette, Fills form field first, and Ask differently here… as one undo", async () => {
     const seed = withJourneys(ownNodesBlock());
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.setAttribute("mode", "journeys");
       el.definition = seed;
     });
@@ -2312,15 +2311,15 @@ describe("the Step view's inspector (forms and steps)", () => {
     await tick(50);
     expect(canvasEl(rig.element).shadowRoot!.querySelector("[data-move-prompt]")).toBeNull();
     // The mode's own: what the step picker calls before it shows another step.
-    const context = (rig.element.journeyMode as unknown as { context: { holdForInspector?(run: () => void): boolean } }).context;
+    const context = (rig.element.journeyMode as unknown as { context: { holdForInspector(run: () => void): boolean } }).context;
     let shown = 0;
-    expect(context.holdForInspector!(() => (shown += 1))).toBe(false);
+    expect(context.holdForInspector(() => (shown += 1))).toBe(false);
     expect(prompt(rig.element)).toBeTruthy();
     expect(shown).toBe(0);
     answer(rig.element, "save");
     expect(shown).toBe(1);
     // Nothing held: at once.
-    expect(context.holdForInspector!(() => (shown += 1))).toBe(true);
+    expect(context.holdForInspector(() => (shown += 1))).toBe(true);
     expect(shown).toBe(2);
   }, 30_000);
 
@@ -2650,7 +2649,7 @@ describe("the Step view's one Undo (shared history)", () => {
 describe("the Step view on the bar and its palette", () => {
   async function onMap(): Promise<DatumFormBuilderElement> {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys();
     });
     await ready(element);
@@ -2710,7 +2709,7 @@ describe("the Step view on the bar and its palette", () => {
 
   it("draws the step in a dark builder's dark scheme, as the Form canvas draws the form", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.setAttribute("scheme", "dark");
       el.definition = withJourneys();
     });
@@ -2726,7 +2725,7 @@ describe("the Step view on the bar and its palette", () => {
 
   it("words Map and Step on the bar from the builder's text tables, as a translated builder words them", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys();
     });
     await ready(element);
@@ -2817,7 +2816,7 @@ describe("the Journey panel's findings card, the blank start and the settings", 
   /** The sample form with no journey, then one made blank: one empty step, the form's required field its first error. */
   async function blankJourney(): Promise<DatumFormBuilderElement> {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = sampleDefinition();
     });
     await ready(element);
@@ -2881,7 +2880,7 @@ describe("the Journey panel's findings card, the blank start and the settings", 
 
   it("moves focus after each fix to the finding now in its place, else to the panel, never to the page (WCAG 2.4.3)", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys();
     });
     await ready(element);
@@ -2923,7 +2922,7 @@ describe("the Journey panel's findings card, the blank start and the settings", 
 
   it("sets what the form opens as from the Journey panel at once, the whole form or a journey by name, and keeps the select focused", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys();
     });
     await ready(element);
@@ -2955,7 +2954,7 @@ describe("the Journey panel's findings card, the blank start and the settings", 
 
   it("selects a finding's node when the finding is pressed, and says nothing again under a keystroke typed elsewhere", async () => {
     const element = mount((el) => {
-      el.setAttribute("pdf", "off");
+      el.setAttribute("features", "-pdf");
       el.definition = withJourneys();
     });
     await ready(element);

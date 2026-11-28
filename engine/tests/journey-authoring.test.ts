@@ -14,7 +14,6 @@ import {
 } from "../form-engine/builder/journey-designer/journey-mode-model.js";
 import { journeyFromTree, treeFromJourney } from "../form-engine/builder/journey-designer/journey-tree.js";
 import type { BuilderModeContext, BuilderModeRules } from "../form-engine/builder/web-component/builder-modes.js";
-import type { Expression } from "../form-engine/core/expressions/expression.js";
 import { createDataSourceCapability } from "../form-engine/core/schema/data-source-capability.js";
 import { createInlineOptionsCapability } from "../form-engine/core/schema/inline-options.js";
 import type { ComponentDefinition } from "../form-engine/core/schema/contracts.js";
@@ -33,7 +32,6 @@ import { applyJourney, presentationRoot, publicVariant } from "./fixtures/presen
  * draws the real fields. The shared fixture's `apply` and `public` stand in for any presentation.
  */
 
-const read = (path: string): Expression => ({ kind: "path", path });
 
 /** A form's definitions as a host registers them: fields, choices, a file, groups, a data-scoping container, steps. */
 function formDefinitions(): ComponentDefinition[] {
@@ -145,7 +143,7 @@ function pageNodes(controller: BuilderController): ComponentNode[] {
 function applyWithRule(): Journey {
   const journey = applyJourney();
   const m1 = journey.pages[1]!.components![0] as unknown as ComponentNode;
-  m1.rules = { visibleWhen: { kind: "binary", operator: "gt", left: read("m2"), right: { kind: "literal", value: 0 } } };
+  m1.rules = { visibleWhen: "m2 > 0" };
   return journey;
 }
 
@@ -222,7 +220,7 @@ describe("how a presentation's own nodes are named", () => {
     const journey = applyJourney();
     delete journey.pages[0]!.title;
     delete journey.pages[1]!.title;
-    (journey.pages[1]!.components as unknown[]).unshift({ id: "total_first", type: "journey-value", configuration: { to: "approved_amount", value: { kind: "literal", value: 1 } } });
+    (journey.pages[1]!.components as unknown[]).unshift({ id: "total_first", type: "journey-value", configuration: { to: "approved_amount", value: "1" } });
     const { controller } = await designFor(journey);
     const details = pageNodes(controller)[0]!;
     expect(controller.treeView().slots[0]?.children[0]?.label).toBe("Step 1 · Work email");
@@ -323,7 +321,7 @@ describe("the inspector of a presentation's own nodes", () => {
 
   it("says a field filling what the runtime will not let it fill — a field gone, a worked-out field — is kept in the browser, in its inspector", async () => {
     const root = formRoot();
-    root.children!.content!.push({ id: "total", type: "number", configuration: { label: "Total" }, rules: { value: { kind: "literal", value: 1 } } });
+    root.children!.content!.push({ id: "total", type: "number", configuration: { label: "Total" }, rules: { value: "1" } });
     const journey = applyJourney();
     journey.pages[0]!.components!.push(
       { id: "gone", type: "text", configuration: { label: "To a gone field", fills: "ghost" } } as never,
@@ -364,7 +362,7 @@ describe("the inspector of a presentation's own nodes", () => {
 // --- the mode -------------------------------------------------------------------------------
 
 function modeContext(root: EventTarget = new EventTarget()): BuilderModeContext {
-  return { host: {} as HTMLElement, root: root as unknown as ShadowRoot, showCanvasSurface: () => undefined };
+  return { host: {} as HTMLElement, root: root as unknown as ShadowRoot, showCanvasSurface: () => undefined, holdForInspector: (run: () => void) => (run(), true) };
 }
 
 async function activatedMode(configuration: JourneyConfiguration, root = formRoot()): Promise<{ mode: JourneyBuilderMode; form: BuilderController; target: EventTarget; errors: string[] }> {
@@ -530,7 +528,7 @@ describe("authoring through the Journeys mode", () => {
   });
 
   it("leaves what reads an own node's old id alone when that node was one the shared rules drop (its id the form's)", async () => {
-    const eq = (path: string, value: string | number): Expression => ({ kind: "binary", operator: "eq", left: read(path), right: { kind: "literal", value } });
+    const eq = (path: string, value: string | number): string => `${path} = ${JSON.stringify(value)}`;
     const journey = {
       id: "j",
       pages: [
@@ -752,7 +750,7 @@ describe("own layouts and own types the host does not define", () => {
 describe("the findings card's words for a left-out input", () => {
   it("offers one Make it optional per required calculation an input left out feeds, naming each", async () => {
     const root = formRoot();
-    const times = (factor: number): Expression => ({ kind: "arithmetic", operator: "multiply", left: read("rate"), right: { kind: "literal", value: factor } });
+    const times = (factor: number): string => `rate * ${factor}`;
     root.children!.content!.push(
       { id: "rate", type: "number", configuration: { label: "Rate" } },
       { id: "total", type: "number", configuration: { label: "Total", required: true }, rules: { value: times(2) } },

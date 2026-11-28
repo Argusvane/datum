@@ -62,12 +62,9 @@ export interface PdfFillPlan {
   attachments?: PdfDocumentAttachment[];
   /** How the host is to seal the filled document; absent: the request alone says. */
   signature?: PdfSignatureSettings;
-  /**
-   * The theme the plan was built under: what a content area draws with when its own
-   * `draw` says nothing. Absent (a plan from an older engine): the kernel's fallbacks.
-   */
-  typography?: PdfTypography;
-  colors?: PdfThemeColors;
+  /** The theme the plan was built under: what a content area draws with when its own `draw` says nothing. */
+  typography: PdfTypography;
+  colors: PdfThemeColors;
 }
 
 export const DEFAULT_TEMPLATE_FILL_OPTIONS: Required<PdfTemplateFillOptions> = {

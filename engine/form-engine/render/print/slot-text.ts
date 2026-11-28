@@ -34,9 +34,7 @@ export interface PrintSlotScope {
 
 const COUNTERS: ReadonlyMap<string, "page" | "pages"> = new Map([
   ["page", "page"],
-  ["pageNumber", "page"],
-  ["pages", "pages"],
-  ["pageCount", "pages"]
+  ["pages", "pages"]
 ]);
 
 /** A value as slot text: a string as it is, a finite number in digits, anything else nothing. */

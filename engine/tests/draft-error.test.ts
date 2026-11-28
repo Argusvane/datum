@@ -51,7 +51,7 @@ function draft(overrides: Partial<FormDraft> = {}): FormDraft {
     runtime: { schemaVersion: "1", rendererVersion: "1.0.0" },
     locale: "en",
     values: { name: "Ada" },
-    state: { touched: [], dirty: [] },
+    state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [] },
     updatedAt: 1,
     ...overrides
   };

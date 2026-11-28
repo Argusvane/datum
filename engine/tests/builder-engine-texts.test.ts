@@ -80,7 +80,7 @@ describe("the engine's own words as texts", () => {
     expect(readTranslation(ctrl.translations(), "fr", addressOf.formText("noSuchKey"))).toBeUndefined();
     // The renderer reads them before the English.
     const words = { translations: ctrl.translations() };
-    expect(createFormTextResolver("fr", undefined, undefined, undefined, words)("selectEmpty")).toBe("Sélectionner…");
+    expect(createFormTextResolver("fr", undefined, undefined, words)("selectEmpty")).toBe("Sélectionner…");
     expect(resolveValidationMessage({ code: "required" }, undefined, "es", words)).toBe("Este campo es obligatorio");
     ctrl.undo();
     expect(readTranslation(ctrl.translations(), "fr", addressOf.formText("selectEmpty"))).toBeUndefined();
@@ -111,7 +111,7 @@ describe("the engine's counted texts in a language with more plural forms", () =
     const written = ctrl.setTranslations([{ locale: "pl", address: addressOf.formText("countLeft.few"), text: "Zostały {{n}} znaki" }]);
     expect(written).toBe(1);
     const words = { translations: ctrl.translations() };
-    expect(createFormTextResolver("pl", undefined, undefined, undefined, words).plural("countLeft", 3, { n: 3 })).toBe("Zostały 3 znaki");
+    expect(createFormTextResolver("pl", undefined, undefined, words).plural("countLeft", 3, { n: 3 })).toBe("Zostały 3 znaki");
   });
 });
 
@@ -122,7 +122,7 @@ describe("the engine's own words on the render model", () => {
     const translations = {
       fr: {
         texts: {
-          form: { summaryEntry: { text: "{{label}} : {{message}}", source: "x" }, summaryHeadingOne: { text: "{{count}} erreur", source: "x" } },
+          form: { summaryEntry: { text: "{{label}} : {{message}}", source: "x" }, "summaryHeading.one": { text: "{{count}} erreur", source: "x" } },
           messages: { required: { text: "Ce champ est obligatoire", source: "x" } }
         }
       }

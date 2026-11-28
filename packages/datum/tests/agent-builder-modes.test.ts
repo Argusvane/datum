@@ -101,7 +101,7 @@ function shellContext(): { host: HTMLElement; root: ShadowRoot; context: Builder
   const host = document.createElement("div");
   document.body.append(host);
   const root = host.attachShadow({ mode: "open" });
-  return { host, root, context: { host, root, showCanvasSurface: () => undefined } };
+  return { host, root, context: { host, root, showCanvasSurface: () => undefined, holdForInspector: (run: () => void) => (run(), true) } };
 }
 
 interface Modes {

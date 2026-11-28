@@ -68,7 +68,7 @@ function definition(when?: unknown): FormDefinition {
 
 async function mount(form: FormDefinition): Promise<DatumFormBuilderElement> {
   const element = document.createElement("datum-form-builder");
-  element.setAttribute("pdf", "off");
+  element.setAttribute("features", "-pdf");
   element.definition = form;
   document.body.append(element);
   await until(() => element.builder?.shadowRoot?.querySelector("datum-builder-canvas"));
@@ -98,7 +98,7 @@ async function openRoute(element: DatumFormBuilderElement): Promise<string> {
 
 describe("a journey route has no Rules tab", () => {
   it("shows its properties but no Rules tab, whatever it holds, and no rule sections", async () => {
-    for (const when of [undefined, 'contact = "mail"', { kind: "path", path: "agree" }]) {
+    for (const when of [undefined, 'contact = "mail"']) {
       const element = await mount(definition(when));
       await openRoute(element);
       const tabs = [...properties(element).querySelectorAll<HTMLElement>("[data-inspector-tab]")].map((tab) => tab.dataset.inspectorTab);
@@ -106,7 +106,7 @@ describe("a journey route has no Rules tab", () => {
       expect(properties(element).querySelector("[data-rule-section]")).toBeNull();
       document.body.innerHTML = "";
     }
-    // Three builders, each drawing its journey's map as it opens: slower than the cards were.
+    // Two builders, each drawing its journey's map as it opens: slower than the cards were.
   }, 60_000);
 
   it("keeps the condition the route holds as it was: the inspector writes nothing when it is only looked at", async () => {

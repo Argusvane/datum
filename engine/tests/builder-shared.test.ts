@@ -130,7 +130,7 @@ describe("json tab", () => {
     id: "email",
     type: "text",
     configuration: { label: "Email" },
-    rules: { visibleWhen: { kind: "path", path: "opt_in" } }
+    rules: { visibleWhen: "opt_in" }
   };
 
   it("shows the selected component's own subtree, rules included", () => {
@@ -600,16 +600,6 @@ describe("rules tab", () => {
     expect(
       rulesTabHtml({ states: [buildRuleEditorState("value", "a + b")], openRules: new Set(), errors: new Map() })
     ).toMatch(/<textarea class="rule-formula-box" data-rule="value" data-rule-formula rows="3"[^>]*aria-multiline="true" data-rule-multiline/);
-  });
-
-  it("opens a legacy tree printed as a formula", () => {
-    const html = tab({
-      kind: "call",
-      name: "contains",
-      args: [{ kind: "path", path: "tags" }, { kind: "literal", value: "x" }]
-    });
-    expect(html).toContain(">contains(tags, &quot;x&quot;)</textarea>");
-    expect(html).not.toContain("data-rule-json");
   });
 
   it("draws the Runs control: a menu of the four scopes with their consequences, the chosen one checked", () => {

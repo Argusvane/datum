@@ -85,9 +85,6 @@ import {
   type WasmValidationError
 } from "./wasm-validation-host.js";
 
-// The list the sandbox splices, kept importable from here where the tests and the name checks read it.
-export { FORM_TEST_KERNEL_DRIVER_FUNCTIONS } from "./portable-kernel.js";
-
 /**
  * The validation kernel's driver for form tests: the server's reading of
  * a scenario. It holds the answers itself, as a host holds a stored record, and asks the
@@ -612,7 +609,9 @@ export function createFormTestKernelDriver(definition: FormDefinition, options: 
         byPath: { ...byPath },
         errors: shown.map((error) => ({ ...kernelFormTestServerSnapshotError(error, word(error)) })),
         rows: { ...kernelFormTestServerRowCounts(answers, index.lists) },
-        unreplayable: { ...reasons }
+        unreplayable: { ...reasons },
+        // Every page the journey has, so a page named off the path can be told from a typo.
+        pages: journey !== undefined ? [...pageOrder] : []
       };
       // The path a route condition draws over a component this side lacks is not the person's.
       const traceReason = journey !== undefined ? kernelFormTestServerMarkTrace(foldJourney, index, folded.ownership, reasons) : undefined;
@@ -628,10 +627,6 @@ export function createFormTestKernelDriver(definition: FormDefinition, options: 
       }
       if (journey !== undefined && navigation.page !== undefined) {
         snapshot.page = navigation.page;
-      }
-      if (journey !== undefined) {
-        // Every page the journey has, so a page named off the path can be told from a typo.
-        snapshot.pages = [...pageOrder];
       }
       if (outcome.trace !== undefined) {
         snapshot.trace = outcome.trace;

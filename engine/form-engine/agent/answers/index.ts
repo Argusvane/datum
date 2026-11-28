@@ -19,7 +19,6 @@ export {
   optionsOf,
   unfillableStaticKind,
   type FieldColumn,
-  type FieldKind,
   type Option
 } from "./kinds.js";
 export { OPTIONS_IN_PROBLEM, matchOption, normalizeLabel, type MatchOptions } from "./match.js";

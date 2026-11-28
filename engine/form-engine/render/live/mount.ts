@@ -857,7 +857,7 @@ export function mountLive(root: ShadowRoot, options: LiveMountOptions): LiveForm
 
   const words = (): Words => {
     const locale = runtime.state().locale;
-    return createFormTextResolver(locale, options.texts, runtime.translationCatalog?.(), undefined, { translations: runtime.translations?.(), pack });
+    return createFormTextResolver(locale, options.texts, undefined, { translations: runtime.translations?.(), catalog: runtime.translationCatalog?.(), pack });
   };
 
   const formElement = (): HTMLFormElement | null => {

@@ -42,7 +42,7 @@ function withJourneys(): FormDefinition {
 
 async function onStep(definition: FormDefinition = withJourneys()): Promise<DatumFormBuilderElement> {
   const element = document.createElement("datum-form-builder");
-  element.setAttribute("pdf", "off");
+  element.setAttribute("features", "-pdf");
   element.definition = definition;
   document.body.append(element);
   await until(() => element.builder?.shadowRoot?.querySelector("datum-builder-canvas"));

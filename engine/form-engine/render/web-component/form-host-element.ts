@@ -242,9 +242,8 @@ export class DatumFormHostElement extends HTMLElementBase {
     const text = createFormTextResolver(
       runtime?.state?.().locale ?? "en",
       this.textsValue,
-      runtime?.translationCatalog?.(),
       undefined,
-      { translations: runtime?.translations?.(), pack: this.bindingPack() }
+      { translations: runtime?.translations?.(), catalog: runtime?.translationCatalog?.(), pack: this.bindingPack() }
     );
     const name = (selector: string, label: string, visible?: { selector: string; text: string }): void => {
       const el = this.root.querySelector<HTMLElement>(selector);

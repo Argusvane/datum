@@ -15,7 +15,7 @@ import { PDF_ABI_VERSION, base64ToBytes, bytesToBase64, deriveDefaultPdfLayout, 
 import { handlePdfRequest } from "../src/program/entry.js";
 import { renderDocument } from "../src/kernel/render.js";
 import { fillTemplate } from "../src/kernel/template.js";
-import { ENV, RED_PNG_BASE64, fonts, paragraph } from "./helpers.js";
+import { ENV, PLAN_THEME, RED_PNG_BASE64, fonts, paragraph } from "./helpers.js";
 import { FILL_OPTIONS, SUBMISSION, SYLLABICS, WIDGETS, archivalDocument, cffFont, cmykProfile, pdfLibTemplate, syllabicsDocument } from "./pdfa-fixtures.js";
 import { completeSignature, prepareSignature } from "../src/kernel/signature/sign.js";
 import { verifySignatures } from "../src/kernel/signature/verify.js";
@@ -94,10 +94,10 @@ describe.skipIf(!cli)("veraPDF conformance", () => {
       { id: "a2", page: 1, rect: { x: 40, y: 630, width: 20, height: 20 }, value: true, draw: { ...DEFAULT_PDF_AREA_DRAW, kind: "check" as const } },
       { id: "a3", page: 1, rect: { x: 40, y: 660, width: 200, height: 20 }, value: "Field answer", draw: { ...DEFAULT_PDF_AREA_DRAW, bold: true }, field: { name: "area3", required: false, readOnly: false } }
     ];
-    const filled = await fillTemplate(own.bytes, { first: "Grace", agree: true, colour: "r" }, FILL_OPTIONS, await fonts(), ENV, areas, { pdfa: "3a", attachments: [SUBMISSION] });
+    const filled = await fillTemplate(own.bytes, { first: "Grace", agree: true, colour: "r" }, FILL_OPTIONS, await fonts(), ENV, areas, { pdfa: "3a", attachments: [SUBMISSION] }, undefined, PLAN_THEME);
     expect(filled.pdfa).toBe("3a");
     await check("filled-own-3a-areas", filled.bytes, "3a");
-    const flat = await fillTemplate(own.bytes, { first: "Grace" }, { ...FILL_OPTIONS, flatten: true }, await fonts(), ENV, areas.slice(0, 1), { pdfa: "2a" });
+    const flat = await fillTemplate(own.bytes, { first: "Grace" }, { ...FILL_OPTIONS, flatten: true }, await fonts(), ENV, areas.slice(0, 1), { pdfa: "2a" }, undefined, PLAN_THEME);
     expect(flat.pdfa).toBe("2u");
     await check("filled-own-2a-flat-as-2u", flat.bytes, "2u");
   }, 180_000);
@@ -159,7 +159,9 @@ describe.skipIf(!cli)("veraPDF conformance", () => {
         { id: "a1", page: 1, rect: { x: 20, y: 150, width: 200, height: 20 }, value: "Drawn answer", draw: { ...DEFAULT_PDF_AREA_DRAW, color: "#112233" } },
         { id: "a2", page: 1, rect: { x: 20, y: 180, width: 200, height: 20 }, value: "Field answer", draw: { ...DEFAULT_PDF_AREA_DRAW, bold: true }, field: { name: "area2", required: false, readOnly: false } }
       ],
-      { pdfa: "2b" }
+      { pdfa: "2b" },
+      undefined,
+      PLAN_THEME
     );
     await check("filled-lib-cmyk", cmyk.bytes, "2b");
   }, 120_000);

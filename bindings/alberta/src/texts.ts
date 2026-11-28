@@ -14,7 +14,7 @@ export const ALBERTA_TEXTS: LanguagePackTable = {
     required: "(required)",
     optional: "(optional)",
     // goa-fieldset's own heading over its errors, whatever their number.
-    summaryHeading: "There is a problem",
-    summaryHeadingOne: "There is a problem"
+    "summaryHeading.other": "There is a problem",
+    "summaryHeading.one": "There is a problem"
   }
 };

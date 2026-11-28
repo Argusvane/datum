@@ -3483,6 +3483,20 @@ export class FormRuntime {
   }
 
   /**
+   * The journey `id` as its author wrote it: the host's override when it gave one, else the
+   * definition's own. What the sandbox is handed, as it is handed the authored form: the kernel
+   * compiles its own copy, and refuses a compiled copy's trees as an author's.
+   */
+  private authoredJourney(id: string | undefined): Journey | undefined {
+    if (id === undefined) {
+      return undefined;
+    }
+    const configuration = this.journeyConfigurationSource !== undefined ? this.journeyConfiguration() : this.authored.journey;
+    const journeys: unknown = configuration?.journeys;
+    return Array.isArray(journeys) ? (journeys as Journey[]).find((journey) => isRecord(journey) && journey.id === id) : undefined;
+  }
+
+  /**
    * The page being shown, as a renderer needs it: where it sits on the path, where Back goes,
    * whether it is the last, what it draws. `undefined` when no journey runs.
    */
@@ -4142,7 +4156,7 @@ export class FormRuntime {
     // kernel counts what the browser did; the rows drawn are
     // read once, for this and the envelope alike.
     const wasmValues = this.withRowsWhole(policed, drawn());
-    const wasmJourney = this.activeJourney()?.journey;
+    const wasmJourney = this.authoredJourney(this.activeJourney()?.journey.id);
     try {
       const locale = this.stateStore.snapshot().locale;
       // The host resolves data sources outside the sandbox and injects a

@@ -132,7 +132,8 @@ export type {
 // The provenance account is a core type: the runtime carries it
 // into the submit hooks without knowing agents, so it comes from the engine root, as a type only.
 export type { AgentProvenance } from "@argusvane/datum-engine";
-export { elementAgentHost, AGENT_HIGHLIGHT_MS, AGENT_HIGHLIGHT_RULE } from "./agent-host.js";
+export { elementAgentHost } from "./agent-host.js";
+export { AGENT_HIGHLIGHT_MS, AGENT_HIGHLIGHT_RULE } from "./agent-ui.js";
 export type { AgentAttachment, AgentMarks, BuilderAgentAttachment, DatumAgentToolsDetail, FormAgentAttachment } from "./agent-attach.js";
 
 import { agentRegistrarFor, createFormAgentTools } from "@argusvane/datum-engine/agent";

@@ -88,8 +88,8 @@ through `canvasHooks`, which take and return templates, never HTML strings.
 
 Picking and removing a file are announced by the renderer, not the binding. The binding draws the
 file field's empty polite status region (`role="status"`, `aria-live="polite"`), marked `data-file-status` (`FILE_STATUS_ATTRIBUTE`,
-`render/live/contract.ts`), and the renderer fills it with the `fileAnnounced` text for a pick
-(`fileAnnouncedMany` for several files) and the `fileRemoved` text for a removal. Focus stays in
+`render/live/contract.ts`), and the renderer fills it with the counted `fileAnnounced` text for a pick
+(`fileAnnounced.one` for one file, `fileAnnounced.other` for several) and the `fileRemoved` text for a removal. Focus stays in
 the field: once the row is gone, the field's focus target (the picker) takes it. The marks and the
 rules for them are in [`docs/binding-authoring.md`](../binding-authoring.md), section 3.
 

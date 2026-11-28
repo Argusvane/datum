@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { PDF_KERNEL_FALLBACKS, type PdfFillArea } from "@argusvane/datum-engine/render";
 import { fillTemplate } from "../src/kernel/template.js";
-import { ENV, fonts, reload } from "./helpers.js";
+import { ENV, fonts, PLAN_THEME, reload } from "./helpers.js";
 import { FILL_OPTIONS, plainTemplate } from "./pdfa-fixtures.js";
 
 /** A page's content streams, inflated and joined. */
@@ -24,8 +24,8 @@ const AREA: PdfFillArea = {
 };
 
 describe("template areas under a theme", () => {
-  it("draws an area in the plan's colours when it carries a theme, and in the kernel's fallbacks when it does not", async () => {
-    const plain = await fillTemplate(await plainTemplate(), {}, FILL_OPTIONS, await fonts(), ENV, [AREA]);
+  it("draws an area in the plan's colours", async () => {
+    const plain = await fillTemplate(await plainTemplate(), {}, FILL_OPTIONS, await fonts(), ENV, [AREA], undefined, undefined, PLAN_THEME);
     const themed = await fillTemplate(await plainTemplate(), {}, FILL_OPTIONS, await fonts(), ENV, [AREA], undefined, undefined, {
       typography: PDF_KERNEL_FALLBACKS.typography,
       colors: { ...PDF_KERNEL_FALLBACKS.colors, text: "#ff0000" }
@@ -36,5 +36,9 @@ describe("template areas under a theme", () => {
     expect(plainContent).not.toContain("1 0 0 rg");
     expect(plain.areas?.[0]?.status).toBe("filled");
     expect(themed.areas?.[0]?.status).toBe("filled");
+  });
+
+  it("refuses areas without the plan's type and colours", async () => {
+    await expect(fillTemplate(await plainTemplate(), {}, FILL_OPTIONS, await fonts(), ENV, [AREA])).rejects.toMatchObject({ code: "invalid_request" });
   });
 });

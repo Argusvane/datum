@@ -2,9 +2,9 @@
  * The formula printer: an expression tree back as FEEL-subset text, the way the parser
  * (`core/expressions/formula.ts`) reads it. Lossless by structure: for every tree `e`,
  * `kernelParseFormula(printFormula(e), signatures).expression` deep-equals `e` (the seeded
- * random-tree test in `tests/feel-print.test.ts` pins it). The builder uses it to open a
- * tree-stored rule as text (migration on touch: Apply then writes the string) and, with
- * labels, for the "Reads as" line.
+ * random-tree test in `tests/feel-print.test.ts` pins it). The builder uses it to write a rule
+ * it works out as text (a generated default, a placeholder value) and, with labels, for the
+ * "Reads as" line.
  *
  * Canonical spelling: double-quoted strings; `not(…)` always; `x between a and b` for an
  * `and` of `gte` and `lte` over one left operand, `x in [a..b)` and the other interval forms

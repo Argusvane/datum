@@ -140,7 +140,7 @@ describe("a check whose answer was replaced some other way writes nothing", () =
       runtime: { schemaVersion: "1", rendererVersion: "0.1.0" },
       locale: "en",
       values: { email: "free@x.ca" },
-      state: { touched: [], dirty: [] },
+      state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [] },
       updatedAt: 0
     };
     const loading = runtime.hydrateFromDraft(draft);
@@ -352,7 +352,7 @@ describe("go-on attempts belong to the answers they were made on", () => {
       runtime: { schemaVersion: "1", rendererVersion: "0.1.0" },
       locale: "en",
       values: { name: "Ada" },
-      state: { touched: [], dirty: [] },
+      state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [] },
       updatedAt: 0
     });
     const before = calls;
@@ -380,7 +380,7 @@ describe("go-on attempts belong to the answers they were made on", () => {
       runtime: { schemaVersion: "1", rendererVersion: "0.1.0" },
       locale: "en",
       values: { a: "1" },
-      state: { touched: [], dirty: [], journey: { id: "apply", page: "two", completed: ["one"] } },
+      state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [], journey: { id: "apply", page: "two", completed: ["one"] } },
       updatedAt: 0
     });
     expect(runtime.journeyView()?.pageId).toBe("two");

@@ -592,9 +592,9 @@ describe("a list names what exists", () => {
 
   it("draws Logic's open-designer buttons only for a side the list names", async () => {
     const definition = fullDefinition();
-    (definition.pdf!.layouts![0]! as { when?: unknown }).when = { kind: "path", path: "fullName" };
+    (definition.pdf!.layouts![0]! as { when?: unknown }).when = "fullName";
     // A journey's condition lives on a route now (a step has none of its own).
-    (definition.journey!.journeys![0]!.pages[0]! as { routes?: unknown }).routes = [{ when: { kind: "path", path: "fullName" }, to: "$end" }];
+    (definition.journey!.journeys![0]!.pages[0]! as { routes?: unknown }).routes = [{ when: "fullName", to: "$end" }];
     const logicRoot = async (features: string): Promise<ShadowRoot> => {
       document.body.innerHTML = "";
       const element = await mount({ features }, definition);
@@ -652,19 +652,7 @@ describe("the list is the master: the other attributes only restrict", () => {
     expect(warn.mock.calls.map((call: readonly unknown[]) => String(call[0])).filter((text: string) => text.includes("pdf attribute ignored"))).toHaveLength(0);
   });
 
-  it("ignores journeys=auto when journeys is not listed, with one warning", async () => {
-    const element = await mount({ features: "pdf", journeys: "auto" });
-    await sidesSettled(element, true, false);
-    expect(asked.journeys).toBe(0);
-    expect(warn.mock.calls.map((call: readonly unknown[]) => String(call[0])).filter((text: string) => text.includes("journeys attribute ignored: not in features"))).toHaveLength(1);
-  });
-
-  it("lets pdf=off, journeys=off and hidden-workspaces take a listed side away, and fetches nothing for it", async () => {
-    const off = await mount({ features: "pdf journeys", pdf: "off", journeys: "off" });
-    await settle();
-    expect(off.modes.map((mode) => mode.id)).toEqual(["form"]);
-    expect(asked.pdf + asked.journeys).toBe(0);
-    document.body.innerHTML = "";
+  it("lets hidden-workspaces take a listed side away, and fetches nothing for it", async () => {
     const hidden = await mount({ features: "pdf journeys", "hidden-workspaces": "pdf journeys" });
     await settle();
     expect(hidden.modes.map((mode) => mode.id)).toEqual(["form"]);
@@ -675,7 +663,7 @@ describe("the list is the master: the other attributes only restrict", () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
-  it("never returns to a workspace the list took away: logic pdf, Logic, PDF, then features pdf and pdf=off lands on Form with no Logic fetch", async () => {
+  it("never returns to a workspace the list took away: logic pdf, Logic, PDF, then features pdf and minimal lands on Form with no Logic fetch", async () => {
     const element = await mount({ features: "logic pdf" });
     await sidesSettled(element, true, false);
     const builder = element.builder!;
@@ -689,7 +677,7 @@ describe("the list is the master: the other attributes only restrict", () => {
     await settle();
     expect(builder.workspace).toBe("pdf");
     expect(builder.availableWorkspaces()).toEqual(["form", "pdf"]);
-    element.setAttribute("pdf", "off");
+    element.setAttribute("features", "minimal");
     await settle();
     expect(builder.workspace).toBe("form");
     expect(asked.logic).toBe(0);
@@ -810,13 +798,13 @@ describe("the features property", () => {
     document.body.append(element);
     await until(() => element.builder?.shadowRoot?.querySelector("datum-builder-canvas"));
     expect(heard).toEqual(['features names no such feature or preset: "agnet"']);
-    // Known words, the presets and the form workspace's own name are not reported; each assignment says its own.
+    // Known words, the presets and a part left out are not reported; each assignment says its own.
     heard.length = 0;
-    element.features = "minimal logic form";
-    element.features = ["all", "agent"];
-    element.features = "Pdff typo, logic";
+    element.features = "minimal logic";
+    element.features = ["all", "agent", "-pdf"];
+    element.features = "Pdff typo, logic, form";
     await settle();
-    expect(heard).toEqual(['features names no such feature or preset: "pdff", "typo"']);
+    expect(heard).toEqual(['features names no such feature or preset: "pdff", "typo", "form"']);
     expect(error).toHaveBeenCalled();
     error.mockRestore();
   });

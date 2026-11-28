@@ -74,11 +74,11 @@ def test_the_golden_file_is_the_conformance_suites_by_sha256() -> None:
 def test_the_pdf_documents_and_hashes_are_the_pdf_kernels_by_sha256() -> None:
     repo = next((p for p in HERE.parents if (p / "packages" / "pdf-kernel").is_dir()), None)
     hashes = fx.pdf_hashes()
-    assert set(hashes) == {"datum-pdf", "gcds", "uswds"}
+    assert set(hashes) == {"datum-pdf", "datum-plain", "datum-pdf-fr-CA"}
     for theme in hashes:
         assert fx.pdf_document(theme)["version"] == "1"
         if repo is not None:
-            source = repo / "packages" / "pdf-kernel" / "tests" / "fixtures" / "documents-3.8" / f"{theme}.json"
+            source = repo / "packages" / "pdf-kernel" / "tests" / "fixtures" / "documents" / f"{theme}.json"
             assert source.read_bytes() == fx.fixture_bytes(f"{fx.DOCUMENTS}/{theme}.json")
     assert PDF_ABI_MIN.startswith("1.")
 

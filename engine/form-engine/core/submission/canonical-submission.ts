@@ -36,7 +36,7 @@ export interface CanonicalSubmission {
     /**
      * The journey the answers were given through — its id only: a server works the
      * path out again from the values and never takes one from the client. Absent when the form
-     * was filled on one page, so an envelope without a journey signs as it always did.
+     * was filled on one page.
      */
     journey?: { id: string };
   };

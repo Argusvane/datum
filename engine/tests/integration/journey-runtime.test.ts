@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ComponentNode, FormDefinition } from "../../form-engine/core/schema/types.js";
-import type { Expression } from "../../form-engine/core/expressions/expression.js";
 import type { Journey, JourneyConfiguration } from "../../form-engine/core/schema/journey.js";
 import type { FormHooks } from "../../form-engine/core/events/hooks.js";
 import { FormEventType } from "../../form-engine/core/events/event-types.js";
@@ -28,11 +27,10 @@ import type {
  * submission carries. The checks against the host's server are journey-server-validation's.
  */
 
-const path = (name: string): Expression => ({ kind: "path", path: name });
-const literal = (value: string | number | boolean | null): Expression => ({ kind: "literal", value });
-const eq = (name: string, value: string | number | boolean): Expression => ({ kind: "binary", operator: "eq", left: path(name), right: literal(value) });
-const neq = (name: string, value: string | number | boolean): Expression => ({ kind: "binary", operator: "neq", left: path(name), right: literal(value) });
-const lt = (name: string, value: number): Expression => ({ kind: "binary", operator: "lt", left: path(name), right: literal(value) });
+const literal = (value: string | number | boolean | null): string => JSON.stringify(value);
+const eq = (name: string, value: string | number | boolean): string => `${name} = ${literal(value)}`;
+const neq = (name: string, value: string | number | boolean): string => `${name} != ${literal(value)}`;
+const lt = (name: string, value: number): string => `${name} < ${literal(value)}`;
 
 function root(): ComponentNode {
   return {
@@ -677,7 +675,7 @@ describe("journey runtime: a deep-linked page", () => {
       runtime: { schemaVersion: "1", rendererVersion: "0.1.0" },
       locale: "en",
       values: { age: "30", "abroad.nation": "FR" },
-      state: { touched: [], dirty: [], journey: { id: "apply", page, completed } },
+      state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [], journey: { id: "apply", page, completed } },
       updatedAt: 0
     };
   }
@@ -847,9 +845,9 @@ describe("journey runtime: a fold that does not settle", () => {
             type: "text",
             configuration: { required: true, hiddenValueBehavior: "exclude-from-submission" },
             // empty() keeps each rule a real yes or no: a condition holds only for true (strict truthiness).
-            rules: { visibleWhen: { kind: "call", name: "empty", args: [path("b")] } }
+            rules: { visibleWhen: "empty(b)" }
           },
-          { id: "b", type: "text", configuration: { hiddenValueBehavior: "exclude-from-submission" }, rules: { visibleWhen: { kind: "unary", operator: "not", operand: { kind: "call", name: "empty", args: [path("a")] } } } },
+          { id: "b", type: "text", configuration: { hiddenValueBehavior: "exclude-from-submission" }, rules: { visibleWhen: "not(empty(a))" } },
           { id: "c", type: "text", configuration: {} },
           { id: "d", type: "text", configuration: {} }
         ]
@@ -1338,13 +1336,13 @@ function presentationDraft(values: Record<string, unknown>, written?: Record<str
     runtime: { schemaVersion: "1.0.0", rendererVersion: "1" },
     locale: "en",
     values,
-    state: { touched: [], dirty: [], journey: { id: "apply", page: "income", completed: ["details"], ...(written !== undefined ? { written } : {}) } },
+    state: { mode: "normal", touched: [], dirty: [], visitedSteps: [], completedSteps: [], journey: { id: "apply", page: "income", completed: ["details"], ...(written !== undefined ? { written } : {}) } },
     updatedAt: 1
   };
 }
 
 /** The fixture's journey with `m2` given a visibility rule. */
-function withM2Rule(visibleWhen: Expression): Journey {
+function withM2Rule(visibleWhen: string): Journey {
   const journey = presentationApplyJourney();
   const income = journey.pages[1] as Journey["pages"][number];
   income.components = (income.components ?? []).map((entry) => (typeof entry !== "string" && entry.id === "m2" ? { ...entry, rules: { visibleWhen } } : entry));
@@ -1454,7 +1452,7 @@ describe("journey runtime: presentations — regressions", () => {
 
     // F3b: `m2` shows while the total is 100 or more — two answers settle. The draft holds the
     // one the person had (110, written by the page); a fresh runtime's empty start shows only m1.
-    const circular = withM2Rule({ kind: "binary", operator: "gte", left: path("annual_income"), right: literal(100) });
+    const circular = withM2Rule("annual_income >= 100");
     const resumed = presentationRuntime({ journeys: [circular] });
     await resumed.hydrateFromDraft(presentationDraft({ email: "ada@example.org", "@apply.m1": 50, "@apply.m2": 60, annual_income: 110 }, { annual_income: 110 }));
     expect(resumed.state().values.annual_income).toBe(110);
@@ -1492,7 +1490,7 @@ describe("journey runtime: presentations — regressions", () => {
                 components: [
                   { id: "first", type: "text", configuration: {} },
                   { id: "second", type: "text", configuration: {} },
-                  { id: "joined", type: "journey-value", configuration: { to: "code", value: { kind: "call", name: "concat", args: [path("first"), path("second")] } } }
+                  { id: "joined", type: "journey-value", configuration: { to: "code", value: "concat(first, second)" } }
                 ]
               }
             ]

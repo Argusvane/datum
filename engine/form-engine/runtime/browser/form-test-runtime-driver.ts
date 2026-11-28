@@ -881,16 +881,16 @@ export function createFormTestRuntimeDriver(definition: FormDefinition, options:
       for (const path of collectionPaths) {
         rows[path] = form.rows(path).length;
       }
-      const snapshot: FormTestSnapshot = { effective, required, values, byPath, errors: snapshotErrors(form), rows };
       const journey = form.journeyView();
+      // Every page the journey has, so a page named off the path can be told from a typo.
+      const pages = journey !== undefined ? journey.journey.pages.map((page) => page.id) : [];
+      const snapshot: FormTestSnapshot = { effective, required, values, byPath, errors: snapshotErrors(form), rows, pages };
       if (journey !== undefined) {
         snapshot.page = journey.pageId;
         // The view carries the path and how it ends, not the walk's decisions (the fold's trace
         // is private to the runtime): none are listed.
         const trace: JourneyTrace = { pages: [...journey.path], end: journey.end, decisions: [] };
         snapshot.trace = trace;
-        // Every page the journey has, so a page named off the path can be told from a typo.
-        snapshot.pages = journey.journey.pages.map((page) => page.id);
       }
       if (verdict !== undefined) {
         snapshot.verdict = verdict;

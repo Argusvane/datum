@@ -214,7 +214,7 @@ describe("what the canvas panel says and the element re-emits", () => {
     const element = await mountBuilder(
       formOf([
         { id: "optIn", type: "checkbox", configuration: { label: "Subscribe" } },
-        { id: "email", type: "text", configuration: { label: "Email" }, rules: { visibleWhen: { kind: "path", path: "optIn" } } }
+        { id: "email", type: "text", configuration: { label: "Email" }, rules: { visibleWhen: "optIn" } }
       ])
     );
     const gated = (): HTMLElement | null => previewOf(element)!.querySelector<HTMLElement>('.db-node[data-component-id="email"]');

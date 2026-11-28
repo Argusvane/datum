@@ -279,7 +279,7 @@ const conformance = join(repo, "packages", "conformance-suite");
 const kernelFixtures = join(repo, "packages", "pdf-kernel", "tests", "fixtures");
 copyFileSync(need(join(conformance, "golden", "abi-1.0.json")), join(fixtures, "abi-1.0.json"));
 copyFileSync(need(join(conformance, "fixtures", "endpoint-fixture.definition.json")), join(fixtures, "endpoint-fixture.definition.json"));
-cpSync(need(join(kernelFixtures, "documents-3.8")), join(fixtures, "documents-3.8"), { recursive: true });
+cpSync(need(join(kernelFixtures, "documents")), join(fixtures, "documents"), { recursive: true });
 cpSync(need(join(kernelFixtures, "signing")), join(fixtures, "signing"), { recursive: true });
 mkdirSync(join(fixtures, "shared"), { recursive: true });
 for (const name of readdirSync(need(join(sharedRoot, "fixtures"))).filter((entry) => entry.endsWith(".json"))) {

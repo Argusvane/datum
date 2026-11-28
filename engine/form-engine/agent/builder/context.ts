@@ -213,7 +213,7 @@ export interface BuilderMemory {
   /**
    * The agent's own `save` is waiting on the site now (save-tool.ts). It lives on the memory, not in
    * a module set, so no state outlives its registration; a reseed copies it, so a save still
-   * running across one answers `busy` as before.
+   * running across one still answers `busy`.
    */
   saving: boolean;
   /** The agent's last Check and anyone's last Submit in this Try it (`try_it { action: 'read' }`). */
@@ -329,7 +329,7 @@ export interface ShowRequest {
   noButton?: true;
 }
 
-/** Names and meanings binding; members after `unknownComponent` were added later. */
+/** Names and meanings binding. */
 export interface BuilderToolsShared {
   host: BuilderToolHost;
   /** host.controller() once; throws builder-not-ready { state: "loading" } as ToolRefusal when absent (the registrar normally answered first). */

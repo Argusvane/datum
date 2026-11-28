@@ -12,11 +12,9 @@ import { createFieldConstraintsStage } from "../form-engine/validation/core/fiel
 import { ValidationPipeline } from "../form-engine/validation/core/validation-pipeline.js";
 import { createInProcessWasmValidationHost } from "../form-engine/validation/wasm/in-process-host.js";
 
-const lit = (value: unknown) => ({ kind: "literal", value });
-
 function journeyRuntime(riskyPatterns?: "allow" | "refuse") {
-  const built = { kind: "call", name: "join", args: [lit(["(a+", ")+$"]), lit("")] };
-  const when = { kind: "call", name: "matches", args: [{ kind: "path", path: "t" }, built] };
+  // The pattern is put together as the condition runs, so no literal of it is there to check.
+  const when = 'matches(t, concat("(a+", ")+$"))';
   const root: any = {
     id: "form",
     type: "form",
