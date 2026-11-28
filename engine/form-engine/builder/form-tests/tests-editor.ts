@@ -407,6 +407,15 @@ function wordInsertion(entry: TestsSlotWord): string {
   return `${entry.text} `;
 }
 
+/** `value` as the text inside a string that `close` opened: the escapes the parser resolves, one line. */
+function stringBody(value: string, close: string): string {
+  let out = "";
+  for (const ch of value) {
+    out += ch === "\\" || ch === close ? `\\${ch}` : ch === "\n" ? "\\n" : ch === "\r" ? "\\r" : ch === "\t" ? "\\t" : ch;
+  }
+  return out;
+}
+
 /** Inserts `text` over the range and asks for the next list, so a statement can be built by choosing. */
 function insertThenSuggest(text: string, chain: boolean): CompletionApply {
   return (view, _completion, from, to) => {
@@ -459,17 +468,20 @@ export function testsCompletionSource(env: TestsCompletionEnv): CompletionSource
     const literal = (label: string, detail: EditorTextKey, apply: CompletionApply = label, boost = 0): void => {
       out.push({ label, detail: text(detail), apply, type: "value", boost, section });
     };
-    // Inside an open string only an option of the field makes sense; the closing quote is added unless it is there.
+    // Inside an open string only an option of the field makes sense; the closing quote is added
+    // unless it is there. The option is escaped for that quote, so a quote or a backslash in it
+    // does not end the string early.
     if (slot.quote !== undefined) {
       for (const option of choices) {
         const close = slot.quote.endsWith('"') ? '"' : "'";
+        const body = stringBody(option.value, close);
         out.push({
           label: option.value,
           detail: option.label === option.value ? text("tests.complete.value.option") : option.label,
           apply: (view, _completion, from, to) => {
             const after = view.state.sliceDoc(to, to + 1);
-            const insert = after === close ? option.value : option.value + close;
-            view.dispatch({ changes: { from, to, insert }, selection: { anchor: from + option.value.length + 1 }, userEvent: "input.complete" });
+            const insert = after === close ? body : body + close;
+            view.dispatch({ changes: { from, to, insert }, selection: { anchor: from + body.length + 1 }, userEvent: "input.complete" });
           },
           type: "value",
           section
