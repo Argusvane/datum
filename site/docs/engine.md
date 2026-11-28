@@ -11,7 +11,7 @@ The runtime has a file of its own, `datum-engine.js`:
 - `datum-form.js` exports the same runtime beside the element.
 - The names are in [JavaScript exports](/exports#the-engine-file), which this page does not repeat.
 
-Datum is pre-release, and the packages below are not published yet: [Release status](/introduction#release-status) says what that means for the contracts.
+`datum-engine.js` is in the npm package `@argusvane/datum`. In Node, install the package and import `@argusvane/datum/engine`; the samples below import `./datum-engine.js`, the same file by its path in the folder you host. Datum is pre-release: [Release status](/introduction#release-status) says what that means for the contracts.
 
 ## A runtime in a few lines
 
@@ -224,7 +224,7 @@ The server checks again what the page checked. The `@argusvane/datum-submissions
 
 A check is a `200` whatever the verdict, and a refused delivery is a `422`. The envelope the runtime above made is accepted here as it is.
 
-- The package is not published yet and its entry points are TypeScript source, so run the file through a TypeScript-aware runner from a checkout.
+- `@argusvane/datum-submissions` is not published, and its entry points are TypeScript source, so run the file through a TypeScript-aware runner from a checkout.
 - There is a second validator, `createKernelValidator()`, that runs the rules in the calling process with no sandbox. It is for development and tests, and the service logs a warning when it is given one.
 
 The page can run the sandbox too, with `wasmValidationHost` on the runtime's config or the `wasm` attribute on the element: [Validation and the sandbox](/validation#loading-the-sandbox-yourself). A server in another language, or one that runs the programs itself, reads [Running the programs on your own server](/server-programs). The built-in hosts are in [Server hosts](/server-hosts).
