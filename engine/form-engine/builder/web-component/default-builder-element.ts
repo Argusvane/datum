@@ -4602,11 +4602,25 @@ export class DatumBuilderElement extends HTMLElementBase {
   }
 
   /**
+   * One of what the canvas previews with (the binding, its assets, the data sources), kept with
+   * the rest of {@link options} and handed to the controller on its own. Not through `options`:
+   * that re-applies every option given so far, `initialRoot` and `localization` among them, which
+   * would put the form back as it was loaded and take the author's edits and their history with it.
+   */
+  private setPreviewOption<K extends "binding" | "assets" | "dataSourceResolver" | "dataSources">(key: K, value: DatumBuilderOptions[K]): void {
+    this.optionsState = { ...this.optionsState, [key]: value };
+    this.ctrl.setOptions({ [key]: value } as Pick<DatumBuilderOptions, K>);
+    if (this.wrapEl) {
+      this.applyPanelControllers();
+    }
+  }
+
+  /**
    * The design-system binding the canvas draws the form with (see
    * {@link DatumBuilderOptions.binding}): a binding, a registered id, or nothing for Datum's.
    */
   public set binding(value: LiveBinding | string | undefined) {
-    this.options = { binding: value };
+    this.setPreviewOption("binding", value);
   }
 
   public get binding(): LiveBinding | string | undefined {
@@ -4615,7 +4629,7 @@ export class DatumBuilderElement extends HTMLElementBase {
 
   /** The design system's files the canvas draws with (see {@link DatumBuilderOptions.assets}). */
   public set assets(value: LiveAssets | undefined) {
-    this.options = { assets: value };
+    this.setPreviewOption("assets", value);
   }
 
   public get assets(): LiveAssets | undefined {
@@ -4624,7 +4638,7 @@ export class DatumBuilderElement extends HTMLElementBase {
 
   /** Resolves `select` options in the canvas preview. */
   public set dataSourceResolver(value: DataSourceResolver | undefined) {
-    this.options = { dataSourceResolver: value };
+    this.setPreviewOption("dataSourceResolver", value);
   }
 
   public get dataSourceResolver(): DataSourceResolver | undefined {
@@ -4633,7 +4647,7 @@ export class DatumBuilderElement extends HTMLElementBase {
 
   /** The host's wiring-time data sources — the same set it hands the renderer. */
   public set dataSources(value: DataSourceSet | undefined) {
-    this.options = { dataSources: value };
+    this.setPreviewOption("dataSources", value);
   }
 
   public get dataSources(): DataSourceSet | undefined {
