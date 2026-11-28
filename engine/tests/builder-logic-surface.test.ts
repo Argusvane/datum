@@ -7,8 +7,9 @@ import type { ComponentNode } from "../form-engine/core/schema/types.js";
 
 /*
  * The Logic editor's working copy against the stored form: a clean copy follows what an undo
- * puts back, and Try it answers as the form stores them. The surface is driven through the real
- * builder element, with the formula box left as its textarea.
+ * puts back, Try it answers as the form stores them, and the surface's own prompt goes with the
+ * copy. The surface is driven through the real builder element, with the formula box left as its
+ * textarea.
  */
 
 defineDatumBuilderElement();
@@ -197,5 +198,32 @@ describe("Try it", () => {
     openCard(surface, "form:w:visibleWhen");
     expect(tryAnswer(surface, "age", "18")).toContain("W is shown");
     expect(tryAnswer(surface, "age", "9")).toContain("W is hidden");
+  });
+});
+
+describe("the surface's own switch prompt", () => {
+  async function heldSwitch(): Promise<LogicSurface> {
+    const { surface } = await mountInLogic();
+    openCard(surface, "form:x:visibleWhen");
+    type(surface, 'a = "2"');
+    openCard(surface, "form:z:visibleWhen");
+    expect(prompt(surface)).not.toBeNull();
+    return surface;
+  }
+
+  it("goes with the copy discardPending drops", async () => {
+    const surface = await heldSwitch();
+    surface.discardPending();
+    expect(inside(surface).querySelector("[data-logic-editor]")).toBeNull();
+    expect(prompt(surface)).toBeNull();
+  });
+
+  it("goes with the copy a new controller drops", async () => {
+    const surface = await heldSwitch();
+    const ctrl = surface.controller;
+    surface.controller = undefined;
+    surface.controller = ctrl;
+    expect(inside(surface).querySelector("[data-logic-editor]")).toBeNull();
+    expect(prompt(surface)).toBeNull();
   });
 });

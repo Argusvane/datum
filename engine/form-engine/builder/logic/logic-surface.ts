@@ -431,6 +431,8 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
     this.ctrl?.setLeaveGuard(undefined);
     this.ctrl = value;
     this.working = undefined;
+    // A switch held behind the old copy's question goes with the copy.
+    this.heldSwitch = undefined;
     this.forgetAuthoredKinds();
     this.dropEditor();
     if (this.isConnected) {
@@ -2087,12 +2089,17 @@ export class DatumBuilderLogicElement extends HTMLElementBase {
     this.root.querySelector<HTMLElement>(`[data-logic-move="${delta}"]:not([disabled])`)?.focus();
   }
 
-  /** Drops the open rule and its tried values without a question: the shell's way out of a workspace the host removed. */
+  /**
+   * Drops the open rule, its tried values and any switch held behind its question, without a
+   * question: the shell's way out of a workspace the host removed.
+   */
   public discardPending(): void {
     // The leave question the controller holds for the open rule goes with it (a Stay: only the held run is dropped).
     if (this.ctrl?.unsavedChangesPrompt()?.external?.id === GUARD_ID) {
       this.ctrl.answerUnsavedChangesPrompt("stay");
     }
+    // So does the surface's own switch question: left up, it would stay a modal in the hidden host.
+    this.heldSwitch = undefined;
     this.discard();
   }
 
